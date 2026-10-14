@@ -1,0 +1,151 @@
+﻿@{
+    ViewBag.Title = "Reports | Balance Sheet - Detail";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> GL Reports </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#"> GL Transaction Reports </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Balance Sheet - Detail
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Balance Sheet - Detail  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                
+                                <div class="row">
+
+                                <!-- End Date -->
+                                <div class="col-sm-2">
+                                    <div class="form-group">
+                                        <label><strong>End Date:</strong></label>
+                                        <input type="month" class="form-control" v-model="endDate" @@change="getReportData()">
+                                    </div>
+                                </div>
+
+                                <!-- Unposted Transactions -->
+                                <div class="col-sm-2 d-flex align-items-center mt-2">
+                                    <label class="mr-1">
+                                        <input type="checkbox" v-model="includeUnposted"> Unposted Trans.
+                                    </label>
+                                </div>
+
+                                <!-- All Accounts -->
+                                <div class="col-sm-2 d-flex align-items-center mt-2">
+                                    <label class="mr-1">
+                                        <input type="checkbox" v-model="allAccounts"> All Accts.
+                                    </label>
+                                </div>
+
+                                <!-- Detail -->
+                                <div class="col-sm-2 d-flex align-items-center mt-2">
+                                    <label class="mr-1">
+                                        <input type="checkbox" v-model="showDetail"> Detail
+                                    </label>
+                                </div>
+
+                                <!-- OU -->
+                                <div class="col-sm-4">
+                                    <div class="form-group">
+                                        <label><strong>Organizational Unit:</strong></label>
+                                        <select class="form-control" v-model="ouId">
+                                            <option value="">Select Organizational Unit</option>
+                                            <option :value="ou.id" v-for="ou in costCenterHierachyList">{{ ou.name }}</option>
+                                        </select>
+                                    </div>
+                                </div>
+
+                        </div>
+
+                                <!-- Second Row -->
+                                <div class="row">
+            
+                                    <!-- Last Close Period -->
+                                    <div class="col-sm-4 mt-1">
+                                        <small><strong>Last Close Period: {{ lastClosedPeriod }}</strong></small>
+                                    </div>
+            
+                                    <!-- Revalue -->
+                                    <div class="col-sm-2 d-flex align-items-center mt-1">
+                                        <label>
+                                            <input type="checkbox" v-model="revalue"> Revalue
+                                        </label>
+                                    </div>
+            
+                                    <!-- G/L -->
+                                    <div class="col-sm-1 d-flex align-items-center mt-1">
+                                        <label>
+                                            <input type="checkbox" v-model="includeGL"> G/L
+                                        </label>
+                                    </div>
+            
+                                    <!-- A/R -->
+                                    <div class="col-sm-1 d-flex align-items-center mt-1">
+                                        <label>
+                                            <input type="checkbox" v-model="includeAR"> A/R
+                                        </label>
+                                    </div>
+            
+                                    <!-- A/P -->
+                                    <div class="col-sm-1 d-flex align-items-center mt-1">
+                                        <label>
+                                            <input type="checkbox" v-model="includeAP"> A/P
+                                        </label>
+                                    </div>
+            
+                                <!-- Run Button -->
+                                <div class="col-sm-1 mt-1">
+                                    <button class="btn btn-primary btn-block" @@click="getReportData()"> Run </button>
+                                </div>
+            
+                            </div>
+                                
+                                <hr />
+                                
+                                <div style="height:auto;width:auto;min-height:500px;" id="reportView">  </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/gl/reports/balance-sheet-detail.js" asp-append-version="true"></script>

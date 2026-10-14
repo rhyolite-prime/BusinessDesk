@@ -1,0 +1,142 @@
+﻿@{
+    ViewBag.Title = "Assign Subjects";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Assign Subjects</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="@Url.Action("SchoolManager", "Dashboard")" class="text-primary"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-primary" href="#"> Staff SetUps </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Assign Subjects
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Assign Subjects To Teachers</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <div class="row g-3 mb-3">
+                                    <!-- Academic Year Dropdown -->
+                                    <div class="col-md-3">
+                                        <label class="form-label">Academic Year:</label>
+                                        <input id="academicYearId"/>
+                                    </div>
+                                    <!-- Teacher Dropdown -->
+                                    <div class="col-md-3">
+                                        <label class="form-label">Teacher:</label>
+                                        <input id="teacherId"/>
+                                    </div>
+
+                                    <!-- Class Dropdown -->
+                                    <div class="col-md-3">
+                                        <label class="form-label">Class:</label>
+                                        <input id="classId"/>
+                                    </div>
+
+                                    <!-- Subject Dropdown -->
+                                    <div class="col-md-3">
+                                        <label class="form-label">Subject:</label>
+                                        <input id="subjectId"/>
+                                    </div>
+
+                                   
+                                </div>
+
+                                <button type="button" class="btn btn-primary btn-sm  mb-3" @@click="assignSubject"
+                                        :disabled="!teacherId || !classId || !subjectId || !academicYearId">
+                                   <i class="la la-save"></i> Save
+                                </button>
+
+                                <div class="row mb-3">
+                                    <div class="col-md-4">
+                                        <input type="text" v-model="searchQuery" class="form-control" placeholder="Search teacher, class, subject, or year">
+                                    </div>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table-responsive table table-striped  table-hover">
+                                        <thead class="bg-primary text-white">
+                                        <tr>
+                                            <th style="width: 450px;">Teacher</th>
+                                            <th style="width: 250px;">Class</th>
+                                            <th style="width: 450px;">Subject</th>
+                                            <th style="width: 250px;">Academic Year</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <template v-for="teacher in paginatedTeacherSubjects" :key="teacher.staffId">
+                                            <!-- Parent Row -->
+                                            <tr >
+                                                <td colspan="5"><b>{{ getTeacherName(teacher.staffId) }}</b></td>
+                                            </tr>
+                                            <!-- Child Rows -->
+                                            <tr  v-for="subject in teacher.subjects" :key="subject.id">
+                                                <td></td>
+                                                <td>{{ getLevelClassNameFromId(subject.classId) }}</td>
+                                                <td>{{ getSubjectName(subject.subjectId) }}</td>
+                                                <td>{{ getAcademicYearName(subject.academicYearId) }}</td>
+                                                <td>
+                                                    <a class="text-danger" @@click="deleteTeacherSubject(subject.id)">
+                                                        <i class="la la-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <nav class="float-right">
+                                    <ul class="pagination">
+                                        <button @@click.prevent="currentPage--" class="btn btn-sm btn-primary mr-1" :class="{ disabled: currentPage === 1 }">
+                                            Prev
+                                        </button>
+                                        <p>Page {{currentPage}} of {{totalPages}}</p>
+                                        <button class="btn btn-sm btn-primary ml-1" :class="{ disabled: currentPage === totalPages }" @@click.prevent="currentPage++">Next
+                                        </button>
+                                    </ul>
+                                </nav>
+
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script src="https://unpkg.com/vue-select@4.0.0-beta.6/dist/vue-select.iife.js"></script>
+<link rel="stylesheet" href="https://unpkg.com/vue-select@4.0.0-beta.6/dist/vue-select.css">
+
+
+
+<script src="~/js/school-manager/staff/assign-subjects.js" asp-append-version="true"></script>

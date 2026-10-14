@@ -1,0 +1,269 @@
+﻿@{
+    ViewBag.Title = "Customers";
+    Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Customers </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/Ar" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> Shared Resources </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Customers
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card b">
+                        <div class="card-header">
+                            <h4 class="card-title"> Customers  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+
+                                <div class="content-i" id="app">
+                                    <div class="content-box">
+                                        <div class="element-wrapper">
+                                            <h6 class="element-header">Add Or Update Customer Info </h6>
+                                            <div class="element-box">
+                                                <div class="table-responsive" style="height:auto;width:auto;min-height:412px;">
+                                                    <div class="row">
+
+                                                        <div class="col-sm-4">
+
+                                                            <button type="button" v-on:click="clearForm" class="mt-1 btn btn-info">
+                                                                Refresh <i class="la la-refresh"></i>
+                                                                <i class="fa fa-spinner fa-spin" v-if="isLoading"></i>
+                                                            </button>
+                                                        </div>
+                                                        <div class="col-sm-4">
+
+                                                            <div class="form-group">
+                                                                <label> <strong> Search Customer: </strong>  </label>
+                                                                <input id="customerId" v-model="customerId" type="text" class="form-control" />
+
+                                                            </div>
+
+                                                        </div>
+                                                        <div class="col-sm-4"></div>
+
+                                                    </div>
+
+                                                    <hr/>
+                                                    <!--form -->
+                                                    <form ref="customerForm" v-on:submit.prevent="validateAndSaveCustomer">
+                                                        <div  class="row">
+                                                            <div class="col-sm-3">
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> <strong> Account Number: </strong> </strong>  <span class="text-danger">* </span> <a style="color:#3498DB;" v-on:click="generateAccountNumber()"><b> Generate </b></a> </label>
+                                                                    <input type="text" class="form-control" v-model="accountNumber" placeholder="Account Number" required/>
+
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Customer Group: </strong> </label>
+                                                                    <select class="form-control" v-model="customerGroupId" type="text">
+                                                                        <option value=""> Select Customer Group </option>
+                                                                        <option :value="customerGroup.id" v-for="customerGroup in customerGroupList"> {{customerGroup.name}} </option>
+                                                                    </select>
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Status: </strong> <span style="color: red">*</span></label>
+                                                                    <select class="form-control" v-model="statusId" required>
+                                                                        <option value="">Select Status</option>
+                                                                        <option :value="status.id" v-for="status in statusList">{{status.name}}</option>
+                                                                    </select>
+                                                                </div>
+
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Address: </strong> <span style="color: red">*</span></label>
+                                                                    <input v-model="address" class="form-control" type="text" required />
+                                                                </div>
+                                                                
+                                                             
+
+                                                            </div>
+
+                                                            <div class="col-sm-3">
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Customer Name: </strong> <span style="color: red">*</span></label>
+                                                                    <input type="text" class="form-control" name="name" v-model="name" placeholder="Customer Name" required />
+                                                                </div>
+                                                                @*<div class="form-group">
+                                                                    <label> <strong>TIN No: </strong> <span style="color: red">*</span></label>
+                                                                    <input type="text" class="form-control" v-model="tinNumber" placeholder="TIN No" required/>
+
+                                                                </div>*@
+                                                                <div class="form-group">
+                                                                    <label> <strong>Vat No: </strong> <span style="color: red">*</span></label>
+                                                                    <input type="text" class="form-control" v-model="vatNumber" placeholder="Vat No"/>
+
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Contact No: </strong> <span style="color: red">*</span></label>
+                                                                    <input v-model="phoneNo" class="form-control" type="text" required />
+
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong>Balance: </strong></label>
+                                                                    <input class="form-control" v-model="balance" type="number" step="0.01" min="0" disabled="disabled"/>
+                                                                </div>
+                                                            </div>
+                                                             <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                    <label> <strong> Email: </strong> <span style="color: red">*</span></label>
+                                                                    <input v-model="email" name="email" class="form-control" type="text" required />
+
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Default Currency: </strong> <span style="color: red">*</span> </label>
+                                                                    <select class="form-control " v-model="currencyId" required>
+                                                                        <option value="">Select Currency</option>
+                                                                        <option :value="currency.id" v-for="currency in currencyList" :key="currency.id">
+                                                                            {{ currency.currencyName }}
+                                                                        </option>
+                                                                    </select>
+
+
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> Credit Limit: </strong></label>
+                                                                    <input class="form-control" v-model="creditLimit" type="number" step="0.01" min="0"/>
+
+                                                                </div>
+
+                                                              
+                                                                
+
+
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label> <strong> Credit G/L: </strong></label>
+                                                                    <input id="creditAccountId" v-model="creditAccountId" class="form-control" type="text" required />
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> VAT G/L No: </strong></label>
+                                                                    <input id="vatAccountId" v-model="vatAccountId" class="form-control" type="text" required />
+                                                                </div>
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> IRS G/L No: </strong></label>
+                                                                    <input id="irsAccountId" v-model="irsAccountId" class="form-control" type="text" required />
+                                                                </div>
+                                                            </div>
+                                                           
+
+                                                        </div>
+                                                        <hr />
+
+                                                        <h1 class="text-center h3 font-weight-bold mb-5">Customer Additional Info</h1>
+                                                        <div class="row">
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label> <strong> <strong>Contact Person Name: </strong> </strong> </label>
+                                                                    <input type="text" class="form-control" v-model="contactPerson" placeholder="Contact Person Name"/>
+
+                                                                </div>
+                                                            </div>
+                                                            <div class="col-sm-3">
+
+
+                                                                <div class="form-group">
+                                                                    <label> <strong> <strong> Phone: </strong> </strong></label>
+                                                                    <input type="text" class="form-control" v-model="contactPersonPhone" placeholder="Contact Person Phone"/>
+
+                                                                </div>
+                    
+                                                            </div>
+                                                            <div class="col-sm-3">
+                                                                <div class="form-group">
+                                                                    <label> <strong> <strong> Email: </strong> </strong></label>
+                                                                    <input type="text" class="form-control" v-model="contactPersonEmail" placeholder="Contact Person Email"/>
+
+                                                                </div>
+                                                            </div>
+
+                                                        </div>
+                                                        <hr/>
+
+                                                        <div class="row">
+                                                            <div class="col-sm-2"></div>
+                                                            <div class="col-sm-2"></div>
+                                                            <div class="col-sm-8">
+
+                                                                <button type="submit" :disabled="isLoading" style="float: right" class="mb-3 btn btn-amber">
+                                                                    Save Customer Info
+                                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                                </button>
+
+
+                                                            </div>
+
+                                                        </div>
+                                                    </form>
+
+
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+
+                                    </div>
+                                </div>
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+</div>
+
+
+<script src="~/js/shared/vue3/customers.js" asp-append-version="true"></script>

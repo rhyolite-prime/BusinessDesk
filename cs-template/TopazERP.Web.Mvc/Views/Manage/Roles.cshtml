@@ -1,0 +1,392 @@
+﻿@using TopazERP
+@using Abp.Authorization.Users
+@using Abp.Web.Security.AntiForgery
+@inject IAbpAntiForgeryManager AbpAntiForgeryManager
+@{
+    ViewBag.Title = "Roles";
+    AbpAntiForgeryManager.SetCookie(Context);
+    Layout = "~/Views/Shared/Layout/_adminTenantLayout.cshtml";
+}
+<style>
+    .permission-panel {
+        padding: 10px 0;
+    }
+
+    .permission-group {
+        padding: 6px 0;
+    }
+
+    .group-title {
+        font-size: 13px;
+        letter-spacing: .06em;
+        text-transform: uppercase;
+        color: #6c757d;
+        font-weight: 600;
+    }
+
+    .sub-group {
+        border-radius: 8px;
+    }
+
+    .sub-group-header {
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #f8f9fa;
+        transition: background 0.2s ease;
+    }
+
+    .sub-group-header:hover {
+        background: #f1f3f5;
+    }
+
+    .sub-group-name {
+        font-size: 14px;
+        font-weight: 500;
+        color: #333;
+    }
+
+    .sub-group-body {
+        padding: 8px 6px;
+    }
+
+    .perm-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+    }
+
+    .perm-chip {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 4px 10px;
+        font-size: 12px;
+        border-radius: 20px;
+        background: #e9ecef;
+        color: #495057;
+        cursor: pointer;
+        transition: all 0.15s ease;
+        user-select: none;
+    }
+
+    .perm-chip:hover {
+        background: #dee2e6;
+    }
+    .granted-panel {
+        border: 1px solid #dee2e6;
+        background: #fbfcfe;
+        border-radius: 10px;
+        padding: 12px;
+    }
+    
+    .granted-header {
+        padding: 8px 10px;
+        border-radius: 6px;
+        cursor: pointer;
+        background: #eef3ff;
+        transition: all 0.2s ease;
+        border-left: 3px solid #44d35c;
+    }
+    .granted-header:hover {
+        background: #e6edff;
+    }
+
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Roles </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#"> Manage </a>
+                            </li>
+
+                            <li class="breadcrumb-item active">
+                                Users
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Roles  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+                                <div class="row d-flex justify-content-between mb-3">
+
+                                    <h6 class="d-flex justify-content-start">   </h6>
+
+                                    <button class="btn btn-outline-primary d-flex justify-content-end media-right mr-2" v-on:click="resetModal()" type="button" data-target="#addEditRole" data-toggle="modal"> Create New Role </button>
+
+                                </div>
+
+                                <div class="element-box-tp">
+
+                                    <div class="table-responsive">
+                                        <table class="table table-padded">
+                                            <thead>
+                                                <tr>
+                                                    <th> Role Name </th>
+                                                    <th> Display Name</th>
+                                                    <th> Actions </th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+
+                                                <tr v-for="(role,index) in roleList" :key="role.id">
+                                                    <td>
+                                                        <div class="">  {{role.name}} </div>
+                                                    </td>
+
+                                                    <td>
+                                                        <div class=""> {{role.displayName}} </div>
+                                                    </td>
+
+                                                    <td class="row-actions">
+
+                                                        <button type="button" v-on:click="initUpdate(role)" class="btn btn-primary btn-sm" aria-expanded="false"> View Details </button>
+                                                       
+                                                        <button type="button" v-on:click="deleteRole(role.id)" class="btn btn-danger btn-sm" aria-expanded="false"> Delete </button>
+
+
+                                                    </td>
+                                                </tr>
+
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+
+                                    <div class="modal fade w-100" id="addEditRole" tabindex="-1" role="dialog">
+                                        <div class="modal-dialog modal-xl" >
+                                            <div class="modal-content">
+
+                                                <div class="modal-header text-black">
+                                                    <h5 class="modal-title">{{ modalTitle }}</h5>
+                                                    <button type="button" class="close text-danger" data-dismiss="modal">
+                                                        <span>&times;</span>
+                                                    </button>
+                                                </div>
+
+                                                <div class="modal-body">
+
+                                                    <div class="row">
+
+                                                        <div class="col-md-3 mb-2">
+                                                            <label><strong>Name</strong></label>
+                                                            <input type="text" class="form-control"
+                                                                   v-model="name" placeholder="Enter role name">
+                                                            <span class="text-danger" v-if="!$v.name.required && $v.name.$dirty">
+                                                                Role name is required
+                                                            </span>
+                                                        </div>
+
+                                                        <div class="col-md-3 mb-2">
+                                                            <label><strong>Display Name</strong></label>
+                                                            <input type="text" class="form-control"
+                                                                   v-model="displayName" placeholder="Enter display name">
+                                                        </div>
+
+                                                        <div class="col-md-6 mb-2">
+                                                            <label><strong>Description</strong></label>
+                                                            <textarea class="form-control" rows="2"
+                                                              v-model="description"
+                                                              placeholder="Description..."></textarea>
+                                                        </div>
+
+                                                        <div class="col-md-12 my-3">
+
+                                                            <label class="text-muted font-weight-bold mb-2">
+                                                               <strong>Add Permissions</strong>
+                                                            </label>
+
+                                                            <div class="permission-panel">
+
+                                                                <!-- MAIN GROUP -->
+                                                                
+                                                                <div v-for="(subGroups, group) in groupedAvailablePermissions"
+                                                                     :key="group"
+                                                                     class="permission-group ">
+
+                                                                    <!-- GROUP TITLE -->
+                                                                    <div class="group-title mb-1">
+                                                                      <strong>{{ group }}</strong>
+                                                                    </div>
+
+                                                                    <!-- SUB GROUPS -->
+                                                                    <div class="row">
+                                                                       <div v-for="(perms, subGroup) in subGroups"
+                                                                         :key="subGroup"
+                                                                         class="sub-group mb-1 col-md-4">
+
+                                                                        <!-- COLLAPSE HEADER -->
+                                                                        <div class="sub-group-header d-flex justify-content-between align-items-center"
+                                                                             data-toggle="collapse"
+                                                                             :data-target="'#available_' + group + '_' + subGroup">
+
+                                                                            <span class="sub-group-name">
+                                                                                {{ subGroup }}
+                                                                            </span>
+
+                                                                            <i class="la la-angle-down text-muted"></i>
+                                                                        </div>
+
+                                                                        <!-- COLLAPSE BODY -->
+                                                                        <div class="collapse sub-group-body"
+                                                                             :id="'available_' + group + '_' + subGroup">
+
+                                                                            <div class="perm-list">
+
+                                                                                <span v-for="perm in perms"
+                                                                                      :key="perm.name"
+                                                                                      class="perm-chip"
+                                                                                      @@click="addPermissionFromList(perm)">
+
+                                                                                    {{ perm.name.split('.').pop() }}
+
+                                                                                    <i class="la la-plus"></i>
+                                                                                </span>
+
+                                                                            </div>
+
+                                                                        </div>
+
+                                                                    </div> 
+                                                                    </div>
+                                                                    
+
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                                        <!-- Granted Permissions -->
+                                                        <div class="col my-3">
+
+                                                            <label class="text-muted font-weight-bold mb-2">
+                                                              <strong>Granted Permissions</strong>
+                                                            </label>
+
+                                                            <div class="permission-panel granted-panel">
+
+                                                                <span v-if="grantedPermissions.length === 0"
+                                                                      class="text-muted small d-block mb-2">
+                                                                    No permissions granted yet.
+                                                                </span>
+
+                                                                <!-- MAIN GROUP -->
+                                                                <div v-for="(subGroups, group) in groupedGrantedPermissions"
+                                                                     :key="group"
+                                                                     class="permission-group mb-1">
+
+                                                                    <div class="group-title granted-group-title mb-1">
+                                                                       <strong>{{ group }}</strong>
+                                                                    </div>
+
+                                                                    <!-- SUB GROUP -->
+                                                                    <div class="row">
+                                                                        <div v-for="(perms, subGroup) in subGroups"
+                                                                         :key="subGroup"
+                                                                         class="sub-group mb-1 col-md-4">
+
+                                                                        <!-- HEADER -->
+                                                                        <div class="sub-group-header granted-header d-flex justify-content-between align-items-center"
+                                                                             data-toggle="collapse"
+                                                                             :data-target="'#collapse_' + group + '_' + subGroup">
+
+                                                                            <span class="sub-group-name">
+                                                                                {{ subGroup }}
+                                                                            </span>
+
+                                                                            <i class="la la-angle-down text-muted"></i>
+                                                                        </div>
+
+                                                                        <!-- BODY -->
+                                                                        <div class="collapse sub-group-body"
+                                                                             :id="'collapse_' + group + '_' + subGroup">
+
+                                                                            <div class="perm-list">
+
+                                                                                <span v-for="perm in perms"
+                                                                                      :key="perm.name"
+                                                                                      class="perm-chip granted-chip"
+                                                                                      @@click="removePermissionFromList(perm)">
+
+                                                                                    {{ perm.name.split('.').pop() }}
+
+                                                                                    <i class="la la-close"></i>
+
+                                                                                </span>
+
+                                                                            </div>
+
+                                                                        </div>
+
+                                                                    </div>
+                                                                    </div>
+                                                                    
+
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                                        
+                                                    </div>
+
+                                                </div>
+
+                                                <div class="modal-footer">
+                                                    <button class="btn btn-secondary" data-dismiss="modal">Close</button>
+
+                                                    <button class="btn btn-primary" 
+                                                            :disabled="isLoading"
+                                                            v-on:click="saveRole()">
+                                                        <i class="la la-save mr-1"></i> Save Changes
+                                                        <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                    </button>
+                                                </div>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+
+ 
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/manage/roles.js" asp-append-version="true"></script>

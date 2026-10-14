@@ -1,0 +1,239 @@
+﻿ @{
+    ViewBag.Title = "Mid Term";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+ <style>
+     .table td:first-child,
+     .table th:first-child {
+         position: sticky;
+         left: 0;
+         background: #fff;
+         z-index: 2;
+         color: #0a0af0;
+     }
+ .table th {
+     color: #353535;
+ }
+ .table td select{
+     color: #0a0af0;
+ }
+ 
+     /* Sticky table header */
+     .assessment-table-wrapper thead th {
+         position: sticky;
+         top: 0;
+         z-index: 3;
+     }
+
+     /* Optional: keep student column visible when scrolling horizontally */
+     .assessment-table-wrapper th:first-child,
+     .assessment-table-wrapper td:first-child {
+         position: sticky;
+         left: 0;
+         z-index: 2;
+         background: #fff;
+     }
+
+     /* Ensure header column stays above body cells */
+     .assessment-table-wrapper thead th:first-child {
+         z-index: 4;
+     }
+     .select{
+         border: none;
+         padding: 2px;
+         width: 100%;
+         background: transparent;
+     }
+     .assignment-item:hover{
+         cursor: pointer;
+         color: #0a0af0;
+     }
+     .assignment-list {
+         display: flex;
+         flex-wrap: wrap;
+         gap: 0.1rem; 
+         padding: 0;
+         margin: 0;
+         list-style: none; 
+     }
+     .is-invalid{
+         color: red;
+     }
+ </style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Mid Term</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Promotion/Results</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Exams
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Mid Term</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <div class="row">
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label>Academic Year:</label>
+                                        <input id="academicYearId"  :disabled="lockInputs"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label>Term: </label>
+                                        <input id="termId"  :disabled="lockInputs"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label>Class: </label>
+                                        <input id="classId"  :disabled="lockInputs"/>
+                                    </div>
+                                   
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label>Subject: </label>
+                                        <input id="subjectId"  :disabled="lockInputs"/>
+                                    </div>
+                                    <div v-if="!assignmentExists" class="col-md-2  mb-1">
+                                        <label>Assignment Date: </label>
+                                        <input type="date" class="form-control"  id="assignmentDate" v-model="assignmentDate"  :disabled="lockInputs"/>
+                                    </div>
+                                    <div v-if="!assignmentExists" c class="col-md-2 e-bootstrap mb-1">
+                                        <label>Assignment Marks: </label>
+                                        <input class="form-control" type="number" id="overallMark" v-model="overallMark"  :disabled="lockInputs"/>
+                                    </div>
+                                    <div class="col-md-4 mb-1">
+                                        <label>Marks Type: </label>
+                                        <div class="form-control">
+                                            <div class="row">
+                                                <div class="col-sm-6">
+                                                    <label><strong>Raw Marks</strong> </label>
+                                                    <input type="checkbox" id="rawMarks" v-model="isRawMark"  :disabled="lockInputs"/>
+                                                </div>
+                                                <div class="col-sm-6">
+                                                    <label><strong>Percentages</strong> </label>
+                                                    <input type="checkbox" id="percentage" v-model="IsPercentage"  :disabled="lockInputs"/>
+                                                </div>
+                                            </div>
+                                          
+                                        </div>
+
+                                    </div>
+                                  
+                                </div>
+                                <hr />
+                                <div class="table-responsive mt-2" v-if="tableData.length">
+                                    <table class="table table-bordered table-striped table-responsive">
+                                        <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th style="width:50%">Student Name</th>
+                                            <th style="width:50%">Marks</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="(row, index) in paginatedRows" :key="row.studentIdentifier">
+                                            <td>
+                                                {{ ((page - 1) * perPage) + index + 1 }}
+                                            </td>
+                                            <td>{{ row.studentName }}</td>
+                                            <td>
+                                                <input type="number"
+                                                       class="select input"
+                                                       v-model="row.marks"
+                                                       :max="overallMark"
+                                                       min="0"
+                                                       :disabled="lockInputs"
+                                                       :class="{ 'is-invalid': !!rowErrors[row.studentIdentifier] }" />
+
+                                                <small class="text-danger" v-if="rowErrors[row.studentIdentifier]">
+                                                    {{ rowErrors[row.studentIdentifier] }}
+                                                </small>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                    <div class="d-flex justify-content-end align-items-center gap-2 my-1">
+
+                                        <button
+                                            class="btn btn-primary btn-sm"
+                                            :disabled="page === 1"
+                                            @@click="page--">
+                                            Prev
+                                        </button>
+
+                                        <span>
+                                            Page {{ page }} of {{ totalPages }}
+                                        </span>
+
+                                        <button
+                                            class="btn btn-primary btn-sm"
+                                            :disabled="page === totalPages"
+                                            @@click="page++">
+                                            Next
+                                        </button>
+
+                                    </div>
+
+                                    <div class="my-1 float-right">
+                                        <button class="btn btn-primary mt-2"
+                                                :disabled="lockInputs"
+                                                @@click="saveResults">
+                                           <i class="la la-save"></i> Save
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                
+                                <div v-else class="alert alert-info mt-2">
+                                    Select Year, Term, Class and Subject to load students. Or select an existing result.
+                                </div>
+                                <div class="alert alert-warning mt-2" v-if="assignmentExists">
+                                    ⚠ Result already entered for selected parameters.
+                                    Editing is disabled on this page.
+                                </div>
+                                
+
+                                
+                               
+
+                             
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/results-promotions/mid-term.js" asp-append-version="true"></script>

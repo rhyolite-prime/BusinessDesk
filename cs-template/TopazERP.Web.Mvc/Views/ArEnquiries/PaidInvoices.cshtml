@@ -1,0 +1,83 @@
+﻿@{
+ViewBag.Title = "paidInvoices";
+Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Invoices</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/Ar" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> Enquiries </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Fully Paid Invoices
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card b">
+                        <div class="card-header">
+                            <h4 class="card-title"> Invoice List</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-content collapse show">
+
+                            <div class="card-body" id="app">
+
+                                <div class="content-i" id="app">
+                                    <div class="content-box">
+                                        <div class="element-wrapper">
+                                            <div class="element-box">
+                                                <div class="element-box-header">Fully Paid Invoices</div>
+                                                <p class="text-danger mt-2">Balance(s) in (0.00) are Credit Balances</p>
+                                                <div class="mt-3 border border-amber" id="dataTable"></div>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="~/js/ar/enquiries/fullyPaidInvoices.js" asp-append-version="true"></script>
+

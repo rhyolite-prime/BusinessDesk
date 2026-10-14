@@ -1,0 +1,237 @@
+@{
+    ViewBag.Title = "Student Medicals";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-body" id="app">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Student Medicals - {{studentName}}</h4>
+                        </div>
+
+                        <div class="card-content collapse show">
+                            <div class="card-body">
+
+                                <!-- TOP NAV BUTTONS -->
+                                <div class="my-1">
+                                    <a href="javascript:void(0);" class="text-primary text-xl" @@click="goBack">
+                                        <i class="las la-arrow-alt-circle-left"></i> Go Back
+                                    </a>
+                                    <a :href="'/SmStudentSetups/StudentAllergies?studentId=' + form.studentId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Allergies
+                                    </a>
+                                    <a :href="'/SmStudentSetups/StudentDisability?studentId=' + form.studentId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Disabilities
+                                    </a>
+                                    <a :href="'/SmStudentSetups/StudentPosition?studentId=' + form.studentId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Position(s)
+                                    </a>
+                                    <a :href="'/SmStudentSetups/ContactRelationships?StudentId=' + form.studentId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Contacts & Guardian
+                                    </a>
+                                    <a :href="'/SmStudentSetups/ChangeStatus?StudentId=' + form.studentId" class="btn btn-sm btn-primary">
+                                        <i class="la la-user-cog"></i> Change Status
+                                    </a>
+                                </div>
+
+                                <!-- MAIN FORM -->
+                                <form>
+
+                                    <!-- DOCTOR SECTION -->
+                                    <div class="row g-2">
+                                        <div class="col-md-3 my-1">
+                                            <label>Doctor Name:</label>
+                                            <input v-model="form.doctorName" class="form-control"/>
+                                        </div>
+
+                                        <div class="col-md-3 my-1">
+                                            <label>Doctor Phone:</label>
+                                            <input v-model="form.doctorPhone" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Clinic Name:</label>
+                                            <input v-model="form.clinicName" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Clinic Phone:</label>
+                                            <input v-model="form.clinicPhone" class="form-control"/>
+                                        </div>
+                                    </div>
+
+                                    <!-- EMERGENCY CONTACT -->
+                                    <div class="row g-2">
+                                        <div class="col-md-3 my-1">
+                                            <label>Emergency Contact Name:</label>
+                                            <input v-model="form.emergencyContactName" class="form-control"/>
+                                        </div>
+
+                                        <div class="col-md-3 my-1">
+                                            <label>Emergency Contact Phone:</label>
+                                            <input v-model="form.emergencyContactPhone" class="form-control"/>
+                                        </div>
+                                    </div>
+
+                                    <hr />
+
+                                    <!-- MEDICAL CONDITIONS TABLE -->
+                                    <h5>Medical Conditions</h5>
+                                    <table class="table table-bordered table-striped">
+                                        <thead class="bg-primary text-white">
+                                        <tr>
+                                            <th style="width: 90%">Condition</th>
+                                            <th style="width: 10%">Remove</th>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+                                        <tr v-for="(item,index) in conditions" :key="index">
+                                            <td>{{ item }}</td>
+                                            <td>
+                                                <a class="text-danger" @@click="removeCondition(index)">
+                                                    <i class="la la-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+
+                                        <tr v-if="conditions.length === 0">
+                                            <td colspan="2" class="text-center text-muted">No conditions added.</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>
+                                                <input type="text" class="form-control" v-model="conditionInput" placeholder="Add condition..." />
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-success btn-sm" @@click="addCondition">Add</button>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                    <hr />
+
+                                    <!-- MEDICATIONS TABLE -->
+                                    <h5>Medications</h5>
+                                    <table class="table table-bordered table-striped">
+                                        <thead class="bg-primary text-white">
+                                        <tr>
+                                            <th style="width: 90%">Medication</th>
+                                            <th style="width: 10%">Remove</th>
+                                        </tr>
+                                        </thead>
+
+                                        <tbody>
+                                        <tr v-for="(item,index) in medications" :key="index">
+                                            <td>{{ item }}</td>
+                                            <td>
+                                                <a class="text-danger" @@click="removeMedication(index)">
+                                                    <i class="la la-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+
+                                        <tr v-if="medications.length === 0">
+                                            <td colspan="2" class="text-center text-muted">No medications added.</td>
+                                        </tr>
+
+                                        <tr>
+                                            <td>
+                                                <input type="text" class="form-control" v-model="medicationInput" placeholder="Add medication..." />
+                                            </td>
+                                            <td>
+                                                <button type="button" class="btn btn-success btn-sm" @@click="addMedication">Add</button>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+
+                                  
+
+                                </form>
+                                
+                                <hr />
+
+                                <h5>Immunizations</h5>
+
+                                <table class="table table-bordered table-striped">
+                                    <thead class="bg-primary text-white">
+                                    <tr>
+                                        <th style="width: 40%">Immunization Type</th>
+                                        <th style="width: 15%">Immunized?</th>
+                                        <th style="width: 25%">Date</th>
+                                        <th style="width: 20%">Action</th>
+                                    </tr>
+                                    </thead>
+
+                                    <tbody>
+
+                                    <!-- List -->
+                                    <tr v-for="item in immunizations" :key="item.id">
+                                        <td>{{ item.immunizationTypeName }}</td>
+                                        <td>{{ item.isImmunized ? 'Yes' : 'No' }}</td>
+                                        <td>{{ item.immunizationDate }}</td>
+                                        <td>
+                                            <a class="text-primary" @@click="editImmunization(item)">
+                                                <i class="la la-edit"></i>
+                                            </a>
+                                            <a class="text-danger" @@click="deleteImmunization(item.id)">
+                                                <i class="la la-trash"></i>
+                                            </a>
+                                        </td>
+                                    </tr>
+
+                                    <tr v-if="immunizations.length === 0">
+                                        <td colspan="4" class="text-center text-muted">No immunizations added.</td>
+                                    </tr>
+
+                                    <!-- Input Row -->
+                                    <tr>
+                                        <td>
+                                            <input type="text"
+                                                   id="immunizationTypeId"
+                                                   v-model="immForm.immunizationTypeId"
+                                                   class="form-control"
+                                                   @@change="setImmunizationTypeName">
+                                        </td>
+
+                                        <td>
+                                            <input type="checkbox" v-model="immForm.isImmunized" />
+                                        </td>
+
+                                        <td>
+                                            <input type="date" v-model="immForm.immunizationDate" class="form-control" />
+                                        </td>
+
+                                        <td>
+                                            <button class="btn btn-success btn-sm" @@click="saveImmunization">
+                                                {{ immForm.id ? 'Update' : 'Add' }}
+                                            </button>
+                                        </td>
+                                    </tr>
+
+                                    </tbody>
+                                </table>
+                                <div class="my-2 float-right">
+                                    <button type="button" class="btn btn-primary" @@click="saveMedical">Save</button>
+                                    <a href="/SmStudentSetUps/StudentBio" class="btn btn-secondary">Cancel</a>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<script>
+    window.studentId = @Html.Raw(Json.Serialize(ViewBag.StudentId ?? ""));
+</script>
+
+<script src="~/js/school-manager/students/studentMedicals.js" asp-append-version="true"></script>

@@ -1,0 +1,168 @@
+﻿ @{
+    ViewBag.Title = " Assign Subject To Multiple Classes";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+ <style>
+     .subject-item input {
+         margin-right: 6px;
+     }
+
+ </style>
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Assign Subject To Multiple Classes</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-primary"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-primary" href="#">Data Entry</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Assign Subject To Multiple Classes
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Assign Subject To Multiple Classes</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show" id="app">
+                          <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <label>Academic Year: </label>
+                                        <input id="academicYearId"/>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Term:</label>
+                                        <input id="termId"/>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label>Source Class:</label>
+                                        <input id="sourceClassId"/>
+                                       
+                                    </div>
+                                    
+                                </div>
+
+                                <hr/>
+
+                                <div class="row mb-2">
+                                    <div class="col-md-3">
+                                        <h6>Select Classes</h6>
+
+                                        <label class="d-flex align-items-center mb-1">
+                                            <input type="checkbox" class="mr-1"
+                                                   :checked="allTargetClassesSelected"
+                                                   @@change="toggleSelectAllTargetClasses">
+                                            Select All
+                                        </label>
+
+                                        <ul class="list-unstyled mb-0">
+                                            <li v-for="c in availableTargetClasses" :key="c.id">
+                                                <label class="d-flex align-items-center">
+                                                    <input type="checkbox" :value="c.id" v-model="multiAssign.targetClassIds" class="mr-1">
+                                                    {{getLevelClassNameFromId(c.id)}}
+                                                </label>
+                                            </li>
+                                            <li v-if="availableTargetClasses.length === 0" class="text-muted">
+                                                No available classes to assign
+                                            </li>
+                                        </ul>
+                                    </div>
+
+
+
+                                    <!-- RIGHT PANEL: Subjects Table -->
+                                    <div class="col-md-9">
+                                        <label>Source Class Subjects:</label>
+                                        <table class="table-responsive table table-bordered table-striped table-sm mt-1">
+                                            <thead>
+                                            <tr>
+                                                <th style="width: 90%">Subject</th>
+                                                <th style="width:10%">Remove</th>
+                                            </tr>
+                                            </thead>
+                                            <tbody>
+                                            <tr v-if="subjectsToAssign.length === 0">
+                                                <td colspan="2" class="text-center text-muted">No subjects available for this class</td>
+                                            </tr>
+                                            <tr v-for="(s, index) in subjectsToAssign" :key="s.subjectId">
+                                                <td>{{getSubjectName(s.subjectId)}}</td>
+                                                <td>
+                                                    <a class="text-danger" @@click="removeSubjectFromTable(index)">
+                                                        <i class="la la-trash"></i>
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                            </tbody>
+                                        </table>
+
+                                    </div>
+                                </div>
+
+
+
+
+                                <div class="text-right">
+                                    <button class="btn btn-primary mr-1"
+                                            :disabled="saving"
+                                            @@click="assignSubjectsToClasses">
+
+                                        <span v-if="saving">
+                                            <i class="la la-spinner la-spin mr-1"></i>
+                                            Processing...
+                                        </span>
+
+                                        <span v-else>
+                                            <i class="la la-save"></i> Save
+                                        </span>
+
+                                    </button>
+                                    @*cancel*@
+                                    <div class="btn btn-secondary"
+                                         @@click="resetForm">
+                                        <i class="la la-times"></i> Cancel
+                                    </div>
+                                </div>
+
+
+                            </div>
+
+</div>
+
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+
+
+<script src="~/js/school-manager/data-entry/assignSubjectMultipleClasses.js" asp-append-version="true"></script>

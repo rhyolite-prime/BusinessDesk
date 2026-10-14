@@ -1,0 +1,31 @@
+﻿@{
+    ViewBag.Title = "Print Opening Balance";
+    Layout = "~/Views/Shared/Layout/_printPreviewLayout.cshtml";
+}
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card-content collapse show">
+                        <div class="card-body" id="app">
+                            <h2 class="card-title">Preview and Print Customer Opening Balance</h2>
+                            <hr/>
+                            <div style="height:150vh;width:auto;" id="reportView"> </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+
+        </div>
+    </div>
+</div>
+<script>
+    let customerId = '@Model.CustomerId';
+</script>
+
+
+<script src="~/js/ar/general-reports/openingBalanceById.js" asp-append-version="true"></script>

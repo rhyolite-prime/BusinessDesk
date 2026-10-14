@@ -1,0 +1,109 @@
+@{
+ViewBag.Title = "Itemized Fees";
+Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Itemized Fees</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Reports</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Itemized Fees
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Itemized Fees</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div  class="card-body" id="app">
+                                <div>
+                                    <div class="row my-1">
+                                        <div class="col-sm-3" >
+                                            <div class="form-group">
+                                                <label>Academic Year:</label>
+                                                <searchable-dropdown :options="academicYears" v-model="academicYearId" text-field="name" value-field="id" placeholder="Select Academic Year..."> </searchable-dropdown>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3" >
+                                            <div class="form-group">
+                                                <label>Term:</label>
+                                                <searchable-dropdown :options="terms" v-model="termId" text-field="name" value-field="id" placeholder="Select Term..."> </searchable-dropdown>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3">
+                                            <div class="form-group">
+                                                <label>Class:</label>
+                                                <searchable-dropdown :options="levelClasses" v-model="classId" text-field="name" value-field="id" placeholder="Select Class..."> </searchable-dropdown>
+                                            </div>
+                                        </div>
+                                        <div class="col-sm-3">
+
+                                            <div class="form-group">
+                                                <label>Start Date:</label>
+                                                <input id="startDate" v-model="startDate" type="date" class="form-control"/>
+
+                                            </div>
+
+                                        </div>
+                                        <div class="col-sm-3">
+
+                                            <div class="form-group">
+                                                <label>End Date:</label>
+                                                <input id="endDate" v-model="endDate" type="date" class="form-control"/>
+
+                                            </div>
+
+                                        </div>
+                                        <div class="my-2 float-right col-md-2">
+                                            <button class="btn btn-primary"
+                                                    :disabled="isLoading"
+                                                    @@click="searchReport">
+                                                <i class="la la-search"></i> Search
+                                                <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div id="reportView" style="height:auto;width:auto;min-height:500px;"></div>
+                                </div>
+                              
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/reports/bills-n-payments/itemized-fees.js" asp-append-version="true"></script>

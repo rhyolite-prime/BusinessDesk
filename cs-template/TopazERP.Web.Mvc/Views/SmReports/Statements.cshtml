@@ -1,0 +1,278 @@
+﻿@{
+ViewBag.Title = "Student Statement";
+Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+<style>
+    .receipt-panel{
+        background:#fff;
+        border-radius:12px;
+        border:1px solid #e9ecef;
+        display:flex;
+        flex-direction:column;
+        height:850px;
+        overflow:hidden;
+    }
+
+    .receipt-header{
+        padding:15px;
+        border-bottom:1px solid #eee;
+    }
+
+    .receipt-list{
+        flex:1;
+        overflow-y:auto;
+        padding:10px;
+    }
+
+    .receipt-item{
+        border:1px solid #ececec;
+        border-radius:10px;
+        padding:12px;
+        margin-bottom:10px;
+        cursor:pointer;
+        transition:.2s;
+    }
+
+    .receipt-item:hover{
+        background:#f8f9fa;
+        border-color: #0d145e;
+    }
+
+    .receipt-item.active{
+        background:#eef5ff;
+        border-left:4px solid #0a075b;
+    }
+
+    .receipt-number{
+        font-weight:600;
+        color: #0e1d5b;
+    }
+
+    .receipt-name{
+        font-size:.9rem;
+        margin:6px 0;
+    }
+
+    .receipt-footer{
+        display:flex;
+        justify-content:space-between;
+        font-size:.8rem;
+        color:#6c757d;
+    }
+
+    .receipt-amount{
+        font-weight:600;
+    }
+
+    .receipt-pagination{
+        border-top:1px solid #eee;
+        padding:12px;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Student Statement</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Reports</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Student Statement
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Student Statement</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div  class="card-body" id="app">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="chkAllReceipts"
+                                           v-model="viewMultiple">
+
+                                    <label class="form-check-label" for="chkAllReceipts">
+                                        All
+                                    </label>
+                                </div>
+                                <div>
+                                      <div  class="row my-1">
+                                    <div class="col-sm-3">
+                                        <div class="form-group">
+                                            <label>Class:</label>
+                                            <searchable-dropdown :options="levelClasses" v-model="classId" text-field="name" value-field="id" placeholder="Select Class..."> </searchable-dropdown>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3"  v-if="!viewMultiple">
+                                        <div class="form-group">
+                                            <label> Student:</label>
+                                            <searchable-dropdown :options="studentList" v-model="studentId" text-field="displayText" value-field="id" placeholder="Select Student..."> </searchable-dropdown>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3">
+
+                                        <div class="form-group">
+                                            <label>Start Date:</label>
+                                            <input id="startDate" v-model="startDate" type="date" class="form-control"/>
+
+                                        </div>
+
+                                    </div>
+                                    <div class="col-sm-3">
+
+                                        <div class="form-group">
+                                            <label>End Date:</label>
+                                            <input id="endDate" v-model="endDate" type="date" class="form-control"/>
+
+                                        </div>
+
+                                    </div>
+                                    <div class="my-2 float-right col-md-2">
+                                        <button class="btn btn-primary"
+                                                :disabled="isLoading"
+                                                @@click="searchReport">
+                                            <i class="la la-search"></i> Search
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                <!-- Multiple receipts -->
+                                   <div v-if="viewMultiple" class="row">
+
+    <!-- Receipt List -->
+    <div class="col-lg-3">
+
+        <div class="receipt-panel">
+
+            <!-- Header -->
+            <div class="receipt-header">
+                <div>
+                    <h6 class="mb-0">Student Statements</h6>
+                    <small>{{ reports.length }} Statement(s)</small>
+                </div>
+
+                <input
+                    v-model="search"
+                    type="text"
+                    class="form-control form-control-sm mt-2"
+                    placeholder="Search statement...">
+            </div>
+
+            <!-- List -->
+            <div class="receipt-list">
+                <div
+                    v-for="(report,index) in pagedData"
+                    :key="report.lines[0].studentId"
+                    class="receipt-item"
+                    :class="{ active: selectedData === report.lines[0]?.studentId }"
+                    @@click="showReport(report)">
+
+                    <div class="d-flex justify-content-between gap-5">
+                        <div class="receipt-number">
+                            {{ report.regNo }}
+                        </div>
+                        <small class="text-muted">
+                            {{ report.className }}
+                        </small>
+                    </div>
+                    
+                    <div class="receipt-name">
+                        {{ report.studentName }}
+                    </div>
+
+                   
+
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="receipt-pagination">
+
+                <button
+                    class="btn btn-sm btn-light"
+                    :disabled="page===1"
+                    @@click="page--">
+
+                    <i class="la la-angle-left"></i>
+
+                </button>
+
+                <span>
+                    {{ page }} / {{ totalPages }}
+                </span>
+
+                <button
+                    class="btn btn-sm btn-light"
+                    :disabled="page===totalPages"
+                    @@click="page++">
+
+                    <i class="la la-angle-right"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Report -->
+    <div class="col-lg-9">
+
+        <div
+            id="reportView"
+            style="height:850px">
+        </div>
+
+    </div>
+
+</div>
+                                    <div
+                                        v-else
+                                        id="reportView"
+                                        style="height:auto;width:auto;min-height:500px;">
+                                    </div>
+                                </div>
+                              
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/reports/bills-n-payments/statements.js" asp-append-version="true"></script>

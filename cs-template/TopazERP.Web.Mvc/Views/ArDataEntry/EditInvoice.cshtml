@@ -1,0 +1,269 @@
+﻿@using Microsoft.AspNetCore.Mvc.TagHelpers
+@using TopazERP.Web.Helpers
+@{
+ViewBag.Title = "Update Invoices";
+Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Update Invoices </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="@Url.Action("ArInvoices","ArDataEntry")" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> Data Entry </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Update Invoices
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card b">
+                        <div class="card-header">
+                            <h4 class="card-title"> Invoices</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-content collapse show">
+
+                            <div class="card-body" id="app">
+                                
+                                                    <div>
+    
+                                                        <!--search area -->
+                                                        <div class="row ">
+
+                                                            <div class="col-sm-4">
+                                                                
+                                                            </div>
+                                                            <div class="col-sm-4">
+
+
+                                                            </div>
+                                                            <div class="col-sm-4  text-right" v-if="invoiceId">
+                                                                <a @@click="printReport" class="btn btn-info text-white btn-sm"> <i class="la la-print"></i> Print </a>
+                                                            </div>
+
+                                                        </div>
+                                                        <hr/>
+                                                        <!-- add and update form -->
+                                                        <div>
+      
+                                                            <div class="row">
+                                                                <div class="col-sm-3">
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong> Customer: </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="customerId" v-model="customerId" type="text" class="form-control" required/>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Account No.: </strong> </label>
+                                                                        <input v-model="accountNumber" class="form-control" type="text" disabled="disabled"/>
+
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Currency: </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="currencyId" v-model="currencyId" type="text" class="form-control" required/>
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label> <strong> Currency Rate: </strong>  </label>
+                                                                        <input id="buyRate" v-model="buyRate" step="0.01" min="0" type="number" class="form-control" />
+
+                                                                    </div>
+                                                                    <div class="form-group mx-2">
+                                                                        <input class="form-check-input" type="checkbox" id="isMulticurrency" v-model="isMultiCurrency" disabled/>
+                                                                        <label class="form-label" for="isMulticurrency">Is MultiCurrency</label>
+                                                                    </div>
+
+
+                                                                </div>
+                                                                <div class="col-sm-3">
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong> <strong> Invoice Number: </strong> </strong> </label><span class="text-success">*</span>
+                                                                        <input type="text" class="form-control" v-model="invoiceNumber" placeholder="Generated On Save" disabled/>
+
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Received Date: </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="invoiceDate" v-model="invoiceDate" class="form-control" type="date" required/>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Projected Pay Date: </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="projectedPayDate" v-model="projectedPayDate" class="form-control" type="date" required/>
+                                                                    </div>
+
+
+
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Voucher No.: </strong> </label>
+                                                                        <input v-model="voucherNumber" class="form-control" type="text" placeholder="V1234"/>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong>PO No.: </strong> </label>
+                                                                        <input v-model="purchaseOrderNumber" class="form-control" type="text" placeholder="P000-333-33"/>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Balance: </strong> </label>
+                                                                        <input v-model="invoiceBalance" class="form-control" type="number" disabled="disabled"/>
+
+                                                                    </div>
+
+
+
+                                                                </div>
+                                                                <div class="col-sm-3">
+                                                                    <div  class="form-group" v-if="isOu">
+                                                                        <label> <strong>OU (Cost Center): </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="ouId" v-model="ouId" type="text" class="form-control" required/>
+                                                                    </div>
+
+                                                                    <div class="form-group">
+                                                                        <label> <strong> G/L Account No: </strong> </label><span class="text-danger">*</span>
+                                                                        <input id="accountId" v-model="accountId" type="text" class="form-control" required/>
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Batch No.: </strong> </label>
+                                                                        <input v-model="batchNumber" class="form-control" type="text" placeholder="2321" disabled/>
+                                                                    </div>
+                                                                    <div class="form-group">
+                                                                        <label> <strong>Total Amount: </strong> </label>
+                                                                        <input v-model="totalInvoiceAmount"  class="form-control" type="number" disabled="disabled"/>
+                                                                    </div>
+                                                                </div>
+
+                                                            </div>
+                                                            <hr />
+                                                            <p>Add Invoice Items</p>
+                                                            <div class="row mb-2">
+                                                                <div class="col-12">
+                                                                    <div class="form-group">
+                                                                        <p class="mt-2"><strong>Add Tax Levies if Applicable: </strong></p>
+                                                                    </div>
+                                                                    <!-- Checkboxes as buttons -->
+                                                                    <div class="form-group d-flex flex-wrap">
+                                                                        <div class="d-flex gap-2 mt-1">
+                                                                            <!-- Tax Levy Buttons -->
+                                                                            <button
+                                                                                v-for="tax in taxLevyList"
+                                                                                :key="tax.id"
+                                                                                :class="['btn', tax.isApplied ? 'btn-amber' : 'btn-outline-amber']"
+                                                                                style="min-width: 120px;"
+                                                                                @@click.prevent="toggleTaxLevy(tax.id)">
+                                                                                {{ tax.name }} ({{ tax.rate }}%)
+                                                                            </button>
+                                                                            <input type="number" v-model="vatRate" class="form-control border-amber"/>
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+                                                            </div>
+                                                            <div class="mt-3" id="dataTable2"></div>
+                                                            <div class="row mt-2">
+                                                                <div class="col"></div>
+                                                                <div class="col">
+                                                                    <button class="btn btn-amber mb-3" style="float: right" type="button" data-target="#addEdit" data-toggle="modal"> Save Invoice </button>
+                                                                </div>
+                                                                <div aria-hidden="true" aria-labelledby="exampleModalLabel" class="modal fade" id="addEdit" role="dialog" tabindex="-1">
+                                                                    <div class="modal-dialog" role="document">
+                                                                        <div class="modal-content">
+                                                                            <div class="modal-header">
+                                                                                <h5 class="modal-title" id="exampleModalLabel"> Confirm Action </h5>
+                                                                                <button aria-label="Close" class="close" data-dismiss="modal" type="button"><span aria-hidden="true"> &times;</span></button>
+                                                                            </div>
+                                                                            <div class="modal-body">
+
+                                                                                <p>Are You Sure You Want To Save/Update Invoice?</p>
+
+                                                                            </div>
+
+                                                                            <div class="modal-footer">
+
+                                                                                <button class="btn btn-danger" data-dismiss="modal" type="button"> Cancel </button>
+
+                                                                                <button class="btn btn-info" type="button" :disabled="isLoading" v-on:click="saveInvoice()">
+
+                                                                                    Yes
+
+                                                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                                                                </button>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+
+                                                            </div> 
+                                                        </div>
+    
+    
+
+
+
+
+                                                    </div>
+
+
+                                                </div>
+                                            </div>
+
+                                        </div>
+
+                                    </div>
+                                </div>
+
+
+                            </div>
+                        </div>
+                    </div>
+
+<script>
+    window.invoiceId = @Html.Raw(Json.Serialize(ViewBag.InvoiceId ?? ""));
+    window.isPosted = @Html.Raw(Json.Serialize(ViewBag.IsPosted ?? false));
+    window.permissionError = @Html.Raw(Json.Serialize(ViewBag.PermissionError ?? ""));
+
+    (function() {
+        if (window.permissionError) {
+            var loginUrl = '@Url.Action("Login","Account")';
+            var returnUrl = encodeURIComponent(window.location.pathname + window.location.search);
+            window.location.href = loginUrl + '?returnUrl=' + returnUrl;
+        }
+    })();
+</script>
+
+<script src="~/js/ar/data-entry/edit-invoice.js" asp-append-version="true"></script>
+

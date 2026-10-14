@@ -1,0 +1,326 @@
+﻿@{
+    ViewBag.Title = "School Gl Accounts";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+<style>
+    .table td:first-child,
+    .table th:first-child {
+        position: sticky;
+        left: 0;
+        background: #fff;
+        z-index: 2;
+        color: #0a0af0;
+    }
+    .table th {
+        color: #000000;
+    }
+   
+   
+    .select{
+        border: none;
+        width: 100%;
+        background: transparent;
+    }
+    .select:focus{
+        outline: none;
+        box-shadow: none;
+    }
+    .bill-table{
+        font-size: 12px;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Bills & Payments Accounts SetUp</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="@Url.Action("SchoolManager", "Dashboard")" class="text-primary"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-primary" href="#">Billings & Payments</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Bills & Payments Accounts SetUp
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Account Numbers</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <!-- Nav tabs -->
+                                <ul class="nav nav-tabs" id="financeTabs" role="tablist">
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link text-primary active" id="bills-tab" data-bs-toggle="tab" data-bs-target="#bills" type="button" role="tab">Bills</a>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link text-primary " id="payments-tab" data-bs-toggle="tab" data-bs-target="#payments" type="button" role="tab">Payments</a>
+                                    </li>
+                                    <li class="nav-item" role="presentation">
+                                        <a class="nav-link text-primary" id="creditMemo-tab" data-bs-toggle="tab" data-bs-target="#creditMemo" type="button" role="tab">Credit Memo</a>
+                                    </li>
+                                   
+                                </ul>
+                                <!-- Tab content -->
+                                <div class="tab-content mt-1" id="financeTabsContent">
+                                    <div class="tab-pane fade show active" id="bills" role="tabpanel">
+                        
+                                        <!-- BILL TYPE ONLY FILTER -->
+                                        <div class="row mb-1">
+                                            <div class="col-md-4">
+                                                <div class="row">
+                                                    <div class="col-md-12">
+                                                        <label class="mb-1">Bill Type</label>
+                                                        <div class="btn-group w-100" role="group">
+
+                                                            <button type="button"
+                                                                    class="btn btn-sm"
+                                                                    :class="billTypeId === 1 ? 'btn-primary' : 'btn-outline-primary'"
+                                                                    @@click="setBillType(1)">
+                                                                Standard Bills
+                                                            </button>
+
+                                                            <button type="button"
+                                                                    class="btn btn-sm"
+                                                                    :class="billTypeId === 2 ? 'btn-primary' : 'btn-outline-primary'"
+                                                                    @@click="setBillType(2)">
+                                                                Supplementary Bills
+                                                            </button>
+                                                            <button type="button"
+                                                                    class="btn btn-sm"
+                                                                    :class="billTypeId === 3 ? 'btn-primary' : 'btn-outline-primary'"
+                                                                    @@click="setBillType(3)">
+                                                                Boarding Bills
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                        
+                                        <!-- TABLE GRID -->
+                                        <div class="card" v-if="billTypeId">
+                                            <div class="card-body p-0">
+                        
+                                                <table class="table table-bordered table-sm mb-0 table-responsive bill-table">
+                                                    <thead>
+                                                    <tr>
+                                                        <th style="width: 20%;">Fee Item</th>
+                                                        <th style="width: 25%;">Bank GL</th>
+                                                        <th style="width: 25%;">Revenue GL</th>
+                                                        <th style="width: 25%;">AR GL</th>
+                                                        <th style="width: 5%;">Save</th>
+                                                    </tr>
+                                                    </thead>
+                        
+                                                    <tbody>
+                                                    <tr v-for="(row, index) in billGrid" :key="row.id || index">
+                        
+                                                        <!-- Fee Item -->
+                                                        <td>
+                                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>  {{ row.feeItemName }}
+                                                        </td>
+                                                        <!-- Bank GL -->
+                                                        <td>
+                                                            <select class="select"
+                                                                    v-model="row.bankGlId">
+                                                                <option v-for="a in accountsList" :value="a.id">
+                                                                    {{ a.accountIdentifier }}
+                                                                </option>
+                                                            </select>
+                                                        </td>
+                        
+                                                        <!-- Credit GL -->
+                                                        <td>
+                                                            <select class="select"
+                                                                    v-model="row.creditGlId">
+                                                                <option v-for="a in accountsList" :value="a.id">
+                                                                    {{ a.accountIdentifier }}
+                                                                </option>
+                                                            </select>
+                                                        </td>
+                                                        <!-- Debit GL -->
+                                                        <td>
+                                                            <select class=" select"
+                                                                    v-model="row.debitGlId">
+                                                                <option v-for="a in accountsList" :value="a.id">
+                                                                    {{ a.accountIdentifier }}
+                                                                </option>
+                                                            </select>
+                                                        </td>
+                                                        <!-- ACTION -->
+                                                        <td>
+                                                            <a :class="row.id ? 'text-primary' : 'text-success'"
+                                                               @@click="saveBillRow(row)">
+                                                                <i class="la la-save"></i>
+                                                            </a>
+                                                        </td>
+                                                    </tr>
+                                                    </tbody>
+                        
+                                                </table>
+                        
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane fade" id="payments" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-3 mb-2">
+                                                <label>Local Bank Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.localDebitGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">
+                                                </searchable-dropdown>
+                                            </div>
+
+                                            <div class="col-md-3 mb-2">
+                                                <label>Local AR Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.localCreditGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">
+                                                </searchable-dropdown>
+                                            </div>
+
+                                            <div class="col-md-3 mb-2">
+                                                <label>Foreign Bank Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.foreignDebitGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>
+
+                                            @*<div class="col-md-3 mb-2">
+                                                <label>Foreign Over Payment Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.foreignOverPaymentGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>*@
+
+                                            @*<div class="col-md-3 mb-2">
+                                                <label>Other Payment Debit Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.otherPaymentDebitGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>*@
+
+                                            <div class="col-md-3 mb-2">
+                                                <label>Foreign AR Gl:</label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="paymentAccountForm.otherPaymentCreditGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>
+                                            <div class="col-sm-2 mt-2 float-right">
+                                                <button class="btn btn-success"
+                                                        v-if="!paymentAccountForm.id"
+                                                        @@click="createPaymentAccount">
+                                                    <i class="la la-save"></i>
+                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                </button>
+
+                                                <button class="btn btn-primary"
+                                                        v-if="paymentAccountForm.id"
+                                                        @@click="updatePaymentAccount">
+                                                    <i class="la la-save"></i>
+                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                       
+                                    </div>
+    
+                                    <div class="tab-pane fade" id="creditMemo" role="tabpanel">
+                                        <div class="row">
+                                            <div class="col-md-3 e-bootstrap mb-1">
+                                                <label>Bank GL: </label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="creditMemoForm.debitGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>
+                                            <div class="col-md-3 e-bootstrap mb-1">
+                                                <label>Accounts Receivable (AR) GL: </label>
+                                                <searchable-dropdown
+                                                    :options="accountsList"
+                                                    v-model="creditMemoForm.creditGlId"
+                                                    text-field="accountIdentifier"
+                                                    value-field="id"
+                                                    placeholder="Select Account">   
+                                                </searchable-dropdown>
+                                            </div>
+                                            <div class="col-sm-2 mt-2 float-right">
+                                                <button class="btn btn-success"
+                                                        v-if="!creditMemoForm.id"
+                                                        @@click="createCreditMemoAccount">
+                                                    <i class="la la-save"></i>
+                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                </button>
+
+                                                <button class="btn btn-primary"
+                                                        v-if="creditMemoForm.id"
+                                                        @@click="updateCreditMemoAccount">
+                                                    <i class="la la-save"></i>
+                                                    <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                     
+                                    </div>
+                                    
+    
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+<script src="~/js/school-manager/bills-payment/gl-accounts.js" asp-append-version="true"></script>

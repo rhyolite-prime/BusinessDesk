@@ -1,0 +1,78 @@
+﻿ @{
+    ViewBag.Title = "Cumulative Average";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+ }
+ <div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Cumulative Average</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Report</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Cumulative Average
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Cumulative Average</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                              
+                                <div class="row">
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Academic Year:</strong> </label>
+                                        <input id="academicYearId"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Class:</strong> </label>
+                                        <input id="classId"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <button class="btn btn-sm btn-primary" @@click="searchReport()">
+                                            <i class="ft-search"></i>
+                                            Search
+                                        </button>
+                                    </div>
+
+                                </div>
+                                
+                                <hr/>
+                                <div style="height:auto;width:auto;min-height:500px;" id="reportView"> </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/reports/results/cumulative-average.js" asp-append-version="true"></script>

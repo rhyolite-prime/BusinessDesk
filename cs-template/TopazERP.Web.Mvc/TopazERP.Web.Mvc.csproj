@@ -1,0 +1,159 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+  <PropertyGroup>
+    <AssemblyName>TopazERP.Web.Mvc</AssemblyName>
+    <OutputType>Exe</OutputType>
+    <PackageId>TopazERP.Web.Mvc</PackageId>
+    <UserSecretsId>AbpCompanyName-TopazERP-56C2EF2F-ABD6-4EFC-AAF2-2E81C34E8FB1</UserSecretsId>
+    <RootNamespace>TopazERP.Web</RootNamespace>
+    <TargetFramework>net6.0</TargetFramework>
+    <AssetTargetFallback>$(AssetTargetFallback);portable-net45+win8+wp8+wpa81;</AssetTargetFallback>
+    <AutoGenerateBindingRedirects>true</AutoGenerateBindingRedirects>
+    <GenerateBindingRedirectsOutputType>true</GenerateBindingRedirectsOutputType>
+    <GenerateRuntimeConfigurationFiles>true</GenerateRuntimeConfigurationFiles>
+    <PreserveCompilationContext>true</PreserveCompilationContext>
+    <MvcRazorExcludeRefAssembliesFromPublish>false</MvcRazorExcludeRefAssembliesFromPublish>
+    <PreserveCompilationReferences>true</PreserveCompilationReferences>
+  </PropertyGroup>
+  <ItemGroup>
+    <Content Remove="Views\PayrollSetups\IrsSignature.cshtml" />
+    <Content Remove="wwwroot\js\manage\audit-trail.js" />
+    <Content Remove="wwwroot\js\school-manager\staff\create-or-update.js" />
+    <Content Remove="wwwroot\js\school-manager\setups\bill-template.js" />
+    <Content Remove="wwwroot\js\school-manager\setups\bill-setups.js" />
+    <Content Remove="wwwroot\js\school-manager\setups\class-streams.js" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="app.config" />
+    <None Include="Views\PayrollSetups\IrsSignature.cshtml" />
+    <None Include="wwwroot\js\manage\modules.js" />
+    <None Include="wwwroot\js\manage\profile.js" />
+    <None Include="wwwroot\js\manage\roles.js" />
+    <None Include="wwwroot\js\manage\subscription.js" />
+    <None Include="wwwroot\js\manage\update-password.js" />
+    <None Include="wwwroot\js\manage\audit-trail.js" />
+    <None Include="wwwroot\js\manage\users.js" />
+    <None Update="Dockerfile">
+      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+    </None>
+    <None Update="log4net.config">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Update="wwwroot\**\*;Views\**\*">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+    <None Remove="App_Data\Logs\Logs.txt" />
+    <None Remove="App_Data\Logs\Logs.txt.1" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TopazERP.Web.Core\TopazERP.Web.Core.csproj" />
+  </ItemGroup>
+  <ItemGroup>
+    <PackageReference Include="BuildBundlerMinifier" Version="3.2.449" />
+    <PackageReference Include="Microsoft.AspNetCore.Mvc.Razor.RuntimeCompilation" Version="6.0.4" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design" Version="6.0.4">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="PaulMiami.AspNetCore.Mvc.Recaptcha" Version="1.2.2" />
+    <PackageReference Include="Abp.HangFire" Version="7.3.0" />
+    <PackageReference Include="Abp.RedisCache" Version="7.3.0" />
+    <PackageReference Include="Abp.Castle.Log4Net" Version="7.3.0" />
+    <PackageReference Include="Syncfusion.XlsIO.Net.Core" Version="21.1.38" />
+    <PackageReference Include="Akka" Version="1.4.10" />
+    <PackageReference Include="Akka.Persistence" Version="1.4.10" />
+
+    <PackageReference Include="Syncfusion.HtmlToPdfConverter.Blink.Net.Core.Windows" Version="19.3.0.48" />
+
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="App_Data\" />
+    <Folder Include="App_Data\Logs\" />
+    <Folder Include="wwwroot\img\" />
+    <Folder Include="wwwroot\view-resources\Views\_Bundles\" />
+  </ItemGroup>
+  <ItemGroup>
+    <UpToDateCheckInput Remove="Views\PayrollSetups\IrsSignature.cshtml" />
+  </ItemGroup>
+  <ItemGroup>
+    <_ContentIncludedByDefault Remove="Views\PayrollSetups\IrsSignature.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\CancelBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\CancelOpeningBalances.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\CancelPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\CreditMemo.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\OpeningBalances.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\Payments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\PostPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\ProcessBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\Receipt.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\BillsAndPayments\ViewBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\Alumni.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\CancelledBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\CreditMemos.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\DailyPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\PaidUpStudents.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentAttendance.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentBalances.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentDebtors.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentsByClass.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentsByNationality.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchEnquiries\StudentsByReligion.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\Attitude.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\Conducts.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\OpeningBalances.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\Staff.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\Students.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchImportData\TeacherRemarks.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\AttendanceSummary.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\BillSetups.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\BulkTerminalReports.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\CancelledBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\CancelledPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\CreditMemo.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\DailyPayments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\EnrollmentByGender.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\PaidUpStudents.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\PaymentReceipt.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\RequestBulkBills.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentBalances.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentBill.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentDebtors.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentsByClass.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentsByNationality.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\StudentsByReligion.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchReports\TerminalReport.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\AcademicYears.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\BillSetups.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\BillTemplate.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\BillTypes.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\ClassStreams.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\FeesDescriptions.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\Levels.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\LevelsAndClasses.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\ResultsTypes.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\SchoolProfile.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\StudentStaffStatus.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\SubjectRemarks.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\Subjects.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSetups\TerminalReportTemplate.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\BanksBranches.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\CostCenters.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Currencies.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\CustomerGroups.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Customers.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Departments.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Relationships.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Religions.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\SupplierGroups.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\Suppliers.cshtml" />
+    <_ContentIncludedByDefault Remove="Views\SchSharedResource\SystemNumbers.cshtml" />
+    <_ContentIncludedByDefault Remove="wwwroot\app-assets\css\Ap\apstyles.css" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Update="wwwroot\js\manage\audit-trail.js">
+      <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+    </None>
+  </ItemGroup>
+  <ProjectExtensions><VisualStudio><UserProperties appsettings_1json__JsonSchema="https://json.schemastore.org/asconfig-schema.json" /></VisualStudio></ProjectExtensions>
+</Project>

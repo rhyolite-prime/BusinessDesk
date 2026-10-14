@@ -1,0 +1,141 @@
+﻿@{
+ViewBag.Title = "Opening Balances";
+Layout = "~/Views/Shared/Layout/_adminApLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Opening Balances </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/Ap" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> Data Entry </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Opening Balances
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card b">
+                        <div class="card-header">
+                            <h4 class="card-title"> Opening Balance</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <div class="row ">
+                                    <div class="col-sm-4">
+                                        <button type="button" v-on:click="clearForm" class="btn-sm btn btn-info">
+                                            <i class="text-sm la la-refresh"></i> Reset Form
+                                            <i class="fa fa-spinner fa-spin" v-if="isLoading"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+<hr/>
+                                <div class="row">
+                                    </div>
+                                <!-- add and update form -->
+                                <form ref="openingbalnceForm">
+                                    <div class="row">
+                                        <div class="col-sm-3">
+                                            <div class="form-group">
+                                                <label> <strong> Supplier: </strong> </label><span class="text-danger">*</span>
+                                                <input id="supplierId" v-model="supplierId" type="text" class="form-control" required/>
+                                                </div>
+
+                                          
+                                            <div class="form-group">
+                                                <label> <strong> Currency Rate: </strong>  </label>
+                                                <input id="buyRate" v-model="buyRate" step="0.01" min="0" type="number" class="form-control" />
+
+                                                </div>
+                                                    </div>
+                                        <div class="col-sm-3">
+
+                                            <div class="form-group">
+                                                <label> <strong> Amount: </strong> </label><span class="text-danger">*</span>
+                                                <input v-model="amount" step="0.01" min="0" class="form-control" type="number" :disabled="isPosted"/>
+
+                                            </div>
+
+
+                                            <div class="form-group" v-if="isOu">
+                                                <label> <strong>OU (Cost Center): </strong> </label><span class="text-danger">*</span>
+                                                <input id="ouId" v-model="ouId" type="text" class="form-control" required/>
+                                            </div>
+
+                                        </div>
+                                        <div class="col-sm-3">
+
+                                            <div class="form-group">
+                                                <label> <strong> Date: </strong> </label><span class="text-danger">*</span>
+                                                <input v-model="transactionDate"  class="form-control" type="date"/>
+
+                                            </div>
+                                                                        
+                                        </div>
+                                        <div class="col-sm-3">
+
+                                            <div class="form-group">
+                                                <label> <strong>Currency: </strong> </label><span class="text-danger">*</span>
+                                                <input id="currencyId" v-model="currencyId" type="text" class="form-control" required/>
+                                            </div>
+                                                                        
+                                        </div>
+
+                                        </div>
+
+                                    <hr/>
+                                    <div class="row">
+                                        <div class="col-sm-4"></div>
+                                        <div class="col-sm-8">
+
+                                                                        <button type="button" v-on:click="saveOpeningBalance()" style="float: right" class=" btn btn-success">
+                                                                            Save Balance
+                                                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                                                        </button>
+
+                                                                    </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+             
+
+
+
+<script src="~/js/ap/DataEntry/create-balance.js" asp-append-version="true"></script>

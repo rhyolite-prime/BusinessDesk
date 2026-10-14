@@ -1,0 +1,255 @@
+@{
+    ViewBag.Title = "Student Bio";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+<style>
+    .avatar-circle {
+        width: 50px;
+        height: 50px;
+        border-radius: 50%;
+        background-color: #144981;
+        color: #fff;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.2rem;
+    }
+</style>
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Student List</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="@Url.Action("SchoolManager", "Dashboard")" class="text-primary"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-primary" href="#"> Student SetUps </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Student List
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Student List</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                               <div class="container-fluid">
+                    <div class="float-right mb-2">
+                     <a href="@Url.Action("AddStudent", "SmStudentSetups")" class="btn btn-sm btn-outline-primary">
+                      <i class="la la-plus"></i> Add New Student
+                     </a>
+                 </div>
+
+    <!-- Search -->
+    <div class="row mb-1">
+        <div class="col-md-4">
+            <input type="text" v-model="searchQuery" class="form-control rounded-lg" placeholder="Search student...">
+        </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-responsive">
+        <table class="table-responsive table table-striped table-bordered table-hover">
+            <thead class="bg-primary text-white font-weight-bold">
+                <tr>
+                    <th style="width: 150px;" @@click="sortBy('studentIdentifier')">Student ID</th>
+                    <th style="width: 150px;" @@click="sortBy('indexNumber')">Index No.</th>
+                    <th style="width: 400px;" @@click="sortBy('fullName')">Name</th>
+                    <th style="width: 200px;" @@click="sortBy('className')">Class</th>
+                    <th @@click="sortBy('admissionDate')">Admission Date</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr v-for="student in paginatedData" :key="student.id">
+                    <td @@click="viewStudent(student)" class="cursor-pointer">{{ student.studentIdentifier }}</td>
+                    <td @@click="viewStudent(student)" class="cursor-pointer">{{student.indexNumber}}</td>
+                    <td @@click="viewStudent(student)" class="cursor-pointer">{{ student.fullName }}</td>
+                    <td @@click="viewStudent(student)" class="cursor-pointer">{{ student.className }}</td>
+                    <td @@click="viewStudent(student)" class="cursor-pointer">{{ formatDate(student.admissionDate) }}</td>
+                    <td>
+                        <a :href="'/SmStudentSetups/EditStudent?id=' + student.id" class="text-primary me-1">
+                            <i class="la la-edit"></i>
+                        </a>
+                        <a class="text-danger" @@click="deleteStudent(student.id, student.fullName)">
+                            <i class="la la-trash"></i>
+                        </a>
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Pagination -->
+    <nav class="float-right">
+
+        <ul class="pagination">
+
+            <button class="btn btn-sm btn-primary mr-1"
+                    :class="{ disabled: currentPage === 1 }"
+                    @@click.prevent="changePage(currentPage - 1)">Prev
+            </button>
+
+            <p>Page {{currentPage}} of {{totalPages}}</p>
+
+            <button class="btn btn-sm btn-primary ml-1"
+                    :class="{ disabled: currentPage === totalPages }"
+                    @@click.prevent="changePage(currentPage + 1)">
+                    Next
+            </button>
+
+        </ul>
+
+    </nav>
+    <div v-if="showStudentModal" class="modal fade show d-block" style="background: rgba(0,0,0,0.5)">
+    <div class="modal-dialog modal-xl" style="max-width: 1000px; max-height: 500px; margin: 0 auto;">
+        <div class="modal-content rounded-lg">
+
+            <!-- Header -->
+            <div class="modal-header bg-primary text-white">
+               
+                <h5 class="modal-title text-white">
+                    {{ selectedStudent.fullName }}
+                </h5>
+                <button class="btn-close btn btn-danger btn-sm" @@click="closeStudentModal"> <i class="la la-close"></i> </button>
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body" v-if="selectedStudent"  style="max-height: 500px; overflow-y: auto; overflow-x: hidden;">
+                <div class="text-center mb-2">
+                    <div class="avatar-circle">
+                        {{ selectedStudent.firstName.charAt(0) }}
+                    </div>
+                </div>
+                <!-- PERSONAL INFO -->
+                <h6 class="text-primary">Personal Information</h6>
+               
+                <div class="row">
+                    <div class="col-md-4"><strong>ID:</strong> {{ selectedStudent.studentIdentifier }}</div>
+                    <div class="col-md-4"><strong>Index No:</strong> {{ selectedStudent.indexNumber }}</div>
+                    <div class="col-md-4"><strong>Gender:</strong> {{ selectedStudent.gender }}</div>
+
+                    <div class="col-md-4"><strong>DOB:</strong> {{ formatDate(selectedStudent.dateOfBirth) }}</div>
+                    <div class="col-md-4"><strong>Religion:</strong> {{ selectedStudent.religionName }}</div>
+                    <div class="col-md-4"><strong>Nationality:</strong> {{ selectedStudent.nationality }}</div>
+                </div>
+
+                <hr>
+
+                <!-- CONTACT -->
+                <h6 class="text-primary">Contact</h6>
+                <div class="row">
+                    <div class="col-md-4"><strong>Phone:</strong> {{ selectedStudent.phoneNumber }}</div>
+                    <div class="col-md-4"><strong>Address:</strong> {{ selectedStudent.address }}</div>
+                    <div class="col-md-4"><strong>Country:</strong> {{ selectedStudent.countryName }}</div>
+                    <div class="col-md-4"><strong>City:</strong> {{ selectedStudent.cityName }}</div>
+                </div>
+
+                <hr>
+
+                <!-- ACADEMIC -->
+                <h6 class="text-primary">Academic Info</h6>
+                <div class="row">
+                    <div class="col-md-4"><strong>Class:</strong> {{ getLevelClassNameFromId(selectedStudent.classId) }}</div>
+                    <div class="col-md-4"><strong>Year:</strong> {{ selectedStudent.academicYearName }}</div>
+                    <div class="col-md-4"><strong>Status:</strong> {{ selectedStudent.statusName }}</div>
+
+                    <div class="col-md-4"><strong>Admission:</strong> {{ formatDate(selectedStudent.admissionDate) }}</div>
+                    <div class="col-md-4"><strong>Pre-Class:</strong> {{ selectedStudent.isPreClassStudent ? 'Yes' : 'No' }}</div>
+                </div>
+
+                <hr>
+
+                <!-- BOARDING -->
+                <h6 class="text-primary">Boarding Info</h6>
+                <div class="row">
+                    <div class="col-md-4"><strong>Boarder:</strong> {{ selectedStudent.isBoarder ? 'Yes' : 'No' }}</div>
+                    <div class="col-md-4"><strong>Hostel:</strong> {{ selectedStudent.hostelName }}</div>
+                    <div class="col-md-4"><strong>Block:</strong> {{ selectedStudent.hostelBlockName }}</div>
+                    <div class="col-md-4"><strong>House:</strong> {{ selectedStudent.houseName }}</div>
+                </div>
+
+                <hr>
+
+                <!-- FINANCE -->
+                <h6 class="text-primary">Finance</h6>
+                <div class="row">
+                    <div class="col-md-4"><strong>Balance:</strong> {{ selectedStudent.balanceDue }}</div>
+                    <div class="col-md-4"><strong>Due Date:</strong> {{ formatDate(selectedStudent.balanceDueDate) }}</div>
+                </div>
+
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+                <a :href="'/SmStudentSetups/EditStudent?id=' + selectedStudent.id"
+                   class="btn btn-primary">
+                    <i class="la la-edit"></i> Edit
+                </a>
+
+                <button class="btn btn-secondary" @@click="closeStudentModal">
+                    Close
+                </button>
+            </div>
+
+        </div>
+    </div>
+</div>
+    <!-- Delete Confirmation Modal -->
+    <div class="modal fade" id="deleteStudentModal" tabindex="-1" role="dialog" aria-labelledby="deleteStudentModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div class="modal-content">
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="deleteStudentModalLabel">Confirm Delete</h5>
+                    <button type="button" class="close text-white"  data-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    Are you sure you want to delete <strong>{{ studentToDeleteName }}</strong>?
+                </div>
+                <div class="modal-footer">
+                    <button class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-danger" @@click="confirmDeleteStudent">Delete</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+<script src="~/js/school-manager/students/index.js" asp-append-version="true"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>

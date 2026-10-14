@@ -1,0 +1,201 @@
+﻿@{
+    ViewBag.Title = "Suppliers";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Suppliers </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">Shared Resource</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Suppliers
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Suppliers </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <ul class="nav nav-tabs nav-top-border no-hover-bg" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="list-tab" data-toggle="tab" href="#list-panel" aria-controls="list-panel" role="tab" aria-selected="true">Supplier List</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="add-tab" data-toggle="tab" href="#add-panel" ref="addNewSupplier" aria-controls="add-panel" role="tab" aria-selected="false">Add Supplier</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content px-1 pt-1">
+                                    <div class="tab-pane active" id="list-panel" role="tabpanel" aria-labelledby="list-tab">
+                                        <div>
+                                            <div id="dataTable"></div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane" id="add-panel" role="tabpanel" aria-labelledby="add-tab">
+                                        
+                                   <div class="row">
+                                            
+                                  <div class="col-sm-6">
+
+                                    <div class="form-group">
+                                        <label> <strong> Account Number: </strong> </label>
+                                        <input type="text" class="form-control" v-model="accountNumber" ref="accountNumber" placeholder="Account Number">
+                                        <span class="text-danger" v-if="!$v.accountNumber.required && $v.accountNumber.$dirty"> Account No. field is required </span>
+                                    </div>
+ 
+                                    <div class="form-group">
+                                        <label> <strong> Supplier Group: </strong>  </label>
+                                        <select class="form-control" v-model="supplierGroupId" type="text">
+                                            <option value=""> Select Supplier Group </option>
+                                            <option :value="supplierGroup.id" v-for="supplierGroup in supplierGroupList"> {{supplierGroup.name}} </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Status: </strong>  </label>
+                                        <select class="form-control" v-model="status">
+                                            <option value="Active">Active</option>
+                                            <option value="InActive">InActive</option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Address: </strong>  </label>
+                                        <input v-model="address" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Balance: </strong>  </label>
+                                        <input v-model="balance" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> VAT G/L No:  </strong>  </label>
+                                        <select class="form-control" v-model="vatAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.accountIdentifier}} </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Credit G/L: </strong> </label>
+                                        <select class="form-control" v-model="creditAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.accountIdentifier}} </option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                   <div class="col-sm-6">
+
+                                    <div class="form-group">
+                                        <label> <strong> Supplier Name: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="name" ref="name" placeholder="Supplier Name">
+                                        <span class="text-danger" v-if="!$v.name.required && $v.name.$dirty"> Supplier Name is required </span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Supplier TIN No: </strong> </label>
+                                        <input type="text" class="form-control" v-model="tinNumber" placeholder="TIN No">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Contact No: </strong>  </label>
+                                        <input v-model="phoneNo" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Email: </strong>  </label>
+                                        <input v-model="email" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>  <strong> Default Currency:  </strong>  </label>
+                                        <select class="form-control" v-model="currencyId" ref="currencyId">
+                                            <option :value="currency.id" v-for="currency in currencyList">{{currency.currencyName}} </option>
+                                        </select>
+                                        <span class="text-danger" v-if="!$v.currencyId.required && $v.currencyId.$dirty"> Currency is required </span>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>  <strong> Credit Limit: </strong>  </label>
+                                        <input class="form-control" v-model="creditLimit" type="number" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> IRS G/L No: </strong>  </label>
+                                        <select class="form-control" v-model="irsAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.accountIdentifier}} </option>
+                                        </select>
+                                    </div>
+
+                                </div>
+ 
+                                  </div>
+                             
+                                 <hr />
+
+                            <div class="row">
+                                <div class="col-sm-6"></div>
+                                <div class="col-sm-6">
+
+                                    <button type="button" :disabled="isLoading" v-on:click="saveSupplier()" style="float: right" class="btn btn-primary">
+                                        Save
+                                        <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+                                        
+                            </div>
+                        </div>
+                    </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/shared/suppliers.js" asp-append-version="true"></script>

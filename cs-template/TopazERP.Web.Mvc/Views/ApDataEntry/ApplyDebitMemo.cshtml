@@ -1,0 +1,308 @@
+﻿@{
+ViewBag.Title = "Apply Debit Memo";
+Layout = "~/Views/Shared/Layout/_adminApLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+<div class="app-content content">
+<div class="content-wrapper">
+<div class="content-header row">
+    <div class="content-header-left col-md-6 col-12 mb-2">
+        <h3 class="content-header-title">Apply Debit Memo</h3>
+        <div class="row breadcrumbs-top">
+            <div class="breadcrumb-wrapper col-12">
+                <ol class="breadcrumb">
+                    <li class="breadcrumb-item">
+                        <a href="../Dashboard/Ap" class="text-info"><i class="la la-home"></i> Home</a>
+                    </li>
+                    <li class="breadcrumb-item">
+                        <a class="text-info" href="#"> Data Entry </a>
+                    </li>
+                    <li class="breadcrumb-item active">
+                        Apply Debit Memo
+                    </li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+</div>
+<div class="content-body">
+<!-- Basic Tables start -->
+<div class="row">
+<div class="col-12">
+<div class="card b">
+<div class="card-header">
+    <h4 class="card-title">Apply Debit Memo</h4>
+    <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+    <div class="heading-elements">
+        <ul class="list-inline mb-0">
+            <li><a data-action="collapse"><i class="ft-minus"></i></a></li>
+            <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+            <li><a data-action="close"><i class="ft-x"></i></a></li>
+        </ul>
+    </div>
+</div>
+
+<div class="card-content collapse show">
+
+<div class="card-body" id="app">
+    <div class="row">
+
+        <div class="col-sm-4">
+            <button type="button" @@click="clearForm()" class="btn btn-info btn-sm">
+                <i class="la la-refresh"></i> Reset Form
+                <i class="fa fa-spinner fa-spin" v-if="isLoading"></i>
+            </button>
+        </div>
+        <div class="col-sm-4 ">
+
+
+        </div>
+        <div class="col-sm-4">
+           
+        </div>
+
+    </div>
+    <div>
+    
+    <!-- form area -->
+    <form ref="debitMemo" v-on:submit.prevent="validateForm()" >
+    <div class="row">
+        <div  class="col">
+            <fieldset>
+              
+                <div class="row">
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <label for="invoiceId" class="form-label"><strong>Select Supplier Invoice:</strong><span class="text-red">*</span></label>
+                            <input id="invoiceId" type="text" class="form-control" v-model="invoiceId">
+                        </div>
+                        <div class="form-group">
+                            <label for="invoiceNo" class="form-label"><strong>Invoice No.:</strong></label>
+                            <input type="text" class="form-control" id="invoiceNo" v-model="invoiceNo" disabled="disabled">
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <label for="accountNo" class="form-label"><strong>Account No:</strong></label>
+                            <input type="text" class="form-control" id="accountNo" v-model="accountNo" disabled="disabled">
+                        </div>
+                        <div class="form-group">
+                            <label for="invoiceBalance" class="form-label"><strong>Invoice Balance:</strong></label>
+                            <input type="number" class="form-control" id="invoiceBalance" v-model="invoiceBalance" disabled="disabled">
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                       
+                        <div class="form-group">
+                            <label for="invoiceCurrencyName" class="form-label"><strong>Invoice Currency:</strong></label>
+                            <input type="text" class="form-control" id="invoiceCurrencyName" v-model="invoiceCurrencyName" disabled="disabled">
+                        </div>
+                    </div>
+                    <div class="col-sm-3">
+                        <div class="form-group">
+                            <label class="form-label"><strong>Rate:</strong></label>
+                            <input type="number" class="form-control" id="invoiceBuyRate" v-model="invoiceBuyRate" disabled="disabled">
+                        </div>
+                    </div>
+                </div>
+                
+            </fieldset>
+        </div>
+         
+    </div>
+    <div>
+        <hr>
+        <fieldset class="mt-4">
+     
+        <div class="row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="transactionDate" class="form-label"><strong>Payment Date:</strong></label> <span class="text-danger">*</span>
+                    <input type="date" class="form-control" id="transactionDate" v-model="transactionDate" required>
+                </div>
+            </div> 
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label class="form-label"><strong>Mode of Payment:</strong></label><br>
+                    <div class="form-control">
+                        <div class="form-check form-check-inline">
+                            <input
+                                class="form-check-input"
+                                type="radio"
+                                id="cash"
+                                value="Cash"
+                                v-model="modeOfPayment"
+                                @@change="toggleCash"/>
+                            <label class="form-check-label" for="cash">Cash</label>
+                        </div>
+                        <div class="form-check form-check-inline">
+                            <input
+                                class="form-check-input"
+                                type="radio"
+                                id="cheque"
+                                value="Cheque"
+                                v-model="modeOfPayment"
+                                @@change="toggleCheque"/>
+                            <label class="form-check-label" for="cheque">Cheque</label>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label> <strong>Currency: </strong> </label><span class="text-danger">*</span>
+                    <input id="currencyId" v-model="currencyId" type="text" class="form-control" required/>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label> <strong>Currency Rate: </strong> </label>
+                    <input id="buyRate" v-model="buyRate" type="number" class="form-control" disabled required/>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label> <strong>Bank: </strong> </label>
+                    <input id="bankId" v-model="bankId" type="text" class="form-control"/>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label> <strong> Bank Branch: </strong> </label>
+                    <input id="branchId" v-model="bankBranchId" type="text" class="form-control" placeholder="bank branch"/>
+
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label class="form-label" for="chequeNumber"><strong>chequeNumber:</strong></label>
+                    <input type="text" class="form-control" id="chequeNumber" v-model="chequeNumber" required>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label class="form-label" for="chequeDate"><strong>cheque Date:</strong></label>
+                    <input type="date" class="form-control" id="chequeDate" v-model="chequeDate" required>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="amount" class="form-label"><strong>Amount:</strong></label><span class="text-danger">*</span>
+                    <input type="number" step="0.01" min="0" class="form-control" id="amount" v-model="amount" required>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="batchNumber" class="form-label"><strong>Batch Number</strong></label>
+                    <input type="text" class="form-control" id="batchNumber" v-model="batchNumber" placeholder="2321" disabled>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label for="description" class="form-label"><strong>Description:</strong></label><span class="text-danger">*</span>
+                    <input type="text" class="form-control" id="description" v-model="description" required> </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-group" v-if="isOu">
+                    <label> <strong>OU (Cost Center): </strong> </label><span class="text-danger">*</span>
+                    <input id="ouId" v-model="ouId" type="text" class="form-control" required/>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-sm-3">
+                <div class="form-group">
+                    <label class="form-label"><strong>Debit GL:</strong></label>
+                    <input id="debitGlId" v-model="debitGlId" type="text" class="form-control" required/>
+                </div>
+            </div>
+            <div class="col-sm-3">
+                <div class="form-groupo">
+                    <label class="form-label"><strong>Credit GL:</strong></label>
+                    <input id="creditGlId" v-model="creditGlId" type="text" class="form-control" required/>
+                </div>
+            </div>
+        </div>
+        </fieldset>
+    </div>
+    <hr/>
+    <div class="row justify-content-end">
+        <div class="col-sm-2">
+            <!-- Submit Button -->
+            <div class="d-grid">
+                <button type="submit" data-target="#addEdit"  class="btn btn-success btn-block btn-sm">Apply Debit Memo
+                <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+    </form>
+        <div aria-hidden="true" aria-labelledby="exampleModalLabel" class="modal fade" id="addEdit" role="dialog" tabindex="-1">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLabel"> Confirm Action </h5>
+                        <button aria-label="Close" class="close" data-dismiss="modal" type="button"><span aria-hidden="true"> &times;</span></button>
+                    </div>
+                    <div class="modal-body">
+
+                        <p>Are You Sure You Want To Apply this Debit Memo?</p>
+
+                    </div>
+
+                    <div class="modal-footer">
+
+                        <button class="btn btn-danger" data-dismiss="modal" type="button"> Cancel </button>
+
+                        <button class="btn btn-info" type="button" :disabled="isLoading" v-on:click="applyMemo()">
+
+                            Yes
+
+                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+
+
+    </div>
+    <hr/>
+    
+   
+
+</div>
+
+    
+
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+
+</div>
+</div>
+
+<script>
+    window.memoId = @Html.Raw(Json.Serialize(ViewBag.MemoId ?? ""));
+</script>
+
+<script src="~/js/ap/DataEntry/apply-memo.js" asp-append-version="true"></script>

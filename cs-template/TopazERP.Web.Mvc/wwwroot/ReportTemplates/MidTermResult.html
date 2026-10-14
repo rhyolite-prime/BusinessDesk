@@ -1,0 +1,252 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>TerminalReport</title>
+    <style>
+        html, body {
+            height: 100%;
+            font-family: "Times New Roman";
+            margin: 0;
+            font-size: 18px;
+            padding: 10px;
+        }
+
+        header {
+            width: 100%;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            position: relative;
+            margin-top:20px;
+        }
+        .header {
+            font-size: 26px;
+            font-weight: bold;
+        }
+        .logo {
+            position: absolute;
+            left: 10px;
+
+
+        }
+        .logo img {
+            height: 100px;
+            width: 250px;
+            object-fit: contain;
+        }
+        .info {
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            font-weight: bold;
+            font-size: 18px;
+            text-align: center;
+        }
+        .student-info {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .report-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+
+        .report-table th,
+        .report-table td {
+            border: 1px solid #000;
+            padding: 6px;
+            text-align: center;
+        }
+
+        .report-table th {
+            background: #f2f2f2;
+        }
+
+        .attendance-section {
+            display: flex;
+            gap: 2px;
+            font-size: 18px;
+        }
+
+
+        .remarks {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            margin-bottom: 20px;
+        }
+        .teacher-remarks{
+            margin-bottom: 20px;
+        }
+        .h, .strong{
+            text-decoration: underline;
+        }
+        .d, .span {
+            flex: 1;
+            border-bottom: 2px dotted #000;
+            min-height: 22px;
+        }
+
+        .f, .rf {
+            display: flex;
+            align-items: baseline;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .signature{
+            margin-top: 20px;
+            margin-bottom: 20px;
+            float: right;
+        }
+        .horizontal-grades {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+            padding-left: 20px;
+        }
+
+        .horizontal-grades li {
+            list-style-position: inside;
+        }
+        footer {
+            position: fixed;
+            bottom: 10px;
+            left: 0;
+            right: 0;
+            width: 100%;
+            font-size: 18px;
+        }
+
+        footer .footer-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 40px;
+            margin: 0 50px;
+            border-top: 1px solid black;
+        }
+
+        hr{
+            border: 0;
+            height: 3px;
+            background-color: black;
+            margin-bottom: 30px;
+
+        }
+
+    </style>
+</head>
+<body>
+<header>
+    <div class="logo">
+        <img src="{{CompanyLogo}}" alt="Company Logo">
+    </div>
+    <div class="info">
+        <div class="header">{{SchoolName}}</div>
+        <div>Address: {{Address}} | Tel: {{PhoneNo}} </div>
+        <div>Email: {{Email}}</div>
+        <div class="header">Mid-Term Results</div>
+    </div>
+</header>
+<hr />
+<main>
+
+
+    <!-- STUDENT INFO -->
+    <div class="student-info">
+        <div class="f">
+            <strong class="h">Name:</strong>
+            <div class="d">{{StudentName}}</div>
+        </div>
+        <div class="f">
+            <strong class="h">Student ID:</strong>
+            <div class="d"> {{StudentIdentifier}}</div>
+        </div>
+        <div  class="f">
+            <strong class="h">Academic Year:</strong>
+            <div class="d"> {{Year}}</div>
+        </div>
+        <div  class="f">
+            <strong class="h">Class:</strong>
+            <div class="d"> {{ClassName}}</div>
+        </div>
+        <div  class="f">
+            <strong class="h">Term:</strong>
+            <div class="d"> {{Term}}</div>
+        </div>
+        <div  class="f">
+            <strong class="h">Number On Roll:</strong>
+            <div class="d"> {{TotalStudents}}</div>
+        </div>
+      
+
+
+    </div>
+
+    <!-- SUBJECT TABLE -->
+    <table class="report-table">
+        <thead>
+        <tr>
+            <th>Subject</th>
+            <th>Score</th>
+            <th>Class Average</th>
+            <th>Remark</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{SubjectRows}}
+        </tbody>
+
+    </table>
+    <div class="remarks">
+        <div class="rf">
+            <strong class="strong">Teacher:</strong>
+            <div class="span">{{TeacherName}}</div>
+        </div >
+    </div>
+    <div class="teacher-remarks">
+        <div class="rf">
+            <strong class="strong">Teacher Remarks:</strong>
+            <div class="span">{{ClassTeacherRemarks}}</div>
+        </div>
+        <div class="rf">
+            <strong class="strong">Headmaster's / Mistress' Remarks:</strong>
+            <div class="span">{{HeadTeacherRemarks}}</div>
+        </div>
+    </div>
+
+
+    <!-- MIDTERM ASSESSMENTS -->
+    <h3>Midterm Assessments</h3>
+    <table class="report-table">
+        <thead>
+        <tr>
+            <th>Assessment</th>
+            <th>Remark</th>
+        </tr>
+        </thead>
+        <tbody>
+        {{MidTermAssessmentRows}}
+        </tbody>
+    </table>
+
+
+
+
+</main>
+
+<footer class="mainFooter">
+    <div class="footer-content">
+        <div><p>Printed On: <span>{{currentDate}}</span></p></div>
+        <div><p>Topaz Accounting Online (School Manager)</p></div>
+        <div><p>Page {{pageNumber}} <span>of {{pageBreakCount}}</span></p></div>
+    </div>
+</footer>
+</body>
+</html>

@@ -1,0 +1,211 @@
+@{
+    ViewBag.Title = "Bank Accounts";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Bank Accounts </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">General Ledger Setups</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Bank Accounts
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Bank Accounts </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <ul class="nav nav-tabs nav-top-border no-hover-bg" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="list-tab" data-toggle="tab" href="#list-panel" aria-controls="list-panel" role="tab" aria-selected="true">Bank Accounts List</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="add-tab" data-toggle="tab" href="#add-panel" ref="addNewAccount" aria-controls="add-panel" role="tab" aria-selected="false">Add Bank Account</a>
+                                    </li>
+                                </ul>
+                                <div class="tab-content px-1 pt-1">
+                                    <div class="tab-pane active" id="list-panel" role="tabpanel" aria-labelledby="list-tab">
+                                        <div>
+                                            <div id="dataTable"></div>
+                                        </div>
+                                    </div>
+                                    <div class="tab-pane" id="add-panel" role="tabpanel" aria-labelledby="add-tab">
+                                        
+                                        <div class="row">
+
+                                <div class="col-sm-6">
+
+                                    <div class="form-group">
+                                        <label> <strong> Bank: </strong>  </label>
+
+                                        <select class="form-control" v-model="bankId" ref="bankId">
+                                            <option value=""> Select Bank </option>
+                                            <option :value="bank.id" v-for="bank in bankList"> {{bank.name}} </option>
+                                        </select>
+
+                                        <span class="text-danger" v-if="!$v.bankId.required && $v.bankId.$dirty"> Bank field is required </span>
+
+                                    </div>
+ 
+                                    <div class="form-group">
+                                        <label> <strong> City/Location: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="location" ref="location" placeholder="City/Location">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> GL Account: </strong>  </label>
+                                        <select class="form-control" v-model="accountId" ref="accountId">
+                                            <option> Select Account </option>
+                                            <option :value="account.id" v-for="account in accountList"> {{account.accountName}} - {{account.accountNo}} </option>
+                                        </select>
+                                       <span class="text-danger" v-if="!$v.accountId.required && $v.accountId.$dirty"> GL Account is required </span>
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Currency: </strong>  </label>
+                                        <select class="form-control" v-model="currencyId" ref="currencyId">
+                                            <option value=""> Select Currency </option>
+                                            <option :value="currency.id" v-for="currency in currencyList"> {{currency.currencyName}} ({{currency.currencyCode}}) </option>
+                                        </select>
+                                        <span class="text-danger" v-if="!$v.currencyId.required && $v.currencyId.$dirty"> Currency is required </span>
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Contact No: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="contactNo" readonly ref="contactNo" placeholder="Contact No">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Cheque Book Start: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="chequeBookStart" ref="chequeBookStart" placeholder="000025896">
+                                        <span class="text-danger" v-if="!$v.chequeBookStart.required && $v.chequeBookStart.$dirty"> Cheque Book Start field is required </span>
+
+                                    </div>
+                                    
+                                    <div class="form-group">
+                                        <label> <strong> Cheque Book End: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="chequeBookEnd" ref="chequeBookEnd" placeholder="0000258789">
+                                        <span class="text-danger" v-if="!$v.chequeBookEnd.required && $v.chequeBookEnd.$dirty"> Cheque Book End field is required </span>
+
+                                    </div>
+
+                                </div>
+
+                                <div class="col-sm-6">
+
+                                    <div class="form-group">
+                                        <label> <strong> Bank Branch: </strong>  </label>
+                                        <select class="form-control" v-model="bankBranchId" ref="bankBranchId">
+                                            <option value=""> Select Bank Branch </option>
+                                            <option :value="branch.id" v-for="branch in bankBranchList"> {{branch.name}} </option>
+                                         </select>
+                                    </div>
+
+
+                                    <div class="form-group">
+                                        <label> <strong> Address: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="address" ref="address" placeholder="1st Street, Mataheko">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Account No: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="accountNo" ref="accountNo" placeholder="1147853698">
+                                        <span class="text-danger" v-if="!$v.accountNo.required && $v.accountNo.$dirty"> Account No. field is required </span>
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Account Type: </strong>  </label>
+                                        <select class="form-control" v-model="accountType" ref="accountType">
+                                            <option> Current Account </option>
+                                            <option> Savings Account </option>
+
+                                         </select>
+                                        
+                                    </div>
+
+
+                                    <div class="form-group">
+                                        <label> <strong> Contact Person: </strong>  </label>
+                                        <input type="text" class="form-control" v-model="contactPerson" readonly ref="contactPerson" placeholder="Kwabena Addo">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Date Opened: </strong>  </label>
+                                        <input type="date" class="form-control" v-model="dateOpened" ref="dateOpened">
+ 
+                                    </div>
+ 
+                                </div>
+
+                            </div>
+                             
+                            <hr />
+
+                            <div class="row">
+                                <div class="col-sm-6"></div>
+                                <div class="col-sm-6">
+
+                                    <button type="button" :disabled="isLoading" v-on:click="saveBankAccount()" style="float: right" class="btn btn-primary">
+                                        Save
+                                        <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+                                        
+                            </div>
+                        </div>
+                    </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/gl/setups/bank-accounts.js" asp-append-version="true"></script>

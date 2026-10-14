@@ -1,0 +1,226 @@
+@{
+    ViewBag.Title = "Vouchers";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Vouchers </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">General Ledger </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Vouchers
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+            <div class="content-header-right col-md-6 col-12 mb-2 text-right">
+                <button type="button" class="btn btn-primary" data-toggle="modal" data-target="#createVoucherModal">
+                    <i class="ft-plus"></i> Create Voucher
+                </button>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Vouchers </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+                                <ul class="nav nav-tabs" id="voucherTabs" role="tablist">
+                                    <li class="nav-item">
+                                        <a class="nav-link active" id="supplier-tab" data-toggle="tab" href="#supplier" role="tab" aria-controls="supplier" aria-selected="true">Supplier Payment Vouchers</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="employee-tab" data-toggle="tab" href="#employee" role="tab" aria-controls="employee" aria-selected="false" v-on:click="getEmployeePaymentVouchers()">Employee Payment Vouchers</a>
+                                    </li>
+                                    <li class="nav-item">
+                                        <a class="nav-link" id="customer-tab" data-toggle="tab" href="#customer" role="tab" aria-controls="customer" aria-selected="false" v-on:click="getCustomerReceiptVouchers()">Customer Receipt Vouchers</a>
+                                    </li>
+                                </ul>
+                                
+                                <div class="tab-content pt-2" id="voucherTabsContent">
+                                    <div class="tab-pane fade show active" id="supplier" role="tabpanel" aria-labelledby="supplier-tab">
+                                        <div class="row mb-2 mt-2">
+                                            
+                                            <div class="col-md-3">
+                                                <label>Start Date</label>
+                                                <input type="date" v-model="supplierPaymentVoucherFilterParams.startDate" class="form-control"/>
+                                            </div>
+
+                                            <div class="col-md-3">
+                                                <label>End Date</label>
+                                                <input type="date" v-model="supplierPaymentVoucherFilterParams.endDate" class="form-control"/>
+                                            </div>
+
+                                            <div class="col-md-2 d-flex align-items-end" v-on:click="getSupplierPaymentVouchers()">
+                                                <button type="button" class="btn btn-primary btn-block">
+                                                    <i class="ft-filter"></i> Filter
+                                                </button>
+                                            </div>
+                                            
+                                            <div v-if="selectedPaymentVouchersToPost.length > 0" class="col-md-3 d-flex align-items-end">
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-primary dropdown-toggle w-100" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <i class="ft-settings"></i> Actions
+                                                    </button>
+                                                    <div class="dropdown-menu w-100">
+                                                        <a class="dropdown-item text-success" href="#" v-on:click.prevent="postSupplierVouchers()">
+                                                            <i class="fa fa-check-circle"></i> Post Selected
+                                                        </a>
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item text-danger" href="#" v-on:click.prevent="deleteSupplierVouchers()">
+                                                            <i class="fa fa-trash"></i> Delete Selected
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        <hr/>
+                                        <div id="supplierDataTable"></div>
+                                    </div>
+                                    
+                                    <div class="tab-pane fade" id="employee" role="tabpanel" aria-labelledby="employee-tab">
+                                        <div class="row mb-2 mt-2">
+                                            <div class="col-md-3">
+                                                <label>Start Date</label>
+                                                <input type="date" class="form-control" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label>End Date</label>
+                                                <input type="date" class="form-control" />
+                                            </div>
+                                            
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button type="button" class="btn btn-primary btn-block">
+                                                    <i class="ft-filter"></i> Filter
+                                                </button>
+                                            </div>
+                                            
+                                            <div v-if="selectedEmployeeVouchersToPost.length > 0" class="col-md-3 d-flex align-items-end">
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-primary dropdown-toggle w-100" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <i class="ft-settings"></i> Actions
+                                                    </button>
+                                                    <div class="dropdown-menu w-100">
+                                                        <a class="dropdown-item text-success" href="#" v-on:click.prevent="postEmployeeVouchers()">
+                                                            <i class="fa fa-check-circle"></i> Post Selected
+                                                        </a>
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item text-danger" href="#" v-on:click.prevent="deleteEmployeeVouchers()">
+                                                            <i class="fa fa-trash"></i> Delete Selected
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        <hr/>
+                                        <div id="employeeDataTable"></div>
+                                    </div>
+                                    <div class="tab-pane fade" id="customer" role="tabpanel" aria-labelledby="customer-tab">
+                                        <div class="row mb-2 mt-2">
+                                            <div class="col-md-3">
+                                                <label>Start Date</label>
+                                                <input type="date" class="form-control" />
+                                            </div>
+                                            <div class="col-md-3">
+                                                <label>End Date</label>
+                                                <input type="date" class="form-control" />
+                                            </div>
+                                            <div class="col-md-2 d-flex align-items-end">
+                                                <button type="button" class="btn btn-primary btn-block">
+                                                    <i class="ft-filter"></i> Filter
+                                                </button>
+                                            </div>
+                                            
+                                            <div v-if="selectedReceiptVouchersToPost.length > 0" class="col-md-3 d-flex align-items-end">
+                                                <div class="dropdown w-100">
+                                                    <button class="btn btn-primary dropdown-toggle w-100" type="button" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                                        <i class="ft-settings"></i> Actions
+                                                    </button>
+                                                    <div class="dropdown-menu w-100">
+                                                        <a class="dropdown-item text-success" href="#" v-on:click.prevent="postReceiptVouchers()">
+                                                            <i class="fa fa-check-circle"></i> Post Selected
+                                                        </a>
+                                                        <div class="dropdown-divider"></div>
+                                                        <a class="dropdown-item text-danger" href="#" v-on:click.prevent="deleteCustomerReceipts()">
+                                                            <i class="fa fa-trash"></i> Delete Selected
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                        </div>
+                                        <hr/>
+                                        <div id="customerDataTable"></div>
+                                    </div>
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="createVoucherModal" tabindex="-1" role="dialog" aria-labelledby="createVoucherModalLabel" aria-hidden="true">
+  <div class="modal-dialog" role="document">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h5 class="modal-title" id="createVoucherModalLabel">Create Voucher</h5>
+        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="list-group">
+          <a href="/LedgerDataEntry/SupplierPaymentVouchers" class="list-group-item list-group-item-action">
+            <h5 class="list-group-item-heading">Supplier Payment Voucher</h5>
+            <p class="list-group-item-text">Create a new payment voucher for a supplier.</p>
+          </a>
+          <a href="/LedgerDataEntry/EmployeePaymentVouchers" class="list-group-item list-group-item-action">
+            <h5 class="list-group-item-heading">Employee Payment Voucher</h5>
+            <p class="list-group-item-text">Create a new payment voucher for an employee.</p>
+          </a>
+          <a href="/LedgerDataEntry/CustomerReceiptVouchers" class="list-group-item list-group-item-action">
+            <h5 class="list-group-item-heading">Customer Receipt Voucher</h5>
+            <p class="list-group-item-text">Create a new receipt voucher for a customer.</p>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<script src="~/js/gl/data-entry/all-vouchers.js" asp-append-version="true"></script>

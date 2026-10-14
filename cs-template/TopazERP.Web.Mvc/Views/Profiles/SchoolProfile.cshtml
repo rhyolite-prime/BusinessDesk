@@ -1,0 +1,772 @@
+﻿@{
+ViewBag.Title = "School Profile";
+Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+    <div class="content-header row">
+        <div class="content-header-left col-md-6 col-12 mb-2">
+            <h3 class="content-header-title">School Profile </h3>
+            <div class="row breadcrumbs-top">
+                <div class="breadcrumb-wrapper col-12">
+                    <ol class="breadcrumb">
+                        <li class=" breadcrumb-item">
+                            <a href="../Dashboard/SchoolManager/" class="text-primary"><i class="la la-home"></i> Home</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="#" class="text-info"> Profiles </a>
+                        </li>
+                        <li class="breadcrumb-item active">
+                           School Profile
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+    </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                        <h4 class="card-title"> School Profile </h4>
+                        <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                        <div class="heading-elements">
+                            <ul class="list-inline mb-0">
+                                <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                <li><a data-action="close"><i class="ft-x"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                   
+            <div class="card-content collapse show">
+
+<div class="card-body" id="app">
+
+<div class="content-i" id="app">
+<div class="content-box">
+<div class="element-wrapper">
+<h6 class="element-header"> School Profile </h6>
+<div class="element-box">
+<div class="table-responsive" style="height:auto;width:auto;min-height:412px;">        
+<ul class="nav nav-tabs" id="myTab-three" role="tablist">
+</ul>
+<!-- Basic Tables start -->
+<div class="tab-content" id="myTabContent-4">
+    
+        <form>
+            <div class="d-flex justify-content-end my-1">
+                <button
+                    type="button"
+                    class="btn btn-outline-success mr-2"
+                    @@click="showEmailModal = true">
+
+                    <i class="la la-envelope me-1"></i>
+                    Email Settings
+                </button>
+                <button
+                    type="button"
+                    class="btn btn-outline-primary"
+                    @@click="showSmsModal = true">
+
+                    <i class="la la-commenting-o me-1"></i>
+                    SMS Settings
+                </button>
+            </div>
+            <fieldset class="form-group mt-1">
+                <legend ><span> Basic Info </span></legend>
+                <hr/>
+                <div class="row">
+                    <div class="col-md-3 text-center mb-2">
+                        <div class="position-relative d-inline-block">
+                          
+                            <img v-if="companyLogoBase64"
+                                 :src="companyLogoBase64"
+                                 alt="SchoolLogo"
+                                 class="shadow-sm border border-primary"
+                                 style="width: 200px; height: 200px; object-fit: contain;">
+                            
+                            <img v-else
+                                 src="https://res.cloudinary.com/dusydqiob/image/upload/v1755769638/erp-reports/ap/profile_biwocv.jpg"
+                                 alt="Default Profile"
+                                 class="shadow-sm border border-primary"
+                                 style="width: 200px; height: 200px; object-fit: cover;">
+                            @*<div class="form-group">
+                                <label><b>Logo Url: </b></label>
+                                <input id="schoolLogo" type="text" class="form-control" v-model="schoolLogo" placeholder="Url...">
+                            </div>*@
+                         
+                            <button v-if="companyLogoBase64"
+                                    @@click="removeLogo"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#f87272; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-times text-white"></i>
+                            </button>
+                            <button v-else
+                                    @@click="showUpload"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#7436f3; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-plus text-white"></i>
+                            </button>
+
+                        </div>
+
+                        <!-- File input -->
+                        <div class="mt-3">
+                            <label class="form-label fw-bold">Upload School Crest</label>
+                            <input type="file"
+                                   ref="fileInput"
+                                   class="form-control form-control-sm d-none"
+                                   @@change="onFileChange"
+                                   accept="image/*">
+                        </div>
+                    </div>
+
+                    <div class="col-sm-3">
+                       
+                      
+                        <div class="form-group">
+                            <label><b> School Name:</b></label> <span class="text-danger">*</span>
+                            <input type="text" class="form-control" v-model="schoolName" ref="schoolName" placeholder="School Name">
+                            <small v-if="errors.schoolName" style="color:red">
+                                {{ errors.schoolName }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label><b> Address: </b></label><span class="text-danger">*</span>
+                            <input type="text" class="form-control" v-model="address" ref="address" placeholder="Address">
+                            <small v-if="errors.address" style="color:red">
+                                {{ errors.address }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label><b> Phone No: </b></label><span class="text-danger">*</span>
+                            <input type="text" class="form-control" id="phoneNo" v-model="phoneNo" ref="phoneNo" placeholder="Phone No">
+                            <small v-if="errors.phoneNo" style="color:red">
+                                {{ errors.phoneNo }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label><b> Email: </b></label><span class="text-danger">*</span>
+                            <input type="text" class="form-control" v-model="email" ref="email" placeholder="Email">
+                            <small v-if="errors.email" style="color:red">
+                                {{ errors.email }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label><b> Region: </b></label><span class="text-danger">*</span>
+                            <input id="countryStateId" type="text" class="form-control" v-model="countryStateId" placeholder="Region">
+                            <small v-if="errors.countryStateId" style="color:red">
+                                {{ errors.countryStateId }}
+                            </small>
+                        </div>
+                       
+                    </div>
+
+                    <div class="col-sm-3">
+            
+                        <div class="form-group">
+                            <label><b> Current Academic Year: </b></label><span class="text-danger">*</span>
+                            <input type="text" id="currentAcademicYearId" class="form-control" v-model="currentAcademicYearId" placeholder="Current Academic Year">
+                            <small v-if="errors.currentAcademicYearId" style="color:red">
+                                {{ errors.currentAcademicYearId }}
+                            </small>
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b>Reg No: </b></label>
+                            <input id="registrationNo" type="text" class="form-control" v-model="registrationNo" placeholder="Registration No">
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b>Sub Metro: </b></label>
+                            <input id="subMetro" type="text" class="form-control" v-model="subMetro" placeholder="Sub Metro">
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b>Circuit: </b></label>
+                            <input id="circuit" type="text" class="form-control" v-model="circuit" placeholder="Circuit">
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b> City: </b></label><span class="text-danger">*</span>
+                            <input id="cityId" type="text" class="form-control" v-model="cityId" placeholder="City or Location">
+                            <small v-if="errors.cityId" style="color:red">
+                                {{ errors.cityId }}
+                            </small>
+                        </div>
+                    </div>
+            
+                    <div class="col-sm-3">
+            
+                        <div class="form-group">
+                            <label><b> Term: </b></label><span class="text-danger">*</span>
+                            <input type="text" id="currentTermId" class="form-control" v-model="currentTermId" placeholder="Term">
+                            <small v-if="errors.currentTermId" style="color:red">
+                                {{ errors.currentTermId }}
+                            </small>
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b> Web Link: </b></label>
+                            <input type="text" id="webLink" class="form-control" v-model="webLink" placeholder="Web Link">
+                        </div>
+            
+                        <div class="form-group">
+                            <label><b> School Days: </b></label><span class="text-danger">*</span>
+                            <input id="schoolDays" type="number" class="form-control" v-model="schoolDays" placeholder="School Days">
+                            <small v-if="errors.schoolDays" style="color:red">
+                                {{ errors.schoolDays }}
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label><b> Country: </b></label><span class="text-danger">*</span>
+                            <input id="countryId" type="text" class="form-control" v-model="countryId" ref="country" placeholder="Country">
+                            <small v-if="errors.countryId" style="color:red">
+                                {{ errors.countryId }}
+                            </small>
+                        </div>
+                        <div class="form-group">
+                            <label><b> Local Currency: </b></label><span class="text-danger">*</span>
+                            <input id="currencyId" type="text" class="form-control" v-model="currencyId" ref="currency" placeholder="Currency">
+                            <small v-if="errors.currencyId" style="color:red">
+                                {{ errors.currencyId }}
+                            </small>
+                        </div>
+                    </div>
+                </div>
+            </fieldset>
+
+            @*<fieldset class="form-group">
+                <legend><span> Email Settings </span></legend>
+                <hr/>
+                <div class="row">
+                    
+                    <div class="col-sm-3">
+
+                        <div class="form-group">
+                            <label> <b>Mail Host Name: </b> </label>
+                            <input type="text" class="form-control" v-model="mailHostName" placeholder="Mail Host Name">
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b>Primary Email Address: </b> </label>
+                            <input type="text" class="form-control" v-model="primaryEmailAddress" placeholder="Primary Email Address">
+                        </div>
+                        
+                    </div>
+
+                    <div class="col-sm-3">
+                        
+                        <div class="form-group">
+                            <label> <b> Port Number: </b> </label>
+                            <input type="number" class="form-control" v-model="portNumber" placeholder="1234">
+
+                        </div>
+                        <div class="form-group">
+                            <label> <b> Is SSL Enabled: </b> </label>
+                            <select class="form-control mb-3" v-model="isSSLEnabled">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+
+                    </div>
+                    <div class="col-sm-3">
+                        
+                        <div class="form-group">
+                            <label> <b>Mail Password: </b> </label>
+                            <input type="password" class="form-control" v-model="emailPassword" placeholder="********">
+
+                        </div>
+                      
+
+                    </div>
+
+                </div>
+
+            </fieldset>*@
+  @*<fieldset class="form-group">
+                <legend><span> SMS Settings </span></legend>
+                <hr/>
+                <div class="row">
+                    
+                    <div class="col-sm-3">
+
+                        <div class="form-group">
+                            <label> <b>Client ID: </b> </label>
+                            <input type="text" class="form-control" v-model="clientId" placeholder="ClientId...">
+                        </div>
+                        <div class="form-group">
+                            <label> <b>Client Secret: </b> </label>
+                            <input type="text" class="form-control" v-model="clientSecret" placeholder="ClientSecret...">
+                        </div>
+                       
+                    </div>
+
+                    <div class="col-sm-3">
+                        
+                        <div class="form-group">
+                            <label> <b> Sender ID: </b> </label>
+                            <input type="text" class="form-control" v-model="senderId" placeholder="senderId...">
+
+                        </div>
+
+                    </div>
+                   
+                </div>
+
+            </fieldset>*@
+            <fieldset class="form-group mt-1">
+                <legend><span>Signature</span></legend>
+                <hr />
+                <div class="row">
+                     <div class="col-md-3 text-center mb-2">
+                        <div class="position-relative d-inline-block">
+                          
+                            <img v-if="signatureBase64" :src="signatureBase64"
+                                 alt="Signature"
+                                 class=" shadow-sm border border-primary"
+                                 style="width: 200px; height: 200px; object-fit: contain;">
+                            
+                            <img v-else
+                                 src="https://res.cloudinary.com/dusydqiob/image/upload/v1755769638/erp-reports/ap/profile_biwocv.jpg"
+                                 alt="Signature"
+                                 class=" shadow-sm border border-primary"
+                                 style="width: 200px; height: 200px; object-fit: cover;">
+                            @*<div class="form-group">
+                                <label><b>Signature Url: </b></label>
+                                <input id="signatureUrl" type="text" class="form-control" v-model="signatureUrl" placeholder="Url...">
+                            </div>*@
+                            <button v-if="signatureBase64"
+                                    @@click="removeSignature"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#f87272; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-times text-white"></i>
+                            </button>
+                            <button v-else
+                                    @@click="showSignatureUpload"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#7436f3; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-plus text-white"></i>
+                            </button>
+
+                        </div>
+
+                        <!-- File input -->
+                        <div class="mt-3">
+                            <label class="form-label fw-bold">Upload Signature</label>
+                            <input type="file"
+                                   ref="signatureFileInput"
+                                   class="form-control form-control-sm d-none"
+                                   @@change="onSignatureFileChange"
+                                   accept="image/*">
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="showSignature" v-model="showSignature"/>
+                                <label class="mb-0 mx-2" for="showSignature"><b>Show Signature</b></label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="showSignatureOnResults" v-model="showSignatureOnResults"/>
+                                <label class="mb-0 mx-2" for="showSignatureOnResults"><b>Show On Results By Students</b></label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="showSignatureOnBills" v-model="showSignatureOnBills"/>
+                                <label class="mb-0 mx-2" for="showSignatureOnBills"><b>Show On Student Bills</b></label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="showSignatureOnStatement" v-model="showSignatureOnStatement"/>
+                                <label class="mb-0 mx-2" for="showSignatureOnStatement"><b>Show On Student Statement</b></label>
+                            </div>
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="showSignatureOnReceipt" v-model="showSignatureOnReceipt"/>
+                                <label class="mb-0 mx-2" for="showSignatureOnReceipt"><b>Show On Receipt</b></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </fieldset>
+            
+            <fieldset class="form-group mt-1">
+                <legend><span>Terminal Report</span></legend>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="isClassPosition" v-model="isClassPosition"/>
+                                <label class="mb-0 mx-2" for="isClassPosition"><b>Class Position (Splitting)</b></label>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="isSubjectPosition" v-model="isSubjectPosition"/>
+                                <label class="mb-0 mx-2" for="isSubjectPosition"><b>Subject Position (Splitting)</b></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </fieldset>
+           
+            <fieldset class="form-group mt-1">
+                <legend><span>Others</span></legend>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="enforceExamSecurity" v-model="enforceExamSecurity"/>
+                                <label class="mb-0 mx-2" for="enforceExamSecurity"><b>Enforce Exam Security</b></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </fieldset>
+            
+            <div class="row mb-4">
+
+                <div class="col-sm-3"></div>
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+
+                    <button type="button" :disabled="isLoading" @@click="saveProfile()" style="float: right" class="btn btn-primary">
+                        Save Profile
+
+                        <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                    </button>
+
+                </div>
+
+            </div>
+<!-- SMS Settings Modal -->
+            <div
+                v-if="showSmsModal"
+                class="modal fade show d-block"
+                tabindex="-1"
+                role="dialog"
+                style="background-color: rgba(0,0,0,0.5);">
+
+                <div class="modal-dialog modal-dialog-centered" role="document">
+
+                    <div class="modal-content">
+
+                        <!-- Header -->
+                        <div class="modal-header">
+
+                            <div>
+                                <h5 class="modal-title mb-1">
+                                    <i class="la la-commenting-o me-1"></i>
+                                    SMS Settings
+                                </h5>
+
+                                <small class="text-muted">
+                                    Configure your school's SMS provider.
+                                </small>
+                            </div>
+
+                            <button
+                                type="button"
+                                class="btn-close btn-danger btn btn-sm" 
+                                aria-label="Close"
+                                @@click="showSmsModal = false">
+                                <i class="la la-times"></i>
+                            </button>
+
+                        </div>
+
+                        <!-- Body -->
+                        <div class="modal-body">
+
+                            <div class="alert alert-info">
+                                <i class="la la-info-circle me-1"></i>
+                                These settings are used when sending SMS messages
+                                to students and parents.
+                            </div>
+
+                            <!-- Client ID -->
+                            <div class="form-group">
+
+                                <label>
+                                    <b>Client ID</b>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    v-model="clientId"
+                                    placeholder="Enter Client ID">
+
+                            </div>
+
+                            <!-- Client Secret -->
+                            <div class="form-group">
+
+                                <label>
+                                    <b>Client Secret</b>
+                                </label>
+
+                                <div class="input-group">
+
+                                    <input
+                                        :type="showClientSecret ? 'text' : 'password'"
+                                        class="form-control"
+                                        v-model="clientSecret"
+                                        placeholder="Enter Client Secret">
+
+                                    <button
+                                        type="button"
+                                        class="btn btn-outline-secondary"
+                                        @@click="showClientSecret = !showClientSecret">
+
+                                        <i
+                                            :class="showClientSecret
+                                    ? 'la la-eye-slash'
+                                    : 'la la-eye'">
+                                        </i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                            <!-- Sender ID -->
+                            <div class="form-group">
+
+                                <label>
+                                    <b>Sender ID</b>
+                                </label>
+
+                                <input
+                                    type="text"
+                                    class="form-control"
+                                    v-model="senderId"
+                                    placeholder="Enter Sender ID">
+
+                            </div>
+
+                        </div>
+
+                        <!-- Footer -->
+                        <div class="modal-footer">
+
+                            <button
+                                type="button"
+                                class="btn btn-light"
+                                :disabled="isLoading"
+                                @@click="showSmsModal = false">
+
+                                Cancel
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-primary"
+                                :disabled="isLoading"
+                                @@click="saveProfile()">
+
+                                <i
+                                    class="la la-circle-o-notch spinner"
+                                    v-if="isLoading">
+                                </i>
+
+                                <i
+                                    class="la la-save"
+                                    v-else>
+                                </i>
+
+                                Save SMS Settings
+
+                            </button>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </div>
+            
+            
+            <!-- Email Settings Modal -->
+<div
+    v-if="showEmailModal"
+    class="modal fade show d-block"
+    tabindex="-1"
+    role="dialog"
+    style="background-color: rgba(0,0,0,0.5);">
+
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-fullscreen-sm-down" role="document">
+
+        <div class="modal-content">
+
+            <!-- Header -->
+            <div class="modal-header">
+
+                <div>
+                    <h5 class="modal-title mb-1">
+                        <i class="la la-envelope me-1"></i>
+                        Email Settings
+                    </h5>
+
+                    <small class="text-muted">
+                        Configure your school's Email provider.
+                    </small>
+                </div>
+
+                <button
+                    type="button"
+                    class="btn-close btn-danger btn btn-sm" 
+                    aria-label="Close"
+                    @@click="showEmailModal = false">
+                    <i class="la la-times"></i>
+                </button>
+
+            </div>
+
+            <!-- Body -->
+            <div class="modal-body">
+
+                <div class="alert alert-info">
+                    <i class="la la-info-circle me-1"></i>
+                    These settings are used when sending Emails
+                    to students and parents.
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label> <b>Mail Host Name: </b> </label>
+                            <input type="text" class="form-control" v-model="mailHostName" placeholder="Mail Host Name">
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="form-group">
+                            <label> <b>Primary Email Address: </b> </label>
+                            <input type="text" class="form-control" v-model="primaryEmailAddress" placeholder="Primary Email Address">
+                        </div>
+                    </div>
+                    </div>
+                    <div class="row">
+                        <div class="col">
+                            <div class="form-group">
+                                <label> <b> Port Number: </b> </label>
+                                <input type="number" class="form-control" v-model="portNumber" placeholder="1234">
+
+                            </div>
+                        </div>
+                        <div class="col">
+                            <div class="form-group">
+                                <label> <b> Is SSL Enabled: </b> </label>
+                                <select class="form-control mb-3" v-model="isSSLEnabled">
+                                    <option value="false">No</option>
+                                    <option value="true">Yes</option>
+                                </select>
+                            </div>
+                        </div>
+                </div>
+                <div class="row">
+                    <div class="col">
+                        <div class="form-group">
+                            <label> <b>Mail Password: </b> </label>
+                            <div class="input-group">
+
+                                <input
+                                    :type="showEmailPassword ? 'text' : 'password'"
+                                    class="form-control"
+                                    v-model="emailPassword"
+                                    placeholder="Enter Email Password">
+
+                                <button
+                                    type="button"
+                                    class="btn btn-outline-secondary"
+                                    @@click="showEmailPassword = !showEmailPassword">
+
+                                    <i
+                                        :class="showEmailPassword
+                                    ? 'la la-eye-slash'
+                                    : 'la la-eye'">
+                                    </i>
+
+                                </button>
+
+                            </div>
+                        </div>
+                    </div>
+                    </div>
+            </div>
+
+            <!-- Footer -->
+            <div class="modal-footer">
+
+                <button
+                    type="button"
+                    class="btn btn-light"
+                    :disabled="isLoading"
+                    @@click="showEmailModal = false">
+
+                    Cancel
+                </button>
+
+                <button
+                    type="button"
+                    class="btn btn-primary"
+                    :disabled="isLoading"
+                    @@click="saveProfile()">
+
+                    <i
+                        class="la la-circle-o-notch spinner"
+                        v-if="isLoading">
+                    </i>
+
+                    <i
+                        class="la la-save"
+                        v-else>
+                    </i>
+
+                    Save Email Settings
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+        </form>
+    
+       
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+
+<script src="~/js/school-manager/setups/school-profile.js" asp-append-version="true"></script>

@@ -1,0 +1,380 @@
+﻿@{
+ViewBag.Title = "Company Profile";
+Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+<style>
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+</style>
+
+<div class="app-content content">
+    <div class="content-wrapper">
+    <div class="content-header row">
+        <div class="content-header-left col-md-6 col-12 mb-2">
+            <h3 class="content-header-title"> Company Profile </h3>
+            <div class="row breadcrumbs-top">
+                <div class="breadcrumb-wrapper col-12">
+                    <ol class="breadcrumb">
+                        <li class=" breadcrumb-item">
+                            <a href="../Dashboard/Ar" class="text-info"><i class="la la-home"></i> Home</a>
+                        </li>
+                        <li class="breadcrumb-item">
+                            <a href="#" class="text-info"> Shared Resources </a>
+                        </li>
+                        <li class="breadcrumb-item active">
+                            Company Profile
+                        </li>
+                    </ol>
+                </div>
+            </div>
+        </div>
+
+    </div>
+<div class="row">
+    <div class="col-12">
+        <div class="card b">
+            <div class="card-header">
+                        <h4 class="card-title"> Company Profile </h4>
+                        <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                        <div class="heading-elements">
+                            <ul class="list-inline mb-0">
+                                <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                <li><a data-action="close"><i class="ft-x"></i></a></li>
+                            </ul>
+                        </div>
+                    </div>
+                   
+            <div class="card-content collapse show">
+
+<div class="card-body" id="app">
+
+<div class="content-i" id="app">
+<div class="content-box">
+<div class="element-wrapper">
+<h6 class="element-header"> Company Profile </h6>
+<div class="element-box">
+<div class="table-responsive" style="height:auto;width:auto;min-height:412px;">        
+<ul class="nav nav-tabs" id="myTab-three" role="tablist">
+    <li class="nav-item">
+        <a class="nav-link text-info active" id="home-tab-three" data-toggle="tab" href="#home-three" role="tab" aria-controls="home" aria-selected="true">Company Profile</a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link text-info" id="profile-tab-three" data-toggle="tab" href="#profile-three" role="tab" aria-controls="profile" aria-selected="false">Add VAT & Tax Levies</a>
+    </li>
+</ul>
+<!-- Basic Tables start -->
+<div class="tab-content" id="myTabContent-4">
+    <div class="tab-pane fade show active" id="home-three" role="tabpanel" aria-labelledby="home-tab-three">
+
+        <form>
+            <fieldset class="form-group mt-4">
+                <legend ><span> Basic Info </span></legend>
+                <hr/>
+                <div class="row">
+                   
+                        <div class="col-md-3 text-center mb-2">
+                        <div class="position-relative d-inline-block">
+                          
+                            <img v-if="companyLogoBase64"
+                                 :src="companyLogoBase64"
+                                 alt="Company Logo"
+                                 class="rounded-circle shadow-sm border border-info"
+                                 style="width: 200px; height: 200px; object-fit: contain;">
+                            
+                            <img v-else
+                                 src="https://res.cloudinary.com/dusydqiob/image/upload/v1755769638/erp-reports/ap/profile_biwocv.jpg"
+                                 alt="Default Profile"
+                                 class="rounded-circle shadow-sm border border-info"
+                                 style="width: 200px; height: 200px; object-fit: cover;">
+
+                         
+                            <button v-if="companyLogoBase64"
+                                    @@click="removeLogo"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#f87272; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-times text-white"></i>
+                            </button>
+                            <button v-else
+                                    @@click="showUpload"
+                                    type="button"
+                                    class="btn btn-sm  p-1 position-absolute bottom-0 end-0 rounded-circle"
+                                    style="background-color:#138fdc; transform: translate(25%, 25%); bottom: 10px; right: 25px; border: 6px solid white">
+                                <i class="la la-plus text-white"></i>
+                            </button>
+
+                        </div>
+
+                        <!-- File input -->
+                        <div class="mt-3">
+                            <label class="form-label fw-bold">Upload Company Logo</label>
+                            <input type="file"
+                                   ref="fileInput"
+                                   class="form-control form-control-sm d-none"
+                                   @@change="onFileChange"
+                                   accept="image/*">
+                        </div>
+                    </div>
+                 
+
+                    <div class="col-sm-4">
+
+                        <div class="form-group">
+                            <label> <b> Company Name:</b> </label>
+                            <input type="text" class="form-control" v-model="companyName" ref="companyName" placeholder="Company Name">
+                            <small v-if="errors.companyName" style="color:red">
+                                {{ errors.companyName }}
+                            </small>
+                        </div>
+
+
+                        <div class="form-group">
+                            <label> <b> Country: </b> </label>
+                            <select class="form-control" v-model="countryId" ref="countryId">
+                                <option value=""> Select Country </option>
+                                <option :value="country.id" v-for="country in nationalityList">{{country.name}}</option>
+                            </select>
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b> City: </b> </label>
+                            <input type="text" class="form-control" v-model="cityName" placeholder="City or Location">
+
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b> Phone No: </b> </label>
+                            <input type="text" class="form-control" id="phoneNo" v-model="phoneNo" ref="phoneNo" placeholder="Phone No">
+                            <small v-if="errors.phoneNo" style="color:red">
+                                {{ errors.phoneNo }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+
+                            <label> <b> Default Currency: </b> </label>
+
+                            <select class="form-control mb-3" v-model="defaultCurrenyId" id="defaultCurrenyId">
+                                <option :value="currency.id" v-for="currency in currencyList"> {{currency.currencyName}} </option>
+                            </select>
+
+                        </div>
+
+                    </div>
+
+                    <div class="col-sm-4">
+
+                        <div class="form-group">
+                            <label> <b> Company TIN: </b> </label>
+                            <input type="text" class="form-control" v-model="companyTin" placeholder="Company Tin">
+
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b> Email: </b> </label>
+                            <input type="text" class="form-control" v-model="email" ref="email" placeholder="Email">
+                            <small v-if="errors.email" style="color:red">
+                                {{ errors.email }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b> Address: </b> </label>
+                            <input type="text" class="form-control" v-model="address" ref="address" placeholder="Address">
+                            <small v-if="errors.address" style="color:red">
+                                {{ errors.address }}
+                            </small>
+                        </div>
+
+                        <div class="form-group">
+
+                            <label> <b> First Month Of FiscalYear: </b> </label>
+
+                            <select class="form-control mb-3" id="firstMonthOfFiscalYear" v-model="firstMonthOfFiscalYear">
+                                <option value="1"> January </option>
+                                <option value="2"> February </option>
+                                <option value="3"> March </option>
+                                <option value="4"> April </option>
+                                <option value="5"> May </option>
+                                <option value="6"> June </option>
+                                <option value="7"> July </option>
+                                <option value="8"> August </option>
+                                <option value="9"> September </option>
+                                <option value="10"> October </option>
+                                <option value="11"> November </option>
+                                <option value="12"> December </option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </fieldset>
+
+            <fieldset class="form-group">
+                <legend><span> SSNIT </span></legend>
+                <hr/>
+                <div class="row">
+
+                    <div class="col">
+
+                        <div class="form-group">
+                            <label> <b> Employer Social Security No: </b> </label>
+                            <input type="text" class="form-control" v-model="employerSocialSecurityNo" placeholder="Employer Social Security No">
+
+                        </div>
+
+
+
+                    </div>
+                    <div class="col"></div>
+
+
+
+
+                </div>
+
+            </fieldset>
+
+            <fieldset class="form-group">
+                <legend><span> Email Settings </span></legend>
+                <hr/>
+                <div class="row">
+
+
+
+                    <div class="col">
+
+                        <div class="form-group">
+                            <label> <b>Mail Host Name: </b> </label>
+                            <input type="text" class="form-control" v-model="mailHostName" placeholder="Mail Host Name">
+
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b>Primary Email Address: </b> </label>
+                            <input type="text" class="form-control" v-model="primaryEmailAddress" placeholder="Primary Email Address">
+
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b>Mail Password: </b> </label>
+                            <input type="password" class="form-control" v-model="emailPassword" placeholder="********">
+
+                        </div>
+
+
+                    </div>
+
+                    <div class="col">
+
+                        <div class="form-group">
+                            <label> <b> Port Number: </b> </label>
+                            <input type="number" class="form-control" v-model="portNumber" placeholder="1234">
+
+                        </div>
+
+                        <div class="form-group">
+                            <label> <b> Is SSL Enabled: </b> </label>
+                            <select class="form-control mb-3" v-model="isSSLEnabled">
+                                <option value="false">No</option>
+                                <option value="true">Yes</option>
+                            </select>
+                        </div>
+
+                    </div>
+
+                </div>
+
+            </fieldset>
+            <fieldset class="form-group mt-4">
+                <legend><span> Apply</span></legend>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <!-- Approve Before Payment -->
+                            <div class="d-flex align-items-center gap-2">
+                                <input type="checkbox" id="approveBeforePayment" v-model="approveInvoiceBeforePayment"/>
+                                <label class="mb-0 mx-2" for="approveBeforePayment"><b>Approval Required (Before Payment)</b></label>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </fieldset>
+         <fieldset class="form-group mt-2">
+                <legend><span> Gl</span></legend>
+                <hr />
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            
+                            <div class="d-flex align-items-center gap-2 mb-2">
+                                <input type="checkbox" id="enforceOu" v-model="enforceOu" />
+                                <label class="mb-0 mx-2" for="enforceOu"><b>Enforce Ou</b></label>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </fieldset>
+       
+
+            <hr/>
+            <div class="row mb-4">
+
+                <div class="col-sm-3"></div>
+                <div class="col-sm-4"></div>
+                <div class="col-sm-4">
+
+                    <button type="button" :disabled="isLoading" v-on:click="saveProfile()" style="float: right" class="btn btn-success">
+                        Save Profile
+
+                        <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                    </button>
+
+                </div>
+
+            </div>
+
+        </form>
+
+    </div>
+
+
+
+    <div class="tab-pane fade mt-3" id="profile-three" role="tabpanel" aria-labelledby="profile-tab-three">
+        <fieldset class="form-group mt-3" id="app1">
+            <legend><span> Tax Levy Details </span></legend>
+            <hr/>
+            <div class="mt-3" id="dataTable"></div>
+        </fieldset>
+        
+        <fieldset class="form-group mt-3" id="app2">
+            <legend><span> Vat Details </span></legend>
+            <hr/>
+            <div class="mt-3" id="dataTable1"></div>
+        </fieldset>
+    </div>
+       
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+
+<script src="~/js/shared/vue3/company-profile.js" asp-append-version="true"></script>

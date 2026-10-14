@@ -1,0 +1,708 @@
+﻿@{
+    ViewBag.Title = "SMS";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+ <style>
+     .table td:first-child,
+     .table th:first-child {
+         position: sticky;
+         left: 0;
+         background: #fff;
+         z-index: 2;
+         color: #0a0af0;
+     }
+     .table th {
+         color: #353535;
+     }
+     .table td select{
+         color: #0a0af0;
+     }
+     .crud-header{
+         background-color: #2f65a5;
+     }
+     .sms-selection-info {
+         height: 38px;
+         border: 1px solid #e5e7eb;
+         border-radius: 7px;
+         background: #f8fafc;
+         padding: 0 13px;
+
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+
+         color: #64748b;
+         font-size: 12px;
+     }
+
+     .sms-selection-info strong {
+         color: #2563eb;
+         font-size: 14px;
+     }
+     
+     /* Status */
+
+     .sms-status {
+         display: inline-flex;
+         align-items: center;
+
+         padding: 5px 9px;
+
+         border-radius: 20px;
+
+         font-size: 10px;
+         font-weight: 600;
+     }
+
+     .sms-status.available {
+         background: #ecfdf5;
+         color: #059669;
+     }
+
+     .sms-status.unavailable {
+         background: #fffbeb;
+         color: #d97706;
+     }
+
+
+     /* Empty */
+
+     .empty-student-icon {
+         width: 45px;
+         height: 45px;
+
+         margin: 0 auto;
+
+         border-radius: 50%;
+
+         display: flex;
+         align-items: center;
+         justify-content: center;
+
+         background: #f1f5f9;
+         color: #94a3b8;
+
+         font-size: 20px;
+     }
+
+
+     /* Footer */
+
+     .student-table-footer {
+         min-height: 55px;
+         padding: 12px 15px;
+
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+
+         gap: 15px;
+
+         border-top: 1px solid #e5e7eb;
+         background: #ffffff;
+     }
+
+
+     /* Pagination */
+
+     .student-table-footer .page-link {
+         width: 30px;
+         height: 30px;
+
+         padding: 0;
+
+         display: flex;
+         align-items: center;
+         justify-content: center;
+
+         border-radius: 5px !important;
+
+         color: #64748b;
+         border-color: #e2e8f0;
+
+         font-size: 11px;
+     }
+
+     .student-table-footer .page-item.active .page-link {
+         background: #2f65a5;
+         border-color:#2f65a5;
+         color: #fff;
+     }
+
+
+     /* SMS */
+
+     .sms-message-box {
+         resize: vertical;
+
+         border-radius: 8px;
+         border-color: #dbe1e8;
+
+         font-size: 13px;
+         line-height: 1.6;
+
+         box-shadow: none;
+     }
+
+     .sms-message-box:focus {
+         border-color: #86b7fe;
+
+         box-shadow:
+             0 0 0 3px rgba(37, 99, 235, .08);
+     }
+        .pagination-dots {
+            border-color: transparent !important;
+            background: transparent !important;
+            color: #94a3b8 !important;
+            cursor: default !important;
+            pointer-events: none;
+        }
+     
+
+
+     /* Bottom action */
+
+     .sms-action-bar {
+         min-height: 55px;
+
+         padding: 13px 15px;
+
+         border: 1px solid #e5e7eb;
+         border-radius: 8px;
+
+         background: #f8fafc;
+
+         display: flex;
+         align-items: center;
+         justify-content: space-between;
+
+         gap: 15px;
+     }
+
+     .sms-action-bar .btn {
+         height: 38px;
+         border-radius: 7px;
+
+         font-size: 12px;
+         font-weight: 600;
+     }
+
+
+     /* Mobile */
+
+     @@media (max-width: 768px) {
+
+     .student-table-footer {
+         align-items: flex-start;
+         flex-direction: column;
+     }
+
+     .sms-action-bar {
+         align-items: stretch;
+         flex-direction: column;
+     }
+
+     .sms-action-bar .btn {
+         width: 100%;
+     }
+
+     }
+ </style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> SMS </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> SMS </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Send SMS
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Send SMS </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+                            <!-- Class + Search -->
+                            <div class="row">
+                                <!-- Class -->
+                                <div class="col-md-3">
+                                    <label class="form-label fw-semibold">
+                                        Class <span class="text-danger">*</span>
+                                    </label>
+                                    <searchable-dropdown :options="levelClassDropdown" v-model="classId" text-field="name" value-field="id" placeholder="Select Class..."> </searchable-dropdown>
+                                </div>
+                            </div>
+                            <!-- Student Table -->
+                            <div class="my-1">
+                                <div class="crud-header rounded rounded-lg d-flex justify-content-between align-items-center p-1 flex-wrap">
+                                                                
+                                    <div>
+                                        <input type="text"
+                                               class="form-control form-control-sm"
+                                               placeholder="Search..."
+                                               v-model="searchTerm"
+                                               style="width: 220px;">
+                                    </div>
+                                    <div class="text-white">
+                    
+                                        <span>
+                                            <i class="la la-users me-1"></i>
+                                            Selected
+                                        </span>
+                    
+                                        <strong>
+                                            {{ selectedStudents.length }}
+                                        </strong>
+                    
+                                    </div>
+                                </div>
+                    
+                                <div class="table-responsive">
+                                    
+                                    <table class="table table-hover align-middle mb-0 table-bordered">
+                                        
+                        <thead>
+                    
+                            <tr>
+                    
+                                <!-- Select All -->
+                                <th style="width: 50px;">
+                                        <input
+                                            type="checkbox"
+                                            id="selectAllStudents"
+                                            :checked="allCurrentPageSelected"
+                                            @@change="toggleSelectAll">
+                                </th>
+                                
+                                <!-- Registration Number -->
+                                <th
+                                    class="sortable-th"
+                                    @@click="sortTable('regNumber')">
+                                    <div class="table-header-content">
+                                        <span>
+                                            Student Reg. No.
+                                        </span>
+                                        <span class="sort-icon">
+                                            <i
+                                                v-if="sortColumn !== 'regNumber'"
+                                                class="la la-sort">
+                                            </i>
+                                            <i
+                                                v-else-if="sortDirection === 'asc'"
+                                                class="la la-sort-up active-sort">
+                                            </i>
+                                            <i
+                                                v-else
+                                                class="la la-sort-down active-sort">
+                                            </i>
+                                        </span>
+                                    </div>
+                                </th>
+                                
+                                <!-- Student Name -->
+                                <th
+                                    class="sortable-th"
+                                    @@click="sortTable('name')">
+                                    <div class="table-header-content">
+                                        <span>
+                                            Student Name
+                                        </span>
+                                        <span class="sort-icon">
+                                            <i
+                                                v-if="sortColumn !== 'name'"
+                                                class="la la-sort">
+                                            </i>
+                                            <i
+                                                v-else-if="sortDirection === 'asc'"
+                                                class="la la-sort-up active-sort">
+                                            </i>
+                                            <i
+                                                v-else
+                                                class="la la-sort-down active-sort">
+                                            </i>
+                                        </span>
+                                    </div>
+                                </th>
+                                <!-- Phone Number -->
+                                <th
+                                    class="sortable-th"
+                                    @@click="sortTable('phoneNumber')">
+                                    <div class="table-header-content">
+                                        <span>
+                                           Phone Number
+                                        </span>
+                                        <span class="sort-icon">
+                                            <i
+                                                v-if="sortColumn !== 'phoneNumber'"
+                                                class="la la-sort">
+                                            </i>
+                                            <i
+                                                v-else-if="sortDirection === 'asc'"
+                                                class="la la-sort-up active-sort">
+                                            </i>
+                                            <i
+                                                v-else
+                                                class="la la-sort-down active-sort">
+                                            </i>
+                                        </span>
+                                    </div>
+                                </th>
+                    
+                    
+                                <!-- Status -->
+                                <th
+                                    class="sortable-th text-center"
+                                    @@click="sortTable('status')">
+                    
+                                    <div class="table-header-content justify-content-center">
+                    
+                                        <span>
+                                            Status
+                                        </span>
+                    
+                                        <span class="sort-icon">
+                    
+                                            <i
+                                                v-if="sortColumn !== 'status'"
+                                                class="la la-sort">
+                                            </i>
+                    
+                                            <i
+                                                v-else-if="sortDirection === 'asc'"
+                                                class="la la-sort-up active-sort">
+                                            </i>
+                    
+                                            <i
+                                                v-else
+                                                class="la la-sort-down active-sort">
+                                            </i>
+                    
+                                        </span>
+                    
+                                    </div>
+                    
+                                </th>
+                    
+                            </tr>
+                    
+                        </thead>
+                    
+                    
+                    
+                    
+                                        <tbody>
+                    
+                                            <!-- Loading -->
+                                            <tr v-if="isLoading">
+                    
+                                                <td colspan="5" class="text-center py-5">
+                    
+                                                    <div class="spinner-border spinner-border-sm text-primary me-2"></div>
+                    
+                                                    Loading students...
+                    
+                                                </td>
+                    
+                                            </tr>
+                    
+                    
+                                            <!-- Students -->
+                                            <tr
+                                                v-for="student in paginatedStudents"
+                                                :key="student.id"
+                                                v-else
+                                                :class="{
+                                                    'selected-student-row':
+                                                        isStudentSelected(student.id)
+                                                }">
+                    
+                                                <!-- Checkbox -->
+                                                <td>
+                    
+                                                    <div class="form-check mb-0">
+                    
+                                                        <input
+                                                            class="form-check-input"
+                                                            type="checkbox"
+                                                            :id="'student_' + student.id"
+                                                            :value="student.id"
+                                                            v-model="selectedStudents">
+                    
+                                                    </div>
+                    
+                                                </td>
+                    
+                    
+                                                <!-- Registration Number -->
+                                                <td>
+                    
+                                                    <span class="student-reg-number">
+                                                        {{ student.studentIdentifier }}
+                                                    </span>
+                    
+                                                </td>
+                    
+                    
+                                                <!-- Student -->
+                                                <td>
+                                                    {{ student.name }}
+                                                </td>
+                    
+                    
+                                                <!-- Phone -->
+                                                <td>
+                    
+                                                            {{ student.phoneNumber }}
+                                                      
+                                                  
+                                                </td>
+                    
+                    
+                                                <!-- Status -->
+                                                <td class="text-center">
+                    
+                                                    <span
+                                                        v-if="student.phoneNumber"
+                                                        class="sms-status available">
+                    
+                                                        <i class="la la-check-circle me-1"></i>
+                                                        Available
+                    
+                                                    </span>
+                    
+                                                    <span
+                                                        v-else
+                                                        class="sms-status unavailable">
+                    
+                                                        <i class="la la-warning me-1"></i>
+                                                        No Number
+                    
+                                                    </span>
+                    
+                                                </td>
+                    
+                                            </tr>
+                    
+                    
+                                            <!-- Empty -->
+                                            <tr
+                                                v-if="
+                                                    !isLoading &&
+                                                    paginatedStudents.length === 0
+                                                ">
+                    
+                                                <td colspan="5" class="text-center py-5">
+                    
+                                                    <div class="empty-student-icon">
+                                                        <i class="la la-users"></i>
+                                                    </div>
+                    
+                                                    <h6 class="mt-3 mb-1">
+                                                        No students found
+                                                    </h6>
+                    
+                                                    <small class="text-muted">
+                                                        Select a class or change your search.
+                                                    </small>
+                    
+                                                </td>
+                    
+                                            </tr>
+                    
+                                        </tbody>
+                    
+                                    </table>
+                    
+                                </div>
+                                <!-- Table Footer -->
+                                <div
+                                    v-if="filteredStudents.length"
+                                    class="student-table-footer">
+                    
+                                    <div class="text-muted small">
+                    
+                                        Showing
+                                        <strong>{{ paginationStart }}</strong>
+                                        -
+                                        <strong>{{ paginationEnd }}</strong>
+                                        of
+                                        <strong>{{ filteredStudents.length }}</strong>
+                                        students
+                    
+                                    </div>
+                    
+                    
+                                    <!-- Pagination -->
+                                    <nav aria-label="Student pagination">
+                    
+                                        <ul class="pagination pagination-sm mb-0">
+                    
+                                            <!-- Previous -->
+                                            <li
+                                                class="page-item"
+                                                :class="{ disabled: currentPage === 1 }">
+                                                <button
+                                                    class="page-link"
+                                                    @@click="changePage(currentPage - 1)"
+                                                    :disabled="currentPage === 1">
+                                                    <i class="la la-angle-left"></i>
+                                                </button>
+                    
+                                            </li>
+                    
+                    
+                                            <!-- Page numbers -->
+                                            <template v-for="(page, index) in paginationPages" :key="index">
+                                                <!-- Ellipsis -->
+                                                <li v-if="page === '...'" class="page-item disabled">
+                                                    <span class="page-link pagination-dots">
+                                                        ...
+                                                    </span>
+                                                </li>
+                    
+                    
+                                                <!-- Page -->
+                                                <li v-else class="page-item" :class="{ active: currentPage === page }">
+                                                    <button
+                                                        type="button"
+                                                        class="page-link"
+                                                        @@click="changePage(page)">
+                                                        {{ page }}
+                                                    </button>
+                                                </li>
+                                            </template>
+                    
+                    
+                                            <!-- Next -->
+                                            <li class="page-item" :class="{ disabled: currentPage === totalPages }">
+                                                <button
+                                                    class="page-link"
+                                                    @@click="changePage(currentPage + 1)"
+                                                    :disabled="currentPage === totalPages">
+                                                    <i class="la la-angle-right"></i>
+                                                </button>
+                                            </li>
+                    
+                                        </ul>
+                    
+                                    </nav>
+                                   
+                    
+                    
+                                </div>
+                    
+                            </div>
+                    
+                    
+                            <!-- SMS Message -->
+                            <div class="mt-1">
+                    
+                                <label class="form-label fw-semibold">
+                                    SMS Message <span class="text-danger">*</span>
+                                </label>
+                    
+                                <textarea
+                                    class="form-control sms-message-box"
+                                    rows="4"
+                                    maxlength="500"
+                                    v-model="smsMessage"
+                                    placeholder="Type your message to the selected parents...">
+                                </textarea>
+                    
+                                <div class="d-flex justify-content-between mt-2">
+                    
+                                    <small class="text-muted">
+                                        <i class="la la-info-circle me-1"></i>
+                                        Message will be sent to the selected parents.
+                                    </small>
+                    
+                                    <small class="text-muted">
+                                        {{ smsMessage.length }} / 500
+                                    </small>
+                    
+                                </div>
+                    
+                            </div>
+                    
+                    
+                            <!-- Bottom Action -->
+                            <div class="sms-action-bar mt-1">
+                    
+                                <div>
+                    
+                                    <span class="text-muted small">
+                                        <i class="la la-users me-1"></i>
+                    
+                                        <strong>
+                                            {{ selectedStudents.length }}
+                                        </strong>
+                    
+                                        student<span v-if="selectedStudents.length !== 1">s</span>
+                                        selected
+                                    </span>
+                    
+                                </div>
+                    
+                    
+                                <button
+                                    type="button"
+                                    class="btn btn-primary px-4"
+                                    :disabled="
+                                        selectedStudents.length === 0 ||
+                                        !smsMessage.trim() ||
+                                        isLoading
+                                    "
+                                    @@click="sendSms">
+                    
+                                    <i class="la la-paper-plane me-2"></i>
+                    
+                                    Send SMS
+                    
+                                </button>
+                    
+                            </div>
+        
+        
+        
+        
+                            </div>
+                            
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<script src="~/js/school-manager/sms/send-sms-class.js" asp-append-version="true"></script>

@@ -1,0 +1,213 @@
+﻿@{
+    ViewBag.Title = "Customers";
+    Layout = "~/Views/Shared/Layout/_adminPayrollLayout.cshtml";
+}
+
+
+<ul class="breadcrumb">
+    <li class="breadcrumb-item"><a href="#">Shared Resource</a></li>
+    <li class="breadcrumb-item"><a href="@Url.Action("Customers","PayrollSharedResource")"> Customers </a></li>
+</ul>
+
+<div class="content-i" id="app">
+    <div class="content-box">
+        <div class="element-wrapper">
+            <h6 class="element-header"> Customers </h6>
+            <div class="element-box">
+                <div class="table-responsive" style="height:auto;width:auto;min-height:412px;">
+
+                    <ul class="nav nav-tabs" id="myTab-three" role="tablist">
+                        <li class="nav-item">
+                            <a class="nav-link active" id="home-tab-three" data-toggle="tab" href="#home-three" role="tab" aria-controls="home" aria-selected="true"> Customer List</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" id="profile-tab-three" data-toggle="tab" href="#profile-three" role="tab" aria-controls="profile" aria-selected="false"> Add New Customer </a>
+                        </li>
+
+                    </ul>
+                    <div class="tab-content" id="myTabContent-4">
+                        <div class="tab-pane fade show active" id="home-three" role="tabpanel" aria-labelledby="home-tab-three">
+
+                            <div class="mt-3" id="dataTable"></div>
+
+                        </div>
+                        <div class="mt-3 tab-pane fade" id="profile-three" role="tabpanel" aria-labelledby="profile-tab-three">
+                          
+                            <div class="row">
+
+                                <div class="col-sm-2">
+
+                                    <div class="form-group">
+                                        <label> <strong> Search: </strong>  </label>
+
+                                    </div>
+                                </div>
+
+                                <div class="col-sm-3">
+
+                                    <div class="form-group">
+
+                                        <label> <strong> Customer Group: </strong>  </label>
+
+                                        <select class="form-control" v-model="selectedCustomerGroupId" type="text">
+                                            <option value=""> Select Customer Group </option>
+                                            <option :value="customerGroup.id" v-for="customerGroup in customerGroupList"> {{customerGroup.name}} </option>
+
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-sm-4">
+
+                                    <div class="form-group">
+                                        <label> <strong> Customer: </strong> </label>
+
+                                        <select class="form-control" v-model="selectedCustomerId" v-on:change="getCustomerDetails()">
+                                            <option value=""> Select Customers </option>
+                                            <option :value="customer.id" v-for="customer in customerList"> {{customer.name}} ({{customer.accountNumber}}) </option>
+
+                                        </select>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr />
+
+                            <div class="row">
+
+                                <div class="col-sm-2">
+                                </div>
+
+                                <div class="col-sm-4">
+
+                                    <div class="form-group">
+                                        <label> <strong> Account Number: </strong> </label>
+                                        <input type="text" class="form-control" v-model="accountNumber" placeholder="Account Number">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Customer Group: </strong>  </label>
+                                        <select class="form-control" v-model="customerGroupId" type="text">
+                                            <option value=""> Select Customer Group </option>
+                                            <option :value="customerGroup.id" v-for="customerGroup in customerGroupList"> {{customerGroup.name}} </option>
+
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Status: </strong>  </label>
+                                        <input v-model="status" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Address: </strong>  </label>
+                                        <input v-model="address" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Balance: </strong>  </label>
+                                        <input v-model="balance" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> VAT G/L No:  </strong>  </label>
+                                        <select class="form-control mb-3" v-model="vatAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.name}} </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Credit G/L: </strong> </label>
+                                        <select class="form-control mb-3" v-model="creditAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.name}} </option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                                <div class="col-sm-4">
+
+                                    <div class="form-group">
+                                        <label> <strong> Customer Name: </strong>  </label>
+                                        <input type="text" class="form-control" name="name" placeholder="Customer Name">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Customer TIN No: </strong> </label>
+                                        <input type="text" class="form-control" v-model="tinNumber" placeholder="TIN No">
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Contact No: </strong>  </label>
+                                        <input v-model="phoneNo" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label> <strong> Email: </strong>  </label>
+                                        <input v-model="email" class="form-control" type="text" />
+
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>  <strong> Default Currency:  </strong>  </label>
+                                        <select class="form-control mb-3" v-model="currencyId">
+                                            <option :value="currency.id" v-for="currency in currencyList">{{currency.currencyName}} </option>
+                                        </select>
+                                    </div>
+
+                                    <div class="form-group">
+                                        <label>  <strong> Credit Limit: </strong>  </label>
+                                        <input class="form-control" v-model="creditLimit" type="number" />
+
+                                    </div>
+
+
+                                    <div class="form-group">
+                                        <label> <strong> IRS G/L No: </strong>  </label>
+                                        <select class="form-control mb-3" v-model="irsAccountId">
+                                            <option :value="account.id" v-for="account in accountList">{{account.name}} </option>
+                                        </select>
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            <hr />
+
+                            <div class="row">
+                                <div class="col-sm-2"></div>
+                                <div class="col-sm-8">
+
+                                    <button type="button" v-on:click="saveCustomer()" style="float: right" class="btn btn-primary">
+                                        Save
+                                        <i class="fa fa-spinner fa-spin" v-if="isLoading"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<script src="~/js/shared/customers.js" asp-append-version="true"></script>

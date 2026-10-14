@@ -1,0 +1,95 @@
+@{
+ViewBag.Title = "Opening Balance";
+Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Opening Balance</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Reports</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Opening Balance
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Opening Balance</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div  class="card-body" id="app">
+                                <div class="form-check mt-2">
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           id="chkAllReceipts"
+                                           v-model="showDetails">
+
+                                    <label class="form-check-label" for="chkAllReceipts">
+                                        Details
+                                    </label>
+                                </div>
+                                <div>
+                                      <div  class="row my-1">
+                                    <div class="col-sm-3">
+                                        <div class="form-group">
+                                            <label>Class:</label>
+                                            <searchable-dropdown :options="levelClasses" v-model="classId" text-field="name" value-field="id" placeholder="Select Class..."> </searchable-dropdown>
+                                        </div>
+                                    </div>
+                                    <div class="col-sm-3"  v-if="showDetails">
+                                        <div class="form-group">
+                                            <label> Student:</label>
+                                            <searchable-dropdown :options="studentList" v-model="studentId" text-field="displayText" value-field="id" placeholder="Select Student..."> </searchable-dropdown>
+                                        </div>
+                                    </div>
+                                    <div class="my-2 float-right col-md-2">
+                                        <button class="btn btn-primary"
+                                                :disabled="isLoading"
+                                                @@click="searchReport">
+                                            <i class="la la-search"></i> Search
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                                    <div id="reportView" style="height:auto;width:auto;min-height:500px;">
+                                    </div>
+                                </div>
+                              
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/reports/bills-n-payments/opening-balances.js" asp-append-version="true"></script>

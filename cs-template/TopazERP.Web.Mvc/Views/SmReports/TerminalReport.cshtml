@@ -1,0 +1,141 @@
+﻿ @{
+    ViewBag.Title = "Terminal Report";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+ }
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Terminal Report</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/SchoolManager/" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#">Report</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Terminal Report
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Terminal Report</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                              
+                                <div class="row">
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Academic Year:</strong> </label>
+                                        <input id="academicYearId"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Term:</strong> </label>
+                                        <input id="termId"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Class:</strong> </label>
+                                        <input id="classId"/>
+                                    </div>
+
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <label><strong>Student:</strong> </label>
+                                        <input id="studentId"/>
+                                    </div>
+                                    <div class="col-md-3 e-bootstrap mb-1">
+                                        <button class="btn btn-sm btn-primary" @@click="printReport()">
+                                            <i class="ft-search"></i>
+                                            Search
+                                        </button>
+                                    </div>
+
+                                </div>
+                                <div class="row">
+                                   
+                                    <div class="col mb-1">
+                                        <label><strong>Report Types:</strong></label><br>
+                                        <input type="radio" name="reportType" id="reportType1"
+                                               v-model="reportType"
+                                               @@change="toggleReportType"
+                                               value="1"
+                                               class="ml-2">Type 1
+                                        
+                                        <input type="radio" name="reportType" id="reportType2"
+                                               v-model="reportType"
+                                               @@change="toggleReportType"
+                                               value="2"
+                                               class="ml-2">Type 2
+                                        
+                                        <input type="radio" name="reportType" id="reportType3"
+                                               v-model="reportType"
+                                               @@change="toggleReportType"
+                                               value="3"
+                                               class="ml-2">Type 3
+                                        
+                                        <input type="radio" name="reportType" id="reportType4"
+                                               v-model="reportType"
+                                               @@change="toggleReportType"
+                                               value="4"
+                                               class="ml-2">Type 4
+                                        
+                                        <input type="radio" name="reportType" id="reportType5"
+                                               v-model="reportType"
+                                               @@change="toggleReportType"
+                                               value="5"
+                                               class="ml-2"> With Analysis
+                                    </div>
+                                </div>
+                                
+                                <hr/>
+                              
+                                @*<div v-if="reportType != '5'" style="height:auto;width:auto;min-height:500px;" id="reportView"> </div>*@
+                                <div>
+                                    @*<div v-if="reportType != '5'" style="height:auto;width:auto;min-height:500px;" id="reportView"> </div>*@
+                                    <report-viewer
+                                        v-if="reportType != '5'"
+                                        ref="reportViewer"
+                                        :template="viewerPath"
+                                        :data="reportData"
+                                    ></report-viewer>
+                                    <div v-else id="reportContainer" style="width: 100%; height: 800px; border: 1px solid #ccc;
+                                    border-radius: 10px;
+                                    overflow: hidden;">
+                                        <iframe v-if="pdfUrl" :src="pdfUrl" width="100%" height="100%"
+                                                style=" border: none; border-radius: 10px;"></iframe>
+                                    </div>
+                                </div>
+                               
+                              
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/school-manager/reports/results/terminal-report.js" asp-append-version="true"></script>

@@ -1,0 +1,113 @@
+@{
+    ViewBag.Title = "Journal Entry";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Journal Entry </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">General Ledger</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Journal Entry
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">  Journal Entry </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            
+                            <div class="card-body" id="app">
+
+                                <div class="row">
+
+                                    <div class="col-sm-1"> </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group">
+                                            <label> <strong> Batch No#: </strong> </label>
+                                            <input type="text" class="form-control" placeholder="1234" v-model="batchNumber">
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group">
+                                            <label> <strong> Batch Date: </strong> </label>
+                                            <input type="text" class="form-control" name="BatchDate" id="batchDate" ref="batchDate" v-model="batchDate">
+                                            <span class="text-danger" v-if="!$v.batchDate.required && $v.batchDate.$dirty"> Batch date field is required </span>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-4"> 
+
+                                        <div class="form-group">
+                                            <label> <strong> OU (Cost Center): </strong> </label>
+                                            <input type="text" ref="ouId"  class="form-control" id="ouId" v-model="ouId">
+
+                                        </div>
+
+                                    </div>
+
+                                        <div class="col-sm-2 mt-1">
+
+                                            <button type="button" v-on:click="saveJournal()" :disabled="isLoading" class="btn btn-primary mt-1">
+                                                Save
+
+                                                <div class="spinner-border" v-if="isLoading" role="status" aria-hidden="true" style="width: 20px; height: 20px"></div>
+                                            </button>
+
+                                        </div>
+                                </div>
+
+                                <hr/>
+                                <div id="dataTable"></div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/gl/data-entry/journal.js" asp-append-version="true"></script>

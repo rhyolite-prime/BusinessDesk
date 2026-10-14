@@ -1,0 +1,71 @@
+﻿@{
+ViewBag.Title = "change Invoice Status";
+Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Change Invoice Status</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="../Dashboard/Ar" class="text-info"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-info" href="#"> Ap Data Entry </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                              Change Invoice Status
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+           
+            <!-- Modal -->
+            <div class="modal fade" id="changeStatusModal" tabindex="-1" role="dialog" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                        <div class="modal-header bg-info text-white">
+                            <h5 class="modal-title text-white" id="changeStatusModalLabel">Change Invoice Status</h5>
+                        </div>
+                        <div class="modal-body">
+                            <form id="statusForm">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="invoiceAction" id="editPosted" value="edit" checked>
+                                    <label class="form-check-label" for="editPosted">
+                                        Edit Posted Invoice
+                                    </label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="invoiceAction" id="cancelPosted" value="cancel">
+                                    <label class="form-check-label" for="cancelPosted">
+                                        Cancel Posted Invoice
+                                    </label>
+                                </div>
+                            </form>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+                            <button id="proceedBtn" type="button" class="btn btn-primary">Proceed</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script src="~/js/ar/data-entry/changeInvoiceStatus.js" asp-append-version="true"></script>
+
+
+

@@ -1,0 +1,156 @@
+@{
+    ViewBag.Title = "Email Invoices";
+    Layout = "~/Views/Shared/Layout/_adminArLayout.cshtml";
+}
+<style>
+ 
+    .b {
+        border-radius: 15px;
+        border: 0.5px solid #e3e3e3;
+    }
+
+        /* Overlay covers the whole page */
+    .loader-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5); /* dark semi-transparent background */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999; /* make sure it stays on top */
+    }
+
+    /* Card container */
+    .loader-card {
+        background: #fff;
+        padding: 30px 40px;
+        border-radius: 12px;
+        box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        max-width: 320px;
+    }
+
+    /* Loader */
+    .dot-loader {
+        display: inline-block;
+        width: 60px;
+        text-align: center;
+        margin-bottom: 15px;
+    }
+    .dot-loader span {
+        display: inline-block;
+        width: 10px;
+        height: 10px;
+        margin: 3px;
+        background: #f7ff00;
+        border-radius: 50%;
+        animation: bounce 1.4s infinite ease-in-out both;
+    }
+    .dot-loader span:nth-child(1) { animation-delay: -0.32s; }
+    .dot-loader span:nth-child(2) { animation-delay: -0.16s; }
+
+    @@keyframes bounce {
+        0%, 80%, 100% { transform: scale(0); }
+        40% { transform: scale(1.0); }
+    }
+
+    /* Text */
+    .loader-text {
+        font-size: 14px;
+        color: #333;
+    }
+</style>
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Email Invoices </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#"> Email </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Email Invoices
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+          <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card b">
+                        <div class="card-header">
+                            <h4 class="card-title"> Email Invoices </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <div class="row">
+                                    <div class="col-sm-3">
+                                        <div class="form-group">
+                                            <label> <strong>Customer:</strong> </label>
+                                            <input id="customerId" v-model="customerId" type="text" class="form-control" />
+                                                    
+                                        </div>
+                                    </div>
+                                    <div v-if="isLoading" class="loader-overlay">
+                                        <div class="loader-card text-center">
+                                            <div class="dot-loader">
+                                                <span></span><span></span><span></span>
+                                            </div>
+                                            <span class="loader-text">Email is being sent, please wait...</span>
+                                        </div>
+                                    </div>
+
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group mt-1">
+
+                                            <button type="button" :disabled="isLoading" class="btn btn-amber mt-1" v-on:click="dispatchInvoice()">
+
+                                                Email Invoices
+                                                <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                            </button>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                                <div class="mt-2 mb-2" id="dataTable"></div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/ar/email/emailInvoice.js" asp-append-version="true"></script>

@@ -1,0 +1,164 @@
+﻿@{
+    ViewBag.Title = "Increase By Grade & Notch";
+    Layout = "~/Views/Shared/Layout/_adminPayrollLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Increase By Grade & Notch </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">Payroll Data Entry </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Increase By Grade & Notch
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Increase By Grade & Notch  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+                                <div class="row">
+
+                                    <div class="col-sm-1"> </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group">
+                                            <label> <strong> Salary Grade: </strong>  </label>
+
+                                            <select class="form-control mb-3" v-model="salaryGradeId" ref="salaryGradeId">
+                                                <option value=""> Select Salary Grade </option>
+                                                <option :value="salaryGrade.id" v-for="salaryGrade in salaryGradeList">{{salaryGrade.name}}</option>
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group">
+                                            <label> <strong> Salary Notch: </strong>  </label>
+
+                                            <select class="form-control mb-3" v-model="salaryNotchId" ref="salaryNotchId">
+                                                <option value=""> Select Salary Notch </option>
+                                                <option :value="salaryNotch.id" v-for="salaryNotch in salaryNotchList"> {{salaryNotch.notch}} </option>
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group">
+                                            <label> <strong> Salary Type: </strong>  </label>
+
+                                            <select class="form-control" v-model="salaryType" ref="salaryType">
+                                                <option> Salaried </option>
+                                                <option> Hourly </option>
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-md-2">
+
+                                        <label for="emailAddress3"><b>&nbsp;</b></label>
+                                        <div class="form-group text-center" style="border: 1px solid #cacfe7; border-radius: 10px; padding: 0.75rem 1rem; justify-content: center">
+                                            <div class="radio" style="width: 150px; display: inline-block;">
+                                                <label><input type="radio" v-model="isFixedAmount" name="IsFixedAmount" value="1"> &nbsp;&nbsp; <b> Fixed Amount ? </b></label>
+                                            </div>
+                                            <div class="radio" style="width: 150px; display: inline-block;">
+                                                <label><input type="radio" v-model="isFixedAmount" name="IsFixedAmount" value="0"> &nbsp;&nbsp; <b> % of Basic ? </b></label>
+                                            </div>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-2">
+
+                                        <div class="form-group" v-if="isFixedAmount === '1'">
+                                            <label> <strong> Amount: </strong>  </label>
+                                            <input type="number" class="form-control" v-model="amount" placeholder="0">
+
+                                        </div>
+
+                                        <div class="form-group" v-if="isFixedAmount === '0'">
+                                            <label> <strong> Percentage: </strong>  </label>
+                                            <input type="number" class="form-control" v-model="percentage" placeholder="0">
+
+                                        </div>
+
+                                    </div>
+
+
+
+                                </div>
+                                <hr />
+                                <div class="row">
+
+                                    <div class="col-md-4">
+                                    </div>
+                                    <div class="col-md-2">
+
+                                        <button type="button" class="alignright btn btn-primary" v-on:click="setIncrement()"> Set Increment  </button>
+
+                                    </div>
+                                    <div class="col-md-2">
+                                        <button type="button" :disabled="isLoading" class="alignright btn btn-primary" v-on:click="applyIncrement()">
+                                            Post
+
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+                                        </button>
+
+                                    </div>
+
+                                </div>
+                                <hr />
+                                <div id="dataTable"></div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+
+<script src="~/js/payroll/salary-increase/increase-by-notch.js" asp-append-version="true"></script>

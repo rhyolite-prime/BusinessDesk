@@ -1,0 +1,187 @@
+ @{
+    ViewBag.Title = "Excursions";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title">Excursions</h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="@Url.Action("SchoolManager", "Dashboard")" class="text-primary"><i class="la la-home"></i> Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a class="text-primary" href="#">Data Entry</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Excursions
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Excursions</h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show" id="app">
+                            <div class="card-body">
+                                <button class="btn btn-sm btn-outline-light my-1" @@click="printPreview(form)" v-show="isEditMode">
+                                    <i class="la la-print"></i> Print
+                                </button>
+                                <ul class="nav nav-tabs mb-2">
+                                    <li class="nav-item">
+                                        <a class="nav-link"
+                                           :class="{ active: activeTab === 'main' }"
+                                           @@click="activeTab = 'main'">
+                                            Main Info
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a class="nav-link"
+                                           :class="{ active: activeTab === 'participants' }"
+                                           @@click="activeTab = 'participants'">
+                                            Participants
+                                        </a>
+                                    </li>
+
+                                    <li class="nav-item">
+                                        <a class="nav-link"
+                                           :class="{ active: activeTab === 'officials' }"
+                                           @@click="activeTab = 'officials'">
+                                            Officials
+                                        </a>
+                                    </li>
+                                </ul>
+
+
+                                <div v-show="activeTab === 'main'">
+                                    <div class="row mb-2">
+                                        <div class="col-md-3">
+                                            <label>Departure Date:</label>
+                                            <input type="date" v-model="form.departureDate" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Departure Time:</label>
+                                            <input type="time" v-model="form.departureTime" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Point:</label>
+                                            <input type="text" v-model="form.point" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Destination:</label>
+                                            <input type="text" v-model="form.destination" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Return Date:</label>
+                                            <input type="date" v-model="form.returnDate" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3">
+                                            <label>Return Time:</label>
+                                            <input type="time" v-model="form.returnTime" class="form-control">
+                                        </div>
+
+                                        <div class="col-md-3 e-bootstrap">
+                                            <label>Academic Year:</label>
+                                            <input id="academicYearId"/>
+                                        </div>
+
+                                        <div class="col-md-3 e-bootstrap">
+                                            <label>Term:</label>
+                                            <input id="termId"/>
+                                        </div>
+
+                                        <div class="col-md-3 e-bootstrap">
+                                            <label>Class:</label>
+                                            <input id="classId"/>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="e-bootstrap my-1" v-show="activeTab === 'participants'">
+                                    <div id="studentsDataTable"></div>
+                                </div>
+                                <div class="e-bootstrap my-1" v-show="activeTab === 'officials'">
+                                    <div id="teachersDataTable"></div>
+                                </div>
+
+
+                                <div class="float-right mb-2">
+                                    <button class="btn btn-primary" @@click="saveExcursion">
+                                        <i class="la la-save"></i>
+                                        {{ isEditMode ? 'Update' : 'Save' }}
+                                    </button>
+                                </div>
+                                <div id="excursionTable">
+                                    <table class="table table-bordered table-responsive">
+                                        <thead>
+                                        <tr>
+                                            <th style="width: 5%">#</th>
+                                            <th style="width: 19%">Destination</th>
+                                            <th style="width: 19%">Point</th>
+                                            <th style="width: 16%">Departure</th>
+                                            <th style="width: 16%">Return</th>
+                                            <th style="width: 15%">Class</th>
+                                            <th style="width: 10%">Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="(exc, index) in excursions" :key="exc.id">
+                                            <td>{{ index + 1 }}</td>
+                                            <td>{{ exc.destination }}</td>
+                                            <td>{{ exc.point }}</td>
+                                            <td>{{ exc.departureDate }} {{ exc.departureTime }}</td>
+                                            <td>{{ exc.returnDate }} {{ exc.returnTime }}</td>
+                                            <td>{{ exc.className }}</td>
+                                            <td>
+                                                <a class="text-sm text-primary" @@click="editExcursion(exc)"><i class="la la-edit"></i></a>
+                                                <a class="text-sm text-danger" @@click="deleteExcursion(exc.id)"><i class="la la-trash"></i></a>
+                                                <a class="text-sm text-secondary" @@click="printPreview(exc)"> <i class="la la-print"></i></a>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                            
+
+                           
+                           
+
+                        </div>
+            </div>
+          </div>
+                </div>
+            </div>
+        </div>
+    </div>
+ 
+
+
+
+<script src="~/js/school-manager/data-entry/excursions.js" asp-append-version="true"></script>

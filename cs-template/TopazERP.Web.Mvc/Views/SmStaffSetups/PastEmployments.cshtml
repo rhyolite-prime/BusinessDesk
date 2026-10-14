@@ -1,0 +1,107 @@
+﻿@{
+    ViewBag.Title = "Add Past Employment";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+    var staffId = ViewBag.StaffId;
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-body" id="app">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Staff Past Employment - {{staffName}}</h4>
+                        </div>
+
+                        <div class="card-content collapse show">
+                            <div class="card-body" >
+                                <div class="mb-2 ">
+                                    <a :href="'/SmStaffSetups/UpdateStaff?id=' + form.staffId" class="text-primary text-xl">
+                                        <i class="las la-arrow-alt-circle-left"></i> Go Back
+                                    </a>
+                                    <a :href="'/SmStaffSetups/Qualification?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Qualification
+                                    </a>
+                                    <a :href="'/SmStaffSetups/Relations?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Relations
+                                    </a>
+                                    <a :href="'/SmStaffSetups/PastPositions?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Past Position
+                                    </a>
+                                </div>
+                                <div class="table-responsive">
+                                    <table class="table-responsive table table-striped table-bordered table-hover">
+                                        <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 450px;">Company</th>
+                                            <th style="width: 250px;">Start Date</th>
+                                            <th style="width: 250px;">End Date</th>
+                                            <th style="width: 450px;">Reason</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="employment in employments" :key="employment.id">
+                                            <td>{{ employment.companyName }}</td>
+                                            <td>{{ formatDate(employment.startDate) }}</td>
+                                            <td>{{ formatDate(employment.endDate) }}</td>
+                                            <td>{{ employment.reason }}</td>
+                                            <td>
+                                                <a class="text-primary me-1" @@click="editEmployment(employment)">
+                                                    <i class="la la-edit"></i>
+                                                </a>
+                                                <a class="text-danger" @@click="deleteEmployment(employment.id)">
+                                                    <i class="la la-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+
+                                <form class="mb-5">
+                                    <input type="hidden" v-model="form.staffId"/>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-4 my-1">
+                                            <label for="companyName" class="form-label">Company Name</label>
+                                            <input type="text" v-model="form.companyName" id="companyName" class="form-control"/>
+                                        </div>
+
+                                        <div class="col-md-4 my-1">
+                                            <label for="startDate" class="form-label">Start Date</label>
+                                            <input type="date" v-model="form.startDate" id="startDate" class="form-control"/>
+                                        </div>
+
+                                        <div class="col-md-4 my-1">
+                                            <label for="endDate" class="form-label">End Date</label>
+                                            <input type="date" v-model="form.endDate" id="endDate" class="form-control"/>
+                                        </div>
+
+                                        <div class="col-md-12 my-1">
+                                            <label for="reason" class="form-label">Reason for Leaving</label>
+                                            <input type="text" v-model="form.reason" id="reason" class="form-control"/>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-1 float-right">
+                                        <button type="button" @@click="saveEmployment" class="btn btn-success">Save</button>
+                                        <a href="/SmStaffSetUps/StaffBio" class="btn btn-secondary">Cancel</a>
+                                    </div>
+                                </form>
+
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.staffId = @Html.Raw(Json.Serialize(ViewBag.StaffId ?? ""));
+</script>
+
+<script src="~/js/school-manager/staff/pastemployments.js" asp-append-version="true"></script>

@@ -1,0 +1,195 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewBag.Title = "Petty Cash Data Entry";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Petty Cash Transactions </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="#">Home</a></li>
+                            <li class="breadcrumb-item"><a href="#">General Ledger</a></li>
+                            <li class="breadcrumb-item active">Petty Cash</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="content-body">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Petty Cash Transactions </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+                                <div class="row" id="main-content">
+                                    <div class="col-sm-12">
+                                        <form id="pettyCashForm">
+                                            <div class="row pt-2 pb-2 mb-2 rounded">
+                                                <div class="col-sm-2">
+                                                    <div class="form-group">
+                                                        <label><strong>Batch Date:</strong></label>
+                                                        <input type="date" class="form-control" v-model="batchDate" />
+                                                        <span class="text-danger" v-if="!$v.batchDate.required && $v.batchDate.$dirty">Batch date is required</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <div class="form-group">
+                                                        <label><strong>Batch #:</strong></label>
+                                                        <input type="text" class="form-control" v-model="batchNo" placeholder="Batch No#" />
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <div class="form-group">
+                                                        <label><strong>Source Doc. No:</strong></label>
+                                                        <input type="text" class="form-control" v-model="sourceDocNo" placeholder="Source Doc No." />
+                                                    </div>
+                                                </div>
+                                                
+
+                                                <div class="col-sm-4">
+                                                    <div class="form-group">
+                                                        <label><strong>Petty Cash G/L:</strong></label>
+                                                        <select class="form-control" v-model="pettyCashAccountId">
+                                                            <option disabled value="">Select Account</option>
+                                                            <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                        </select>
+                                                        <span class="text-danger" v-if="!$v.pettyCashAccountId.required && $v.pettyCashAccountId.$dirty">Select a Petty Cash G/L</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-3">
+                                                    <div class="form-group">
+                                                        <label><strong>Batch Originator:</strong></label>
+                                                        <input type="text" class="form-control" v-model="batchOriginator" placeholder="Originator Name" />
+                                                    </div>
+                                                </div>
+
+                                                <div class="col-sm-2">
+                                                    <div class="form-group">
+                                                        <label><strong>Currency:</strong></label>
+                                                        <select class="form-control" v-model="currencyId">
+                                                            <option disabled value="">Select Currency</option>
+                                                            <option v-for="curr in currencyList" :value="curr.id">{{ curr.currencyName }}</option>
+                                                        </select>
+                                                        <span class="text-danger" v-if="!$v.currencyId.required && $v.currencyId.$dirty">Select a currency</span>
+                                                    </div>
+                                                </div>
+                                                <div class="col-sm-2">
+                                                    <div class="form-group">
+                                                        <label><strong>Rate:</strong></label>
+                                                        <input type="text" class="form-control" v-model="currencyRate" readonly placeholder="1.0000" />
+                                                    </div>
+                                                </div>
+                                                
+                                                <div class="col-sm-2 mt-1">
+
+                                                    <button type="button" v-on:click="savePettyCash()" :disabled="isLoading" class="btn btn-primary mt-1">
+                                                        Save
+                                                        <div class="spinner-border" v-if="isLoading" role="status" aria-hidden="true" style="width: 20px; height: 20px"></div>
+                                                    </button>
+
+                                                </div>  
+                                            </div>
+
+                                            <div class="row mb-1">
+                                                <div class="col-12 d-flex">
+                                                    <button type="button" class="btn btn-sm btn-success mx-1" @@click="addPettyCashRow()">
+                                                        <i class="fa fa-plus"></i> Add Row
+                                                    </button>
+                                                    <button type="button" v-if="transactionId && isRecordCreated" v-on:click="postPettyCash()" :disabled="isLoading" class="btn btn-sm btn-warning ml-auto">
+                                                        Post Petty Cash
+                                                    </button>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="row">
+                                                <div class="table-responsive col-12">
+                                                    <table class="table table-bordered table-sm table-striped">
+                                                        <thead class="bg-primary text-white">
+                                                            <tr>
+                                                                <th style="width: 12%;">Date</th>
+                                                                <th style="width: 10%;">Ref No.</th>
+                                                                <th style="width: 25%;">G/L Account</th>
+                                                                <th style="width: 20%;">Description</th>
+                                                                <th style="width: 10%;">Amount</th>
+                                                                <th style="width: 15%;">Organizational Unit</th>
+                                                                <th style="width: 13%;">Recipient</th>
+                                                                <th style="width: 5%;"></th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <tr v-for="(v, index) in pettyCashList" :key="v.id">
+                                                                <td>
+                                                                    <input type="date" class="form-control form-control-sm" v-model="v.transactionDate" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" class="form-control form-control-sm" v-model="v.refNo" placeholder="Ref No." />
+                                                                </td>
+                                                                <td>
+                                                                    <select class="form-control form-control-sm" v-model="v.expenseAccountId">
+                                                                        <option disabled value="">Select Account...</option>
+                                                                        <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" class="form-control form-control-sm" v-model="v.description" placeholder="Description" />
+                                                                </td>
+                                                                <td>
+                                                                    <input type="number" class="form-control form-control-sm text-right" v-model.number="v.amount" placeholder="0.00" min="0" @@input="reComputeTotal()" />
+                                                                </td>
+                                                                <td>
+                                                                    <select class="form-control form-control-sm" v-model="v.ouId">
+                                                                        <option disabled value="">Select OU...</option>
+                                                                        <option v-for="ou in costCenterHierachyList" :value="ou.id">{{ ou.name }}</option>
+                                                                    </select>
+                                                                </td>
+                                                                <td>
+                                                                    <input type="text" class="form-control form-control-sm" v-model="v.recipientName" placeholder="Recipient" />
+                                                                </td>
+                                                                <td class="text-center align-middle">
+                                                                    <button type="button" class="btn btn-sm btn-danger" @@click="removePettyCashRow(index)">
+                                                                        <i class="ft-trash"></i>
+                                                                    </button>
+                                                                </td>
+                                                            </tr>
+                                                        </tbody>
+                                                        <tfoot>
+                                                            <tr class="">
+                                                                <td colspan="4" class="text-right font-weight-bold align-middle">TOTAL:</td>
+                                                                <td class="text-right font-weight-bold align-middle">{{ totalAmount }}</td>
+                                                                <td colspan="3"></td>
+                                                            </tr>
+                                                        </tfoot>
+                                                    </table>
+                                                </div>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+ 
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/gl/data-entry/petty-cash.js" asp-append-version="true"></script>

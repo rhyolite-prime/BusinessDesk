@@ -1,0 +1,125 @@
+﻿@{
+    ViewBag.Title = "Add Qualification";
+    Layout = "~/Views/Shared/Layout/_adminSchoolManagerLayout.cshtml";
+    var staffId = ViewBag.StaffId;
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-body" id="app">
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title">Staff Qualification - {{staffName}}</h4>
+                        </div>
+                        
+                        <div class="card-content collapse show">
+                            <div class="card-body" >
+                                <div class="mb-2 ">
+                                    <a :href="'/SmStaffSetups/UpdateStaff?id=' + form.staffId" class="text-primary text-xl">
+                                        <i class="las la-arrow-alt-circle-left"></i> Go Back
+                                    </a>
+                                    <a :href="'/SmStaffSetups/Relations?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Relations
+                                    </a>
+                                    <a :href="'/SmStaffSetups/PastEmployments?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Past Employment
+                                    </a>
+                                    <a :href="'/SmStaffSetups/PastPositions?staffId=' + form.staffId" class="btn btn-sm btn-outline-secondary">
+                                        <i class="la la-plus"></i> Past Position
+                                    </a>
+                                </div>
+                                <div class="table-responsive mt-2">
+                                    <table class="table-responsive table table-striped table-bordered table-hover">
+                                        <thead class="table-light">
+                                        <tr>
+                                            <th style="width: 450px;">Institute</th>
+                                            <th style="width: 500px">Programme</th>
+                                            <th style="width: 450px;">Certificate</th>
+                                            <th style="width: 250px;">From</th>
+                                            <th style="width: 250px;">To</th>
+                                            <th>Is Academic</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                        </thead>
+                                        <tbody>
+                                        <tr v-for="qualification in qualifications" :key="qualification.id">
+                                            <td>{{ qualification.institute }}</td>
+                                            <td>{{ qualification.programme }}</td>
+                                            <td>{{ qualification.certificateName }}</td>
+                                            <td>{{ qualification.startDate.slice(0,10) }}</td>
+                                            <td>{{ qualification.endDate.slice(0,10) }}</td>
+                                            <td>
+                                                <span class="badge" :class="qualification.isAcademic ? 'text-success' : 'text-secondary'">
+                                                    {{ qualification.isAcademic ? 'Yes' : 'No' }}
+                                                </span>
+                                            </td>
+                                            <td>
+                                                <a class="text-primary me-1" @@click="editQualification(qualification)">
+                                                    <i class="la la-edit"></i>
+                                                </a>
+                                                <a class="text-danger" @@click="deleteQualification(qualification.id)">
+                                                    <i class="la la-trash"></i>
+                                                </a>
+                                            </td>
+                                        </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <form class="mb-5">
+                                    <input type="hidden" v-model="form.staffId"/>
+
+                                    <div class="row g-3">
+                                        <div class="col-md-3 my-1">
+                                            <label>Institute</label>
+                                            <input type="text" v-model="form.institute" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Programme</label>
+                                            <input type="text" v-model="form.programme" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Certificate</label>
+                                            <select v-model="form.certificateId" class="form-control" @@change="setCertificateName">
+                                                <option v-for="cert in certificates" :value="cert.id">{{ cert.name }}</option>
+                                            </select>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Start Date</label>
+                                            <input type="date" v-model="form.startDate" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>End Date</label>
+                                            <input type="date" v-model="form.endDate" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-3 my-1">
+                                            <label>Is Academic</label>
+                                            <input type="checkbox" v-model="form.isAcademic" class="form-control"/>
+                                        </div>
+                                        <div class="col-md-6 my-1">
+                                            <label>Comments</label>
+                                            <textarea type="text" v-model="form.comments" class="form-control"></textarea>
+                                        </div>
+                                    </div>
+
+                                    <div class="mt-1 float-right">
+                                        <button type="button" @@click="saveQualification" class="btn btn-success">Save</button>
+                                        <a href="/SmStaffSetUps/StaffBio" class="btn btn-secondary">Cancel</a>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+                        </div>
+                    </div>
+                </div>
+<script>
+    window.staffId = @Html.Raw(Json.Serialize(ViewBag.StaffId ?? ""));
+</script>
+
+<script src="~/js/school-manager/staff/qualifications.js" asp-append-version="true"></script>
+
