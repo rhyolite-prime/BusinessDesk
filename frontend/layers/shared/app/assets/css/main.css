@@ -1,5 +1,11 @@
 @import "tailwindcss";
 
+/* The design-system stylesheet lives in a Nuxt layer. Tell Tailwind v4 to scan
+   the root BusinessDesk app and every feature layer as well, or layer-only
+   utilities (for example auth max-widths and responsive splits) are omitted. */
+@source "../../../../";
+@source "../../../../../app";
+
 /* ── Sora (self-hosted, variable weight 100–800) ─────────────────────── */
 @font-face {
   font-family: "Sora";
