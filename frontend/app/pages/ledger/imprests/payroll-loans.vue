@@ -43,6 +43,7 @@ import {
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Convert Outstanding Balance to Payroll Loans' })
 
+const route = useRoute()
 const ledger = useLedgerImprests()
 const employees = ledger.employees
 const imprests = ledger.imprests
@@ -423,6 +424,31 @@ function downloadReport() {
 function returnToImprests() {
   return navigateTo('/ledger/imprests')
 }
+
+function applyImprestQuery(value: unknown) {
+  const imprestId = typeof value === 'string' ? value : Array.isArray(value) ? value[0] : undefined
+  if (!imprestId) return
+  const imprest = imprests.value.find((item) => item.id === imprestId)
+  if (!imprest) {
+    errorMessage.value = 'The selected imprest could not be found.'
+    return
+  }
+  const available = parseLedgerAmount(ledger.availableBalanceForImprest(imprest.id))
+  if (!imprest.postedToGl || available === null || available <= BigInt(0) || ledger.hasUnpostedSettlement(imprest.id)) {
+    errorMessage.value = 'This imprest is not currently available for conversion. It must be posted, have an unreserved balance, and have no pending settlement.'
+    return
+  }
+  editingConversionId.value = ''
+  selectedConversionId.value = ''
+  form.employeeId = imprest.employeeId
+  selectedImprestIds.value = [imprest.id]
+  searchTerm.value = ''
+  expandedCategories.value = [imprest.imprestCategoryId]
+  errorMessage.value = ''
+  successMessage.value = `${imprest.imprestNumber} selected. Review the loan details and save a conversion draft.`
+}
+
+watch(() => route.query.imprestId, applyImprestQuery, { immediate: true })
 </script>
 
 <template>
