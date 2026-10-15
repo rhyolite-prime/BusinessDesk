@@ -118,6 +118,7 @@ const outstandingStatusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'pending_approval', label: 'Awaiting review' },
   { value: 'posted', label: 'Posted' },
+  { value: 'converted', label: 'Converted to payroll loan' },
   { value: 'closed', label: 'Settled' },
 ]
 const tabItems = computed(() => [
@@ -160,7 +161,7 @@ function matchesSearch(term: string, values: Array<string | undefined>) {
 
 function matchesStatus(status: ImprestStatus | ImprestSettlementStatus, filter: string) {
   if (!filter) return true
-  if (filter === 'closed') return ['retired', 'refunded', 'written_off'].includes(status)
+  if (filter === 'closed') return ['retired', 'refunded', 'written_off', 'converted'].includes(status)
   return status === filter
 }
 
@@ -173,6 +174,7 @@ function statusLabel(status: ImprestStatus | ImprestSettlementStatus) {
     retired: 'Retired',
     refunded: 'Refunded',
     written_off: 'Written off',
+    converted: 'Converted to payroll loan',
     reversed: 'Reversed',
   }
   return labels[status]
@@ -183,6 +185,7 @@ function statusClass(status: ImprestStatus | ImprestSettlementStatus) {
   if (status === 'approved') return 'bg-blue-50 text-blue-700 dark:bg-blue-900/25 dark:text-blue-300'
   if (status === 'pending_approval') return 'bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300'
   if (status === 'draft') return 'bg-violet-50 text-violet-700 dark:bg-violet-900/25 dark:text-violet-300'
+  if (status === 'converted') return 'bg-sky-50 text-sky-700 dark:bg-sky-900/25 dark:text-sky-300'
   if (status === 'reversed') return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
   return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
 }
@@ -625,6 +628,7 @@ function exportCurrentTab() {
       </div>
       <div class="flex flex-wrap items-center gap-2">
         <NuxtLink to="/ledger/imprest-categories" class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800">Manage categories</NuxtLink>
+        <NuxtLink to="/ledger/imprests/payroll-loans" class="inline-flex h-10 items-center gap-2 rounded-lg border border-brand-200 bg-brand-50 px-3.5 text-xs font-semibold text-brand-800 shadow-sm hover:bg-brand-100 dark:border-brand-900/60 dark:bg-brand-950/30 dark:text-brand-200 dark:hover:bg-brand-950/60">Convert to payroll loan</NuxtLink>
         <button type="button" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" @click="openCreateImprest"><Plus :size="15" /> New imprest</button>
       </div>
     </section>

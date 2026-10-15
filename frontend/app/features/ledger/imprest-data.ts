@@ -8,6 +8,7 @@ export type ImprestStatus =
   | 'retired'
   | 'refunded'
   | 'written_off'
+  | 'converted'
   | 'reversed'
 
 export type ImprestSettlementStatus = 'draft' | 'pending_approval' | 'approved' | 'posted' | 'reversed'
@@ -118,6 +119,54 @@ export interface LedgerImprestWriteOff {
   postedToGl: boolean
 }
 
+export interface LedgerPayrollLoanType {
+  id: string
+  name: string
+  description: string
+}
+
+export interface PayrollLoanConversionSource {
+  imprestId: string
+  imprestNumber: string
+  categoryId: string
+  categoryName: string
+  outstandingAmount: string
+  currencyCode: string
+  exchangeRate: string
+  payrollAmountGhs: string
+}
+
+export interface LedgerPayrollLoanConversion {
+  id: string
+  conversionNumber: string
+  employeeId: string
+  employeeIdentifier: string
+  employeeName: string
+  loanDate: string
+  loanTypeId: string
+  loanTypeName: string
+  deductionStarts: string
+  durationMonths: number
+  deductThisMonth: boolean
+  principalAmountGhs: string
+  monthlyDeductionGhs: string
+  sources: PayrollLoanConversionSource[]
+  status: 'draft' | 'converted'
+  createdAt: string
+  convertedAt?: string
+}
+
+export interface SavePayrollLoanConversionInput {
+  id?: string
+  employeeId: string
+  loanDate: string
+  loanTypeId: string
+  deductionStarts: string
+  durationMonths: number
+  deductThisMonth: boolean
+  selectedImprestIds: string[]
+}
+
 export type SaveImprestInput = Omit<LedgerImprest, 'id' | 'balance' | 'status' | 'postedToGl' | 'journalBatchId'> & { id?: string }
 export type SaveRetirementInput = Omit<LedgerImprestRetirement, 'id' | 'imprestNumber' | 'employeeName' | 'amountRetired' | 'status' | 'postedToGl' | 'details'> & {
   id?: string
@@ -132,6 +181,12 @@ export const imprestEmployees: ImprestEmployee[] = [
   { id: 'employee-abena-mensah', employeeIdentifier: 'EMP-0221', employeeName: 'Abena Mensah', departmentName: 'Sales & Marketing', organizationUnitId: 'ou-sales' },
   { id: 'employee-kojo-appiah', employeeIdentifier: 'EMP-0255', employeeName: 'Kojo Appiah', departmentName: 'Operations', organizationUnitId: 'ou-kumasi' },
   { id: 'employee-efua-sarpong', employeeIdentifier: 'EMP-0300', employeeName: 'Efua Sarpong', departmentName: 'Finance & Administration', organizationUnitId: 'ou-accra' },
+]
+
+export const payrollLoanTypes: LedgerPayrollLoanType[] = [
+  { id: 'staff-payroll-loan', name: 'Staff payroll loan', description: 'Recoverable employee loan collected through payroll deductions.' },
+  { id: 'salary-advance', name: 'Salary advance', description: 'Short-term salary advance recovered from a future payroll.' },
+  { id: 'emergency-loan', name: 'Emergency loan', description: 'Employee emergency assistance recovered in instalments.' },
 ]
 
 const imprestSeed: LedgerImprest[] = [
@@ -263,6 +318,7 @@ export function useLedgerImprests() {
   const retirements = useState<LedgerImprestRetirement[]>('ledger-imprest-retirements', () => retirementSeed.map((item) => ({ ...item, details: item.details.map((line) => ({ ...line })) })))
   const refunds = useState<LedgerImprestRefund[]>('ledger-imprest-refunds', () => refundSeed.map((item) => ({ ...item })))
   const writeOffs = useState<LedgerImprestWriteOff[]>('ledger-imprest-writeoffs', () => writeOffSeed.map((item) => ({ ...item })))
+  const payrollLoanConversions = useState<LedgerPayrollLoanConversion[]>('ledger-payroll-loan-conversions', () => [])
 
   function nextImprestNumber() {
     const year = new Date().getFullYear()
@@ -272,6 +328,37 @@ export function useLedgerImprests() {
       return match ? Math.max(sequence, Number(match[1])) : sequence
     }, 0)
     return `IMP-${year}-${String(highest + 1).padStart(4, '0')}`
+  }
+
+  function nextPayrollLoanConversionNumber() {
+    const year = new Date().getFullYear()
+    const pattern = new RegExp(`^PLC-${year}-(\\d+)$`)
+    const highest = payrollLoanConversions.value.reduce((sequence, conversion) => {
+      const match = conversion.conversionNumber.match(pattern)
+      return match ? Math.max(sequence, Number(match[1])) : sequence
+    }, 0)
+    return `PLC-${year}-${String(highest + 1).padStart(4, '0')}`
+  }
+
+  function reservedByDraftUnits(imprestId: string, excludeConversionId = '') {
+    return payrollLoanConversions.value
+      .filter((conversion) => conversion.status === 'draft' && conversion.id !== excludeConversionId)
+      .flatMap((conversion) => conversion.sources)
+      .filter((source) => source.imprestId === imprestId)
+      .reduce((total, source) => total + amountUnits(source.outstandingAmount), BigInt(0))
+  }
+
+  function availableBalanceForImprest(imprestId: string, excludeConversionId = '') {
+    const imprest = imprests.value.find((item) => item.id === imprestId)
+    if (!imprest) return '0.000000'
+    const available = amountUnits(imprest.balance) - reservedByDraftUnits(imprestId, excludeConversionId)
+    return formatLedgerAmount(available > BigInt(0) ? available : BigInt(0))
+  }
+
+  function hasUnpostedSettlement(imprestId: string) {
+    return retirements.value.some((item) => item.imprestId === imprestId && item.status !== 'posted' && item.status !== 'reversed')
+      || refunds.value.some((item) => item.imprestId === imprestId && item.status !== 'posted' && item.status !== 'reversed')
+      || writeOffs.value.some((item) => item.imprestId === imprestId && item.status !== 'posted' && item.status !== 'reversed')
   }
 
   function settledAmountUnits(imprestId: string) {
@@ -284,13 +371,19 @@ export function useLedgerImprests() {
     const writeOffTotal = writeOffs.value
       .filter((item) => item.imprestId === imprestId && item.status !== 'reversed')
       .reduce((total, item) => total + amountUnits(item.amount), BigInt(0))
-    return retirementTotal + refundTotal + writeOffTotal
+    const payrollLoanTotal = payrollLoanConversions.value
+      .filter((conversion) => conversion.status === 'converted')
+      .flatMap((conversion) => conversion.sources)
+      .filter((source) => source.imprestId === imprestId)
+      .reduce((total, source) => total + amountUnits(source.outstandingAmount), BigInt(0))
+    return retirementTotal + refundTotal + writeOffTotal + payrollLoanTotal
   }
 
   function hasSettlements(imprestId: string) {
     return retirements.value.some((item) => item.imprestId === imprestId)
       || refunds.value.some((item) => item.imprestId === imprestId)
       || writeOffs.value.some((item) => item.imprestId === imprestId)
+      || payrollLoanConversions.value.some((conversion) => conversion.sources.some((source) => source.imprestId === imprestId))
   }
 
   function refreshImprestBalance(imprestId: string) {
@@ -308,8 +401,11 @@ export function useLedgerImprests() {
       ...retirements.value.filter((item) => item.imprestId === imprestId).map((item) => ({ date: item.retirementDate, status: item.status, kind: 'retired' as const })),
       ...refunds.value.filter((item) => item.imprestId === imprestId).map((item) => ({ date: item.refundDate, status: item.status, kind: 'refunded' as const })),
       ...writeOffs.value.filter((item) => item.imprestId === imprestId).map((item) => ({ date: item.writeOffDate, status: item.status, kind: 'written_off' as const })),
+      ...payrollLoanConversions.value
+        .filter((conversion) => conversion.status === 'converted' && conversion.sources.some((source) => source.imprestId === imprestId))
+        .map((conversion) => ({ date: conversion.convertedAt || conversion.loanDate, status: conversion.status, kind: 'converted' as const })),
     ].filter((item) => item.status !== 'reversed').sort((a, b) => b.date.localeCompare(a.date))
-    if (entries.some((item) => item.status !== 'posted')) imprest.status = 'pending_approval'
+    if (entries.some((item) => item.status !== 'posted' && item.status !== 'converted')) imprest.status = 'pending_approval'
     else if (entries[0]) imprest.status = entries[0].kind
   }
 
@@ -488,13 +584,107 @@ export function useLedgerImprests() {
     return true
   }
 
+  function savePayrollLoanConversion(input: SavePayrollLoanConversionInput) {
+    const existing = input.id ? payrollLoanConversions.value.find((item) => item.id === input.id) : undefined
+    if (input.id && (!existing || existing.status !== 'draft')) return null
+    const employee = imprestEmployees.find((item) => item.id === input.employeeId)
+    const loanType = payrollLoanTypes.find((item) => item.id === input.loanTypeId)
+    const duration = Number(input.durationMonths)
+    const validDate = (value: string) => {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+      const parsed = new Date(`${value}T00:00:00.000Z`)
+      return !Number.isNaN(parsed.valueOf()) && parsed.toISOString().slice(0, 10) === value
+    }
+    const selectedIds = [...new Set(input.selectedImprestIds)]
+    if (!employee || !loanType || !validDate(input.loanDate) || !validDate(input.deductionStarts)
+      || input.deductionStarts < input.loanDate || !Number.isInteger(duration) || duration < 1 || duration > 60 || !selectedIds.length) return null
+
+    const sources: PayrollLoanConversionSource[] = []
+    let principalUnits = BigInt(0)
+    for (const imprestId of selectedIds) {
+      const imprest = imprests.value.find((item) => item.id === imprestId)
+      const rate = imprest ? parseLedgerRate(imprest.sellRate) : null
+      const availableUnits = imprest
+        ? amountUnits(imprest.balance) - reservedByDraftUnits(imprest.id, existing?.id)
+        : BigInt(0)
+      if (!imprest || !imprest.postedToGl || imprest.employeeId !== employee.id || hasUnpostedSettlement(imprest.id)
+        || rate === null || rate <= BigInt(0) || availableUnits <= BigInt(0)) return null
+      const payrollAmountUnits = convertLedgerAmount(availableUnits, rate)
+      if (payrollAmountUnits <= BigInt(0)) return null
+      sources.push({
+        imprestId: imprest.id,
+        imprestNumber: imprest.imprestNumber,
+        categoryId: imprest.imprestCategoryId,
+        categoryName: imprest.imprestCategoryName,
+        outstandingAmount: formatLedgerAmount(availableUnits),
+        currencyCode: imprest.currencyCode,
+        exchangeRate: imprest.sellRate,
+        payrollAmountGhs: formatLedgerAmount(payrollAmountUnits),
+      })
+      principalUnits += payrollAmountUnits
+    }
+
+    const monthlyUnits = principalUnits / BigInt(duration)
+    if (principalUnits <= BigInt(0) || monthlyUnits <= BigInt(0)) return null
+    const saved: LedgerPayrollLoanConversion = {
+      id: existing?.id || input.id || makeId('payroll-loan-conversion'),
+      conversionNumber: existing?.conversionNumber || nextPayrollLoanConversionNumber(),
+      employeeId: employee.id,
+      employeeIdentifier: employee.employeeIdentifier,
+      employeeName: employee.employeeName,
+      loanDate: input.loanDate,
+      loanTypeId: loanType.id,
+      loanTypeName: loanType.name,
+      deductionStarts: input.deductionStarts,
+      durationMonths: duration,
+      deductThisMonth: input.deductThisMonth,
+      principalAmountGhs: formatLedgerAmount(principalUnits),
+      monthlyDeductionGhs: formatLedgerAmount(monthlyUnits),
+      sources,
+      status: 'draft',
+      createdAt: existing?.createdAt || new Date().toISOString(),
+    }
+    const index = existing ? payrollLoanConversions.value.findIndex((item) => item.id === existing.id) : -1
+    if (index >= 0) payrollLoanConversions.value[index] = saved
+    else payrollLoanConversions.value.unshift(saved)
+    return saved
+  }
+
+  function removePayrollLoanConversion(id: string) {
+    const conversion = payrollLoanConversions.value.find((item) => item.id === id)
+    if (!conversion || conversion.status !== 'draft') return false
+    payrollLoanConversions.value = payrollLoanConversions.value.filter((item) => item.id !== id)
+    return true
+  }
+
+  function convertPayrollLoanConversion(id: string) {
+    const conversion = payrollLoanConversions.value.find((item) => item.id === id)
+    if (!conversion || conversion.status !== 'draft' || !conversion.sources.length) return false
+    for (const source of conversion.sources) {
+      const imprest = imprests.value.find((item) => item.id === source.imprestId)
+      const availableUnits = imprest
+        ? amountUnits(imprest.balance) - reservedByDraftUnits(imprest.id, conversion.id)
+        : BigInt(0)
+      if (!imprest || !imprest.postedToGl || imprest.employeeId !== conversion.employeeId || hasUnpostedSettlement(imprest.id)
+        || availableUnits < amountUnits(source.outstandingAmount)) return false
+    }
+    conversion.status = 'converted'
+    conversion.convertedAt = new Date().toISOString()
+    for (const source of conversion.sources) refreshImprestBalance(source.imprestId)
+    return true
+  }
+
   return {
     employees: imprestEmployees,
     imprests,
     retirements,
     refunds,
     writeOffs,
+    payrollLoanConversions,
     nextImprestNumber,
+    nextPayrollLoanConversionNumber,
+    availableBalanceForImprest,
+    hasUnpostedSettlement,
     hasSettlements,
     saveImprest,
     removeImprest,
@@ -508,5 +698,8 @@ export function useLedgerImprests() {
     saveWriteOff,
     removeWriteOff,
     postWriteOff,
+    savePayrollLoanConversion,
+    removePayrollLoanConversion,
+    convertPayrollLoanConversion,
   }
 }
