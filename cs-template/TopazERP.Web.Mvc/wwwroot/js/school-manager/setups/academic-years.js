@@ -76,7 +76,7 @@
                 // build grids after all data is available
                 this.dataTable(this.academicYearList);
             }).catch(err => {
-                this.toastHandler('error', 'Unable to load setups.');
+                this.toastHandler('error', 'Unable to load js.');
             });
         },
         getAcademicYearDetails(id) {

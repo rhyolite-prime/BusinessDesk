@@ -3221,7 +3221,7 @@
             return {
                 viewer: null,       // underlying ReportViewer instance
                 loading: false,     // true while a URL template is fetched
-                _setupToken: 0      // cancels stale async setups
+                _setupToken: 0      // cancels stale async js
             };
         },
 

@@ -33,7 +33,7 @@
     this.dataTable(this.schoolGroupList);
 })
     .catch(err => {
-    this.toastHandler('error', 'Unable to load school group setups.');
+    this.toastHandler('error', 'Unable to load school group js.');
 });
 },
 

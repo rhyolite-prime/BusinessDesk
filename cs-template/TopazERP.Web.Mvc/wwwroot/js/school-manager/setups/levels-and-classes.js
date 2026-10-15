@@ -44,7 +44,7 @@
 
                 this.dataTable(this.levelList);
             }).catch(err => {
-                this.toastHandler('error', 'Unable to load setups.');
+                this.toastHandler('error', 'Unable to load js.');
             });
         },
         dataTable(responseData) {

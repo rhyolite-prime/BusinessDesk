@@ -411,7 +411,7 @@
                     .then(() => {
                         this.toastHandler(
                             'success',
-                            'Fee setups saved successfully.'
+                            'Fee js saved successfully.'
                         );
                         this.getFeeSetups();
                         this.resetDetails();
@@ -420,7 +420,7 @@
                     .catch(() => {
                         this.toastHandler(
                             'error',
-                            'Failed to save fee setups.'
+                            'Failed to save fee js.'
                         );
                     })
                     .finally(() => {

@@ -54,7 +54,7 @@
                 // build grids after all data is available
                 this.countryTable(this.countryList);
             }).catch(err => {
-                this.toastHandler('error', 'Unable to load setups.');
+                this.toastHandler('error', 'Unable to load js.');
             });
         },
         getCountries() {
