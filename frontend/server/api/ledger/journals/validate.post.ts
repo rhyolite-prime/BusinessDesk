@@ -1,4 +1,5 @@
 import type { CreateJournalDraftInput, JournalValidationResponse } from '../../../../app/features/ledger/types'
+import { requireBusinessDeskSession } from '../../../utils/auth'
 
 const decimalScale = BigInt(1_000_000)
 
@@ -19,15 +20,22 @@ function formatAmount(units: bigint): string {
 }
 
 export default defineEventHandler(async (event): Promise<JournalValidationResponse> => {
+  const session = await requireBusinessDeskSession(event)
   const body = await readBody<Partial<CreateJournalDraftInput>>(event)
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
 
   if (baseUrl) {
+    if (session.demo || !session.accessToken) {
+      throw createError({ statusCode: 403, statusMessage: 'Demo sign-in cannot access a configured ledger service.' })
+    }
     return await $fetch<JournalValidationResponse>(`${baseUrl}/api/v1/ledger/journals/validate`, {
       method: 'POST',
       body,
-      headers: { 'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID() },
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
+      },
     })
   }
 

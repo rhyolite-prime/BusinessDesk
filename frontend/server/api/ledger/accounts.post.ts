@@ -1,7 +1,9 @@
 import type { CreateAccountInput, LedgerAccount } from '../../../app/features/ledger/types'
 import { demoAccounts } from '../../utils/ledger-demo'
+import { requireBusinessDeskSession } from '../../utils/auth'
 
 export default defineEventHandler(async (event): Promise<LedgerAccount> => {
+  const session = await requireBusinessDeskSession(event)
   const body = await readBody<Partial<CreateAccountInput>>(event)
   const accountNumber = String(body?.accountNumber ?? '').trim()
   const name = String(body?.name ?? '').trim()
@@ -17,10 +19,16 @@ export default defineEventHandler(async (event): Promise<LedgerAccount> => {
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
   if (baseUrl) {
+    if (session.demo || !session.accessToken) {
+      throw createError({ statusCode: 403, statusMessage: 'Demo sign-in cannot access a configured ledger service.' })
+    }
     return await $fetch<LedgerAccount>(`${baseUrl}/api/v1/ledger/accounts`, {
       method: 'POST',
       body: { accountNumber, name, group, accountType, currency },
-      headers: { 'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID() },
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
+      },
     })
   }
 

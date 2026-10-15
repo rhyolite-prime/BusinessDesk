@@ -1,20 +1,23 @@
 import type { AccountsResponse, CreateAccountInput, CreateJournalDraftInput, DashboardResponse, JournalValidationResponse, JournalsResponse, JournalSummary, LedgerAccount } from './types'
 
 export function useLedgerApi() {
-  const request = <T>(path: string, options: Parameters<typeof $fetch<T>>[1] = {}) =>
-    $fetch<T>(`/api/ledger/${path}`, options)
+  const requestFetch = useRequestFetch()
+  const getRequest = <T>(path: string, query?: Record<string, string>) =>
+    requestFetch<T>(`/api/ledger/${path}`, query ? { query } : undefined)
+  const postRequest = <T>(path: string, body: CreateAccountInput | CreateJournalDraftInput) =>
+    $fetch<T>(`/api/ledger/${path}`, { method: 'POST', body })
 
   return {
-    dashboard: () => request<DashboardResponse>('dashboard'),
+    dashboard: () => getRequest<DashboardResponse>('dashboard'),
     accounts: (query: Record<string, string> = {}) =>
-      request<AccountsResponse>('accounts', { query }),
+      getRequest<AccountsResponse>('accounts', query),
     createAccount: (input: CreateAccountInput) =>
-      request<LedgerAccount>('accounts', { method: 'POST', body: input }),
+      postRequest<LedgerAccount>('accounts', input),
     journals: (query: Record<string, string> = {}) =>
-      request<JournalsResponse>('journals', { query }),
+      getRequest<JournalsResponse>('journals', query),
     createJournalDraft: (input: CreateJournalDraftInput) =>
-      request<JournalSummary>('journals', { method: 'POST', body: input }),
+      postRequest<JournalSummary>('journals', input),
     validateJournalDraft: (input: CreateJournalDraftInput) =>
-      request<JournalValidationResponse>('journals/validate', { method: 'POST', body: input }),
+      postRequest<JournalValidationResponse>('journals/validate', input),
   }
 }

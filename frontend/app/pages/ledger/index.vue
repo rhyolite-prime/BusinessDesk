@@ -136,9 +136,9 @@ function statusClass(status: string) {
           <div class="flex items-center gap-3 text-xs"><span class="flex h-5 w-5 items-center justify-center rounded-full bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-300">!</span><span class="flex-1 text-slate-600 dark:text-slate-300">Approve pending journals</span><span class="text-[10px] font-medium text-amber-600 dark:text-amber-300">2 pending</span></div>
           <div class="flex items-center gap-3 text-xs"><span class="flex h-5 w-5 items-center justify-center rounded-full border border-slate-200 text-slate-400 dark:border-slate-700">4</span><span class="flex-1 text-slate-500 dark:text-slate-400">Review FX revaluation</span><span class="text-[10px] text-slate-400">Next</span></div>
         </div>
-        <NuxtLink to="/ledger/reports" class="mt-5 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-semibold text-brand-700 hover:text-brand-800 dark:border-slate-800 dark:text-brand-300">
-          View close details <ArrowRight :size="14" />
-        </NuxtLink>
+        <button type="button" disabled title="Period close details are planned for a later phase" class="mt-5 flex w-full cursor-not-allowed items-center justify-between border-t border-slate-100 pt-4 text-xs font-semibold text-slate-400 dark:border-slate-800 dark:text-slate-500">
+          Close details coming soon <ArrowRight :size="14" />
+        </button>
       </article>
     </section>
 

@@ -1,9 +1,12 @@
 <script setup lang="ts">
-import { Bell, ChevronDown, Menu, Moon, Search, Sun } from '@lucide/vue'
+import { Bell, LayoutGrid, LogOut, Menu, Moon, Search, Sun } from '@lucide/vue'
 
 withDefaults(defineProps<{ dark: boolean }>(), { dark: false })
 const emit = defineEmits<{ toggleMenu: []; toggleTheme: [] }>()
 const searchOpen = ref(false)
+const { user, logout } = useBusinessDeskAuth()
+const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
+const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
 </script>
 
 <template>
@@ -41,13 +44,18 @@ const searchOpen = ref(false)
         <Moon v-else :size="17" />
       </button>
       <div class="mx-1 hidden h-7 w-px bg-slate-200 sm:block dark:bg-slate-700" />
-      <button class="flex items-center gap-2 rounded-lg px-1.5 py-1.5 hover:bg-slate-50 dark:hover:bg-slate-800">
-        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e5eee9] text-[11px] font-bold text-brand-800">KA</span>
-        <span class="hidden text-left sm:block">
-          <span class="block text-xs font-semibold leading-4 text-slate-800 dark:text-slate-100">K. Agyeman</span>
-          <span class="block text-[10px] leading-4 text-slate-400">Administrator</span>
+      <NuxtLink to="/modules" aria-label="Switch to module manager" title="Switch to module manager" class="rounded-lg p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-brand-700 dark:hover:bg-slate-800 dark:hover:text-brand-300">
+        <LayoutGrid :size="17" />
+      </NuxtLink>
+      <div class="flex items-center gap-2 rounded-lg px-1.5 py-1.5">
+        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e5eee9] text-[11px] font-bold text-brand-800">{{ avatarInitials }}</span>
+        <span class="hidden max-w-[140px] text-left sm:block">
+          <span class="block truncate text-xs font-semibold leading-4 text-slate-800 dark:text-slate-100">{{ currentName }}</span>
+          <span class="block truncate text-[10px] leading-4 text-slate-400">{{ user?.accountId }}</span>
         </span>
-        <ChevronDown :size="14" class="hidden text-slate-400 sm:block" />
+      </div>
+      <button type="button" aria-label="Sign out" title="Sign out" class="rounded-lg p-2.5 text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300" @click="logout()">
+        <LogOut :size="16" />
       </button>
     </div>
   </header>

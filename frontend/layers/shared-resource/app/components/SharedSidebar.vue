@@ -9,9 +9,9 @@ import {
   ChevronDown,
   CircleHelp,
   Coins,
-  Files,
   LayoutDashboard,
   ListTree,
+  LogOut,
   Settings2,
   WalletCards,
   X,
@@ -21,6 +21,9 @@ import type { Component } from 'vue'
 const props = defineProps<{ mobileOpen: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const route = useRoute()
+const { user, logout } = useBusinessDeskAuth()
+const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
+const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
 
 interface NavigationLink {
   label: string
@@ -78,7 +81,7 @@ function isActive(path?: string) {
     :class="props.mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
   >
     <div class="flex h-[76px] items-center justify-between border-b border-slate-100 px-5 dark:border-slate-800">
-      <NuxtLink to="/ledger" class="flex items-center gap-3" @click="emit('close')">
+      <NuxtLink to="/modules" class="flex items-center gap-3" @click="emit('close')">
         <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-700 text-white shadow-sm shadow-brand-900/15">
           <span class="text-sm font-bold tracking-tight">BD</span>
         </span>
@@ -98,8 +101,8 @@ function isActive(path?: string) {
           <Building2 :size="16" />
         </span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">Accra Operations</span>
-          <span class="mt-0.5 block text-[11px] text-slate-500">Accounting unit</span>
+          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{{ user?.accountId || 'Business account' }}</span>
+          <span class="mt-0.5 block text-[11px] text-slate-500">Account ID</span>
         </span>
         <ChevronDown :size="15" class="text-slate-400" />
       </button>
@@ -165,12 +168,14 @@ function isActive(path?: string) {
         Help &amp; support
       </a>
       <div class="mt-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900/60">
-        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#d7e8e1] text-xs font-bold text-brand-800">KA</span>
+        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#d7e8e1] text-xs font-bold text-brand-800">{{ avatarInitials }}</span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">K. Agyeman</span>
-          <span class="mt-0.5 block truncate text-[11px] text-slate-500">Finance administrator</span>
+          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{{ currentName }}</span>
+          <span class="mt-0.5 block truncate text-[11px] text-slate-500">{{ user?.username }}</span>
         </span>
-        <Files :size="16" class="text-slate-400" />
+        <button type="button" class="rounded-md p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300" aria-label="Sign out" title="Sign out" @click="logout()">
+          <LogOut :size="15" />
+        </button>
       </div>
     </div>
   </aside>

@@ -1,5 +1,6 @@
 import type { CreateJournalDraftInput, JournalSummary } from '../../../app/features/ledger/types'
 import { demoAccounts, demoJournals } from '../../utils/ledger-demo'
+import { requireBusinessDeskSession } from '../../utils/auth'
 
 const decimalScale = BigInt(1_000_000)
 
@@ -18,6 +19,7 @@ function formatAmount(units: bigint): string {
 }
 
 export default defineEventHandler(async (event): Promise<JournalSummary> => {
+  const session = await requireBusinessDeskSession(event)
   const body = await readBody<Partial<CreateJournalDraftInput>>(event)
   const description = String(body?.description ?? '').trim()
   const batchDate = String(body?.batchDate ?? '').trim()
@@ -45,6 +47,9 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
   if (baseUrl) {
+    if (session.demo || !session.accessToken) {
+      throw createError({ statusCode: 403, statusMessage: 'Demo sign-in cannot access a configured ledger service.' })
+    }
     return await $fetch<JournalSummary>(`${baseUrl}/api/v1/ledger/journals`, {
       method: 'POST',
       body: {
@@ -58,7 +63,10 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
           credit: line.credit,
         })),
       },
-      headers: { 'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID() },
+      headers: {
+        authorization: `Bearer ${session.accessToken}`,
+        'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
+      },
     })
   }
 

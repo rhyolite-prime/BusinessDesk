@@ -9,8 +9,10 @@ export default defineNuxtConfig({
     plugins: [tailwindcss()],
   },
   runtimeConfig: {
-    // Server-only upstream URL. Browser requests stay same-origin under /api/ledger.
+    // Server-only upstream URLs. Browser requests stay same-origin under /api.
     ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
+    authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
+    authDemoMode: process.env.AUTH_DEMO_MODE === 'true',
     public: {
       demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
     },

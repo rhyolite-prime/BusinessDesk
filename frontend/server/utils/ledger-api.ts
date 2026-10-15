@@ -1,13 +1,19 @@
-import type { H3Event } from 'h3'
+import { createError, type H3Event } from 'h3'
+import { requireBusinessDeskSession } from './auth'
 
 export async function getLedgerResource<T>(event: H3Event, resource: string, query: Record<string, unknown>, demo: () => T): Promise<T> {
+  const session = await requireBusinessDeskSession(event)
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
 
   if (baseUrl) {
+    if (session.demo || !session.accessToken) {
+      throw createError({ statusCode: 403, statusMessage: 'Demo sign-in cannot access a configured ledger service.' })
+    }
     return (await $fetch<T>(`${baseUrl}/api/v1/ledger/${resource}`, {
       query,
       headers: {
+        authorization: `Bearer ${session.accessToken}`,
         'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
       },
     })) as T
