@@ -1,13 +1,50 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'node:url'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: false },
-  modules: [],
-  vite: {
-    plugins: [tailwindcss()],
+
+  // Inherit the shared ERP design system and domain-specific layer features.
+  extends: [
+    './layers/shared',
+    './layers/shared-resource',
+    './layers/modules/auth',
+    './layers/modules/dashboard',
+    './layers/modules/clients',
+    './layers/modules/groups',
+    './layers/modules/loans',
+    './layers/modules/savings',
+    './layers/modules/products',
+    './layers/modules/accounting',
+    './layers/modules/organization',
+    './layers/modules/system',
+    './layers/modules/reports',
+  ],
+
+  imports: {
+    dirs: [
+      fileURLToPath(new URL('./layers/shared/app/composables', import.meta.url)),
+      fileURLToPath(new URL('./layers/shared/app/utils', import.meta.url)),
+    ],
   },
+
+  devServer: { host: '0.0.0.0', port: 3000 },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@lucide/vue',
+        'echarts/charts',
+        'echarts/components',
+        'echarts/core',
+        'echarts/renderers',
+      ],
+    },
+  },
+  future: { compatibilityVersion: 4 },
+
+  // Server-only upstream URLs. Browser requests stay same-origin under /api.
   runtimeConfig: {
-    // Server-only upstream URLs. Browser requests stay same-origin under /api.
     ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
     authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
     // Mock sign-in defaults on for development navigation; the server rejects it outside NODE_ENV=development.
@@ -26,8 +63,11 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   typescript: {
     strict: true,
-    typeCheck: true,
+    // The Nuxt CLI typecheck and production build validate types; skip the
+    // dev-server checker, which mis-resolves Nuxt's generated app/server globals.
+    typeCheck: 'build',
   },
 })

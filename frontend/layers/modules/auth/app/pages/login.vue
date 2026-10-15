@@ -13,7 +13,7 @@ const challengeId = ref('')
 const pendingName = ref('')
 const enrol = ref<any>(null)
 const busy = ref(false)
-const redirect = computed(() => String(route.query.redirect ?? '/'))
+const redirect = computed(() => String(route.query.redirect ?? '/modules'))
 
 async function signIn() {
   busy.value = true
@@ -40,7 +40,7 @@ async function verify() {
     toast.success('Welcome back', 'You are signed in.')
     // full navigation so the SSR guard re-evaluates with the new session
     await nextTick()
-    window.location.assign(redirect.value && redirect.value !== '/login' ? redirect.value : '/')
+    window.location.assign(redirect.value && redirect.value !== '/login' ? redirect.value : '/modules')
   } catch (e: any) {
     toast.error('Verification failed', e.message)
   } finally { busy.value = false }
@@ -101,7 +101,7 @@ onUnmounted(() => clearInterval(timer))
 
       <p class="text-sm text-ink-soft leading-relaxed">
         Open <strong>Google Authenticator</strong> (or Authy / Microsoft Authenticator) and enter the
-        6-digit code for <strong>TL Core Banking</strong>.
+        6-digit code for <strong>BusinessDesk ERP</strong>.
       </p>
 
       <!-- Enrolment QR (shown for first-time users) -->

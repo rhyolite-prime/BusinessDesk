@@ -1,19 +1,26 @@
 {
-  "name": "tl-core-banking-ui",
+  "name": "businessdesk-web",
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "nuxt dev --port 7802",
+    "dev": "nuxt dev --host 0.0.0.0 --port 7802",
     "build": "nuxt build",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "preview": "nuxt preview --host 0.0.0.0",
+    "typecheck": "nuxt typecheck"
   },
   "dependencies": {
-    "nuxt": "^4.5.0",
-    "qrcode": "^1.5.4"
+    "@lucide/vue": "^1.57.0",
+    "echarts": "^6.1.0",
+    "nuxt": "^4.6.1",
+    "qrcode": "^1.5.4",
+    "vue": "^3.5.13"
   },
   "devDependencies": {
-    "@tailwindcss/vite" : "^4.3.0",
-    "tailwindcss": "^4.3.0"
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/node": "^26.6.5",
+    "@types/qrcode": "^1.5.6",
+    "tailwindcss": "^4.3.3",
+    "typescript": "^5.8.3",
+    "vue-tsc": "^3.3.13"
   }
 }

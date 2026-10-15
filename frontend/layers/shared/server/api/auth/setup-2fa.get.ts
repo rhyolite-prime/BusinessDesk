@@ -15,7 +15,7 @@ export default defineEventHandler(async (event) => {
     secret = generateTotpSecret()
     st.totp.set(username, secret)
   }
-  const issuer = 'TL Core Banking'
+  const issuer = 'BusinessDesk ERP'
   const url = otpauthUrl(secret, issuer, username)
   const QRCode = await import('qrcode')
   const qr = await QRCode.toDataURL(url, { width: 220, margin: 1, color: { dark: '#0C231C', light: '#FFFFFF' } })

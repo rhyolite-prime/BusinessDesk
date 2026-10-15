@@ -1,28 +1,23 @@
 /**
- * White-label branding configuration.
- * An institution deploying TL Core Banking edits ONLY this file to
- * re-brand the entire platform (name, logo wordmark, colour theme,
- * currency, support contact). The shared-resource layer reads these
- * values at runtime and applies them as CSS custom properties — no
- * component changes required.
+ * Default BusinessDesk tenant branding. Tenant deployments can override
+ * these values without changing the shared UI layer.
  */
 export default defineAppConfig({
   brand: {
-    productName: 'TL Core Banking',
-    institutionName: 'SikaTrust Microfinance',
-    institutionShort: 'SikaTrust',
-    tagline: 'Banking for every community',
-    // Theme palette (driven through CSS variables → Tailwind theme tokens)
+    productName: 'BusinessDesk ERP',
+    institutionName: 'BusinessDesk',
+    institutionShort: 'BusinessDesk',
+    tagline: 'One workspace for finance and operations',
     theme: {
-      primary: '#0B6E4F',       // brand green
-      primaryDark: '#08543D',
-      primaryLight: '#E6F4EF',
+      primary: '#1B4B42',
+      primaryDark: '#0C352D',
+      primaryLight: '#E8F1ED',
       onPrimary: '#FFFFFF',
-      sidebar: '#0C231C',       // deep evergreen sidebar
-      accent: '#E8A33D',        // gold accent
+      sidebar: '#0C231C',
+      accent: '#E8A33D',
     },
     currency: { code: 'GHS', symbol: 'GH₵', locale: 'en-GH' },
-    contact: { email: 'support@sikatrust.example', phone: '+233 30 255 0100' },
-    footerNote: 'Licensed under the Companies Act, 2019 (Act 992). Deposits insured by GHIDIC.',
+    contact: { email: '', phone: '' },
+    footerNote: '',
   },
 })

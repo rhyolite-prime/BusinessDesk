@@ -1,20 +1,44 @@
+interface AuthIdentityResponse {
+  authenticated: boolean
+  demo: boolean
+  accountId?: string
+  id?: number
+  username?: string
+  name?: string
+  firstname?: string
+  lastname?: string
+  email?: string
+  roleNames?: string[]
+  officeId?: number
+  officeName?: string
+  permissions?: string[]
+}
+
 /**
- * Session-aware identity for the console chrome.
- * Mock session is the `tl_session` cookie set at the 2FA step.
+ * Session-aware identity for the application chrome.
+ * Mock sessions are created by the two-factor verification endpoint.
  */
-export default defineEventHandler((event) => {
-  const d = db()
+export default defineEventHandler((event): AuthIdentityResponse => {
   const token = getCookie(event, 'tl_session')
   const session = token ? authStore().sessions.get(token) : undefined
-  const user = d.users.find(x => x.id === (session?.userId ?? d.currentUser.id))
-  if (!user) {
-    // not signed in (used by client to route to /login)
+
+  if (!session) {
     setResponseStatus(event, 401)
-    return { authenticated: false }
+    return { authenticated: false, demo: false }
   }
-  const office = d.offices.find(o => o.id === user.officeId)
+
+  const d = db()
+  const user = d.users.find((candidate) => candidate.id === session.userId)
+  if (!user) {
+    setResponseStatus(event, 401)
+    return { authenticated: false, demo: false }
+  }
+
+  const office = d.offices.find((candidate) => candidate.id === user.officeId)
   return {
     authenticated: true,
+    demo: true,
+    accountId: 'DEMO-01',
     id: user.id,
     username: user.username,
     name: `${user.firstname} ${user.lastname}`,
