@@ -60,7 +60,7 @@ const form = reactive({
   allocationMethod: 'each-period' as AllocationMethod,
   budgetTarget: 'budget' as BudgetTarget,
   amount: '0',
-  percentage: '10',
+  percentage: '100',
   status: 'draft' as LedgerBudgetStatus,
 })
 
@@ -168,7 +168,7 @@ const generatedAmounts = computed(() => {
       const previous = priorYearAmount(period)
       result[period.key] = previous === null || !Number.isFinite(percentage)
         ? 0
-        : roundMoney(previous * (1 + percentage / 100))
+        : roundMoney(previous * (percentage / 100))
     }
     return result
   }
@@ -274,7 +274,7 @@ function openCreate() {
     allocationMethod: 'each-period' as AllocationMethod,
     budgetTarget: 'budget' as BudgetTarget,
     amount: '0',
-    percentage: '10',
+    percentage: '100',
     status: 'draft' as LedgerBudgetStatus,
   })
   resetPeriodAmounts(getPeriods(form.beginYear, form.beginMonth, form.endYear, form.endMonth))
@@ -299,7 +299,7 @@ function openEdit(budget: LedgerBudget) {
     allocationMethod: 'individual-period' as AllocationMethod,
     budgetTarget,
     amount: '0',
-    percentage: '10',
+    percentage: '100',
     status: budget.status,
   })
   const rows = getPeriods(form.beginYear, form.beginMonth, form.endYear, form.endMonth)
@@ -347,8 +347,8 @@ function saveBudget() {
   }
   if (form.amountOption === 'percentage-of-last-year') {
     const percentage = numericValue(form.percentage)
-    if (!Number.isFinite(percentage) || percentage < -100) {
-      saveError.value = 'Enter a valid percentage of at least -100%.'
+    if (!Number.isFinite(percentage) || percentage < 0) {
+      saveError.value = "Enter a non-negative percentage of last year's amount."
       return
     }
   }
@@ -647,7 +647,7 @@ function confirmDelete() {
                 </label>
                 <label class="flex cursor-pointer gap-3 rounded-xl border p-3.5 transition-colors" :class="form.amountOption === 'percentage-of-last-year' ? 'border-brand-500 bg-brand-50/70 dark:border-brand-700 dark:bg-brand-950/30' : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-800 dark:bg-slate-900/30'">
                   <input v-model="form.amountOption" type="radio" value="percentage-of-last-year" class="mt-0.5 accent-brand-700">
-                  <span><span class="block text-xs font-semibold text-slate-800 dark:text-slate-100">Percentage of last year</span><span class="mt-1 block text-[10px] leading-4 text-slate-500 dark:text-slate-400">Carry forward the prior-year pattern with an adjustment.</span></span>
+                  <span><span class="block text-xs font-semibold text-slate-800 dark:text-slate-100">Percentage of last year</span><span class="mt-1 block text-[10px] leading-4 text-slate-500 dark:text-slate-400">Set each period as a percent of last year (100% = unchanged; 110% = 10% higher).</span></span>
                 </label>
               </div>
               <div v-if="usesPriorYear" class="mt-3 flex items-start gap-2 rounded-lg border border-blue-100 bg-blue-50/70 px-3.5 py-3 text-[10px] leading-4 text-blue-800 dark:border-blue-900/50 dark:bg-blue-950/30 dark:text-blue-200">
@@ -656,8 +656,8 @@ function confirmDelete() {
                 <p v-else>No matching prior-year schedule was found for this account and organizational unit. Choose a prior-year pair or use a different amount.</p>
               </div>
               <label v-if="form.amountOption === 'percentage-of-last-year'" class="mt-3 block max-w-xs">
-                <span class="mb-1.5 block text-[10px] font-semibold text-slate-600 dark:text-slate-300">Adjustment percentage</span>
-                <div class="relative"><input v-model="form.percentage" type="number" step="0.01" min="-100" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 pr-9 text-xs text-slate-700 outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">%</span></div>
+                <span class="mb-1.5 block text-[10px] font-semibold text-slate-600 dark:text-slate-300">Percent of last year's amount</span>
+                <div class="relative"><input v-model="form.percentage" type="number" step="0.01" min="0" class="h-9 w-full rounded-lg border border-slate-200 bg-white px-3 pr-9 text-xs text-slate-700 outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200"><span class="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-slate-400">%</span></div>
               </label>
               <p v-if="usesPriorYear && missingPriorPeriods.length" class="mt-2 text-[10px] text-amber-700 dark:text-amber-300">{{ missingPriorPeriods.length }} selected period{{ missingPriorPeriods.length === 1 ? '' : 's' }} have no matching prior-year line.</p>
             </section>
