@@ -1,0 +1,8 @@
+//
+// Created by Emmanuel Addo-Odame on 15/10/2026.
+//
+
+#ifndef BUSINESSDESKAPI_GLSERVICE_H
+#define BUSINESSDESKAPI_GLSERVICE_H
+
+#endif //BUSINESSDESKAPI_GLSERVICE_H

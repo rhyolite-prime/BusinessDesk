@@ -27,7 +27,15 @@ endif ()
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
-add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION})
+add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
+        services/gl/GlService.h
+        services/gl/GlService.cc
+        services/hr/HrService.h
+        services/hr/HrService.cc
+        services/payroll/PayrollService.h
+        services/payroll/PayrollService.cc
+        services/sm/SchoolService.h
+        services/sm/SchoolService.cc)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
