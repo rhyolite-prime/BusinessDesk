@@ -1,4 +1,5 @@
-import type { CreateJournalDraftInput, JournalSummary } from '../../../app/features/ledger/types'
+import type { CreateJournalDraftInput, JournalLineSummary, JournalSummary } from '../../../app/features/ledger/types'
+import { ledgerOrganizationalUnits } from '../../../app/features/ledger/organization-data'
 import { demoAccounts, demoJournals } from '../../utils/ledger-demo'
 import { requireBusinessDeskSession } from '../../utils/auth'
 
@@ -32,16 +33,25 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
 
   const normalizedLines = lines.map((line) => {
     const accountId = String(line?.accountId ?? '').trim()
+    const accountName = String(line?.accountName ?? '').trim()
+    const referenceNumber = String(line?.referenceNumber ?? '').trim()
     const lineDescription = String(line?.description ?? '').trim()
+    const organizationUnitId = String(line?.organizationUnitId ?? '').trim()
+    const transactionDate = String(line?.transactionDate ?? batchDate).trim()
+    const chequeNumber = String(line?.chequeNumber ?? '').trim()
     const debit = String(line?.debit ?? '0')
     const credit = String(line?.credit ?? '0')
     const debitUnits = parseAmount(debit)
     const creditUnits = parseAmount(credit)
+    const parsedTransactionDate = new Date(`${transactionDate}T00:00:00Z`)
 
-    if (!accountId || accountId.length > 80 || lineDescription.length > 300 || debitUnits === null || creditUnits === null || (debitUnits > BigInt(0) && creditUnits > BigInt(0)) || (debitUnits === BigInt(0) && creditUnits === BigInt(0))) {
-      throw createError({ statusCode: 400, statusMessage: 'Each line needs a valid account, a valid description, and exactly one non-negative debit or credit amount.' })
+    if (!accountId || accountId.length > 80 || referenceNumber.length > 80 || !referenceNumber || lineDescription.length > 300 || chequeNumber.length > 80 || organizationUnitId.length > 80 || !/^\d{4}-\d{2}-\d{2}$/.test(transactionDate) || Number.isNaN(parsedTransactionDate.getTime()) || parsedTransactionDate.toISOString().slice(0, 10) !== transactionDate || debitUnits === null || creditUnits === null || (debitUnits > BigInt(0) && creditUnits > BigInt(0)) || (debitUnits === BigInt(0) && creditUnits === BigInt(0))) {
+      throw createError({ statusCode: 400, statusMessage: 'Each line needs a reference, account, valid transaction date, and exactly one non-negative debit or credit amount.' })
     }
-    return { accountId, description: lineDescription, debit, credit, debitUnits, creditUnits }
+    if (organizationUnitId && !ledgerOrganizationalUnits.some((unit) => unit.id === organizationUnitId)) {
+      throw createError({ statusCode: 400, statusMessage: 'Select a valid organizational unit for each journal line.' })
+    }
+    return { accountId, accountName, referenceNumber, description: lineDescription, organizationUnitId, transactionDate, chequeNumber, debit, credit, debitUnits, creditUnits }
   })
 
   const config = useRuntimeConfig(event)
@@ -55,10 +65,16 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
       body: {
         batchDate,
         description,
+        organizationUnitId: String(body?.organizationUnitId ?? '').trim() || undefined,
         status: 'draft',
         lines: normalizedLines.map((line) => ({
           accountId: line.accountId,
+          accountName: line.accountName,
+          referenceNumber: line.referenceNumber,
           description: line.description,
+          organizationUnitId: line.organizationUnitId || undefined,
+          transactionDate: line.transactionDate,
+          chequeNumber: line.chequeNumber || undefined,
           debit: line.debit,
           credit: line.credit,
         })),
@@ -75,14 +91,36 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
   }
 
   for (const line of normalizedLines) {
-    if (!demoAccounts.some((account) => account.id === line.accountId)) {
-      throw createError({ statusCode: 400, statusMessage: 'Select an account from the chart of accounts for every journal line.' })
+    if (!demoAccounts.some((account) => account.id === line.accountId && account.status === 'Active')) {
+      throw createError({ statusCode: 400, statusMessage: 'Select an active account from the chart of accounts for every journal line.' })
     }
   }
 
   const totalDebit = formatAmount(normalizedLines.reduce((sum, line) => sum + line.debitUnits, BigInt(0)))
   const totalCredit = formatAmount(normalizedLines.reduce((sum, line) => sum + line.creditUnits, BigInt(0)))
   const batchNumber = `GJ-${batchDate.slice(0, 4)}-${String(37 + demoJournals.length).padStart(4, '0')}`
+  const organizationUnitId = String(body?.organizationUnitId ?? '').trim()
+  if (organizationUnitId && !ledgerOrganizationalUnits.some((unit) => unit.id === organizationUnitId)) {
+    throw createError({ statusCode: 400, statusMessage: 'Select a valid organizational unit for the journal batch.' })
+  }
+  const journalLines: JournalLineSummary[] = normalizedLines.map((line) => {
+    const account = demoAccounts.find((item) => item.id === line.accountId)
+    const unit = ledgerOrganizationalUnits.find((item) => item.id === line.organizationUnitId)
+    return {
+      id: `demo-${crypto.randomUUID()}`,
+      accountId: line.accountId,
+      accountNumber: account?.accountNumber,
+      accountName: account?.name ?? line.accountName,
+      referenceNumber: line.referenceNumber,
+      description: line.description,
+      organizationUnitId: line.organizationUnitId || undefined,
+      organizationUnitName: unit?.path,
+      transactionDate: line.transactionDate,
+      chequeNumber: line.chequeNumber || undefined,
+      debit: line.debit,
+      credit: line.credit,
+    }
+  })
   const journal: JournalSummary = {
     id: `demo-${crypto.randomUUID()}`,
     batchNumber,
@@ -93,6 +131,9 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
     credit: totalCredit,
     status: 'Draft',
     preparer: 'K. Agyeman',
+    organizationUnitName: ledgerOrganizationalUnits.find((unit) => unit.id === organizationUnitId)?.path,
+    lineCount: journalLines.length,
+    lines: journalLines,
   }
   demoJournals.unshift(journal)
   setResponseStatus(event, 201)

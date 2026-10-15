@@ -1,4 +1,5 @@
 import type { CreateJournalDraftInput, JournalValidationResponse } from '../../../../app/features/ledger/types'
+import { demoAccounts } from '../../../utils/ledger-demo'
 import { requireBusinessDeskSession } from '../../../utils/auth'
 
 const decimalScale = BigInt(1_000_000)
@@ -22,6 +23,21 @@ function formatAmount(units: bigint): string {
 export default defineEventHandler(async (event): Promise<JournalValidationResponse> => {
   const session = await requireBusinessDeskSession(event)
   const body = await readBody<Partial<CreateJournalDraftInput>>(event)
+  const lines = Array.isArray(body?.lines) ? body.lines : []
+  const metadataErrors: string[] = []
+  lines.forEach((line, index) => {
+    const referenceNumber = String(line?.referenceNumber ?? '').trim()
+    const transactionDate = String(line?.transactionDate ?? body?.batchDate ?? '').trim()
+    const parsedDate = new Date(`${transactionDate}T00:00:00Z`)
+    if (!referenceNumber || referenceNumber.length > 80) metadataErrors.push(`Line ${index + 1}: reference number is required and must not exceed 80 characters.`)
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== transactionDate) {
+      metadataErrors.push(`Line ${index + 1}: transaction date must be a real calendar date in YYYY-MM-DD format.`)
+    }
+  })
+  if (metadataErrors.length) {
+    return { valid: false, balanced: false, debitTotal: '0.000000', creditTotal: '0.000000', errors: metadataErrors }
+  }
+
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
 
@@ -45,7 +61,6 @@ export default defineEventHandler(async (event): Promise<JournalValidationRespon
 
   const description = String(body?.description ?? '').trim()
   const batchDate = String(body?.batchDate ?? '').trim()
-  const lines = Array.isArray(body?.lines) ? body.lines : []
   const errors: string[] = []
   const parsedDate = new Date(`${batchDate}T00:00:00Z`)
 
@@ -63,6 +78,7 @@ export default defineEventHandler(async (event): Promise<JournalValidationRespon
     const accountId = String(line.accountId ?? '').trim()
     const lineDescription = String(line.description ?? '')
     if (!accountId || accountId.length > 80) errors.push(`Line ${lineNumber}: account is required and must not exceed 80 characters.`)
+    else if (!demoAccounts.some((account) => account.id === accountId && account.status === 'Active')) errors.push(`Line ${lineNumber}: select an active account from the chart of accounts.`)
     if (lineDescription.length > 300) errors.push(`Line ${lineNumber}: description must not exceed 300 characters.`)
 
     const debit = parseAmount(line.debit)

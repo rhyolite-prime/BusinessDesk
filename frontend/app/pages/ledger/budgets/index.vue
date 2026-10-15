@@ -231,7 +231,11 @@ function budgetSum(budget: LedgerBudget, key: 'budgetAmount' | 'revisedAmount') 
 }
 
 function periodLabel(budget: LedgerBudget) {
-  return `${formatDate(budget.beginDate)} — ${formatDate(budget.endDate)}`
+  const [beginYear, beginMonth] = budget.beginDate.split('-').map(Number)
+  const [endYear, endMonth] = budget.endDate.split('-').map(Number)
+  const begin = `${monthOptions[(beginMonth || 1) - 1]?.name} ${beginYear}`
+  const end = `${monthOptions[(endMonth || 1) - 1]?.name} ${endYear}`
+  return `${begin} — ${end}`
 }
 
 function statusText(status: LedgerBudgetStatus) {
@@ -371,8 +375,8 @@ function saveBudget() {
   }
 
   const beginDate = createIsoDate(beginYear, beginMonth, 1)
-  const lastDay = new Date(Date.UTC(endYear, endMonth, 0)).getUTCDate()
-  const endDate = createIsoDate(endYear, endMonth, lastDay)
+  // Store the first day of each bound month, matching the ledger budget contract.
+  const endDate = createIsoDate(endYear, endMonth, 1)
   const duplicate = budgets.value.some((budget) => budget.id !== editingId.value
     && budget.accountId === form.accountId
     && budget.organizationUnitId === form.organizationUnitId

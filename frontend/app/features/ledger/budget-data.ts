@@ -1,3 +1,5 @@
+import { ledgerOrganizationalUnits, type LedgerOrganizationalUnit } from './organization-data'
+
 export type LedgerBudgetStatus = 'draft' | 'submitted' | 'approved' | 'closed'
 
 export interface LedgerBudgetDetail {
@@ -21,19 +23,8 @@ export interface LedgerBudget {
   details: LedgerBudgetDetail[]
 }
 
-export interface BudgetOrganizationalUnit {
-  id: string
-  name: string
-  path: string
-}
-
-export const budgetOrganizationalUnits: BudgetOrganizationalUnit[] = [
-  { id: 'ou-accra', name: 'Accra Operations', path: 'Head Office / Accra Operations' },
-  { id: 'ou-finance', name: 'Finance & Administration', path: 'Head Office / Finance & Administration' },
-  { id: 'ou-operations', name: 'Operations', path: 'Head Office / Operations' },
-  { id: 'ou-sales', name: 'Sales & Marketing', path: 'Head Office / Sales & Marketing' },
-  { id: 'ou-kumasi', name: 'Kumasi Branch', path: 'Kumasi Branch' },
-]
+export type BudgetOrganizationalUnit = LedgerOrganizationalUnit
+export const budgetOrganizationalUnits: BudgetOrganizationalUnit[] = ledgerOrganizationalUnits
 
 function makeMonthlyDetails(
   budgetKey: string,
@@ -62,7 +53,7 @@ const budgetSeed: LedgerBudget[] = [
     organizationUnitId: 'ou-operations',
     organizationUnitName: 'Operations',
     beginDate: '2025-01-01',
-    endDate: '2025-12-31',
+    endDate: '2025-12-01',
     status: 'closed',
     details: makeMonthlyDetails('budget-revenue-2025', 2025, (month) => 42_000 + month * 250, (month) => 42_000 + month * 300),
   },
@@ -74,7 +65,7 @@ const budgetSeed: LedgerBudget[] = [
     organizationUnitId: 'ou-operations',
     organizationUnitName: 'Operations',
     beginDate: '2026-01-01',
-    endDate: '2026-12-31',
+    endDate: '2026-12-01',
     status: 'approved',
     details: makeMonthlyDetails('budget-revenue-2026', 2026, (month) => 46_000 + month * 300, (month) => 47_000 + month * 300),
   },
@@ -86,7 +77,7 @@ const budgetSeed: LedgerBudget[] = [
     organizationUnitId: 'ou-finance',
     organizationUnitName: 'Finance & Administration',
     beginDate: '2026-01-01',
-    endDate: '2026-12-31',
+    endDate: '2026-12-01',
     status: 'draft',
     details: makeMonthlyDetails('budget-expenses-2026', 2026, (month) => 9_500 + month * 175),
   },

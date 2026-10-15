@@ -61,7 +61,10 @@ const ledgerGroups: NavigationGroup[] = [
       {
         label: 'Vouchers',
         icon: 'credit-card',
-        children: [soon('Voucher'), soon('Voucher History', 'clock')],
+        children: [
+          { label: 'Voucher', to: '/ledger/vouchers', icon: 'credit-card' },
+          { label: 'Voucher History', to: '/ledger/vouchers/history', icon: 'clock' },
+        ],
       },
       {
         label: 'Accountable Imprest',

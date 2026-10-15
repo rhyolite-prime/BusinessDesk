@@ -28,6 +28,21 @@ export interface LedgerAccount {
   status: 'Active' | 'Inactive'
 }
 
+export interface JournalLineSummary {
+  id?: string
+  accountId: string
+  accountNumber?: string
+  accountName?: string
+  referenceNumber?: string
+  description: string
+  organizationUnitId?: string
+  organizationUnitName?: string
+  transactionDate?: string
+  chequeNumber?: string
+  debit: string
+  credit: string
+}
+
 export interface JournalSummary {
   id: string
   batchNumber: string
@@ -38,6 +53,9 @@ export interface JournalSummary {
   credit: string
   status: 'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Reversed'
   preparer: string
+  organizationUnitName?: string
+  lineCount?: number
+  lines?: JournalLineSummary[]
 }
 
 export interface CreateAccountInput {
@@ -53,10 +71,15 @@ export interface CreateAccountInput {
 export interface CreateJournalDraftInput {
   batchDate: string
   description: string
+  organizationUnitId?: string
   lines: Array<{
     accountId: string
     accountName: string
+    referenceNumber?: string
     description: string
+    organizationUnitId?: string
+    transactionDate?: string
+    chequeNumber?: string
     debit: string
     credit: string
   }>
