@@ -2,7 +2,7 @@ import type { CreateJournalDraftInput, JournalLineSummary, JournalSummary } from
 import { formatLedgerAmount } from '../../../app/features/ledger/money'
 import { ledgerOrganizationalUnits } from '../../../app/features/ledger/organization-data'
 import { normalizeJournalLineAmounts } from '../../utils/ledger-journal-amounts'
-import { demoAccounts, demoJournals } from '../../utils/ledger-demo'
+import { demoAccounts, demoJournals, getNextDemoJournalBatchNumber } from '../../utils/ledger-demo'
 import { requireBusinessDeskSession } from '../../utils/auth'
 
 function isRealDate(value: string): boolean {
@@ -109,7 +109,7 @@ export default defineEventHandler(async (event): Promise<JournalSummary> => {
 
   const totalDebit = formatLedgerAmount(normalizedLines.reduce((sum, line) => sum + line.debitUnits, BigInt(0)))
   const totalCredit = formatLedgerAmount(normalizedLines.reduce((sum, line) => sum + line.creditUnits, BigInt(0)))
-  const batchNumber = `GJ-${batchDate.slice(0, 4)}-${String(37 + demoJournals.length).padStart(4, '0')}`
+  const batchNumber = getNextDemoJournalBatchNumber(batchDate)
   const organizationUnitId = String(body?.organizationUnitId ?? '').trim()
   if (organizationUnitId && !ledgerOrganizationalUnits.some((unit) => unit.id === organizationUnitId)) {
     throw createError({ statusCode: 400, statusMessage: 'Select a valid organizational unit for the journal batch.' })

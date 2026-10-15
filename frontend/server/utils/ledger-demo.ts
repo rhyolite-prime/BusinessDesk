@@ -30,6 +30,16 @@ export const demoJournals: JournalSummary[] = [
   { id: 'jrn-006', batchNumber: 'GJ-2026-0039', description: 'Correction — duplicate accrual', date: '2026-04-24', source: 'Reversal', debit: '930.00', credit: '930.00', status: 'Reversed', preparer: 'M. Boateng' },
 ]
 
+export function getNextDemoJournalBatchNumber(batchDate: string): string {
+  const year = batchDate.slice(0, 4)
+  const pattern = new RegExp(`^GJ-${year}-(\\d+)$`)
+  const highestSequence = demoJournals.reduce((highest, journal) => {
+    const match = journal.batchNumber.match(pattern)
+    return match ? Math.max(highest, Number(match[1])) : highest
+  }, 0)
+  return `GJ-${year}-${String(highestSequence + 1).padStart(4, '0')}`
+}
+
 export const demoDashboard: DashboardResponse = {
   accountingUnit: { id: 'unit-accra', name: 'Accra Operations', code: 'ACC-01', baseCurrency: 'GHS' },
   asOf: '2026-04-30',

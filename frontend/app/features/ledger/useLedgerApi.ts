@@ -1,4 +1,4 @@
-import type { AccountsResponse, CreateAccountInput, CreateJournalDraftInput, DashboardResponse, JournalValidationResponse, JournalsResponse, JournalSummary, LedgerAccount } from './types'
+import type { AccountsResponse, CreateAccountInput, CreateJournalDraftInput, DashboardResponse, JournalValidationResponse, JournalBatchNumberResponse, JournalsResponse, JournalSummary, LedgerAccount } from './types'
 
 export function useLedgerApi() {
   const requestFetch = useRequestFetch()
@@ -23,6 +23,8 @@ export function useLedgerApi() {
       deleteRequest<{ id: string; deleted: boolean }>(`accounts/${encodeURIComponent(id)}`),
     journals: (query: Record<string, string> = {}) =>
       getRequest<JournalsResponse>('journals', query),
+    nextJournalBatchNumber: (batchDate: string) =>
+      getRequest<JournalBatchNumberResponse>('journals/next-number', { batchDate }),
     createJournalDraft: (input: CreateJournalDraftInput) =>
       postRequest<JournalSummary>('journals', input),
     validateJournalDraft: (input: CreateJournalDraftInput) =>

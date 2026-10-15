@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ArrowLeft, Plus, Trash2, Save, AlertTriangle, CheckCircle2 } from '@lucide/vue'
-import type { AccountsResponse, CreateJournalDraftInput } from '../../../features/ledger/types'
+import type { AccountsResponse, CreateJournalDraftInput, JournalBatchNumberResponse } from '../../../features/ledger/types'
 import { ledgerCurrencyOptions } from '../../../features/ledger/setup-data'
 import { ledgerOrganizationalUnits } from '../../../features/ledger/organization-data'
 import { convertBaseToTransactionAmount, convertLedgerAmount, formatLedgerAmount, LEDGER_RATE_SCALE, parseLedgerAmount, parseLedgerRate } from '../../../features/ledger/money'
@@ -61,7 +61,13 @@ const lines = ref<DraftLine[]>([
 ])
 const saving = ref(false)
 const saveError = ref('')
+const showLocalJournalScenarios = import.meta.dev
 const { data: accountsData, error: accountsError, refresh: refreshAccounts } = await useAsyncData<AccountsResponse>('ledger-journal-account-options', () => api.accounts())
+const { data: batchNumberData, pending: batchNumberPending, error: batchNumberError } = await useAsyncData<JournalBatchNumberResponse>(
+  'ledger-journal-next-batch-number',
+  () => api.nextJournalBatchNumber(batchDate.value),
+  { watch: [batchDate] },
+)
 const accounts = computed(() => accountsData.value?.items ?? [])
 const activeAccounts = computed(() => accounts.value.filter((account) => account.status === 'Active'))
 const hasForeignCurrencyAccount = computed(() => lines.value.some((line) => {
@@ -154,7 +160,54 @@ const exchangeRateErrors = computed(() => lines.value.flatMap((line, index) => {
 }))
 
 function addLine() {
-  lines.value.push(makeLine(organizationUnitId.value, batchDate.value))
+  const line = makeLine(organizationUnitId.value, batchDate.value)
+  const deficit = debitUnits.value - creditUnits.value
+  if (deficit > BigInt(0)) {
+    if (isMultiCurrency.value) line.foreignCredit = formatLedgerAmount(deficit)
+    else line.credit = formatLedgerAmount(deficit)
+  } else if (deficit < BigInt(0)) {
+    const amount = -deficit
+    if (isMultiCurrency.value) line.foreignDebit = formatLedgerAmount(amount)
+    else line.debit = formatLedgerAmount(amount)
+  }
+  lines.value.push(line)
+}
+
+type LocalJournalScenario = 'debit-ahead' | 'credit-ahead' | 'balanced' | 'fx-debit-ahead'
+
+function localDemoLine(overrides: Partial<DraftLine>): DraftLine {
+  return { ...makeLine(organizationUnitId.value, batchDate.value), ...overrides }
+}
+
+function loadLocalJournalScenario(scenario: LocalJournalScenario) {
+  organizationUnitId.value = 'ou-accra'
+  multiCurrency.value = scenario === 'fx-debit-ahead'
+
+  if (scenario === 'debit-ahead') {
+    description.value = 'Local demo — GHS debit exceeds credit'
+    lines.value = [
+      localDemoLine({ accountId: 'acc-1000', referenceNumber: 'DEMO-GHS-001', description: 'Mock cash debit', debit: '1250.000000' }),
+      localDemoLine({ accountId: 'acc-4000', referenceNumber: 'DEMO-GHS-002', description: 'Mock revenue credit', credit: '500.000000' }),
+    ]
+  } else if (scenario === 'credit-ahead') {
+    description.value = 'Local demo — GHS credit exceeds debit'
+    lines.value = [
+      localDemoLine({ accountId: 'acc-2000', referenceNumber: 'DEMO-GHS-003', description: 'Mock payable credit', credit: '1250.000000' }),
+      localDemoLine({ accountId: 'acc-5000', referenceNumber: 'DEMO-GHS-004', description: 'Mock expense debit', debit: '500.000000' }),
+    ]
+  } else if (scenario === 'balanced') {
+    description.value = 'Local demo — balanced GHS journal'
+    lines.value = [
+      localDemoLine({ accountId: 'acc-1000', referenceNumber: 'DEMO-GHS-005', description: 'Mock cash debit', debit: '1250.000000' }),
+      localDemoLine({ accountId: 'acc-4000', referenceNumber: 'DEMO-GHS-006', description: 'Mock revenue credit', credit: '1250.000000' }),
+    ]
+  } else {
+    description.value = 'Local demo — USD debit with GHS offset'
+    lines.value = [
+      localDemoLine({ accountId: 'acc-1020', referenceNumber: 'DEMO-FX-001', description: 'Mock USD debit', currencyCode: 'USD', exchangeRate: '12.5000000000', foreignDebit: '100.000000' }),
+      localDemoLine({ accountId: 'acc-1000', referenceNumber: 'DEMO-FX-002', description: 'Mock GHS offset', foreignCredit: '400.000000' }),
+    ]
+  }
 }
 
 function removeLine(index: number) {
@@ -345,11 +398,12 @@ async function saveDraft() {
 
     <section class="rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:p-6">
       <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start">
-        <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Journal header</h2><p class="mt-1 text-[11px] text-slate-500">A batch number is assigned when the journal is saved.</p></div>
+        <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Journal header</h2><p class="mt-1 text-[11px] text-slate-500">The batch number is shown here and confirmed when the journal is saved.</p></div>
         <span class="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-300">General journal</span>
       </div>
-      <div class="mt-4 grid gap-4 sm:grid-cols-[190px_260px_1fr]">
+      <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-[190px_210px_260px_1fr]">
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Batch date</span><input v-model="batchDate" type="date" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" @change="updateLineDates" /></label>
+        <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Batch number</span><input :value="batchNumberPending ? 'Generating…' : batchNumberData?.batchNumber || 'Assigned on save'" readonly aria-label="Journal batch number" class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono text-xs font-semibold text-brand-700 outline-none dark:border-slate-700 dark:bg-slate-900/70 dark:text-brand-300" /><span v-if="batchNumberError" class="mt-1 block text-[10px] text-slate-400">The ledger will confirm the number when the draft is saved.</span></label>
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Organizational unit</span><select v-model="organizationUnitId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" @change="updateLineDefaultUnits"><option value="">No unit</option><option v-for="unit in ledgerOrganizationalUnits" :key="unit.id" :value="unit.id">{{ unit.path }}</option></select></label>
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Batch description</span><input v-model="description" required maxlength="200" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" placeholder="What is this journal recording?" /></label>
       </div>
@@ -357,6 +411,18 @@ async function saveDraft() {
         <input type="checkbox" :checked="isMultiCurrency" :disabled="hasForeignCurrencyAccount" class="mt-0.5 rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="onMultiCurrencyToggle" />
         <span><span class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Multi-currency journal</span><span class="mt-1 block text-[10px] text-slate-500 dark:text-slate-400">Enter each line in its account currency and set its rate to GHS. Foreign-currency accounts automatically require this mode; journal totals and balancing remain in GHS.</span></span>
       </label>
+    </section>
+
+    <section v-if="showLocalJournalScenarios" class="rounded-xl border border-sky-200 bg-sky-50/70 p-4 dark:border-sky-900/50 dark:bg-sky-950/20">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div><h2 class="text-xs font-semibold text-sky-900 dark:text-sky-200">Local journal test data</h2><p class="mt-1 text-[11px] text-sky-800/80 dark:text-sky-300/80">Load a mock scenario, then click Add line to validate the balancing behavior. Scenarios are development-only.</p></div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" class="rounded-lg border border-sky-300 bg-white px-3 py-2 text-[10px] font-semibold text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-sky-900/40" @click="loadLocalJournalScenario('debit-ahead')">GHS debit ahead</button>
+          <button type="button" class="rounded-lg border border-sky-300 bg-white px-3 py-2 text-[10px] font-semibold text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-sky-900/40" @click="loadLocalJournalScenario('credit-ahead')">GHS credit ahead</button>
+          <button type="button" class="rounded-lg border border-sky-300 bg-white px-3 py-2 text-[10px] font-semibold text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-sky-900/40" @click="loadLocalJournalScenario('balanced')">Balanced GHS</button>
+          <button type="button" class="rounded-lg border border-sky-300 bg-white px-3 py-2 text-[10px] font-semibold text-sky-800 hover:bg-sky-100 dark:border-sky-800 dark:bg-slate-900 dark:text-sky-200 dark:hover:bg-sky-900/40" @click="loadLocalJournalScenario('fx-debit-ahead')">USD / GHS FX</button>
+        </div>
+      </div>
     </section>
 
     <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">

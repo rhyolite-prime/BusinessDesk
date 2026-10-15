@@ -114,3 +114,7 @@ export interface JournalsResponse {
   items: JournalSummary[]
   total: number
 }
+
+export interface JournalBatchNumberResponse {
+  batchNumber: string
+}
