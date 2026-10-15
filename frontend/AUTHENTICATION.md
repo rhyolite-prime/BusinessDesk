@@ -8,4 +8,6 @@ The frontend does not authenticate users by itself. Configure `AUTH_API_BASE_URL
 
 The browser calls only `/api/auth/*`. The access token is stored in an HttpOnly, SameSite=Lax cookie and is not exposed to client JavaScript. Protected ledger BFF routes validate the session with the auth service and forward the bearer token to `LEDGER_API_BASE_URL`. The ledger service must still enforce authorization and tenant/account access for every request.
 
-For local UI preview only, run Nuxt in development with `AUTH_DEMO_MODE=true`. Any non-empty credentials are accepted in this mode, and the UI labels the session as a demo. This mode is disabled outside `NODE_ENV=development` and must not be enabled as a substitute for production authentication. Without a configured auth service or the explicit local demo flag, sign-in returns `503` rather than accepting credentials.
+The module catalog is currently static: General Ledger is linkable and the remaining catalog cards are locked for presentation. Subscription statuses are not entitlements; the Manage Subscriptions dialog explains that a subscription service is not connected yet.
+
+For local UI preview only, run Nuxt in development with `AUTH_DEMO_MODE=true`. Any valid-length non-empty credentials are accepted in this mode, and the UI labels the session as a demo. This mode is disabled outside `NODE_ENV=development` and must not be enabled as a substitute for production authentication. Without a configured auth service or the explicit local demo flag, sign-in returns `503` rather than accepting credentials.
