@@ -45,6 +45,7 @@ export default defineNuxtConfig({
       demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
     },
   },
+
   app: {
     head: {
       titleTemplate: '%s · BusinessDesk',

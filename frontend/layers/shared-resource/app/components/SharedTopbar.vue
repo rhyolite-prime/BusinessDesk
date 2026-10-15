@@ -32,7 +32,10 @@ const currentName = computed(() => user.value?.displayName || user.value?.userna
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
 const pageTitle = computed(() => {
   if (route.path.startsWith('/modules/')) return props.moduleName
-  if (route.path.startsWith('/ledger/accounts')) return 'Chart of accounts'
+  if (route.path === '/ledger/account-heads') return 'Account Heads'
+  if (route.path === '/ledger/account-controls') return 'Chart of Account Control'
+  if (route.path === '/ledger/bank-accounts') return 'Bank Accounts'
+  if (route.path.startsWith('/ledger/accounts')) return 'Chart of Account Detail'
   if (route.path === '/ledger/journals/new') return 'New journal'
   if (route.path.startsWith('/ledger/journals')) return 'Journal entries'
   return 'Overview'
@@ -41,7 +44,10 @@ const pageTitle = computed(() => {
 const searchItems = computed(() => isLedgerWorkspace.value
   ? [
       { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
-      { label: 'Chart of accounts', detail: 'Browse accounts and balances', to: '/ledger/accounts' },
+      { label: 'Account Heads', detail: 'Maintain the chart-of-accounts hierarchy', to: '/ledger/account-heads' },
+      { label: 'Bank Account', detail: 'Manage bank accounts and GL links', to: '/ledger/bank-accounts' },
+      { label: 'Chart of Account Control', detail: 'Set control headers and number ranges', to: '/ledger/account-controls' },
+      { label: 'Chart of Account Detail', detail: 'Manage posting accounts and balances', to: '/ledger/accounts' },
       { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
       { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
       { label: 'Module manager', detail: 'Switch workspaces', to: '/modules' },

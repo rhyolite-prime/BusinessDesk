@@ -23,6 +23,7 @@ export interface LedgerAccount {
   group: string
   accountType: string
   currency: string
+  accountHeaderId?: string
   balance: string
   status: 'Active' | 'Inactive'
 }
@@ -45,6 +46,8 @@ export interface CreateAccountInput {
   group: string
   accountType: string
   currency: string
+  accountHeaderId?: string
+  status?: 'Active' | 'Inactive'
 }
 
 export interface CreateJournalDraftInput {
