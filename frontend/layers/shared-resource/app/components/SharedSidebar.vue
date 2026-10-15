@@ -1,10 +1,20 @@
 <script setup lang="ts">
-const props = defineProps<{ mobileOpen: boolean }>()
+const props = withDefaults(defineProps<{
+  mobileOpen: boolean
+  moduleId?: string
+  moduleName?: string
+  dashboardTo?: string
+}>(), {
+  moduleId: 'general-ledger',
+  moduleName: 'General Ledger',
+  dashboardTo: '/ledger',
+})
 const emit = defineEmits<{ close: [] }>()
 const route = useRoute()
 const { user, logout } = useBusinessDeskAuth()
 const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
+const isLedgerWorkspace = computed(() => props.moduleId === 'general-ledger')
 
 interface NavigationLink {
   label: string
@@ -18,7 +28,7 @@ interface NavigationGroup {
   links: NavigationLink[]
 }
 
-const groups: NavigationGroup[] = [
+const ledgerGroups: NavigationGroup[] = [
   {
     title: 'General ledger',
     links: [
@@ -38,15 +48,43 @@ const groups: NavigationGroup[] = [
   },
 ]
 
-const setupLinks: NavigationLink[] = [
+const moduleGroups = computed<NavigationGroup[]>(() => [
+  {
+    title: `${props.moduleName} workflows`,
+    links: [
+      { label: 'Records & transactions', icon: 'document-text', comingSoon: true },
+      { label: 'Approvals', icon: 'shield-check', comingSoon: true },
+    ],
+  },
+  {
+    title: 'Insights & reports',
+    links: [
+      { label: 'Operational reports', icon: 'chart-bar-square', comingSoon: true },
+      { label: 'Activity log', icon: 'clock', comingSoon: true },
+    ],
+  },
+])
+
+const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : moduleGroups.value)
+const ledgerSetupLinks: NavigationLink[] = [
   { label: 'Accounting units', icon: 'building-office', comingSoon: true },
   { label: 'Bank accounts', icon: 'wallet', comingSoon: true },
   { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
 ]
+const moduleSetupLinks: NavigationLink[] = [
+  { label: 'Workspace settings', icon: 'cog-6-tooth', comingSoon: true },
+  { label: 'User access', icon: 'user-group', comingSoon: true },
+  { label: 'Data connections', icon: 'arrow-path', comingSoon: true },
+]
+const setupLinks = computed(() => isLedgerWorkspace.value ? ledgerSetupLinks : moduleSetupLinks)
+
+function comingSoonTitle(label: string) {
+  return `${label} is planned for a later ${props.moduleName} phase`
+}
 
 function isActive(path?: string) {
   if (!path) return false
-  if (path === '/ledger') return route.path === path
+  if (path === '/ledger' || path === props.dashboardTo) return route.path === path
   return route.path === path || route.path.startsWith(`${path}/`)
 }
 </script>
@@ -62,15 +100,15 @@ function isActive(path?: string) {
   >
     <div class="border-b border-white/10 px-5 py-5">
       <NuxtLink to="/modules" class="block min-w-0" aria-label="BusinessDesk module manager" @click="emit('close')">
-        <BrandMark dark product-name="General Ledger" />
+        <BrandMark dark :product-name="props.moduleName" />
       </NuxtLink>
     </div>
 
     <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4">
       <NuxtLink
-        to="/ledger"
+        :to="props.dashboardTo"
         class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-        :class="isActive('/ledger') ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
+        :class="isActive(props.dashboardTo) ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
         @click="emit('close')"
       >
         <AppIcon name="home" :size="18" />
@@ -95,7 +133,7 @@ function isActive(path?: string) {
               v-else
               type="button"
               disabled
-              :title="`${link.label} is planned for a later GL phase`"
+              :title="comingSoonTitle(link.label)"
               class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
             >
               <AppIcon :name="link.icon" :size="18" />
@@ -114,7 +152,7 @@ function isActive(path?: string) {
             :key="link.label"
             type="button"
             disabled
-            :title="`${link.label} is planned for a later GL phase`"
+            :title="comingSoonTitle(link.label)"
             class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
           >
             <AppIcon :name="link.icon" :size="18" />
@@ -142,7 +180,7 @@ function isActive(path?: string) {
           <AppIcon name="arrow-left-on-rectangle" :size="17" />
         </button>
       </div>
-      <p class="px-2 pt-1 text-[10px] leading-relaxed text-white/35">BusinessDesk · Accounting workspace</p>
+      <p class="px-2 pt-1 text-[10px] leading-relaxed text-white/35">BusinessDesk ERP · {{ props.moduleName }} workspace</p>
     </div>
   </aside>
 </template>

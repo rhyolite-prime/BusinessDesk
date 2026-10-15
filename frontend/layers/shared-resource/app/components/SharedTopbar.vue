@@ -1,11 +1,22 @@
 <script setup lang="ts">
 import { ArrowRight, Bell, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Search, Sun, X } from '@lucide/vue'
 
-const props = withDefaults(defineProps<{ dark: boolean }>(), { dark: false })
+const props = withDefaults(defineProps<{
+  dark: boolean
+  moduleId?: string
+  moduleName?: string
+  dashboardTo?: string
+}>(), {
+  dark: false,
+  moduleId: 'general-ledger',
+  moduleName: 'General Ledger',
+  dashboardTo: '/ledger',
+})
 const emit = defineEmits<{ toggleMenu: []; toggleTheme: [] }>()
 const route = useRoute()
 const router = useRouter()
 const { user, logout } = useBusinessDeskAuth()
+const isLedgerWorkspace = computed(() => props.moduleId === 'general-ledger')
 
 const searchQuery = ref('')
 const searchFocused = ref(false)
@@ -20,23 +31,29 @@ const notificationsError = ref(false)
 const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
 const pageTitle = computed(() => {
+  if (route.path.startsWith('/modules/')) return props.moduleName
   if (route.path.startsWith('/ledger/accounts')) return 'Chart of accounts'
   if (route.path === '/ledger/journals/new') return 'New journal'
   if (route.path.startsWith('/ledger/journals')) return 'Journal entries'
   return 'Overview'
 })
 
-const searchItems = [
-  { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
-  { label: 'Chart of accounts', detail: 'Browse accounts and balances', to: '/ledger/accounts' },
-  { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
-  { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
-  { label: 'Module manager', detail: 'Switch workspaces', to: '/modules' },
-]
+const searchItems = computed(() => isLedgerWorkspace.value
+  ? [
+      { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
+      { label: 'Chart of accounts', detail: 'Browse accounts and balances', to: '/ledger/accounts' },
+      { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
+      { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
+      { label: 'Module manager', detail: 'Switch workspaces', to: '/modules' },
+    ]
+  : [
+      { label: `${props.moduleName} overview`, detail: 'Open this module landing dashboard', to: props.dashboardTo },
+      { label: 'Module manager', detail: 'Browse all ERP workspaces', to: '/modules' },
+    ])
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query) return []
-  return searchItems.filter((item) => `${item.label} ${item.detail}`.toLowerCase().includes(query))
+  return searchItems.value.filter((item) => `${item.label} ${item.detail}`.toLowerCase().includes(query))
 })
 
 function go(to: string) {
@@ -115,7 +132,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
             v-model="searchQuery"
             type="search"
             autocomplete="off"
-            placeholder="Search ledger pages…"
+            :placeholder="isLedgerWorkspace ? 'Search ledger pages…' : 'Search workspace…'"
             class="w-full rounded-full border border-transparent bg-canvas py-2.5 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition focus:border-primary/30 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/15"
             @focus="searchFocused = true"
             @keydown.esc="searchQuery = ''; searchFocused = false"
@@ -167,7 +184,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
           <Moon v-else :size="18" />
         </button>
 
-        <div class="relative" data-popover>
+        <div v-if="isLedgerWorkspace" class="relative" data-popover>
           <button
             type="button"
             class="relative rounded-lg p-2 text-ink-soft transition hover:bg-canvas"

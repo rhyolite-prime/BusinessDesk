@@ -21,9 +21,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       titleTemplate: '%s · BusinessDesk',
-      title: 'General Ledger',
+      title: 'BusinessDesk ERP',
       meta: [
-        { name: 'description', content: 'BusinessDesk General Ledger' },
+        { name: 'description', content: 'BusinessDesk ERP workspaces for finance, operations, people, and industry workflows.' },
         { name: 'theme-color', content: '#f7f8fa' },
       ],
     },
