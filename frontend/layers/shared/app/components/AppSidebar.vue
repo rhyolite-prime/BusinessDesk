@@ -23,12 +23,12 @@ const isActive = (to: string) =>
     </div>
 
     <nav class="flex-1 overflow-y-auto py-4 px-3 space-y-5">
-      <NuxtLink to="/"
+      <NuxtLink to="/modules"
         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors"
-        :class="route.path === '/' ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
+        :class="route.path === '/modules' ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
         @click="mobileOpen = false">
         <AppIcon name="home" :size="18" />
-        Dashboard
+        Module manager
       </NuxtLink>
 
       <div v-for="section in sections" :key="section.key">
@@ -52,7 +52,7 @@ const isActive = (to: string) =>
 
     <div class="px-5 py-4 border-t border-white/10 text-[10px] text-white/40 leading-relaxed">
       <p class="font-semibold text-white/60">{{ brand.productName }}</p>
-      <p>v1.0 · Mock core · Fineract-compatible API</p>
+      <p>BusinessDesk ERP · Finance, operations &amp; people</p>
     </div>
   </aside>
 </template>

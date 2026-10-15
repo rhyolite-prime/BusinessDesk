@@ -5,21 +5,13 @@ export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: false },
 
-  // Inherit the shared ERP design system and domain-specific layer features.
+  // Compose the ERP design system and authentication layer only. The legacy
+  // core-banking feature layers remain in the repository but are not mounted
+  // into the ERP app; workspaces are defined by the ERP module catalog.
   extends: [
     './layers/shared',
     './layers/shared-resource',
     './layers/modules/auth',
-    './layers/modules/dashboard',
-    './layers/modules/clients',
-    './layers/modules/groups',
-    './layers/modules/loans',
-    './layers/modules/savings',
-    './layers/modules/products',
-    './layers/modules/accounting',
-    './layers/modules/organization',
-    './layers/modules/system',
-    './layers/modules/reports',
   ],
 
   imports: {
