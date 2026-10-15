@@ -38,6 +38,21 @@
   --color-sidebar: var(--brand-sidebar);
   --color-accent: var(--brand-accent);
 
+  /* Tailwind `brand-*` utilities used by the ERP pages and action buttons.
+     Tie the scale to the active tenant palette so `bg-brand-700 text-white`
+     remains a real, high-contrast button after white-label theme changes. */
+  --color-brand-50: color-mix(in srgb, var(--brand-primary) 4%, white);
+  --color-brand-100: var(--brand-primary-light);
+  --color-brand-200: color-mix(in srgb, var(--brand-primary) 18%, white);
+  --color-brand-300: color-mix(in srgb, var(--brand-primary) 32%, white);
+  --color-brand-400: color-mix(in srgb, var(--brand-primary) 52%, white);
+  --color-brand-500: color-mix(in srgb, var(--brand-primary) 72%, white);
+  --color-brand-600: var(--brand-primary);
+  --color-brand-700: var(--brand-primary);
+  --color-brand-800: var(--brand-primary-dark);
+  --color-brand-900: color-mix(in srgb, var(--brand-primary-dark) 80%, black);
+  --color-brand-950: color-mix(in srgb, var(--brand-primary-dark) 62%, black);
+
   --color-ink: #0F172A;
   --color-ink-soft: #475569;
   --color-ink-faint: #94A3B8;
