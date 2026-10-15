@@ -4,10 +4,12 @@ const props = withDefaults(defineProps<{
   moduleId?: string
   moduleName?: string
   dashboardTo?: string
+  navigationGroups?: NavigationGroup[]
 }>(), {
   moduleId: 'general-ledger',
   moduleName: 'General Ledger',
   dashboardTo: '/ledger',
+  navigationGroups: undefined,
 })
 const emit = defineEmits<{ close: [] }>()
 const route = useRoute()
@@ -73,7 +75,7 @@ const ledgerGroups: NavigationGroup[] = [
         children: [
           { label: 'Imprest Categories', to: '/ledger/imprest-categories', icon: 'list-bullet' },
           { label: 'Imprests', to: '/ledger/imprests', icon: 'banknotes' },
-          { label: 'Convert to Payroll Loans', to: '/ledger/imprests/payroll-js-loans', icon: 'arrow-path' },
+          { label: 'Convert to Payroll Loans', to: '/ledger/imprests/payroll-loans', icon: 'arrow-path' },
         ],
       },
       {
@@ -180,7 +182,7 @@ const moduleGroups = computed<NavigationGroup[]>(() => [
   },
 ])
 
-const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : moduleGroups.value)
+const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : (props.navigationGroups ?? moduleGroups.value))
 const ledgerSetupLinks: NavigationLink[] = [
   { label: 'Accounting units', icon: 'building-office', comingSoon: true },
   { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
@@ -245,7 +247,7 @@ function isActive(path?: string) {
         </div>
       </section>
 
-      <section>
+      <section v-if="isLedgerWorkspace || !props.navigationGroups">
         <p class="mb-1.5 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
           <AppIcon name="cog-6-tooth" :size="13" /> Configuration
         </p>

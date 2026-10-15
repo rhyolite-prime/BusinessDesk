@@ -86,7 +86,7 @@ interface PayrollCategoryRow {
 const form = reactive<ConversionForm>({
   loanDate: todayIso(),
   employeeId: 'employee-ama-owusu',
-  loanTypeId: 'staff-payroll-js-loan',
+  loanTypeId: 'staff-payroll-loan',
   deductionStarts: todayIso(),
   durationMonths: 12,
   deductThisMonth: true,
@@ -375,7 +375,7 @@ function confirmAction() {
   if (action === 'delete') {
     const conversion = conversions.value.find((item) => item.id === id)
     if (!ledger.removePayrollLoanConversion(id)) {
-      errorMessage.value = 'Only payroll-js-loan conversion drafts can be deleted.'
+      errorMessage.value = 'Only payroll-loan conversion drafts can be deleted.'
       return
     }
     if (editingConversionId.value === id) resetForm()
@@ -535,7 +535,7 @@ watch(() => route.query.imprestId, applyImprestQuery, { immediate: true })
         <div class="mt-3 flex flex-col justify-between gap-3 rounded-lg border border-slate-100 bg-slate-50/70 px-3.5 py-3 sm:flex-row sm:items-center dark:border-slate-800 dark:bg-slate-900/35">
           <label class="flex cursor-pointer items-start gap-2.5">
             <input v-model="form.deductThisMonth" type="checkbox" class="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-700 focus:ring-brand-500 dark:border-slate-600 dark:bg-slate-900" />
-            <span><span class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Deduct This Month?</span><span class="mt-0.5 block text-[10px] text-slate-500 dark:text-slate-400">{{ form.deductThisMonth ? 'The first scheduled payroll-js deduction is included in the current month.' : `First scheduled deduction: ${formatDate(form.deductionStarts)}` }}</span></span>
+            <span><span class="block text-xs font-semibold text-slate-700 dark:text-slate-200">Deduct This Month?</span><span class="mt-0.5 block text-[10px] text-slate-500 dark:text-slate-400">{{ form.deductThisMonth ? 'The first scheduled payroll deduction is included in the current month.' : `First scheduled deduction: ${formatDate(form.deductionStarts)}` }}</span></span>
           </label>
           <div class="flex flex-wrap gap-x-5 gap-y-1 text-[10px] text-slate-500 dark:text-slate-400">
             <span>Selected imprests <strong class="ml-1 text-slate-700 dark:text-slate-200">{{ selectedAmountCount }}</strong></span>
@@ -641,7 +641,7 @@ watch(() => route.query.imprestId, applyImprestQuery, { immediate: true })
 
     <div v-if="confirmation" class="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/50 p-4 backdrop-blur-[2px]" role="presentation" @click.self="confirmation = null">
       <section role="dialog" aria-modal="true" aria-labelledby="conversion-confirm-title" class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-[#172321] sm:p-6">
-        <div class="flex gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl" :class="confirmation.action === 'convert' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/25 dark:text-rose-300'"><CircleAlert :size="19" /></span><div><h2 id="conversion-confirm-title" class="text-sm font-semibold text-slate-900 dark:text-white">{{ confirmation.action === 'convert' ? 'Convert outstanding balance?' : 'Delete payroll-js-loan draft?' }}</h2><p class="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ confirmation.action === 'convert' ? 'This will mark the selected source balances as converted and lock this local preview record. Payroll and GL integrations are not connected.' : 'This draft will be removed and the reserved imprest balances will become available again.' }}</p></div></div>
+        <div class="flex gap-3"><span class="grid h-10 w-10 shrink-0 place-items-center rounded-xl" :class="confirmation.action === 'convert' ? 'bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300' : 'bg-rose-50 text-rose-600 dark:bg-rose-900/25 dark:text-rose-300'"><CircleAlert :size="19" /></span><div><h2 id="conversion-confirm-title" class="text-sm font-semibold text-slate-900 dark:text-white">{{ confirmation.action === 'convert' ? 'Convert outstanding balance?' : 'Delete payroll-loan draft?' }}</h2><p class="mt-1.5 text-xs leading-5 text-slate-500 dark:text-slate-400">{{ confirmation.action === 'convert' ? 'This will mark the selected source balances as converted and lock this local preview record. Payroll and GL integrations are not connected.' : 'This draft will be removed and the reserved imprest balances will become available again.' }}</p></div></div>
         <div class="mt-5 flex justify-end gap-2"><button type="button" class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="confirmation = null">Cancel</button><button type="button" class="h-9 rounded-lg px-3.5 text-xs font-semibold text-white" :class="confirmation.action === 'convert' ? 'bg-brand-700 hover:bg-brand-800' : 'bg-rose-600 hover:bg-rose-700'" @click="confirmAction">{{ confirmation.action === 'convert' ? 'Convert balance' : 'Delete draft' }}</button></div>
       </section>
     </div>

@@ -79,22 +79,22 @@ export const businessModules: BusinessModule[] = [
     ],
   },
   {
-    id: 'payroll-js',
+    id: 'payroll',
     name: 'Payroll',
     domain: 'Finance',
     category: 'People & compensation',
-    description: 'Prepare payroll-js cycles, employee compensation, statutory deductions, payslips, and approvals.',
+    description: 'Manage employee records, compensation, statutory deductions, pay cycles, approvals, and payroll reporting.',
     readiness: 'preview',
     icon: Banknote,
     metrics: [
-      { label: 'Employees in payroll-js', context: 'Compensation records' },
+      { label: 'Employee records', context: 'Active employee compensation records' },
       { label: 'Pay runs', context: 'Payroll cycle status' },
       { label: 'Pending approvals', context: 'Payroll review queue' },
     ],
     workflows: [
       { title: 'Payroll runs', description: 'Prepare, review, and close recurring compensation cycles.' },
       { title: 'Deductions & benefits', description: 'Maintain employee deductions and compensation components.' },
-      { title: 'Payslips & approvals', description: 'Review payroll-js changes and provide employee pay statements.' },
+      { title: 'Payslips & approvals', description: 'Review payroll changes and provide employee pay statements.' },
     ],
   },
   {
@@ -347,11 +347,15 @@ export const businessModules: BusinessModule[] = [
 ]
 
 export function getBusinessModule(id?: string | string[]) {
-  const moduleId = Array.isArray(id) ? id[0] : id
+  const requestedId = Array.isArray(id) ? id[0] : id
+  const moduleId = requestedId === 'payroll-js' ? 'payroll' : requestedId
   return businessModules.find((businessModule) => businessModule.id === moduleId)
 }
 
 export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string) {
-  const moduleId = typeof module === 'string' ? module : module.id
-  return moduleId === 'general-ledger' ? '/ledger' : `/modules/${moduleId}`
+  const requestedId = typeof module === 'string' ? module : module.id
+  const moduleId = requestedId === 'payroll-js' ? 'payroll' : requestedId
+  if (moduleId === 'general-ledger') return '/ledger'
+  if (moduleId === 'payroll') return '/payroll'
+  return `/modules/${moduleId}`
 }

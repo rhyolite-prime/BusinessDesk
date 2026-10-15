@@ -1,16 +1,26 @@
 <script setup lang="ts">
 import { ArrowRight, Bell, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Search, Sun, X } from '@lucide/vue'
 
+interface SearchNavigationItem {
+  label: string
+  detail: string
+  to: string
+}
+
 const props = withDefaults(defineProps<{
   dark: boolean
   moduleId?: string
   moduleName?: string
   dashboardTo?: string
+  pageTitle?: string
+  searchItems?: SearchNavigationItem[]
 }>(), {
   dark: false,
   moduleId: 'general-ledger',
   moduleName: 'General Ledger',
   dashboardTo: '/ledger',
+  pageTitle: '',
+  searchItems: undefined,
 })
 const emit = defineEmits<{ toggleMenu: []; toggleTheme: [] }>()
 const route = useRoute()
@@ -31,13 +41,14 @@ const notificationsError = ref(false)
 const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
 const pageTitle = computed(() => {
+  if (props.pageTitle) return props.pageTitle
   if (route.path.startsWith('/modules/')) return props.moduleName
   if (route.path === '/ledger/account-heads') return 'Account Heads'
   if (route.path === '/ledger/account-controls') return 'Chart of Account Control'
   if (route.path === '/ledger/budgets') return 'Budget'
   if (route.path === '/ledger/default-gl-numbers') return 'Default GL Numbers'
   if (route.path === '/ledger/imprest-categories') return 'Imprest Categories'
-  if (route.path === '/ledger/imprests/payroll-js-loans') return 'Convert Outstanding Balance to Payroll Loans'
+  if (route.path === '/ledger/imprests/payroll-loans') return 'Convert Outstanding Balance to Payroll Loans'
   if (route.path.startsWith('/ledger/imprests')) return 'Accountable imprests'
   if (route.path === '/ledger/petty-cash-recipients') return 'Petty Cash Recipients'
   if (route.path === '/ledger/bank-accounts') return 'Bank Accounts'
@@ -47,7 +58,7 @@ const pageTitle = computed(() => {
   return 'Overview'
 })
 
-const searchItems = computed(() => isLedgerWorkspace.value
+const fallbackSearchItems = computed(() => isLedgerWorkspace.value
   ? [
       { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
       { label: 'Account Heads', detail: 'Maintain the chart-of-accounts hierarchy', to: '/ledger/account-heads' },
@@ -58,7 +69,7 @@ const searchItems = computed(() => isLedgerWorkspace.value
       { label: 'Default GL Numbers', detail: 'Maintain default posting-account mappings', to: '/ledger/default-gl-numbers' },
       { label: 'Imprest Categories', detail: 'Maintain accountable imprest classifications', to: '/ledger/imprest-categories' },
       { label: 'Accountable imprests', detail: 'Issue, retire, refund and write off imprests', to: '/ledger/imprests' },
-      { label: 'Convert outstanding balance to payroll-js loans', detail: 'Select open imprest balances and create payroll-js deduction loans', to: '/ledger/imprests/payroll-js-loans' },
+      { label: 'Convert outstanding balance to payroll loans', detail: 'Select open imprest balances and create payroll deduction loans', to: '/ledger/imprests/payroll-loans' },
       { label: 'Petty Cash Recipients', detail: 'Maintain the petty cash recipient directory', to: '/ledger/petty-cash-recipients' },
       { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
       { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
@@ -68,6 +79,7 @@ const searchItems = computed(() => isLedgerWorkspace.value
       { label: `${props.moduleName} overview`, detail: 'Open this module landing dashboard', to: props.dashboardTo },
       { label: 'Module manager', detail: 'Browse all ERP workspaces', to: '/modules' },
     ])
+const searchItems = computed(() => props.searchItems ?? fallbackSearchItems.value)
 const searchResults = computed(() => {
   const query = searchQuery.value.trim().toLowerCase()
   if (!query) return []

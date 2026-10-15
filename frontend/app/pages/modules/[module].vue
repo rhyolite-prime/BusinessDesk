@@ -15,6 +15,10 @@ if (initialModule.id === 'general-ledger') {
   await navigateTo('/ledger', { replace: true })
 }
 
+if (initialModule.id === 'payroll') {
+  await navigateTo('/payroll', { replace: true })
+}
+
 const activeModule = computed(() => getBusinessModule(route.params.module) ?? initialModule)
 const setupSteps = [
   { title: 'Connect operational data', description: 'Link the module to its service and business records.', icon: Database },

@@ -118,7 +118,7 @@ const outstandingStatusOptions = [
   { value: 'draft', label: 'Draft' },
   { value: 'pending_approval', label: 'Awaiting review' },
   { value: 'posted', label: 'Posted' },
-  { value: 'converted', label: 'Converted to payroll-js loan' },
+  { value: 'converted', label: 'Converted to payroll loan' },
   { value: 'closed', label: 'Settled' },
 ]
 const tabItems = computed(() => [
@@ -174,7 +174,7 @@ function statusLabel(status: ImprestStatus | ImprestSettlementStatus) {
     retired: 'Retired',
     refunded: 'Refunded',
     written_off: 'Written off',
-    converted: 'Converted to payroll-js loan',
+    converted: 'Converted to payroll loan',
     reversed: 'Reversed',
   }
   return labels[status]
@@ -209,7 +209,7 @@ function canConvertToPayrollLoan(imprest: LedgerImprest) {
 function payrollConversionUnavailableReason(imprest: LedgerImprest) {
   if (!imprest.postedToGl) return 'Post this disbursement to the General Ledger before converting.'
   if (ledger.hasUnpostedSettlement(imprest.id)) return 'Complete or remove the pending imprest settlement before converting.'
-  return 'This outstanding balance is already reserved by a payroll-js-loan draft.'
+  return 'This outstanding balance is already reserved by a payroll-loan draft.'
 }
 
 function accountName(accountId: string) {
@@ -699,7 +699,7 @@ function exportCurrentTab() {
                   <button type="button" class="rounded-md px-2 py-1.5 text-[10px] font-semibold text-brand-700 hover:bg-brand-50 dark:text-brand-300 dark:hover:bg-brand-950/30" @click="openSettlement('retirement', item)">Retire</button>
                   <button type="button" class="rounded-md px-2 py-1.5 text-[10px] font-semibold text-blue-700 hover:bg-blue-50 dark:text-blue-300 dark:hover:bg-blue-950/30" @click="openSettlement('refund', item)">Refund</button>
                   <button type="button" class="rounded-md px-2 py-1.5 text-[10px] font-semibold text-amber-700 hover:bg-amber-50 dark:text-amber-300 dark:hover:bg-amber-950/30" @click="openSettlement('writeoff', item)">Write off</button>
-                  <NuxtLink v-if="canConvertToPayrollLoan(item)" :to="{ path: '/ledger/imprests/payroll-js-loans', query: { imprestId: item.id } }" class="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/30" :aria-label="`Convert ${item.imprestNumber} to payroll loan`" title="Convert this outstanding balance to a payroll loan"><ArrowRightLeft :size="12" />Convert to Payroll Loan</NuxtLink>
+                  <NuxtLink v-if="canConvertToPayrollLoan(item)" :to="{ path: '/ledger/imprests/payroll-loans', query: { imprestId: item.id } }" class="inline-flex items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-semibold text-violet-700 hover:bg-violet-50 dark:text-violet-300 dark:hover:bg-violet-950/30" :aria-label="`Convert ${item.imprestNumber} to payroll loan`" title="Convert this outstanding balance to a payroll loan"><ArrowRightLeft :size="12" />Convert to Payroll Loan</NuxtLink>
                   <button v-else type="button" disabled class="inline-flex cursor-not-allowed items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-semibold text-slate-400 opacity-60" :aria-label="`${item.imprestNumber} is not available for payroll-loan conversion`" :title="payrollConversionUnavailableReason(item)"><ArrowRightLeft :size="12" />Convert to Payroll Loan</button>
                 </template>
                 <button v-else-if="hasOutstanding(item.balance)" type="button" disabled class="inline-flex cursor-not-allowed items-center gap-1 rounded-md px-2 py-1.5 text-[10px] font-semibold text-slate-400 opacity-60" :aria-label="`${item.imprestNumber} is not available for payroll-loan conversion`" :title="payrollConversionUnavailableReason(item)"><ArrowRightLeft :size="12" />Convert to Payroll Loan</button>

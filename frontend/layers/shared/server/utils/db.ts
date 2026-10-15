@@ -614,7 +614,7 @@ function buildDB(): DB {
   // ── historical operational journals (random expenses / income) ──
   for (let m = 12; m >= 1; m--) {
     const base = daysAgo(m * 30 + ri(0, 20))
-    postPair(base, 'STAFF_COSTS', 'CASH', round2(r(38000, 52000)), 'Monthly payroll-js')
+    postPair(base, 'STAFF_COSTS', 'CASH', round2(r(38000, 52000)), 'Monthly payroll')
     postPair(base, 'RENT_UTILITIES', 'CASH', round2(r(6000, 9000)), 'Rent & utilities')
     if (m % 2 === 0) postPair(base, 'ADMIN', 'CASH', round2(r(1500, 3500)), 'Administration & logistics')
     if (m % 3 === 0) postPair(base, 'LOAN_LOSS_EXPENSE', 'LOAN_PORTFOLIO', round2(r(4000, 12000)), 'Quarterly provisioning charge')
