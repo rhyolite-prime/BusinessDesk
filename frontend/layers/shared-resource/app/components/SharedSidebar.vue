@@ -73,7 +73,7 @@ const ledgerGroups: NavigationGroup[] = [
         children: [
           { label: 'Imprest Categories', to: '/ledger/imprest-categories', icon: 'list-bullet' },
           { label: 'Imprests', to: '/ledger/imprests', icon: 'banknotes' },
-          { label: 'Convert to Payroll Loans', to: '/ledger/imprests/payroll-loans', icon: 'arrow-path' },
+          { label: 'Convert to Payroll Loans', to: '/ledger/imprests/payroll-js-loans', icon: 'arrow-path' },
         ],
       },
       {

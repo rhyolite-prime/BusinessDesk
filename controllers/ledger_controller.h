@@ -18,7 +18,7 @@ class LedgerController final : public drogon::HttpController<LedgerController>
     METHOD_LIST_END
 
     void validateJournal(const drogon::HttpRequestPtr &request,
-                         std::function<void(c   onst drogon::HttpResponsePtr &)> &&callback) const;
+                         std::function<void(const drogon::HttpResponsePtr &)> &&callback) const;
 
   private:
     LedgerService service_;

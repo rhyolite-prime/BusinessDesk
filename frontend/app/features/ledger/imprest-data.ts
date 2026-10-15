@@ -184,8 +184,8 @@ export const imprestEmployees: ImprestEmployee[] = [
 ]
 
 export const payrollLoanTypes: LedgerPayrollLoanType[] = [
-  { id: 'staff-payroll-loan', name: 'Staff payroll loan', description: 'Recoverable employee loan collected through payroll deductions.' },
-  { id: 'salary-advance', name: 'Salary advance', description: 'Short-term salary advance recovered from a future payroll.' },
+  { id: 'staff-payroll-js-loan', name: 'Staff payroll loan', description: 'Recoverable employee loan collected through payroll-js deductions.' },
+  { id: 'salary-advance', name: 'Salary advance', description: 'Short-term salary advance recovered from a future payroll-js.' },
   { id: 'emergency-loan', name: 'Emergency loan', description: 'Employee emergency assistance recovered in instalments.' },
 ]
 
@@ -318,7 +318,7 @@ export function useLedgerImprests() {
   const retirements = useState<LedgerImprestRetirement[]>('ledger-imprest-retirements', () => retirementSeed.map((item) => ({ ...item, details: item.details.map((line) => ({ ...line })) })))
   const refunds = useState<LedgerImprestRefund[]>('ledger-imprest-refunds', () => refundSeed.map((item) => ({ ...item })))
   const writeOffs = useState<LedgerImprestWriteOff[]>('ledger-imprest-writeoffs', () => writeOffSeed.map((item) => ({ ...item })))
-  const payrollLoanConversions = useState<LedgerPayrollLoanConversion[]>('ledger-payroll-loan-conversions', () => [])
+  const payrollLoanConversions = useState<LedgerPayrollLoanConversion[]>('ledger-payroll-js-loan-conversions', () => [])
 
   function nextImprestNumber() {
     const year = new Date().getFullYear()
@@ -627,7 +627,7 @@ export function useLedgerImprests() {
     const monthlyUnits = principalUnits / BigInt(duration)
     if (principalUnits <= BigInt(0) || monthlyUnits <= BigInt(0)) return null
     const saved: LedgerPayrollLoanConversion = {
-      id: existing?.id || input.id || makeId('payroll-loan-conversion'),
+      id: existing?.id || input.id || makeId('payroll-js-loan-conversion'),
       conversionNumber: existing?.conversionNumber || nextPayrollLoanConversionNumber(),
       employeeId: employee.id,
       employeeIdentifier: employee.employeeIdentifier,

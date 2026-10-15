@@ -1,0 +1,189 @@
+﻿@{
+    ViewBag.Title = "Edit Employee Loan";
+    Layout = "~/Views/Shared/Layout/_adminPayrollLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Employee Loans </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">Payroll Setups</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Edit Employee Loan
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Edit Employee Loan  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+  
+                                <div class="row">
+
+                                    <div class="col-sm-3">
+
+                                        <img src="https://res.cloudinary.com/rhyoliteprime/image/upload/v1533814738/images_6.png" class="height-150" style="width:150px" alt="employee_info" id="empImage" name="empImage">
+
+                                    </div>
+
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label>  <strong> Employee ID: </strong> </label>
+                                            <input type="text" class="form-control" v-model="employeeIdentifier" disabled ref="employeeIdentifier" placeholder="Employee ID">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Loan Date: </strong> </label>
+                                            <input id="loanDate" v-model="loanDate" type="date" class="form-control"/>
+                                            <span class="text-danger" v-if="!$v.loanDate.required && $v.loanDate.$dirty && loanDate == ''"> Loan date is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Loan Type: </strong> </label>
+                                            <select class="form-control" v-model="loanTypeId" ref="loanTypeId">
+                                                <option value=""> Select Loan Type </option>
+                                                <option :value="loanType.id" v-for="loanType in loanTypeList">{{loanType.name}}</option>
+                                            </select>
+
+                                            <span class="text-danger" v-if="!$v.loanTypeId.required && $v.loanTypeId.$dirty && loanTypeId == ''"> Loan Type is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Amount: </strong> </label>
+                                            <input type="number" class="form-control" v-model="amount" id="amount" v-on:keyup="calculateInterest()">
+                                            <span class="text-danger" v-if="!$v.amount.required && $v.amount.$dirty && duration == ''"> Amount is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Annual Interest Rate: </strong> </label>
+                                            <input type="number" :readonly="!chargeInterest" class="form-control" v-model="annualInterestRate" ref="annualInterestRate" v-on:keyup="calculateInterest()">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Monthly Deduction: </strong> </label>
+                                            <input type="number" class="form-control" readonly v-model="monthlyDeduction" id="monthlyDeduction">
+
+                                        </div>
+
+                                    </div>
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label> <strong> Employee Name: </strong> </label>
+                                            <input type="text" class="form-control" disabled v-model="employeeName" placeholder="Employee Name">
+
+                                        </div>
+                                        
+                                        <div class="form-group">
+                                            <label> <strong> Deduction Starts: </strong>  </label>
+                                             <input id="deductionStarts" v-model="deductionStarts" type="date" class="form-control" />
+                                            <span class="text-danger" v-if="!$v.deductionStarts.required && $v.deductionStarts.$dirty && deductionStarts == ''"> Deduction Start Date is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Interest Type: </strong>  </label>
+                                            <select :disabled="!chargeInterest" class="form-control" v-model="interestType" ref="interestType">
+                                                <option> No Interest </option>
+                                                <option> Simple Interest </option>
+                                                <option> Compound Interest </option>
+                                            </select>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Duration (Months): </strong>  </label>
+                                            <input type="number" class="form-control" v-model="duration" ref="duration" v-on:keyup="calculateInterest()">
+                                            <span class="text-danger" v-if="!$v.duration.required && $v.duration.$dirty && duration == ''"> Loan duration is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Next Deduction: </strong>  </label>
+                                            <input type="number" class="form-control" v-model="nextDeduction" ref="nextDeduction">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Interest Charges: </strong>  </label>
+                                            <input type="number" readonly class="form-control" v-model="interestCharges" ref="interestCharges">
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <hr />
+                                <div class="row">
+                                    <div class="col-3">
+                                    </div>
+                                    <div class="col-sm-4">
+                                        <button type="button" v-on:click="goBack()" class="btn btn-warning"> <i class="bx bx-reset"></i> Cancel </button>
+                                    </div>
+                                    <div class="col-sm-4">
+
+                                        <button type="button" :disabled="isLoading" v-on:click="updateEmployeeLoan()" :disabled="isLoading" class="btn btn-primary" style="float: right;"> <i class="bx bxs-save"></i>
+                                            Save
+
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+<script>
+
+    let id = '@Model.Id';
+
+</script>
+<script src="~/js/payroll/data-entry/edit-employee-loan.js" asp-append-version="true"></script>

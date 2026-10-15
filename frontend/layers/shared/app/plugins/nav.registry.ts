@@ -19,7 +19,7 @@ export default defineNuxtPlugin(() => {
 
   register('people', { label: 'People & education', icon: 'users', order: 3 })
   addItem('people', { label: 'Human Resources', to: '/modules/human-resource', icon: 'identification' })
-  addItem('people', { label: 'Payroll', to: '/modules/payroll', icon: 'banknotes' })
+  addItem('people', { label: 'Payroll', to: '/modules/payroll-js', icon: 'banknotes' })
   addItem('people', { label: 'School Information System', to: '/modules/school-information-system', icon: 'document-text' })
 
   register('industry', { label: 'Industry solutions', icon: 'home', order: 4 })

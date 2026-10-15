@@ -79,22 +79,22 @@ export const businessModules: BusinessModule[] = [
     ],
   },
   {
-    id: 'payroll',
+    id: 'payroll-js',
     name: 'Payroll',
     domain: 'Finance',
     category: 'People & compensation',
-    description: 'Prepare payroll cycles, employee compensation, statutory deductions, payslips, and approvals.',
+    description: 'Prepare payroll-js cycles, employee compensation, statutory deductions, payslips, and approvals.',
     readiness: 'preview',
     icon: Banknote,
     metrics: [
-      { label: 'Employees in payroll', context: 'Compensation records' },
+      { label: 'Employees in payroll-js', context: 'Compensation records' },
       { label: 'Pay runs', context: 'Payroll cycle status' },
       { label: 'Pending approvals', context: 'Payroll review queue' },
     ],
     workflows: [
       { title: 'Payroll runs', description: 'Prepare, review, and close recurring compensation cycles.' },
       { title: 'Deductions & benefits', description: 'Maintain employee deductions and compensation components.' },
-      { title: 'Payslips & approvals', description: 'Review payroll changes and provide employee pay statements.' },
+      { title: 'Payslips & approvals', description: 'Review payroll-js changes and provide employee pay statements.' },
     ],
   },
   {

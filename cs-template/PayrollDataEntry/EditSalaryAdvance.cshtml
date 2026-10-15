@@ -1,0 +1,142 @@
+﻿@{
+    ViewBag.Title = "Edit Salary Advance";
+    Layout = "~/Views/Shared/Layout/_adminPayrollLayout.cshtml";
+}
+
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Payroll Data Entry </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">Payroll Data Entry</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Edit Salary Advance
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Edit Salary Advance </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+
+                                <div class="row">
+
+                                    <div class="col-sm-3">
+
+                                        <img src="https://res.cloudinary.com/rhyoliteprime/image/upload/v1533814738/images_6.png" class="height-150" style="width:150px" alt="employee_info" id="empImage" name="empImage">
+
+                                    </div>
+                                    <div class="col-sm-4">
+
+
+                                        <div class="form-group">
+                                            <label> <strong> Employee Name: </strong>  </label>
+                                            <input class="form-control" readonly v-model="employeeName" ref="employeeName" type="text" />
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Loan Date: </strong>  </label>
+                                            <input v-model="loanDate" id="loanDate" ref="loanDate" type="text" />
+                                            <span class="text-danger" v-if="!$v.loanDate.required && $v.loanDate.$dirty && loanDate == ''"> Loan date is required </span>
+
+                                        </div>
+
+                                     
+
+                                    </div>
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label> <strong> Loan Type: </strong>  </label>
+                                            <select class="form-control" v-model="loanTypeId" ref="loanTypeId">
+                                                <option value=""> Loan Type </option>
+                                                <option :value="loanType.id" v-for="loanType in loanTypeList">{{loanType.name}}</option>
+                                            </select>
+                                            <span class="text-danger" v-if="!$v.loanTypeId.required && $v.loanTypeId.$dirty && loanTypeId == ''"> Loan Type is required </span>
+
+                                        </div>
+
+                                           <div class="form-group">
+                                            <label> <strong> Amount: </strong>  </label>
+                                            <input type="number" class="form-control" name="Amount" ref="amount" v-model="amount">
+                                            <span class="text-danger" v-if="!$v.amount.required && $v.amount.$dirty && amount == ''"> Amount is required </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                                <hr />
+                                <div class="row">
+
+
+                                    <div class="col-sm-7">
+                                    </div>
+
+                                    <div class="col-sm-4">
+
+                                        <button type="button" :disabled="isLoading" v-on:click="updateSalaryAdvance()" class="btn btn-primary" style="float: right;">
+                                            
+                                            Save
+
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                        </button>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+
+
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+<script>
+
+    let id = '@Model.Id';
+
+</script>
+<script src="~/js/payroll/data-entry/edit-salary-advance.js" asp-append-version="true"></script>

@@ -1,0 +1,331 @@
+﻿@{
+    ViewBag.Title = "Employee Bio Data";
+    Layout = "~/Views/Shared/Layout/_adminPayrollLayout.cshtml";
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Employee Bio Data </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">Payroll Data Entry</a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Employee Bio Data
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Employee Bio Data  </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            <div class="card-body" id="app">
+
+                                 <div class="row">
+
+                                    <div class="col-sm-4"></div>
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label> <strong> Search Employee: </strong>  </label>
+                                            <input id="employeeId" v-model="employeeId" type="text" class="form-control" />
+
+                                        </div>
+
+                                    </div>
+                                    <div class="col-sm-4"></div>
+
+                                </div>
+                                <br />
+                                <hr />
+                                <form ref="employeeForm">
+                                <div class="row">
+
+                                    <div class="col-sm-3">
+
+                                        <img src="https://res.cloudinary.com/rhyoliteprime/image/upload/v1533814738/images_6.png" class="height-150" style="width:150px" alt="employee_info" id="empImage" name="empImage">
+                                        <br /> <br />
+                                        <div class="custom-file col-md-10">
+                                            <input type="file" class="custom-file-input col-md-12" id="inputGroupFile01" name="myfile" onchange="previewImage(event)">
+                                            <label class="custom-file-label col-md-12" for="inputGroupFile01">Choose Image</label>
+                                        </div>
+
+                                    </div>
+
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label> <strong> <strong> Employee ID: </strong> </strong>  <span class="text-danger">* </span> <a style="color:#3498DB;" v-on:click="generateEmployeeIdentifier()"><b> Generate </b></a> </label>
+                                            <input type="text" class="form-control" v-model="employeeIdentifier" ref="employeeIdentifier" placeholder="Employee ID">
+                                            <span class="text-danger" v-if="!$v.employeeIdentifier.required && $v.employeeIdentifier.$dirty && employeeIdentifier == ''"> Employee ID field is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Last Name: </strong>  <span class="text-danger">* </span>  </label>
+                                            <input type="text" class="form-control" v-model="lastName" ref="lastName" placeholder="Last Name">
+                                            <span class="text-danger" v-if="!$v.lastName.required && $v.lastName.$dirty && lastName == ''"> Last name field is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Gender: </strong>  </label>
+                                            <select class="form-control" v-model="gender" ref="gender">
+                                                <option>Male</option>
+                                                <option>Female</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+
+                                            <label> <strong> Department: </strong> </label>
+                                            <select class="form-control" v-model="departmentId" ref="departmentId">
+                                                <option value=""> Select Department </option>
+                                                <option :value="department.id" v-for="department in departmentHierachyList">{{department.name}}</option>
+                                            </select>
+
+                                        </div>
+
+                                        <div class="form-group">
+
+                                            <label> <strong> Category: </strong> <span class="text-danger">* </span>  </label>
+
+                                            <select class="form-control" v-model="categoryId" ref="categoryId">
+                                                <option value=""> Select Category </option>
+                                                <option :value="category.id" v-for="category in categoryList">{{category.name}}</option>
+                                            </select>
+                                            
+                                            <span class="text-danger" v-if="!$v.categoryId.required && $v.categoryId.$dirty && categoryId == ''"> Category field is required </span>
+                                            
+                                        </div>
+
+                                        <div class="form-group">
+
+                                            <label> <strong> Salary Grade: </strong> </label>
+                                            <select class="form-control" v-model="salaryGradeId" ref="salaryGradeId">
+                                                <option value=""> Select Salary Grade </option>
+                                                <option :value="salaryGrade.id" v-for="salaryGrade in salaryGradeList">{{salaryGrade.name}}</option>
+                                            </select>
+
+                                        </div>
+
+
+                                        <div class="form-group">
+                                            <label> <strong>  Date Appointed: </strong>  </label>
+                                            <div class="input-group">
+
+                                                <date-picker id="dateAppointed" v-model="dateAppointed" class="form-control" placeholder="Date Appointed" :config="dateAppointedDateConfig"></date-picker>
+
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="la la-calendar"></i></span>
+                                                </div>
+
+                                            </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Personal Email: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="personalEmail" placeholder="Personal Email">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Primary Phone No: </strong> <span class="text-danger">* </span> </label>
+                                            <input type="text" class="form-control" v-model="primaryPhoneNumber" ref="primaryPhoneNumber" placeholder="Primary Phone#">
+                                            <span class="text-danger" v-if="!$v.primaryPhoneNumber.required && $v.primaryPhoneNumber.$dirty && primaryPhoneNumber == ''"> Primary Phone No. field is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Nationality: </strong>  </label>
+                                            <select class="form-control" v-model="nationalityId" ref="nationalityId">
+                                                <option value=""> Select Nationality </option>
+                                                <option :value="nationality.id" v-for="nationality in nationalityList"> {{nationality.name}} </option>
+                                            </select>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Hometown: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="hometown" placeholder="Hometown">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Status: </strong>  </label>
+                                            <select class="form-control" v-model="statusId" ref="statusId">
+                                                <option value=""> Select Status </option>
+                                                <option :value="status.id" v-for="status in statusList"> {{status.name}} </option>
+                                            </select>
+
+                                        </div>
+
+
+                                    </div>
+
+                                    <div class="col-sm-4">
+
+                                        <div class="form-group">
+                                            <label> <strong> First Name: </strong>  <span class="text-danger">* </span>   </label>
+                                            <input type="text" class="form-control" v-model="firstName" placeholder="First Name">
+                                            <span class="text-danger" v-if="!$v.firstName.required && $v.firstName.$dirty && firstName == ''"> First name field is required </span>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Other Name: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="otherName" placeholder="Other Name">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> TIN No: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="taxIdentificationNo" placeholder="TIN No">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Residential Address: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="residenceAddress" placeholder="Residential Address">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Company Email: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="companyEmail" ref="companyEmail" placeholder="Company Email">
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Salary Notch: </strong>  </label>
+
+                                            <select class="form-control" v-model="salaryNotchId" ref="salaryNotchId">
+                                                <option value=""> Select Salary Notch </option>
+                                                <option :value="salaryNotch.id" v-for="salaryNotch in salaryNotchList"> {{salaryNotch.notch}} </option>
+                                            </select>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Date of Birth: </strong>  </label>
+
+                                            <div class="input-group">
+                                                <date-picker id="dateOfBirth" v-model="dateOfBirth" class="form-control" placeholder="Date Of Birth" :config="dobDateConfig"></date-picker>
+                                                <div class="input-group-append">
+                                                    <span class="input-group-text"><i class="la la-calendar"></i></span>
+                                                </div>
+
+                                            </div>
+                                            
+                                        </div>
+
+                                        <div class="form-group">
+
+                                            <label> <strong> Marital Status: </strong> </label>
+                                            <select class="form-control" v-model="maritalStatus" ref="maritalStatus">
+                                                <option>Single</option>
+                                                <option>Married</option>
+                                                <option>Divorced</option>
+                                                <option>Widowed</option>
+                                                <option>Married But Separated</option>
+                                            </select>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Religion: </strong>  </label>
+                                            <select class="form-control" v-model="religionId" ref="religionId">
+                                                <option value="">Select Religion</option>
+                                                <option :value="religion.id" v-for="religion in religionList">{{religion.name}}</option>
+                                            </select>
+
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Secondary Phone No: </strong>  </label>
+                                            <input type="text" class="form-control" v-model="secondaryPhoneNumber" placeholder="Secondary Phone#">
+
+                                        </div>
+
+
+                                        <div class="form-group">
+                                            <label> <strong> City or Location: </strong>  </label>
+                                            <input id="cityOrLocation" v-model="cityOrLocation" placeholder="City Or Location" type="text" class="form-control" />
+                                        </div>
+
+                                        <div class="form-group">
+                                            <label> <strong> Rank: </strong>  </label>
+                                            <select class="form-control" v-model="rankId" ref="rankId">
+                                                <option value=""> Select Rank </option>
+                                                <option :value="rank.id" v-for="rank in rankList"> {{rank.name}} </option>
+                                            </select>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+                                </form>
+
+                                <hr />
+
+                            <div class="row">
+
+                                <div class="col-sm-3"> </div>
+
+                                <div class="col-sm-4">
+                                    <button type="button" v-on:click="resetForm()" class="btn btn-warning"> <i class="bx bx-reset"></i> Reset </button>
+                                </div>
+
+                                <div class="col-sm-4">
+
+                                        <button type="button" :disabled="isLoading" v-on:click="saveEmployee()" class="btn btn-primary" style="float: right;">
+                                            Save
+
+                                            <i class="la la-circle-o-notch spinner" v-if="isLoading"></i>
+
+                                    </button>
+
+                                </div>
+
+                            </div>
+
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/payroll/data-entry/employee-bio-data.js" asp-append-version="true"></script>
