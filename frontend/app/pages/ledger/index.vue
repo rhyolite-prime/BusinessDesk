@@ -250,6 +250,7 @@ function statusClass(status: string) {
 
 const quickActions: Array<{ label: string; description: string; to: string; icon: Component }> = [
   { label: 'New journal draft', description: 'Record an accounting entry', to: '/ledger/journals/new', icon: BookOpenCheck },
+  { label: 'Budget planning', description: 'Plan account amounts by period', to: '/ledger/budgets', icon: CircleDollarSign },
   { label: 'Chart of accounts', description: 'Review accounts and balances', to: '/ledger/accounts', icon: ListTree },
   { label: 'Journal register', description: 'Browse recent batches', to: '/ledger/journals', icon: ChartNoAxesCombined },
   { label: 'Module manager', description: 'Switch workspaces', to: '/modules', icon: LayoutGrid },

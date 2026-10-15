@@ -34,6 +34,7 @@ const pageTitle = computed(() => {
   if (route.path.startsWith('/modules/')) return props.moduleName
   if (route.path === '/ledger/account-heads') return 'Account Heads'
   if (route.path === '/ledger/account-controls') return 'Chart of Account Control'
+  if (route.path === '/ledger/budgets') return 'Budget'
   if (route.path === '/ledger/bank-accounts') return 'Bank Accounts'
   if (route.path.startsWith('/ledger/accounts')) return 'Chart of Account Detail'
   if (route.path === '/ledger/journals/new') return 'New journal'

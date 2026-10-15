@@ -49,7 +49,7 @@ const ledgerGroups: NavigationGroup[] = [
           { label: 'Chart of Account Detail', to: '/ledger/accounts', icon: 'document-text' },
         ],
       },
-      soon('Budget', 'scale'),
+      { label: 'Budget', to: '/ledger/budgets', icon: 'scale' },
       {
         label: 'Journal',
         icon: 'document-text',
