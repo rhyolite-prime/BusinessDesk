@@ -26,6 +26,7 @@ function loadEChartsCore() {
     ]).then(([core, charts, components, renderers]) => {
       core.use([
         charts.BarChart,
+        charts.LineChart,
         charts.PieChart,
         components.GridComponent,
         components.TooltipComponent,

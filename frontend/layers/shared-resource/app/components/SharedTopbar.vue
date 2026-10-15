@@ -1,62 +1,256 @@
 <script setup lang="ts">
-import { Bell, LayoutGrid, LogOut, Menu, Moon, Search, Sun } from '@lucide/vue'
+import { ArrowRight, Bell, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Search, Sun, X } from '@lucide/vue'
 
-withDefaults(defineProps<{ dark: boolean }>(), { dark: false })
+const props = withDefaults(defineProps<{ dark: boolean }>(), { dark: false })
 const emit = defineEmits<{ toggleMenu: []; toggleTheme: [] }>()
-const searchOpen = ref(false)
+const route = useRoute()
+const router = useRouter()
 const { user, logout } = useBusinessDeskAuth()
+
+const searchQuery = ref('')
+const searchFocused = ref(false)
+const notificationsOpen = ref(false)
+const userMenuOpen = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
+const notificationJournals = ref<Array<{ id: string; batchNumber: string; description: string; date: string }>>([])
+const notificationsLoading = ref(false)
+const notificationsLoaded = ref(false)
+const notificationsError = ref(false)
+
 const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
+const pageTitle = computed(() => {
+  if (route.path.startsWith('/ledger/accounts')) return 'Chart of accounts'
+  if (route.path === '/ledger/journals/new') return 'New journal'
+  if (route.path.startsWith('/ledger/journals')) return 'Journal entries'
+  return 'Overview'
+})
+
+const searchItems = [
+  { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
+  { label: 'Chart of accounts', detail: 'Browse accounts and balances', to: '/ledger/accounts' },
+  { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
+  { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
+  { label: 'Module manager', detail: 'Switch workspaces', to: '/modules' },
+]
+const searchResults = computed(() => {
+  const query = searchQuery.value.trim().toLowerCase()
+  if (!query) return []
+  return searchItems.filter((item) => `${item.label} ${item.detail}`.toLowerCase().includes(query))
+})
+
+function go(to: string) {
+  searchQuery.value = ''
+  searchFocused.value = false
+  notificationsOpen.value = false
+  userMenuOpen.value = false
+  router.push(to)
+}
+
+async function toggleNotifications() {
+  notificationsOpen.value = !notificationsOpen.value
+  userMenuOpen.value = false
+  searchFocused.value = false
+  if (!notificationsOpen.value || notificationsLoaded.value || notificationsLoading.value) return
+
+  notificationsLoading.value = true
+  notificationsError.value = false
+  try {
+    const response = await $fetch<{ recentJournals: Array<{ id: string; batchNumber: string; description: string; date: string; status: string }> }>('/api/ledger/dashboard')
+    notificationJournals.value = response.recentJournals
+      .filter((journal) => journal.status === 'Pending approval')
+      .slice(0, 4)
+    notificationsLoaded.value = true
+  } catch {
+    notificationsError.value = true
+  } finally {
+    notificationsLoading.value = false
+  }
+}
+
+function closePopovers() {
+  searchFocused.value = false
+  notificationsOpen.value = false
+  userMenuOpen.value = false
+}
+
+function handleDocumentClick(event: MouseEvent) {
+  if (!(event.target as HTMLElement).closest('[data-popover]')) closePopovers()
+}
+
+watch(searchFocused, async (open) => {
+  if (open) {
+    await nextTick()
+    searchInput.value?.focus()
+  }
+})
+
+onMounted(() => document.addEventListener('click', handleDocumentClick))
+onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick))
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 flex h-[76px] items-center justify-between border-b border-slate-200/80 bg-white/90 px-4 backdrop-blur-md sm:px-6 lg:px-9 dark:border-slate-800 dark:bg-[#121d1b]/90">
-    <div class="flex min-w-0 items-center gap-3">
-      <button class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 lg:hidden dark:hover:bg-slate-800" aria-label="Open navigation" @click="emit('toggleMenu')">
-        <Menu :size="20" />
+  <header class="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
+    <div class="flex h-16 items-center gap-3 px-4 sm:px-6">
+      <button
+        type="button"
+        class="-ml-1.5 rounded-lg p-1.5 text-ink-soft transition hover:bg-canvas lg:hidden"
+        aria-label="Open navigation"
+        @click="emit('toggleMenu')"
+      >
+        <Menu :size="21" />
       </button>
-      <div class="hidden items-center gap-2 text-xs text-slate-400 sm:flex">
+
+      <div class="hidden shrink-0 items-center gap-2 text-xs text-ink-faint lg:flex">
         <span>Workspace</span>
         <span class="text-slate-300">/</span>
-        <span class="font-semibold text-slate-700 dark:text-slate-200">General Ledger</span>
+        <span class="font-semibold text-ink-soft">{{ pageTitle }}</span>
       </div>
-      <div class="sm:hidden">
-        <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400">BusinessDesk</p>
-        <p class="text-sm font-semibold text-slate-800 dark:text-slate-100">General Ledger</p>
-      </div>
-    </div>
 
-    <div class="flex items-center gap-1.5 sm:gap-2">
-      <div v-if="searchOpen" class="hidden items-center gap-2 rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 md:flex dark:border-slate-700 dark:bg-slate-900">
-        <Search :size="15" class="text-slate-400" />
-        <input autofocus type="search" placeholder="Search the ledger…" class="w-44 bg-transparent text-xs outline-none placeholder:text-slate-400 xl:w-56" @keydown.esc="searchOpen = false" />
-        <kbd class="rounded border border-slate-200 bg-white px-1 text-[10px] text-slate-400 dark:border-slate-700 dark:bg-slate-800">ESC</kbd>
+      <div class="relative mx-auto min-w-0 max-w-xl flex-1" data-popover>
+        <div class="relative">
+          <Search :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+          <input
+            ref="searchInput"
+            v-model="searchQuery"
+            type="search"
+            autocomplete="off"
+            placeholder="Search ledger pages…"
+            class="w-full rounded-full border border-transparent bg-canvas py-2.5 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition focus:border-primary/30 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/15"
+            @focus="searchFocused = true"
+            @keydown.esc="searchQuery = ''; searchFocused = false"
+            @keydown.enter.prevent="searchResults[0] && go(searchResults[0].to)"
+          >
+          <button
+            v-if="searchQuery"
+            type="button"
+            class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition hover:text-ink"
+            aria-label="Clear search"
+            @click="searchQuery = ''; searchInput?.focus()"
+          >
+            <X :size="15" />
+          </button>
+        </div>
+
+        <Transition name="pop">
+          <div v-if="searchFocused && searchQuery.trim()" class="absolute left-0 right-0 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-xl">
+            <p v-if="!searchResults.length" class="px-4 py-6 text-center text-xs text-ink-faint">No pages match “{{ searchQuery }}”.</p>
+            <div v-else class="py-2">
+              <p class="px-4 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-ink-faint">Quick navigation</p>
+              <button
+                v-for="result in searchResults"
+                :key="result.to"
+                type="button"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-primary-soft/60"
+                @click="go(result.to)"
+              >
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium text-ink">{{ result.label }}</span>
+                  <span class="mt-0.5 block truncate text-[11px] text-ink-faint">{{ result.detail }}</span>
+                </span>
+                <ArrowRight :size="14" class="shrink-0 text-ink-faint" />
+              </button>
+            </div>
+          </div>
+        </Transition>
       </div>
-      <button class="rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Search" @click="searchOpen = !searchOpen">
-        <Search :size="17" />
-      </button>
-      <button class="relative rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Notifications">
-        <Bell :size="17" />
-        <span class="absolute right-2 top-2 h-1.5 w-1.5 rounded-full bg-amber-500 ring-2 ring-white dark:ring-[#121d1b]" />
-      </button>
-      <button class="rounded-lg p-2.5 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" :aria-label="dark ? 'Switch to light theme' : 'Switch to dark theme'" @click="emit('toggleTheme')">
-        <Sun v-if="dark" :size="17" />
-        <Moon v-else :size="17" />
-      </button>
-      <div class="mx-1 hidden h-7 w-px bg-slate-200 sm:block dark:bg-slate-700" />
-      <NuxtLink to="/modules" aria-label="Switch to module manager" title="Switch to module manager" class="rounded-lg p-2.5 text-slate-500 transition hover:bg-slate-100 hover:text-brand-700 dark:hover:bg-slate-800 dark:hover:text-brand-300">
-        <LayoutGrid :size="17" />
-      </NuxtLink>
-      <div class="flex items-center gap-2 rounded-lg px-1.5 py-1.5">
-        <span class="flex h-8 w-8 items-center justify-center rounded-full bg-[#e5eee9] text-[11px] font-bold text-brand-800">{{ avatarInitials }}</span>
-        <span class="hidden max-w-[140px] text-left sm:block">
-          <span class="block truncate text-xs font-semibold leading-4 text-slate-800 dark:text-slate-100">{{ currentName }}</span>
-          <span class="block truncate text-[10px] leading-4 text-slate-400">{{ user?.accountId }}</span>
-        </span>
+
+      <div class="ml-auto flex shrink-0 items-center gap-1 sm:gap-1.5">
+        <button
+          type="button"
+          class="rounded-lg p-2 text-ink-soft transition hover:bg-canvas"
+          :aria-label="props.dark ? 'Switch to light theme' : 'Switch to dark theme'"
+          :title="props.dark ? 'Switch to light theme' : 'Switch to dark theme'"
+          @click="emit('toggleTheme')"
+        >
+          <Sun v-if="props.dark" :size="18" />
+          <Moon v-else :size="18" />
+        </button>
+
+        <div class="relative" data-popover>
+          <button
+            type="button"
+            class="relative rounded-lg p-2 text-ink-soft transition hover:bg-canvas"
+            :aria-label="notificationJournals.length ? `${notificationJournals.length} recent journal approvals` : 'Notifications'"
+            :aria-expanded="notificationsOpen"
+            @click="toggleNotifications"
+          >
+            <Bell :size="18" />
+            <span v-if="notificationJournals.length" class="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[9px] font-bold text-white ring-2 ring-surface">{{ notificationJournals.length }}</span>
+          </button>
+          <Transition name="pop">
+            <div v-if="notificationsOpen" class="absolute right-0 mt-2 w-[min(88vw,320px)] overflow-hidden rounded-xl border border-line bg-surface shadow-xl">
+              <div class="flex items-center justify-between border-b border-line px-4 py-3">
+                <div>
+                  <p class="text-sm font-semibold text-ink">Awaiting approval</p>
+                  <p class="mt-0.5 text-[11px] text-ink-faint">Latest journal entries</p>
+                </div>
+                <Badge v-if="notificationJournals.length" tone="amber" size="sm">{{ notificationJournals.length }} recent</Badge>
+              </div>
+              <div v-if="notificationsLoading" class="px-4 py-7 text-center text-xs text-ink-faint">Loading recent approvals…</div>
+              <div v-else-if="notificationsError" class="px-4 py-7 text-center text-xs text-rose-600">Unable to load approvals. Close and reopen to retry.</div>
+              <div v-else-if="notificationJournals.length" class="max-h-72 divide-y divide-line overflow-y-auto">
+                <NuxtLink v-for="journal in notificationJournals" :key="journal.id" to="/ledger/journals" class="block px-4 py-3 transition hover:bg-primary-soft/40" @click="notificationsOpen = false">
+                  <span class="block truncate text-xs font-semibold text-ink">{{ journal.description }}</span>
+                  <span class="mt-1 flex items-center justify-between gap-3 text-[10px] text-ink-faint">
+                    <span class="truncate">{{ journal.batchNumber }}</span>
+                    <span class="shrink-0">{{ formatDate(journal.date) }}</span>
+                  </span>
+                </NuxtLink>
+              </div>
+              <div v-else class="px-4 py-7 text-center">
+                <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-canvas text-ink-faint"><Bell :size="18" /></span>
+                <p class="mt-3 text-xs font-semibold text-ink">All caught up</p>
+                <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">No recent journal entries are awaiting approval.</p>
+              </div>
+              <NuxtLink to="/ledger/journals" class="block border-t border-line px-4 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary-soft/60" @click="notificationsOpen = false">
+                Open journal register <ArrowRight :size="13" class="ml-1 inline" />
+              </NuxtLink>
+            </div>
+          </Transition>
+        </div>
+
+        <div class="mx-1 hidden h-7 w-px bg-line sm:block" />
+        <NuxtLink
+          to="/modules"
+          class="rounded-lg p-2 text-ink-soft transition hover:bg-canvas hover:text-primary"
+          aria-label="Switch to module manager"
+          title="Switch workspace"
+        >
+          <LayoutGrid :size="18" />
+        </NuxtLink>
+
+        <div class="relative ml-1 border-l border-line pl-2" data-popover>
+          <button
+            type="button"
+            class="flex items-center gap-2 rounded-lg p-1 transition hover:bg-canvas sm:gap-2.5"
+            aria-label="Open user menu"
+            :aria-expanded="userMenuOpen"
+            @click="userMenuOpen = !userMenuOpen; notificationsOpen = false; searchFocused = false"
+          >
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary">{{ avatarInitials }}</span>
+            <span class="hidden max-w-[140px] text-left leading-tight sm:block">
+              <span class="block truncate text-xs font-semibold text-ink">{{ currentName }}</span>
+              <span class="mt-0.5 block truncate text-[10px] text-ink-faint">{{ user?.accountId || user?.username }}</span>
+            </span>
+            <ChevronDown :size="14" class="hidden text-ink-faint sm:block" />
+          </button>
+          <Transition name="pop">
+            <div v-if="userMenuOpen" class="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-xl">
+              <div class="border-b border-line bg-canvas/60 px-4 py-3">
+                <p class="truncate text-sm font-semibold text-ink">{{ currentName }}</p>
+                <p class="mt-0.5 truncate text-[11px] text-ink-faint">{{ user?.username }} · {{ user?.accountId }}</p>
+              </div>
+              <NuxtLink to="/modules" class="flex items-center gap-3 px-4 py-3 text-sm text-ink-soft transition hover:bg-primary-soft/60" @click="userMenuOpen = false">
+                <LayoutGrid :size="16" class="text-ink-faint" /> Switch workspace
+              </NuxtLink>
+              <button type="button" class="flex w-full items-center gap-3 border-t border-line px-4 py-3 text-sm text-red-600 transition hover:bg-red-50" @click="logout()">
+                <LogOut :size="16" /> Sign out
+              </button>
+            </div>
+          </Transition>
+        </div>
       </div>
-      <button type="button" aria-label="Sign out" title="Sign out" class="rounded-lg p-2.5 text-slate-500 transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300" @click="logout()">
-        <LogOut :size="16" />
-      </button>
     </div>
   </header>
 </template>

@@ -21,7 +21,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-sans: "Sora", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --font-sora: "Sora", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   --color-brand-50: #eff8f6;
   --color-brand-100: #d9eee9;
@@ -34,33 +34,78 @@
   --color-brand-800: #1b4b42;
   --color-brand-900: #183f38;
   --color-ink-950: #14211f;
-  --color-surface: #f7f8fa;
+}
+
+@theme inline {
+  --color-primary: var(--ui-primary);
+  --color-primary-dark: var(--ui-primary-dark);
+  --color-primary-soft: var(--ui-primary-soft);
+  --color-on-primary: var(--ui-on-primary);
+  --color-sidebar: var(--ui-sidebar);
+  --color-accent: var(--ui-accent);
+  --color-ink: var(--ui-ink);
+  --color-ink-soft: var(--ui-ink-soft);
+  --color-ink-faint: var(--ui-ink-faint);
+  --color-line: var(--ui-line);
+  --color-canvas: var(--ui-canvas);
+  --color-surface: var(--ui-surface);
 }
 
 :root {
+  --brand-primary: #1e5d50;
+  --brand-primary-dark: #183f38;
+  --brand-primary-light: #eff8f6;
+  --brand-sidebar: #0c231c;
+  --brand-accent: #e8a33d;
+
+  --ui-primary: var(--brand-primary);
+  --ui-primary-dark: var(--brand-primary-dark);
+  --ui-primary-soft: var(--brand-primary-light);
+  --ui-on-primary: #ffffff;
+  --ui-sidebar: var(--brand-sidebar);
+  --ui-accent: var(--brand-accent);
+  --ui-ink: #14211f;
+  --ui-ink-soft: #475569;
+  --ui-ink-faint: #94a3b8;
+  --ui-line: #e5e9f0;
+  --ui-canvas: #f4f6fa;
+  --ui-surface: #ffffff;
+
   font-family: var(--font-sans);
-  color: #182321;
-  background: #f7f8fa;
+  color: var(--ui-ink);
+  background: var(--ui-canvas);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-html.dark {
-  color-scheme: dark;
+.dark {
+  --ui-primary: #73c3ae;
+  --ui-primary-dark: #8bd2bf;
+  --ui-primary-soft: rgb(47 141 121 / 18%);
+  --ui-on-primary: #0c231c;
+  --ui-accent: #f0b45b;
+  --ui-ink: #e5eeeb;
+  --ui-ink-soft: #c3d1cc;
+  --ui-ink-faint: #96aaa3;
+  --ui-line: #33423f;
+  --ui-canvas: #101716;
+  --ui-surface: #17211f;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
 }
 
 body {
   min-width: 320px;
   min-height: 100vh;
   margin: 0;
-  background: #f7f8fa;
-}
-
-.dark body {
-  background: #101716;
-  color: #e5eeeb;
+  background: var(--ui-canvas);
+  color: var(--ui-ink);
 }
 
 button,
@@ -71,4 +116,50 @@ a {
 ::selection {
   color: #173f37;
   background: #cde9e1;
+}
+
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #94a3b8 transparent;
+}
+
+*::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+*::-webkit-scrollbar-thumb {
+  border-radius: 8px;
+  background: #94a3b8;
+}
+
+.nav-active {
+  background: color-mix(in srgb, var(--brand-primary) 22%, transparent);
+  color: #ffffff;
+  box-shadow: inset 3px 0 0 var(--brand-accent);
+}
+
+.fade-enter-active,
+.fade-leave-active {
+  transition: opacity 0.18s ease;
+}
+
+.fade-enter-from,
+.fade-leave-to {
+  opacity: 0;
+}
+
+.pop-enter-active,
+.pop-leave-active {
+  transition: all 0.18s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.pop-enter-from,
+.pop-leave-to {
+  opacity: 0;
+  transform: translateY(8px) scale(0.98);
 }

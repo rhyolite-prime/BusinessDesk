@@ -1,23 +1,4 @@
 <script setup lang="ts">
-import {
-  Activity,
-  ArrowLeftRight,
-  Banknote,
-  BookOpenCheck,
-  Building2,
-  ChartNoAxesCombined,
-  ChevronDown,
-  CircleHelp,
-  Coins,
-  LayoutDashboard,
-  ListTree,
-  LogOut,
-  Settings2,
-  WalletCards,
-  X,
-} from '@lucide/vue'
-import type { Component } from 'vue'
-
 const props = defineProps<{ mobileOpen: boolean }>()
 const emit = defineEmits<{ close: [] }>()
 const route = useRoute()
@@ -28,7 +9,7 @@ const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Bool
 interface NavigationLink {
   label: string
   to?: string
-  icon: Component
+  icon: string
   comingSoon?: boolean
 }
 
@@ -39,32 +20,28 @@ interface NavigationGroup {
 
 const groups: NavigationGroup[] = [
   {
-    title: 'Workspace',
-    links: [{ label: 'Overview', to: '/ledger', icon: LayoutDashboard }],
-  },
-  {
     title: 'General ledger',
     links: [
-      { label: 'Chart of accounts', to: '/ledger/accounts', icon: ListTree },
-      { label: 'Journal entries', to: '/ledger/journals', icon: BookOpenCheck },
-      { label: 'Payments', icon: WalletCards, comingSoon: true },
-      { label: 'Receipts', icon: Banknote, comingSoon: true },
-      { label: 'Budgets', icon: Coins, comingSoon: true },
+      { label: 'Chart of accounts', to: '/ledger/accounts', icon: 'building-library' },
+      { label: 'Journal entries', to: '/ledger/journals', icon: 'document-text' },
+      { label: 'Payments', icon: 'credit-card', comingSoon: true },
+      { label: 'Receipts', icon: 'banknotes', comingSoon: true },
+      { label: 'Budgets', icon: 'scale', comingSoon: true },
     ],
   },
   {
-    title: 'Insights',
+    title: 'Reports & insights',
     links: [
-      { label: 'Financial reports', icon: ChartNoAxesCombined, comingSoon: true },
-      { label: 'Activity log', icon: Activity, comingSoon: true },
+      { label: 'Financial reports', icon: 'chart-bar-square', comingSoon: true },
+      { label: 'Activity log', icon: 'clock', comingSoon: true },
     ],
   },
 ]
 
 const setupLinks: NavigationLink[] = [
-  { label: 'Accounting units', icon: Building2, comingSoon: true },
-  { label: 'Bank accounts', icon: ArrowLeftRight, comingSoon: true },
-  { label: 'Preferences', icon: Settings2, comingSoon: true },
+  { label: 'Accounting units', icon: 'building-office', comingSoon: true },
+  { label: 'Bank accounts', icon: 'wallet', comingSoon: true },
+  { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
 ]
 
 function isActive(path?: string) {
@@ -75,108 +52,97 @@ function isActive(path?: string) {
 </script>
 
 <template>
-  <div v-if="props.mobileOpen" class="fixed inset-0 z-40 bg-slate-950/35 backdrop-blur-[2px] lg:hidden" @click="emit('close')" />
+  <Transition name="fade">
+    <div v-if="props.mobileOpen" class="fixed inset-0 z-40 bg-slate-950/55 backdrop-blur-[2px] lg:hidden" @click="emit('close')" />
+  </Transition>
+
   <aside
-    class="fixed inset-y-0 left-0 z-50 flex w-[268px] flex-col border-r border-slate-200 bg-white transition-transform duration-200 dark:border-slate-800 dark:bg-[#121d1b] lg:translate-x-0"
+    class="fixed inset-y-0 left-0 z-50 flex w-[264px] flex-col bg-sidebar text-white/70 transition-transform duration-200 lg:translate-x-0"
     :class="props.mobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'"
   >
-    <div class="flex h-[76px] items-center justify-between border-b border-slate-100 px-5 dark:border-slate-800">
-      <NuxtLink to="/modules" class="flex items-center gap-3" @click="emit('close')">
-        <span class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-700 text-white shadow-sm shadow-brand-900/15">
-          <span class="text-sm font-bold tracking-tight">BD</span>
-        </span>
-        <span class="min-w-0">
-          <span class="block text-[15px] font-semibold tracking-tight text-slate-900 dark:text-slate-100">BusinessDesk</span>
-          <span class="mt-0.5 block text-[11px] font-medium uppercase tracking-[0.13em] text-slate-400">Finance workspace</span>
-        </span>
+    <div class="border-b border-white/10 px-5 py-5">
+      <NuxtLink to="/modules" class="block min-w-0" aria-label="BusinessDesk module manager" @click="emit('close')">
+        <BrandMark dark product-name="General Ledger" />
       </NuxtLink>
-      <button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 lg:hidden dark:hover:bg-slate-800" aria-label="Close navigation" @click="emit('close')">
-        <X :size="18" />
-      </button>
     </div>
 
-    <div class="px-4 pt-4">
-      <button class="flex w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2.5 text-left hover:border-brand-200 dark:border-slate-700 dark:bg-slate-900/60">
-        <span class="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-700 ring-1 ring-slate-200 dark:bg-slate-800 dark:ring-slate-700">
-          <Building2 :size="16" />
-        </span>
-        <span class="min-w-0 flex-1">
-          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{{ user?.accountId || 'Business account' }}</span>
-          <span class="mt-0.5 block text-[11px] text-slate-500">Account ID</span>
-        </span>
-        <ChevronDown :size="15" class="text-slate-400" />
-      </button>
-    </div>
+    <nav class="flex-1 space-y-5 overflow-y-auto px-3 py-4">
+      <NuxtLink
+        to="/ledger"
+        class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+        :class="isActive('/ledger') ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
+        @click="emit('close')"
+      >
+        <AppIcon name="home" :size="18" />
+        Overview
+      </NuxtLink>
 
-    <nav class="flex-1 space-y-6 overflow-y-auto px-3 py-6">
       <section v-for="group in groups" :key="group.title">
-        <h2 class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">{{ group.title }}</h2>
-        <div class="space-y-1">
-          <div v-for="link in group.links" :key="link.to ?? link.label">
+        <p class="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">{{ group.title }}</p>
+        <div class="space-y-0.5">
+          <template v-for="link in group.links" :key="link.to ?? link.label">
             <NuxtLink
               v-if="link.to"
               :to="link.to"
-              class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors"
-              :class="isActive(link.to)
-                ? 'bg-brand-50 text-brand-800 dark:bg-brand-900/35 dark:text-brand-200'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100'"
+              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
+              :class="isActive(link.to) ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
               @click="emit('close')"
             >
-              <component :is="link.icon" :size="17" :stroke-width="1.8" :class="isActive(link.to) ? 'text-brand-700 dark:text-brand-300' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'" />
-              <span class="flex-1">{{ link.label }}</span>
-              <span v-if="isActive(link.to)" class="h-1.5 w-1.5 rounded-full bg-brand-600" />
+              <AppIcon :name="link.icon" :size="18" />
+              <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
             </NuxtLink>
-            <button v-else type="button" disabled :title="`${link.label} is planned for a later GL phase`" class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-slate-400 dark:text-slate-600">
-              <component :is="link.icon" :size="17" :stroke-width="1.8" class="text-slate-300 dark:text-slate-700" />
-              <span class="flex-1">{{ link.label }}</span>
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800 dark:text-slate-500">Soon</span>
+            <button
+              v-else
+              type="button"
+              disabled
+              :title="`${link.label} is planned for a later GL phase`"
+              class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
+            >
+              <AppIcon :name="link.icon" :size="18" />
+              <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
+              <span class="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>
             </button>
-          </div>
+          </template>
         </div>
       </section>
 
       <section>
-        <h2 class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.16em] text-slate-400">Configuration</h2>
-        <div class="space-y-1">
-          <div v-for="link in setupLinks" :key="link.to ?? link.label">
-            <NuxtLink
-              v-if="link.to"
-              :to="link.to"
-              class="group flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium transition-colors"
-              :class="isActive(link.to)
-                ? 'bg-brand-50 text-brand-800 dark:bg-brand-900/35 dark:text-brand-200'
-                : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900 dark:text-slate-400 dark:hover:bg-slate-800/70 dark:hover:text-slate-100'"
-              @click="emit('close')"
-            >
-              <component :is="link.icon" :size="17" :stroke-width="1.8" :class="isActive(link.to) ? 'text-brand-700 dark:text-brand-300' : 'text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300'" />
-              <span class="flex-1">{{ link.label }}</span>
-              <span v-if="isActive(link.to)" class="h-1.5 w-1.5 rounded-full bg-brand-600" />
-            </NuxtLink>
-            <button v-else type="button" disabled :title="`${link.label} is planned for a later GL phase`" class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-[13px] font-medium text-slate-400 dark:text-slate-600">
-              <component :is="link.icon" :size="17" :stroke-width="1.8" class="text-slate-300 dark:text-slate-700" />
-              <span class="flex-1">{{ link.label }}</span>
-              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide text-slate-400 dark:bg-slate-800 dark:text-slate-500">Soon</span>
-            </button>
-          </div>
+        <p class="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Configuration</p>
+        <div class="space-y-0.5">
+          <button
+            v-for="link in setupLinks"
+            :key="link.label"
+            type="button"
+            disabled
+            :title="`${link.label} is planned for a later GL phase`"
+            class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
+          >
+            <AppIcon :name="link.icon" :size="18" />
+            <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
+            <span class="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>
+          </button>
         </div>
       </section>
     </nav>
 
-    <div class="border-t border-slate-100 p-3 dark:border-slate-800">
-      <a href="#help" class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-[13px] font-medium text-slate-500 hover:bg-slate-50 dark:text-slate-400 dark:hover:bg-slate-800/70">
-        <CircleHelp :size="17" />
-        Help &amp; support
-      </a>
-      <div class="mt-2 flex items-center gap-3 rounded-xl bg-slate-50 px-3 py-3 dark:bg-slate-900/60">
-        <span class="flex h-9 w-9 items-center justify-center rounded-full bg-[#d7e8e1] text-xs font-bold text-brand-800">{{ avatarInitials }}</span>
+    <div class="border-t border-white/10 px-4 py-3">
+      <div class="flex min-w-0 items-center gap-3 rounded-xl px-2 py-2">
+        <span class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-accent text-xs font-bold text-sidebar">{{ avatarInitials }}</span>
         <span class="min-w-0 flex-1">
-          <span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{{ currentName }}</span>
-          <span class="mt-0.5 block truncate text-[11px] text-slate-500">{{ user?.username }}</span>
+          <span class="block truncate text-xs font-semibold text-white">{{ currentName }}</span>
+          <span class="mt-0.5 block truncate text-[10px] text-white/45">{{ user?.accountId || user?.username }}</span>
         </span>
-        <button type="button" class="rounded-md p-1.5 text-slate-400 transition hover:bg-rose-50 hover:text-rose-700 dark:hover:bg-rose-950/40 dark:hover:text-rose-300" aria-label="Sign out" title="Sign out" @click="logout()">
-          <LogOut :size="15" />
+        <button
+          type="button"
+          class="rounded-md p-1.5 text-white/50 transition hover:bg-white/10 hover:text-white"
+          aria-label="Sign out"
+          title="Sign out"
+          @click="logout()"
+        >
+          <AppIcon name="arrow-left-on-rectangle" :size="17" />
         </button>
       </div>
+      <p class="px-2 pt-1 text-[10px] leading-relaxed text-white/35">BusinessDesk · Accounting workspace</p>
     </div>
   </aside>
 </template>
