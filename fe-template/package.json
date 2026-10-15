@@ -1,0 +1,19 @@
+{
+  "name": "tl-core-banking-ui",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "nuxt dev --port 7702",
+    "build": "nuxt build",
+    "preview": "nuxt preview",
+    "postinstall": "nuxt prepare"
+  },
+  "dependencies": {
+    "nuxt": "^4.5.0",
+    "qrcode": "^1.5.4"
+  },
+  "devDependencies": {
+    "@tailwindcss/vite" : "^4.3.0",
+    "tailwindcss": "^4.3.0"
+  }
+}
