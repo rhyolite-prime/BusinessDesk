@@ -64,7 +64,7 @@ onUnmounted(() => clearInterval(timer))
 
       <form class="space-y-4 mt-6" @submit.prevent="proceed">
         <FormField label="Institution name" required>
-          <TextInput v-model="form.institution" placeholder="e.g. SikaTrust Microfinance" />
+          <TextInput v-model="form.institution" placeholder="e.g. BusinessDesk" />
         </FormField>
         <FormField label="Administrator full name" required>
           <TextInput v-model="form.fullname" placeholder="Adjoa Mensah" />

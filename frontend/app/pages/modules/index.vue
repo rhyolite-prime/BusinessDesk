@@ -5,7 +5,8 @@ import { businessModules, type BusinessModule, type ModuleDomain, moduleDashboar
 definePageMeta({ layout: false })
 useHead({ title: 'Module Manager' })
 
-const { user, isDemo, logout } = useBusinessDeskAuth()
+const { user, isDemo, logout, refreshSession } = useBusinessDeskAuth()
+await refreshSession()
 const subscriptionsOpen = ref(false)
 const signingOut = ref(false)
 const searchQuery = ref('')

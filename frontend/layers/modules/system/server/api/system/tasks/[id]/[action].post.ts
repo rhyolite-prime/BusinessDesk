@@ -6,6 +6,7 @@ export default defineEventHandler(async (event) => {
   const body = await readBody<{ note?: string }>(event)
 
   if (action !== 'approve' && action !== 'reject') throw badRequest(`Unknown checker action: ${action}`)
-  const task = resolveTask(d, id, action, body?.note ?? '')
+  const decision = action === 'approve' ? 'approved' : 'rejected'
+  const task = resolveTask(d, id, decision, body?.note ?? '')
   return { data: task, message: `Task ${action}d — ${task.entityLabel}` }
 })

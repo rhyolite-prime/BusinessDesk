@@ -1,8 +1,6 @@
 /**
- * White-label branding.
- *  - Defaults come from app.config.ts (one file per tenant).
- *  - Theme presets can be applied live (CSS custom properties on <html>)
- *    to demonstrate multi-tenant re-skinning; choice persists locally.
+ * White-label branding shared by the BusinessDesk shell and feature modules.
+ * Tenant deployments may override the defaults in the root app.config.ts.
  */
 
 export interface BrandTheme {
@@ -23,29 +21,32 @@ export interface BrandPreset {
   theme: BrandTheme
 }
 
+const defaultName = 'BusinessDesk'
+const defaultTagline = 'One workspace for finance and operations'
+
 export const BRAND_PRESETS: BrandPreset[] = [
   {
-    key: 'sikatrust', label: 'SikaTrust Microfinance',
-    institutionName: 'SikaTrust Microfinance', institutionShort: 'SikaTrust',
-    tagline: 'Banking for every community',
-    theme: { primary: '#0B6E4F', primaryDark: '#08543D', primaryLight: '#E6F4EF', onPrimary: '#FFFFFF', sidebar: '#0C231C', accent: '#E8A33D' },
+    key: 'businessdesk-forest', label: 'BusinessDesk · Forest',
+    institutionName: defaultName, institutionShort: defaultName,
+    tagline: defaultTagline,
+    theme: { primary: '#1B4B42', primaryDark: '#0C352D', primaryLight: '#E8F1ED', onPrimary: '#FFFFFF', sidebar: '#0C231C', accent: '#E8A33D' },
   },
   {
-    key: 'tldigital', label: 'TL Digital Bank',
-    institutionName: 'TL Digital Bank', institutionShort: 'TL Bank',
-    tagline: 'Core banking, delivered as a service',
+    key: 'businessdesk-ocean', label: 'BusinessDesk · Ocean',
+    institutionName: defaultName, institutionShort: defaultName,
+    tagline: defaultTagline,
     theme: { primary: '#1D4ED8', primaryDark: '#1E40AF', primaryLight: '#E8EEFC', onPrimary: '#FFFFFF', sidebar: '#0F1E3D', accent: '#F59E0B' },
   },
   {
-    key: 'royal', label: 'Royal MFB',
-    institutionName: 'Royal Microfinance Bank', institutionShort: 'Royal',
-    tagline: 'Royal service for every customer',
+    key: 'businessdesk-violet', label: 'BusinessDesk · Violet',
+    institutionName: defaultName, institutionShort: defaultName,
+    tagline: defaultTagline,
     theme: { primary: '#7C3AED', primaryDark: '#6D28D9', primaryLight: '#F1EAFE', onPrimary: '#FFFFFF', sidebar: '#22123F', accent: '#FBBF24' },
   },
   {
-    key: 'sunshine', label: 'Sunshine Savings & Loans',
-    institutionName: 'Sunshine Savings & Loans', institutionShort: 'Sunshine',
-    tagline: 'Your money, rising every day',
+    key: 'businessdesk-copper', label: 'BusinessDesk · Copper',
+    institutionName: defaultName, institutionShort: defaultName,
+    tagline: defaultTagline,
     theme: { primary: '#C2410C', primaryDark: '#9A3412', primaryLight: '#FDEEE5', onPrimary: '#FFFFFF', sidebar: '#2A1608', accent: '#0EA5E9' },
   },
 ]
@@ -55,26 +56,25 @@ export function useBrand() {
   const brand = computed(() => appConfig.brand)
   const activePreset = ref<string>(appConfig.brand.institutionShort ?? 'default')
 
-  const varsFor = (t: BrandTheme) => ({
-    '--brand-primary': t.primary,
-    '--brand-primary-dark': t.primaryDark,
-    '--brand-primary-light': t.primaryLight,
-    '--brand-on-primary': t.onPrimary,
-    '--brand-sidebar': t.sidebar,
-    '--brand-accent': t.accent,
+  const varsFor = (theme: BrandTheme) => ({
+    '--brand-primary': theme.primary,
+    '--brand-primary-dark': theme.primaryDark,
+    '--brand-primary-light': theme.primaryLight,
+    '--brand-on-primary': theme.onPrimary,
+    '--brand-sidebar': theme.sidebar,
+    '--brand-accent': theme.accent,
   })
 
-  /** SSR-safe: inject the configured theme as a <style> on first paint. */
   function headTheme() {
-    const vars = varsFor(brand.value.theme)
-    const css = ':root{' + Object.entries(vars).map(([k, v]) => `${k}:${v}`).join(';') + '}'
+    const variables = varsFor(brand.value.theme)
+    const css = ':root{' + Object.entries(variables).map(([key, value]) => `${key}:${value}`).join(';') + '}'
     useHead({ style: [{ innerHTML: css, id: 'brand-theme' }] })
   }
 
-  function applyToDocument(t: BrandTheme) {
+  function applyToDocument(theme: BrandTheme) {
     if (typeof document === 'undefined') return
     const root = document.documentElement
-    for (const [k, v] of Object.entries(varsFor(t))) root.style.setProperty(k, v)
+    for (const [key, value] of Object.entries(varsFor(theme))) root.style.setProperty(key, value)
   }
 
   function applyPreset(preset: BrandPreset) {
@@ -84,15 +84,14 @@ export function useBrand() {
     appConfig.brand.tagline = preset.tagline
     appConfig.brand.theme = preset.theme
     activePreset.value = preset.key
-    if (typeof localStorage !== 'undefined') localStorage.setItem('tl-brand-preset', preset.key)
+    if (typeof localStorage !== 'undefined') localStorage.setItem('businessdesk-brand-preset', preset.key)
   }
 
-  /** Restore a tenant-chosen theme after hydration. */
   function init() {
     headTheme()
     onMounted(() => {
-      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('tl-brand-preset') : null
-      const preset = BRAND_PRESETS.find(p => p.key === saved)
+      const saved = typeof localStorage !== 'undefined' ? localStorage.getItem('businessdesk-brand-preset') : null
+      const preset = BRAND_PRESETS.find((candidate) => candidate.key === saved)
       if (preset) applyPreset(preset)
       else applyToDocument(brand.value.theme)
     })

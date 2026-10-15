@@ -1,45 +1,14 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
+import { fileURLToPath } from 'node:url'
+
 export default defineNuxtConfig({
   compatibilityDate: '2026-09-01',
   devtools: { enabled: false },
-<<<<<<< Updated upstream
-  modules: [],
-  vite: {
-    plugins: [tailwindcss()],
-  },
-  runtimeConfig: {
-    // Server-only upstream URLs. Browser requests stay same-origin under /api.
-    ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
-    authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
-    // Mock sign-in defaults on for development navigation; the server rejects it outside NODE_ENV=development.
-    authDemoMode: process.env.AUTH_DEMO_MODE !== 'false',
-    public: {
-      demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
-    },
-  },
-  app: {
-    head: {
-      titleTemplate: '%s · BusinessDesk',
-      title: 'BusinessDesk ERP',
-      meta: [
-        { name: 'description', content: 'BusinessDesk ERP workspaces for finance, operations, people, and industry workflows.' },
-        { name: 'theme-color', content: '#f7f8fa' },
-      ],
-    },
-  },
-  typescript: {
-    strict: true,
-    // The Nuxt CLI typecheck and production build validate types; skip the
-    // dev-server checker, which mis-resolves Nuxt's generated app/server globals.
-    typeCheck: 'build',
-  },
-=======
 
-  // ── Nuxt Layers ──────────────────────────────────────────────────────
-  // shared-resource layer is inherited FIRST so every business module
-  // below gets the theme, UI kit, composables, mock DB and API plumbing.
+  // Inherit the shared ERP design system and domain-specific layer features.
   extends: [
     './layers/shared',
+    './layers/shared-resource',
     './layers/modules/auth',
     './layers/modules/dashboard',
     './layers/modules/clients',
@@ -53,10 +22,53 @@ export default defineNuxtConfig({
     './layers/modules/reports',
   ],
 
-  devServer: { host: '0.0.0.0', port: 3000 },
+  imports: {
+    dirs: [
+      fileURLToPath(new URL('./layers/shared/app/composables', import.meta.url)),
+      fileURLToPath(new URL('./layers/shared/app/utils', import.meta.url)),
+    ],
+  },
 
-  // Tenant / white-label defaults live in app.config.ts so an institution
-  // only has to edit one file to re-brand the whole platform.
+  devServer: { host: '0.0.0.0', port: 3000 },
+  vite: {
+    optimizeDeps: {
+      include: [
+        '@lucide/vue',
+        'echarts/charts',
+        'echarts/components',
+        'echarts/core',
+        'echarts/renderers',
+      ],
+    },
+  },
   future: { compatibilityVersion: 4 },
->>>>>>> Stashed changes
+
+  // Server-only upstream URLs. Browser requests stay same-origin under /api.
+  runtimeConfig: {
+    ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
+    authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
+    // Mock sign-in defaults on for development navigation; the server rejects it outside NODE_ENV=development.
+    authDemoMode: process.env.AUTH_DEMO_MODE !== 'false',
+    public: {
+      demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
+    },
+  },
+
+  app: {
+    head: {
+      titleTemplate: '%s · BusinessDesk',
+      title: 'BusinessDesk ERP',
+      meta: [
+        { name: 'description', content: 'BusinessDesk ERP workspaces for finance, operations, people, and industry workflows.' },
+        { name: 'theme-color', content: '#f7f8fa' },
+      ],
+    },
+  },
+
+  typescript: {
+    strict: true,
+    // The Nuxt CLI typecheck and production build validate types; skip the
+    // dev-server checker, which mis-resolves Nuxt's generated app/server globals.
+    typeCheck: 'build',
+  },
 })

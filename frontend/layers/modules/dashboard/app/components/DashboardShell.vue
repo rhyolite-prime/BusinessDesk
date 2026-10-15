@@ -10,13 +10,13 @@ const k = computed(() => summary.value?.kpis ?? {})
 const palette = ['#0B6E4F', '#1D4ED8', '#E8A33D', '#7C3AED', '#DC2626', '#0EA5E9']
 const moneyFmt = (n: number) => money(n)
 
-const statusSegments = computed(() => {
+const statusSegments = computed<Array<{ label: string; value: number; color: string }>>(() => {
   const tones: Record<string, string> = {
     active: '#0B6E4F', closed: '#94A3B8', submitted: '#F59E0B',
     approved: '#3B82F6', rejected: '#DC2626', writtenoff: '#7F1D1D',
   }
-  return (summary.value?.portfolioByStatus ?? []).filter((s: any) => s.count > 0)
-    .map((s: any) => ({ label: meta(s.status).label, value: s.count, color: tones[s.status] ?? '#94A3B8' }))
+  return (summary.value?.portfolioByStatus ?? []).filter((status: { count: number }) => status.count > 0)
+    .map((status: { status: string; count: number }) => ({ label: meta(status.status).label, value: status.count, color: tones[status.status] ?? '#94A3B8' }))
 })
 
 const trendSeries = computed(() => [

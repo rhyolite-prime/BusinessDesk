@@ -1,23 +1,23 @@
 /**
- * Default branding for the shared-resource layer.
- * The deploying tenant overrides these values in the root app.config.ts.
+ * Default BusinessDesk branding; tenant deployments can override this in the
+ * root app.config.ts without editing shared components.
  */
 export default defineAppConfig({
   brand: {
-    productName: 'TL Core Banking',
-    institutionName: 'TL Digital Bank',
-    institutionShort: 'TL Bank',
-    tagline: 'Core banking, delivered as a service',
+    productName: 'BusinessDesk ERP',
+    institutionName: 'BusinessDesk',
+    institutionShort: 'BusinessDesk',
+    tagline: 'One workspace for finance and operations',
     theme: {
-      primary: '#1D4ED8',
-      primaryDark: '#1E40AF',
-      primaryLight: '#E8EEFC',
+      primary: '#1B4B42',
+      primaryDark: '#0C352D',
+      primaryLight: '#E8F1ED',
       onPrimary: '#FFFFFF',
-      sidebar: '#0F1E3D',
-      accent: '#F59E0B',
+      sidebar: '#0C231C',
+      accent: '#E8A33D',
     },
     currency: { code: 'GHS', symbol: 'GH₵', locale: 'en-GH' },
-    contact: { email: 'support@tlbank.example', phone: '+233 30 000 0000' },
+    contact: { email: '', phone: '' },
     footerNote: '',
   },
 })

@@ -17,7 +17,7 @@ export function useApi() {
 
   async function request<T = any>(path: string, opts: any = {}): Promise<T> {
     try {
-      return await $fetch<T>(`/api${path}`, opts)
+      return await $fetch<T>(`/api${path}`, opts) as T
     } catch (e: any) {
       if (e?.statusCode === 401 || e?.response?.status === 401) { handle401(); throw new Error('Your session has expired. Please sign in again.') }
       const msg = e?.data?.statusMessage || e?.data?.message || e?.statusMessage || 'Request failed. Please try again.'
@@ -41,7 +41,7 @@ export function useResource<T = any>(path: string, queryGetter?: () => Record<st
   const q = computed(() => (queryGetter ? queryGetter() : {}))
   return useAsyncData<T>(
     `res-${path}`,
-    () => $fetch<T>(`/api${path}`, { query: q.value }),
+    () => $fetch<T>(`/api${path}`, { query: q.value }) as Promise<T>,
     { watch: [q] },
   )
 }
