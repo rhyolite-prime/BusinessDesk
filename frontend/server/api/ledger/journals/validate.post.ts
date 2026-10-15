@@ -1,53 +1,71 @@
 import type { CreateJournalDraftInput, JournalValidationResponse } from '../../../../app/features/ledger/types'
+import { formatLedgerAmount } from '../../../../app/features/ledger/money'
 import { demoAccounts } from '../../../utils/ledger-demo'
+import { normalizeJournalLineAmounts } from '../../../utils/ledger-journal-amounts'
 import { requireBusinessDeskSession } from '../../../utils/auth'
 
-const decimalScale = BigInt(1_000_000)
-
-function parseAmount(value: unknown): bigint | null {
-  const amount = String(value ?? '')
-  if (amount.length > 64 || !/^\d+(\.\d{1,6})?$/.test(amount)) return null
-
-  const [whole, fraction = ''] = amount.split('.')
-  const normalizedWhole = (whole ?? '0').replace(/^0+/, '') || '0'
-  if (normalizedWhole.length > 14) return null
-  return BigInt(normalizedWhole) * decimalScale + BigInt(fraction.padEnd(6, '0'))
-}
-
-function formatAmount(units: bigint): string {
-  const whole = units / decimalScale
-  const fraction = String(units % decimalScale).padStart(6, '0')
-  return `${whole}.${fraction}`
+function isRealDate(value: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false
+  const date = new Date(`${value}T00:00:00Z`)
+  return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
 export default defineEventHandler(async (event): Promise<JournalValidationResponse> => {
   const session = await requireBusinessDeskSession(event)
   const body = await readBody<Partial<CreateJournalDraftInput>>(event)
   const lines = Array.isArray(body?.lines) ? body.lines : []
+  const description = String(body?.description ?? '').trim()
+  const batchDate = String(body?.batchDate ?? '').trim()
+  const isMultiCurrency = Boolean(body?.isMultiCurrency) || lines.some((line) => String(line?.currencyCode ?? 'GHS').trim().toUpperCase() !== 'GHS')
+  const errors: string[] = []
+
+  if (!description || description.length > 200) errors.push('Journal description is required and must not exceed 200 characters.')
+  if (!isRealDate(batchDate)) errors.push('Journal date must be a real calendar date in YYYY-MM-DD format.')
+  if (lines.length < 2) errors.push('A journal draft must contain at least two lines.')
+  if (lines.length > 1000) errors.push('A journal draft cannot contain more than 1000 lines.')
+
   const metadataErrors: string[] = []
-  lines.forEach((line, index) => {
+  lines.slice(0, 1000).forEach((line, index) => {
     const referenceNumber = String(line?.referenceNumber ?? '').trim()
-    const transactionDate = String(line?.transactionDate ?? body?.batchDate ?? '').trim()
-    const parsedDate = new Date(`${transactionDate}T00:00:00Z`)
+    const transactionDate = String(line?.transactionDate ?? batchDate).trim()
     if (!referenceNumber || referenceNumber.length > 80) metadataErrors.push(`Line ${index + 1}: reference number is required and must not exceed 80 characters.`)
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(transactionDate) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== transactionDate) {
-      metadataErrors.push(`Line ${index + 1}: transaction date must be a real calendar date in YYYY-MM-DD format.`)
+    if (!isRealDate(transactionDate)) metadataErrors.push(`Line ${index + 1}: transaction date must be a real calendar date in YYYY-MM-DD format.`)
+    const accountId = String(line?.accountId ?? '').trim()
+    if (!accountId || accountId.length > 80) metadataErrors.push(`Line ${index + 1}: account is required and must not exceed 80 characters.`)
+    if (String(line?.description ?? '').length > 300) metadataErrors.push(`Line ${index + 1}: description must not exceed 300 characters.`)
+  })
+  errors.push(...metadataErrors)
+
+  const amountResults = lines.slice(0, 1000).map((line, index) => normalizeJournalLineAmounts(line, index + 1, isMultiCurrency))
+  for (const result of amountResults) errors.push(...result.errors)
+
+  if (errors.length) {
+    return { valid: false, balanced: false, debitTotal: '0.000000', creditTotal: '0.000000', errors }
+  }
+
+  const normalizedLines = lines.slice(0, 1000).map((line, index) => {
+    const amounts = amountResults[index]?.value!
+    return {
+      ...line,
+      currencyCode: amounts.currencyCode,
+      currencyName: amounts.currencyName,
+      exchangeRate: amounts.exchangeRate,
+      foreignDebit: amounts.foreignDebit,
+      foreignCredit: amounts.foreignCredit,
+      debit: amounts.debit,
+      credit: amounts.credit,
     }
   })
-  if (metadataErrors.length) {
-    return { valid: false, balanced: false, debitTotal: '0.000000', creditTotal: '0.000000', errors: metadataErrors }
-  }
 
   const config = useRuntimeConfig(event)
   const baseUrl = String(config.ledgerApiBaseUrl || '').replace(/\/$/, '')
-
   if (baseUrl) {
     if (session.demo || !session.accessToken) {
       throw createError({ statusCode: 403, statusMessage: 'Demo sign-in cannot access a configured ledger service.' })
     }
     return await $fetch<JournalValidationResponse>(`${baseUrl}/api/v1/ledger/journals/validate`, {
       method: 'POST',
-      body,
+      body: { ...body, isMultiCurrency, lines: normalizedLines },
       headers: {
         authorization: `Bearer ${session.accessToken}`,
         'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
@@ -59,45 +77,22 @@ export default defineEventHandler(async (event): Promise<JournalValidationRespon
     throw createError({ statusCode: 503, statusMessage: 'Ledger API is not configured', data: { code: 'LEDGER_API_UNAVAILABLE' } })
   }
 
-  const description = String(body?.description ?? '').trim()
-  const batchDate = String(body?.batchDate ?? '').trim()
-  const errors: string[] = []
-  const parsedDate = new Date(`${batchDate}T00:00:00Z`)
-
-  if (!description || description.length > 200) errors.push('Journal description is required and must not exceed 200 characters.')
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(batchDate) || Number.isNaN(parsedDate.getTime()) || parsedDate.toISOString().slice(0, 10) !== batchDate) {
-    errors.push('Journal date must be a real calendar date in YYYY-MM-DD format.')
-  }
-  if (lines.length < 2) errors.push('A journal draft must contain at least two lines.')
-  if (lines.length > 1000) errors.push('A journal draft cannot contain more than 1000 lines.')
-
-  let debitTotal = BigInt(0)
-  let creditTotal = BigInt(0)
-  for (const [index, line] of lines.slice(0, 1000).entries()) {
-    const lineNumber = index + 1
-    const accountId = String(line.accountId ?? '').trim()
-    const lineDescription = String(line.description ?? '')
-    if (!accountId || accountId.length > 80) errors.push(`Line ${lineNumber}: account is required and must not exceed 80 characters.`)
-    else if (!demoAccounts.some((account) => account.id === accountId && account.status === 'Active')) errors.push(`Line ${lineNumber}: select an active account from the chart of accounts.`)
-    if (lineDescription.length > 300) errors.push(`Line ${lineNumber}: description must not exceed 300 characters.`)
-
-    const debit = parseAmount(line.debit)
-    const credit = parseAmount(line.credit)
-    if (debit === null) errors.push(`Line ${lineNumber}: debit must be a non-negative decimal with at most 14 whole digits and 6 decimal places.`)
-    if (credit === null) errors.push(`Line ${lineNumber}: credit must be a non-negative decimal with at most 14 whole digits and 6 decimal places.`)
-    if (debit === null || credit === null) continue
-    if (debit > BigInt(0) && credit > BigInt(0)) errors.push(`Line ${lineNumber}: enter an amount on either debit or credit, not both.`)
-    if (debit === BigInt(0) && credit === BigInt(0)) errors.push(`Line ${lineNumber}: either debit or credit must be greater than zero.`)
-    debitTotal += debit
-    creditTotal += credit
+  for (const [index, line] of normalizedLines.entries()) {
+    const account = demoAccounts.find((item) => item.id === line.accountId && item.status === 'Active')
+    if (!account) errors.push(`Line ${index + 1}: select an active account from the chart of accounts.`)
+    else if (account.currency.toUpperCase() !== line.currencyCode) {
+      errors.push(`Line ${index + 1}: account ${account.accountNumber} is assigned to ${account.currency}; use its account currency on the journal line.`)
+    }
   }
 
+  const debitUnits = amountResults.reduce((sum, result) => sum + (result.value?.debitUnits ?? BigInt(0)), BigInt(0))
+  const creditUnits = amountResults.reduce((sum, result) => sum + (result.value?.creditUnits ?? BigInt(0)), BigInt(0))
   const valid = errors.length === 0
   return {
     valid,
-    balanced: valid && debitTotal === creditTotal,
-    debitTotal: formatAmount(debitTotal),
-    creditTotal: formatAmount(creditTotal),
+    balanced: valid && debitUnits === creditUnits,
+    debitTotal: formatLedgerAmount(debitUnits),
+    creditTotal: formatLedgerAmount(creditUnits),
     errors,
   }
 })

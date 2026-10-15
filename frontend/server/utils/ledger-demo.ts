@@ -19,7 +19,14 @@ export const demoJournals: JournalSummary[] = [
   { id: 'jrn-002', batchNumber: 'GJ-2026-0041', description: 'Accrual — utilities', date: '2026-04-29', source: 'General journal', debit: '4830.00', credit: '4830.00', status: 'Pending approval', preparer: 'K. Agyeman' },
   { id: 'jrn-003', batchNumber: 'PV-2026-0118', description: 'Office supplies — Adom Trading', date: '2026-04-28', source: 'Payment voucher', debit: '2640.00', credit: '2640.00', status: 'Approved', preparer: 'M. Boateng' },
   { id: 'jrn-004', batchNumber: 'RC-2026-0076', description: 'Consulting receipt — Akua Co.', date: '2026-04-27', source: 'Cash receipt', debit: '18750.00', credit: '18750.00', status: 'Posted', preparer: 'E. Mensah' },
-  { id: 'jrn-005', batchNumber: 'GJ-2026-0040', description: 'FX revaluation — USD balances', date: '2026-04-26', source: 'Revaluation', debit: '1820.14', credit: '1820.14', status: 'Draft', preparer: 'K. Agyeman' },
+  {
+    id: 'jrn-005', batchNumber: 'GJ-2026-0040', description: 'FX revaluation — USD balances', date: '2026-04-26', source: 'Revaluation',
+    debit: '1820.140000', credit: '1820.140000', status: 'Draft', preparer: 'K. Agyeman', isMultiCurrency: true, lineCount: 2,
+    lines: [
+      { id: 'jrn-005-line-1', accountId: 'acc-5100', accountNumber: '5100', accountName: 'Foreign Exchange Loss', referenceNumber: 'FX-APR-2026', description: 'Unrealized exchange loss', currencyCode: 'GHS', currencyName: 'Ghana cedi', exchangeRate: '1.0000000000', foreignDebit: '1820.140000', foreignCredit: '0.000000', debit: '1820.140000', credit: '0.000000' },
+      { id: 'jrn-005-line-2', accountId: 'acc-1020', accountNumber: '1020', accountName: 'Bank — USD Account', referenceNumber: 'FX-APR-2026', description: 'Revaluation of USD bank balance', currencyCode: 'USD', currencyName: 'US dollar', exchangeRate: '12.5000000000', foreignDebit: '0.000000', foreignCredit: '145.611200', debit: '0.000000', credit: '1820.140000' },
+    ],
+  },
   { id: 'jrn-006', batchNumber: 'GJ-2026-0039', description: 'Correction — duplicate accrual', date: '2026-04-24', source: 'Reversal', debit: '930.00', credit: '930.00', status: 'Reversed', preparer: 'M. Boateng' },
 ]
 

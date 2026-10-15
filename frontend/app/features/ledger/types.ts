@@ -39,6 +39,11 @@ export interface JournalLineSummary {
   organizationUnitName?: string
   transactionDate?: string
   chequeNumber?: string
+  currencyCode?: string
+  currencyName?: string
+  exchangeRate?: string
+  foreignDebit?: string
+  foreignCredit?: string
   debit: string
   credit: string
 }
@@ -54,6 +59,7 @@ export interface JournalSummary {
   status: 'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Reversed'
   preparer: string
   organizationUnitName?: string
+  isMultiCurrency?: boolean
   lineCount?: number
   lines?: JournalLineSummary[]
 }
@@ -72,6 +78,7 @@ export interface CreateJournalDraftInput {
   batchDate: string
   description: string
   organizationUnitId?: string
+  isMultiCurrency?: boolean
   lines: Array<{
     accountId: string
     accountName: string
@@ -80,6 +87,11 @@ export interface CreateJournalDraftInput {
     organizationUnitId?: string
     transactionDate?: string
     chequeNumber?: string
+    currencyCode?: string
+    currencyName?: string
+    exchangeRate?: string
+    foreignDebit?: string
+    foreignCredit?: string
     debit: string
     credit: string
   }>

@@ -35,6 +35,11 @@ export function convertLedgerAmount(amountUnits: bigint, rateUnits: bigint): big
   return (amountUnits * rateUnits + LEDGER_RATE_SCALE / BigInt(2)) / LEDGER_RATE_SCALE
 }
 
+export function convertBaseToTransactionAmount(baseAmountUnits: bigint, rateUnits: bigint): bigint {
+  if (rateUnits <= BigInt(0)) return BigInt(0)
+  return (baseAmountUnits * LEDGER_RATE_SCALE + rateUnits / BigInt(2)) / rateUnits
+}
+
 export function percentageOfLedgerAmount(amountUnits: bigint, percentageUnits: bigint): bigint {
   const divisor = BigInt(100) * LEDGER_AMOUNT_SCALE
   return (amountUnits * percentageUnits + divisor / BigInt(2)) / divisor
