@@ -2,10 +2,12 @@
 import { Check, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
 import type { LedgerImprestCategory } from '../../../features/ledger/setup-data'
 import { useLedgerSetup } from '../../../features/ledger/setup-data'
+import { useLedgerImprests } from '../../../features/ledger/imprest-data'
 
 definePageMeta({ layout: 'admin-ledger' })
 
 const setup = useLedgerSetup()
+const imprestLedger = useLedgerImprests()
 const search = ref('')
 const showForm = ref(false)
 const editingId = ref<string | null>(null)
@@ -16,6 +18,9 @@ const form = reactive({ name: '' })
 
 const defaultCategoryId = computed(() => setup.defaultGlNumbers.value?.imprestCategoryId || '')
 const inUseCount = computed(() => setup.imprestCategories.value.filter((category) => category.id === defaultCategoryId.value).length)
+function isCategoryInUse(categoryId: string) {
+  return imprestLedger.imprests.value.some((imprest) => imprest.imprestCategoryId === categoryId)
+}
 const visibleCategories = computed(() => {
   const term = search.value.trim().toLowerCase()
   return [...setup.imprestCategories.value]
@@ -56,6 +61,10 @@ function removeCategory() {
   const target = deleteTarget.value
   if (!target) return
   deleteError.value = ''
+  if (isCategoryInUse(target.id)) {
+    deleteError.value = 'This category is assigned to an imprest and cannot be deleted.'
+    return
+  }
   if (!setup.removeImprestCategory(target.id)) {
     deleteError.value = 'This category is assigned in Default GL Numbers. Change that mapping before deleting it.'
     return
@@ -122,7 +131,7 @@ function removeCategory() {
               </td>
               <td class="px-4 py-3.5 text-right">
                 <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" :aria-label="`Edit ${category.name}`" title="Edit category" @click="openEdit(category)"><Pencil :size="14" /></button>
-                <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" :aria-label="`Delete ${category.name}`" :title="category.id === defaultCategoryId ? 'Change the Default GL Numbers mapping before deleting' : 'Delete category'" :disabled="category.id === defaultCategoryId" @click="deleteTarget = category; deleteError = ''"><Trash2 :size="14" /></button>
+                <button type="button" class="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" :aria-label="`Delete ${category.name}`" :title="isCategoryInUse(category.id) ? 'Cannot delete a category assigned to an imprest' : category.id === defaultCategoryId ? 'Change the Default GL Numbers mapping before deleting' : 'Delete category'" :disabled="category.id === defaultCategoryId || isCategoryInUse(category.id)" @click="deleteTarget = category; deleteError = ''"><Trash2 :size="14" /></button>
               </td>
             </tr>
             <tr v-if="!visibleCategories.length">
@@ -135,7 +144,7 @@ function removeCategory() {
         </table>
       </div>
       <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800">
-        <span>Deleting a category used by a default posting rule is blocked.</span>
+        <span>Categories used by default mappings or existing imprests cannot be deleted.</span>
         <NuxtLink to="/ledger/default-gl-numbers" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Review Default GL Numbers →</NuxtLink>
       </div>
     </section>

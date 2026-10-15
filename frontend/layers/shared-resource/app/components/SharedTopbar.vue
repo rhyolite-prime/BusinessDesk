@@ -37,6 +37,7 @@ const pageTitle = computed(() => {
   if (route.path === '/ledger/budgets') return 'Budget'
   if (route.path === '/ledger/default-gl-numbers') return 'Default GL Numbers'
   if (route.path === '/ledger/imprest-categories') return 'Imprest Categories'
+  if (route.path.startsWith('/ledger/imprests')) return 'Accountable imprests'
   if (route.path === '/ledger/petty-cash-recipients') return 'Petty Cash Recipients'
   if (route.path === '/ledger/bank-accounts') return 'Bank Accounts'
   if (route.path.startsWith('/ledger/accounts')) return 'Chart of Account Detail'
@@ -55,6 +56,7 @@ const searchItems = computed(() => isLedgerWorkspace.value
       { label: 'Budget', detail: 'Plan account budgets by period and unit', to: '/ledger/budgets' },
       { label: 'Default GL Numbers', detail: 'Maintain default posting-account mappings', to: '/ledger/default-gl-numbers' },
       { label: 'Imprest Categories', detail: 'Maintain accountable imprest classifications', to: '/ledger/imprest-categories' },
+      { label: 'Accountable imprests', detail: 'Issue, retire, refund and write off imprests', to: '/ledger/imprests' },
       { label: 'Petty Cash Recipients', detail: 'Maintain the petty cash recipient directory', to: '/ledger/petty-cash-recipients' },
       { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
       { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },

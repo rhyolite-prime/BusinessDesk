@@ -72,7 +72,7 @@ const ledgerGroups: NavigationGroup[] = [
         icon: 'wallet',
         children: [
           { label: 'Imprest Categories', to: '/ledger/imprest-categories', icon: 'list-bullet' },
-          soon('Imprests', 'banknotes'),
+          { label: 'Imprests', to: '/ledger/imprests', icon: 'banknotes' },
         ],
       },
       {
