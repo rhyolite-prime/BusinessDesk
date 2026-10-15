@@ -1,39 +1,12 @@
-/* This is a JSON format configuration file
- */
 {
-    /*
-    //ssl:The global SSL settings. "key" and "cert" are the path to the SSL key and certificate. While
-    //    "conf" is an array of 1 or 2-element tuples that supplies file style options for `SSL_CONF_cmd`.
-    "ssl": {
-        "cert": "../../trantor/trantor/tests/server.crt",
-        "key": "../../trantor/trantor/tests/server.key",
-        "conf": [
-            //["Options", "-SessionTicket"], 
-            //["Options", "Compression"]
-        ]
-    },
     "listeners": [
         {
             //address: Ip address,0.0.0.0 by default
             "address": "0.0.0.0",
             //port: Port number
-            "port": 80,
+            "port": 5108,
             //https: If true, use https for security,false by default
             "https": false
-        },
-        {
-            "address": "0.0.0.0",
-            "port": 443,
-            "https": true,
-            //cert,key: Cert file path and key file path, empty by default,
-            //if empty, use the global setting
-            "cert": "",
-            "key": "",
-            //use_old_tls: enable the TLS1.0/1.1, false by default
-            "use_old_tls": false,
-            "ssl_conf": [
-                //["MinProtocol", "TLSv1.3"]
-            ]
         }
     ],
     "db_clients": [
@@ -49,19 +22,19 @@
             //port: Server port, 5432 by default
             "port": 5432,
             //dbname: Database name
-            "dbname": "test",
+            "dbname": "BusinessDesk",
             //user: 'postgres' by default
-            "user": "",
+            "user": "postgres",
             //passwd: '' by default
-            "passwd": "",
+            "passwd": "postgres", // yLF8Sq!2jRP7x$z
             //is_fast: false by default, if it is true, the client is faster but user can't call
             //any synchronous interface of it.
             "is_fast": false,
-            //client_encoding: The character set used by the client. it is empty string by default which 
+            //client_encoding: The character set used by the client. it is empty string by default which
             //means use the default character set.
             //"client_encoding": "",
-            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-            //connections per IO thread, otherwise it is the total number of all connections.  
+            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+            //connections per IO thread, otherwise it is the total number of all connections.
             "number_of_connections": 1,
             //timeout: -1.0 by default, in seconds, the timeout for executing a SQL query.
             //zero or negative value means no timeout.
@@ -91,14 +64,14 @@
             //is_fast: false by default, if it is true, the client is faster but user can't call
             //any synchronous interface of it.
             "is_fast": false,
-            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-            //connections per IO thread, otherwise it is the total number of all connections.  
+            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+            //connections per IO thread, otherwise it is the total number of all connections.
             "number_of_connections": 1,
             //timeout: -1.0 by default, in seconds, the timeout for executing a command.
             //zero or negative value means no timeout.
             "timeout": -1.0
         }
-    ],*/
+    ],
     "app": {
         //number_of_threads: The number of IO threads, 1 by default, if the value is set to 0, the number of threads
         //is the number of CPU cores
@@ -131,7 +104,7 @@
                 "value": "field-value"
             }
         ],*/
-        //upload_path: The path to save the uploaded file. "uploads" by default. 
+        //upload_path: The path to save the uploaded file. "uploads" by default.
         //If the path isn't prefixed with /, ./ or ../,
         //it is relative path of document_root path
         "upload_path": "uploads",
@@ -170,9 +143,9 @@
                 //default_content_type: The default content type of the static files without
                 //an extension. empty string by default.
                 "default_content_type": "text/plain",
-                //alias: The location in file system, if it is prefixed with "/", it 
-                //presents an absolute path, otherwise it presents a relative path to 
-                //the document_root path. 
+                //alias: The location in file system, if it is prefixed with "/", it
+                //presents an absolute path, otherwise it presents a relative path to
+                //the document_root path.
                 //The default value is "" which means use the document root path as the location base path.
                 "alias": "",
                 //is_case_sensitive: indicates whether the URI prefix is case sensitive.
@@ -198,20 +171,20 @@
         "dynamic_views_path": [
             "./views"
         ],
-        //dynamic_views_output_path: Default by an empty string which means the output path of source 
-        //files is the path where the csp files locate. If the path isn't prefixed with /, it is relative 
+        //dynamic_views_output_path: Default by an empty string which means the output path of source
+        //files is the path where the csp files locate. If the path isn't prefixed with /, it is relative
         //path of the current working directory.
         "dynamic_views_output_path": "",
         //json_parser_stack_limit: 1000 by default, the maximum number of stack depth when reading a json string by the jsoncpp library.
         "json_parser_stack_limit": 1000,
         //enable_unicode_escaping_in_json: true by default, enable unicode escaping in json.
         "enable_unicode_escaping_in_json": true,
-        //float_precision_in_json: set precision of float number in json. 
+        //float_precision_in_json: set precision of float number in json.
         "float_precision_in_json": {
-            //precision: 0 by default, 0 means use the default precision of the jsoncpp lib. 
+            //precision: 0 by default, 0 means use the default precision of the jsoncpp lib.
             "precision": 0,
-            //precision_type: must be "significant" or "decimal", defaults to "significant" that means 
-            //setting max number of significant digits in string, "decimal" means setting max number of 
+            //precision_type: must be "significant" or "decimal", defaults to "significant" that means
+            //setting max number of significant digits in string, "decimal" means setting max number of
             //digits after "." in string
             "precision_type": "significant"
         },
@@ -242,7 +215,7 @@
         "handle_sig_term": true,
         //relaunch_on_error: False by default, if true, the program will be restart by the parent after exiting;
         "relaunch_on_error": false,
-        //use_sendfile: True by default, if true, the program 
+        //use_sendfile: True by default, if true, the program
         //uses sendfile() system-call to send static files to clients;
         "use_sendfile": true,
         //use_gzip: True by default, use gzip to compress the response body's content;
@@ -266,31 +239,31 @@
         //        ]
         //    }
         //],
-        //idle_connection_timeout: Defaults to 60 seconds, the lifetime 
+        //idle_connection_timeout: Defaults to 60 seconds, the lifetime
         //of the connection without read or write
         "idle_connection_timeout": 60,
         //server_header_field: Set the 'Server' header field in each response sent by drogon,
         //empty string by default with which the 'Server' header field is set to "Server: drogon/version string\r\n"
         "server_header_field": "",
-        //enable_server_header: Set true to force drogon to add a 'Server' header to each HTTP response. The default 
+        //enable_server_header: Set true to force drogon to add a 'Server' header to each HTTP response. The default
         //value is true.
         "enable_server_header": true,
-        //enable_date_header: Set true to force drogon to add a 'Date' header to each HTTP response. The default 
+        //enable_date_header: Set true to force drogon to add a 'Date' header to each HTTP response. The default
         //value is true.
         "enable_date_header": true,
-        //keepalive_requests: Set the maximum number of requests that can be served through one keep-alive connection. 
+        //keepalive_requests: Set the maximum number of requests that can be served through one keep-alive connection.
         //After the maximum number of requests are made, the connection is closed.
         //The default value of 0 means no limit.
         "keepalive_requests": 0,
-        //pipelining_requests: Set the maximum number of unhandled requests that can be cached in pipelining buffer. 
+        //pipelining_requests: Set the maximum number of unhandled requests that can be cached in pipelining buffer.
         //After the maximum number of requests are made, the connection is closed.
         //The default value of 0 means no limit.
         "pipelining_requests": 0,
-        //gzip_static: If it is set to true, when the client requests a static file, drogon first finds the compressed 
+        //gzip_static: If it is set to true, when the client requests a static file, drogon first finds the compressed
         //file with the extension ".gz" in the same path and send the compressed file to the client.
         //The default value of gzip_static is true.
         "gzip_static": true,
-        //br_static: If it is set to true, when the client requests a static file, drogon first finds the compressed 
+        //br_static: If it is set to true, when the client requests a static file, drogon first finds the compressed
         //file with the extension ".br" in the same path and send the compressed file to the client.
         //The default value of br_static is true.
         "br_static": true,
@@ -313,10 +286,67 @@
         "enabled_compressed_request": false,
         // enable_request_stream: Defaults to false. If true the server will enable stream mode for http requests.
         // See the wiki for more details.
-        "enable_request_stream": false,
+        "enable_request_stream": false
     },
     //plugins: Define all plugins running in the application
     "plugins": [
+        {
+            //name: The class name of the plugin
+            "name": "SapoEnginePlugin",
+            //dependencies: Plugins that the plugin depends on. It can be commented out
+            "dependencies": [],
+            //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
+            //Environment overrides (see SapoSettings::applyEnvOverrides): SAPO_WORKFLOW_DIR,
+            //SAPO_CONFIG_PATH, SAPO_STATE_DIR, SAPO_REDIS_URL (or SAPO_REDIS_HOST/PORT),
+            //SAPO_LOG_LEVEL, SAPO_DEFAULT_WORKFLOW, SAPO_PLUGIN_DIR,
+            //SAPO_MSISDN_COUNTRY_CODE, SAPO_MSISDN_TRUNK_PREFIX, SAPO_MSISDN_NATIONAL_DIGITS,
+            //SAPO_MSISDN_FORMAT.
+            "config": {
+                //workflow_directory: *.json blueprints loaded once at startup
+                "workflow_directory": "sapo/workflows",
+                //plugin_directory: *.json plugin blueprints runnable by name via
+                //POST /api/v1/sapo/plugins/execute ("" disables directory loading)
+                "plugin_directory": "sapo/plugins",
+                //config_path: optional sapo-dev-config.json (provider config, secrets, engine tunables)
+                "config_path": "sapo/sapo-config.json",
+                //state_directory: file state store (used when redis_url is empty)
+                "state_directory": "sapo/state-store",
+                //redis_url: durable multi-node state; "" (default) selects the file store.
+                //Accepts "host[:port]" or "redis://[[user]:pass@]host[:port][/db]".
+                "redis_url": "redis://127.0.0.1:6379/1",
+                //redis_ttl_seconds: TTL on every Redis session hash
+                "redis_ttl_seconds": 900,
+                //redis_pool_size: socket client pool, keep >= engine workers
+                "redis_pool_size": 8,
+                //redis_atomic_index: fold index writes into the CAS script (single Redis only;
+                //set false on Redis Cluster)
+                "redis_atomic_index": true,
+                //log_level: trace|debug|info|warn|error|off
+                "log_level": "info",
+                //default_workflow: fallback blueprint stem (sapo-dev/workflows/<name>.json)
+                "default_workflow": "default",
+                //blocking_threads: workers for blocking engine calls (0 => hardware default)
+                "blocking_threads": 8,
+                //Dialing plan used to canonicalise the number that dialed the short code,
+                //whatever shape the provider reports it in. Blueprints then always read the
+                //same value from $msisdn/$phone/$local_phone/... (docs/SAPO_INTEGRATION.md).
+                //msisdn_country_code: country calling code without '+'
+                "msisdn_country_code": "233",
+                //msisdn_trunk_prefix: national trunk prefix ("" for plans without one)
+                "msisdn_trunk_prefix": "0",
+                //msisdn_national_digits: subscriber digits after the code/prefix
+                "msisdn_national_digits": 9,
+                //msisdn_format: what $msisdn itself carries -
+                //international (233...) | e164 (+233...) | local (0...) | national (244...) | raw
+                "msisdn_format": "international"
+            }
+        },
+        {
+            "name": "WssdServicePlugin",
+            "dependencies": [],
+            "config": {
+            }
+        },
         {
             //name: The class name of the plugin
             "name": "drogon::plugin::PromExporter",
@@ -338,13 +368,72 @@
                 "log_file": "access.log",
                 "log_size_limit": 0,
                 "use_local_time": true,
-                "log_index": 0,
+                "log_index": 0
                 // "show_microseconds": true,
                 // "custom_time_format": "",
                 // "use_real_ip": false
             }
         }
     ],
-    //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
-    "custom_config": {}
+    //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method.
+    "custom_config": {
+
+        "Countries": [
+            { "name": "Algeria", "code": "DZ", "currency": "DZD", "currency_name": "Algerian Dinar", "minor_unit": "Santeem" },
+            { "name": "Angola", "code": "AO", "currency": "AOA", "currency_name": "Angolan Kwanza", "minor_unit": "Cêntimo" },
+            { "name": "Benin", "code": "BJ", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Botswana", "code": "BW", "currency": "BWP", "currency_name": "Botswana Pula", "minor_unit": "Thebe" },
+            { "name": "Burkina Faso", "code": "BF", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Burundi", "code": "BI", "currency": "BIF", "currency_name": "Burundian Franc", "minor_unit": "Centime" },
+            { "name": "Cabo Verde", "code": "CV", "currency": "CVE", "currency_name": "Cape Verdean Escudo", "minor_unit": "Centavo" },
+            { "name": "Cameroon", "code": "CM", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Central African Republic", "code": "CF", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Chad", "code": "TD", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Comoros", "code": "KM", "currency": "KMF", "currency_name": "Comorian Franc", "minor_unit": "Centime" },
+            { "name": "Congo", "code": "CG", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Congo, The Democratic Republic of the", "code": "CD", "currency": "CDF", "currency_name": "Congolese Franc", "minor_unit": "Centime" },
+            { "name": "Cote D'Ivoire", "code": "CI", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Djibouti", "code": "DJ", "currency": "DJF", "currency_name": "Djiboutian Franc", "minor_unit": "Centime" },
+            { "name": "Egypt", "code": "EG", "currency": "EGP", "currency_name": "Egyptian Pound", "minor_unit": "Piastre" },
+            { "name": "Equatorial Guinea", "code": "GQ", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Eritrea", "code": "ER", "currency": "ERN", "currency_name": "Eritrean Nakfa", "minor_unit": "Cent" },
+            { "name": "Eswatini", "code": "SZ", "currency": "SZL", "currency_name": "Swazi Lilangeni", "minor_unit": "Cent" },
+            { "name": "Ethiopia", "code": "ET", "currency": "ETB", "currency_name": "Ethiopian Birr", "minor_unit": "Santim" },
+            { "name": "Gabon", "code": "GA", "currency": "XAF", "currency_name": "Central African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Gambia", "code": "GM", "currency": "GMD", "currency_name": "Gambian Dalasi", "minor_unit": "Butut" },
+            { "name": "Ghana", "code": "GH", "currency": "GHS", "currency_name": "Ghanaian Cedi", "minor_unit": "Pesewa" },
+            { "name": "Guinea", "code": "GN", "currency": "GNF", "currency_name": "Guinean Franc", "minor_unit": "Centime" },
+            { "name": "Guinea-Bissau", "code": "GW", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Kenya", "code": "KE", "currency": "KES", "currency_name": "Kenyan Shilling", "minor_unit": "Cent" },
+            { "name": "Lesotho", "code": "LS", "currency": "LSL", "currency_name": "Lesotho Loti", "minor_unit": "Sente" },
+            { "name": "Liberia", "code": "LR", "currency": "LRD", "currency_name": "Liberian Dollar", "minor_unit": "Cent" },
+            { "name": "Libya", "code": "LY", "currency": "LYD", "currency_name": "Libyan Dinar", "minor_unit": "Dirham" },
+            { "name": "Madagascar", "code": "MG", "currency": "MGA", "currency_name": "Malagasy Ariary", "minor_unit": "Iraimbilanja" },
+            { "name": "Malawi", "code": "MW", "currency": "MWK", "currency_name": "Malawian Kwacha", "minor_unit": "Tambala" },
+            { "name": "Mali", "code": "ML", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Mauritania", "code": "MR", "currency": "MRU", "currency_name": "Mauritanian Ouguiya", "minor_unit": "Khoums" },
+            { "name": "Mauritius", "code": "MU", "currency": "MUR", "currency_name": "Mauritian Rupee", "minor_unit": "Cent" },
+            { "name": "Morocco", "code": "MA", "currency": "MAD", "currency_name": "Moroccan Dirham", "minor_unit": "Centime" },
+            { "name": "Mozambique", "code": "MZ", "currency": "MZN", "currency_name": "Mozambican Metical", "minor_unit": "Centavo" },
+            { "name": "Namibia", "code": "NA", "currency": "NAD", "currency_name": "Namibian Dollar", "minor_unit": "Cent" },
+            { "name": "Niger", "code": "NE", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Nigeria", "code": "NG", "currency": "NGN", "currency_name": "Nigerian Naira", "minor_unit": "Kobo" },
+            { "name": "Rwanda", "code": "RW", "currency": "RWF", "currency_name": "Rwandan Franc", "minor_unit": "Centime" },
+            { "name": "Sao Tome and Principe", "code": "ST", "currency": "STN", "currency_name": "São Tomé and Príncipe Dobra", "minor_unit": "Cêntimo" },
+            { "name": "Senegal", "code": "SN", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Seychelles", "code": "SC", "currency": "SCR", "currency_name": "Seychellois Rupee", "minor_unit": "Cent" },
+            { "name": "Sierra Leone", "code": "SL", "currency": "SLL", "currency_name": "Sierra Leonean Leone", "minor_unit": "Cent" },
+            { "name": "Somalia", "code": "SO", "currency": "SOS", "currency_name": "Somali Shilling", "minor_unit": "Cent" },
+            { "name": "South Africa", "code": "ZA", "currency": "ZAR", "currency_name": "South African Rand", "minor_unit": "Cent" },
+            { "name": "South Sudan", "code": "SS", "currency": "SSP", "currency_name": "South Sudanese Pound", "minor_unit": "Piaster" },
+            { "name": "Sudan", "code": "SD", "currency": "SDG", "currency_name": "Sudanese Pound", "minor_unit": "Piastre" },
+            { "name": "Tanzania, United Republic of", "code": "TZ", "currency": "TZS", "currency_name": "Tanzanian Shilling", "minor_unit": "Cent" },
+            { "name": "Togo", "code": "TG", "currency": "XOF", "currency_name": "West African CFA Franc", "minor_unit": "Centime" },
+            { "name": "Tunisia", "code": "TN", "currency": "TND", "currency_name": "Tunisian Dinar", "minor_unit": "Millime" },
+            { "name": "Uganda", "code": "UG", "currency": "UGX", "currency_name": "Ugandan Shilling", "minor_unit": "Cent" },
+            { "name": "Zambia", "code": "ZM", "currency": "ZMW", "currency_name": "Zambian Kwacha", "minor_unit": "Ngwee" },
+            { "name": "Zimbabwe", "code": "ZW", "currency": "ZWL", "currency_name": "Zimbabwean Dollar", "minor_unit": "Cent" }
+        ]
+
+    }
 }
