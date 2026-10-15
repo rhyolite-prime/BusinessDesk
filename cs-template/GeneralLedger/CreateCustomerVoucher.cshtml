@@ -1,0 +1,238 @@
+@{
+    ViewData["Title"] = "General Ledger | Create Customer Receipt Voucher";
+    Layout = "~/Views/Shared/_generalLedgerLayout.cshtml";
+}
+
+<div class="content" id="app">
+    <!-- Header -->
+    <div class="page-header d-flex align-items-center justify-content-between flex-wrap row-gap-3 mb-4">
+        <div class="page-title">
+            <h4 class="fw-bold mb-1">Customer Receipt Voucher</h4>
+            <h6 class="text-muted fs-13 mb-0">Record a new receipt voucher for business customers.</h6>
+        </div>
+        <div>
+            <a href="/GeneralLedger/Vouchers?tab=customer" class="btn btn-outline-secondary d-inline-flex align-items-center">
+                <i class="ti ti-arrow-left me-2"></i>Back to List
+            </a>
+        </div>
+    </div>
+
+    <!-- Main Tabs -->
+    <div class="card mb-3">
+        <div class="card-body p-0">
+            <ul class="nav nav-tabs nav-tabs-solid nav-tabs-rounded border-0 p-3 bg-light m-0">
+                <li class="nav-item">
+                    <a class="nav-link cursor-pointer fw-semibold px-4 py-2 active">
+                        Receipt Voucher
+                    </a>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <form @@submit.prevent="saveVoucher">
+        <div>
+            <div class="card mb-4">
+                <div class="card-body">
+                    <!-- Form Row 1 -->
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Customer Name: <span class="text-danger">*</span></label>
+                                <select class="form-select" v-model="form.customerId" required @@change="updateCustomerName">
+                                    <option value="" disabled>Select Customer</option>
+                                    <option v-for="c in customers" :key="c.id" :value="c.id">{{ c.name }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Entry Date: <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" v-model="form.entryDate" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Bank/Cash G/L: <span class="text-danger">*</span></label>
+                                <select class="form-select" v-model="form.bankGl" required>
+                                    <option value="" disabled>Select Account</option>
+                                    <option v-for="b in bankAccounts" :key="b" :value="b">{{ b }}</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Currency: <span class="text-danger">*</span></label>
+                                <select class="form-select" v-model="form.currencyCode" required>
+                                    <option v-for="c in currencies" :key="c.code" :value="c.code">{{ c.name }} ({{ c.code }})</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Row 2 -->
+                    <div class="row g-3 mt-1">
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Mode Of Receipt: <span class="text-danger">*</span></label>
+                                <select class="form-select" v-model="form.modeOfReceipt" required>
+                                    <option value="Cash">Cash</option>
+                                    <option value="Cheque">Cheque</option>
+                                    <option value="Bank Transfer">Bank Transfer</option>
+                                    <option value="Mobile Money">Mobile Money</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Receipt Date: <span class="text-danger">*</span></label>
+                                <input type="date" class="form-control" v-model="form.receiptDate" required>
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="form-group mb-0">
+                                <label class="form-label fw-bold text-dark mb-1">Batch No#:</label>
+                                <input type="text" class="form-control" placeholder="Batch No#" v-model="form.batchNo">
+                            </div>
+                        </div>
+
+                        <div class="col-md-3">
+                            <div class="row align-items-end g-2">
+                                <div class="col-8">
+                                    <label class="form-label fw-bold text-dark mb-1">Currency Rate:</label>
+                                    <input type="number" step="0.0001" class="form-control" v-model.number="form.currencyRate" :disabled="!form.isMultiCurrency">
+                                </div>
+                                <div class="col-4 mb-2">
+                                    <div class="form-check">
+                                        <input class="form-check-input" type="checkbox" id="multiCurrencyCheck" v-model="form.isMultiCurrency" @@change="toggleMultiCurrency">
+                                        <label class="form-check-label text-dark fs-12 cursor-pointer" for="multiCurrencyCheck">
+                                            Multi-Currency
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Lines Grid Table -->
+            <div class="card mb-4">
+                <div class="card-header bg-light py-2 border-bottom d-flex align-items-center justify-content-between">
+                    <div class="d-flex align-items-center gap-2">
+                        <button type="button" class="btn btn-sm btn-primary d-inline-flex align-items-center shadow-sm" @@click="addLine">
+                            <i class="ti ti-plus me-1"></i>Add Row
+                        </button>
+                    </div>
+                    <span class="fs-12 text-muted fw-semibold">Voucher Lines ({{ form.lines.length }})</span>
+                </div>
+                <div class="card-body p-0">
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover align-middle mb-0 text-nowrap">
+                            <thead class="bg-light-100 fs-13 text-dark">
+                                <tr>
+                                    <th style="width: 150px;">Invoice No.</th>
+                                    <th style="width: 150px;">Reference No</th>
+                                    <th style="width: 280px;">Credit G/L <span class="text-danger">*</span></th>
+                                    <th>Description</th>
+                                    <th style="width: 160px;" class="text-end">Local Amount <span class="text-danger">*</span></th>
+                                    <th style="width: 160px;" class="text-end">Foreign Amount</th>
+                                    <th style="width: 200px;">Organizational Unit</th>
+                                    <th class="text-center" style="width: 50px;"></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr v-for="(line, index) in form.lines" :key="index">
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm border-light-subtle" v-model="line.invoiceNo">
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm border-light-subtle" v-model="line.referenceNo">
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm border-light-subtle" v-model="line.glAccount" required>
+                                            <option value="" disabled>Select Account</option>
+                                            <option v-for="a in creditGlAccounts" :key="a" :value="a">{{ a }}</option>
+                                        </select>
+                                    </td>
+                                    <td>
+                                        <input type="text" class="form-control form-control-sm border-light-subtle" v-model="line.description">
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" class="form-control form-control-sm text-end border-light-subtle fw-semibold" v-model.number="line.localAmount" required @@input="calculateLineForeign(line)">
+                                    </td>
+                                    <td>
+                                        <input type="number" step="0.01" class="form-control form-control-sm text-end border-light-subtle bg-light text-muted" v-model.number="line.foreignAmount" disabled>
+                                    </td>
+                                    <td>
+                                        <select class="form-select form-select-sm border-light-subtle" v-model="line.orgUnit">
+                                            <option v-for="org in orgUnits" :key="org" :value="org">{{ org }}</option>
+                                        </select>
+                                    </td>
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-icon btn-outline-danger border-0" @@click="removeLine(index)">
+                                            <i class="ti ti-trash fs-14"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                                <tr v-if="form.lines.length === 0">
+                                    <td colspan="8" class="text-center py-4 text-muted small">
+                                        No rows added. Click "+ Add Row" to add receipt details.
+                                    </td>
+                                </tr>
+                                <!-- Totals Row -->
+                                <tr v-else class="bg-light fw-bold fs-13">
+                                    <td colspan="4" class="text-end text-dark">Total:</td>
+                                    <td class="text-end text-primary">{{ formatCurrency(totalLocalLines) }}</td>
+                                    <td class="text-end text-muted">{{ formatCurrency(totalForeignLines) }}</td>
+                                    <td colspan="2"></td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Summary Section -->
+            <div class="row g-4 mb-4 justify-content-end">
+                <div class="col-lg-5">
+                    <div class="card shadow-sm border border-light-subtle bg-light-50">
+                        <div class="card-header bg-light py-3">
+                            <h6 class="fw-bold text-dark mb-0"><i class="ti ti-report-money me-2"></i>Receipt Totals</h6>
+                        </div>
+                        <div class="card-body d-flex flex-column gap-3">
+                            <div>
+                                <div class="mb-3">
+                                    <label class="form-label text-muted small fw-semibold mb-1">Receipt Total (Local):</label>
+                                    <input type="text" class="form-control bg-light text-muted fw-bold text-end fs-15" :value="formatCurrency(totalLocalLines)" disabled>
+                                </div>
+                                <div class="mb-0">
+                                    <label class="form-label text-muted small fw-semibold mb-1">Net Amount Received:</label>
+                                    <input type="text" class="form-control bg-light text-dark fw-bold text-end fs-16 border-success-subtle text-success" :value="formatCurrency(totalLocalLines)" disabled>
+                                </div>
+                            </div>
+                            
+                            <div class="d-flex gap-2 justify-content-end mt-3">
+                                <a href="/GeneralLedger/Vouchers?tab=customer" class="btn btn-secondary px-4">Cancel</a>
+                                <button type="submit" class="btn btn-primary px-4 fw-bold shadow">Save Voucher</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<style>
+    .cursor-pointer {
+        cursor: pointer;
+    }
+</style>
+
+<script src="~/module-js/gl/create-customer-voucher.js" asp-append-version="true"></script>

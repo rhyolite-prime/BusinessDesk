@@ -1,0 +1,315 @@
+@using Newtonsoft.Json
+@using RhyoliteOrbitUi.Models.GeneralLedger
+@{
+    ViewData["Title"] = "General Ledger | Budget";
+    Layout = "~/Views/Shared/_generalLedgerLayout.cshtml";
+    PagedRecords<Budget> pagedBudgets = Model.PagedBudgets;
+}
+
+<div class="content" id="app" v-cloak>
+    <div class="page-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
+        <div class="page-title">
+            <h4 class="fw-bold mb-1">Budget</h4>
+            <h6 class="text-muted fs-13 mb-0">Manage and organize your budgets.</h6>
+        </div>
+        
+        <div class="page-btn">
+            <a href="#" @@click.prevent="resetModal" class="btn btn-primary d-inline-flex align-items-center shadow-sm">
+                <i class="ti ti-circle-plus me-2 fs-16"></i>Add Budget
+            </a>
+        </div>
+    </div>
+                    
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3 py-3 border-bottom-0">
+            <div class="search-set">
+                <div class="search-input position-relative">
+                    <span class="btn-searchset position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"><i class="ti ti-search fs-14"></i></span>
+                    <input type="search" class="form-control form-control-sm ps-5" placeholder="Search accounts..." style="width: 250px;">
+                </div>
+            </div>
+             
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="thead-light">
+                    <tr>
+                        <th>Account</th>
+                        <th>Organizational Unit</th>
+                        <th>Period</th>
+                        <th class="text-end no-sort">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if(pagedBudgets?.Data != null && pagedBudgets.Data.Any())
+                    {
+                        @foreach (var budget in pagedBudgets.Data)
+                        {
+                            <tr class="transition-all">
+                                <td>
+                                    <span class="fw-bold text-dark">@budget.AccountName</span>
+                                </td>
+                                <td>
+                                    <span class="text-muted">@budget.OuName</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-transparent text-secondary px-3 py-1.5 rounded-pill fs-12">
+                                        @budget.BeginDate.ToString("MMMM") @budget.BeginDate.Year - @budget.EndDate.ToString("MMMM") @budget.EndDate.Year
+                                    </span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="#" @@click.prevent="viewSetupDetails({ Id: '@budget.Id', AccountId: '@budget.AccountId', OuId: '@budget.OuId', BeginDate: '@budget.BeginDate.ToString("yyyy-MM-dd")', EndDate: '@budget.EndDate.ToString("yyyy-MM-dd")' })" class="btn btn-sm btn-icon btn-outline-light hover-bg-primary text-secondary border-0" title="Edit">
+                                            <i class="ti ti-edit fs-16 text-primary"></i>
+                                        </a>
+                                        <a href="#" @@click.prevent="initDeleteSetup('@budget.Id')" class="btn btn-sm btn-icon btn-outline-light hover-bg-danger text-secondary border-0" title="Delete">
+                                            <i class="ti ti-trash fs-16 text-danger"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="4" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="ti ti-file-text fs-40 text-muted mb-2"></i>
+                                    <h5 class="text-muted fw-normal">No budgets found</h5>
+                                    <p class="text-muted-light small mb-0">Try creating a new one or adjusting your search term.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                
+                
+            </div>
+        </div>
+        
+        @if (pagedBudgets != null)
+        {
+            <div class="card-footer border-top-0 d-flex justify-content-between align-items-center">
+                <!-- Summary -->
+                <div class="text-muted fs-14">
+                    Showing {{ @pagedBudgets.LowerBound }} to {{ @pagedBudgets.UpperBound }} of {{ @pagedBudgets.TotalCount }} entries
+                </div>
+
+                <div class="d-flex gap-2">
+                    <!-- Pagination -->
+                    <ul class="pagination">
+
+                        @{
+                            int counter = 1;
+                            int initPage = 1;
+                            int currentPage = pagedBudgets.PageNo;
+                            int pages = pagedBudgets.TotalPages;
+                            if (currentPage > 9 && pages > 10)
+                            {
+                                initPage = currentPage - 5;
+                            }
+                        }
+
+                        @for (int i = initPage; i <= pages; i++)
+                        {
+                            string active = string.Empty;
+                            if (i == currentPage)
+                            {
+                                active = "active";
+                            }
+
+                            string? url = Url.Action("Budget", "GeneralLedger", new { 
+                                pageNo = i, 
+                                pageSize = pagedBudgets.PageSize,
+                                query = Model.Query 
+                            });
+
+                            <li class="paginate_button page-item @active">
+                                <a href="@url" aria-controls="DataTables_Table_0" role="link" aria-current="page" data-dt-idx="0" tabindex="0" class="page-link">@i</a>
+                            </li>
+
+                            counter++;
+
+                            if (counter > 10)
+                            {
+                                break;
+                            }
+                        }
+
+                    </ul>
+                </div>
+            </div>
+        }
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal fade" id="setupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ modalTitle }}</h5>
+                    <button type="button" class="close bg-danger text-white fs-16" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body p-4">
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label">Account:</label>
+                        <div class="col-sm-8 d-flex gap-2">
+                            <select class="form-select " v-model="accountId">
+                                <option value="">Select Account</option>
+                                <option v-for="item in accounts" :value="item.id">{{ item.name }}</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary shadow-sm" title="Search Accounts"><i class="ti ti-search"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label">Organizational Unit:</label>
+                        <div class="col-sm-8 d-flex gap-2">
+                            <select class="form-select" v-model="organizationalUnitId">
+                                <option value="">Select Unit</option>
+                                <option v-for="item in orgUnits" :value="item.id">{{ item.name }}</option>
+                            </select>
+                            <button class="btn btn-sm btn-outline-primary shadow-sm" title="Search Organizational Units"><i class="ti ti-search"></i></button>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3 align-items-center">
+                        <label class="col-sm-4 col-form-label">Beginning Month: </label>
+                        <div class="col-sm-3">
+                            <select class="form-select" v-model="beginningMonth">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June">June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        <label class="col-sm-2 col-form-label">Year:</label>
+                        <div class="col-sm-3">
+                            <input type="number" class="form-control" v-model="beginningYear" min="1900" max="2100" />
+                        </div>
+                    </div>
+
+                    <div class="row mb-4 align-items-center">
+                        <label class="col-sm-4 col-form-label">Ending Month</label>
+                        <div class="col-sm-3">
+                            <select class="form-select" v-model="endingMonth">
+                                <option value="January">January</option>
+                                <option value="February">February</option>
+                                <option value="March">March</option>
+                                <option value="April">April</option>
+                                <option value="May">May</option>
+                                <option value="June">June</option>
+                                <option value="July">July</option>
+                                <option value="August">August</option>
+                                <option value="September">September</option>
+                                <option value="October">October</option>
+                                <option value="November">November</option>
+                                <option value="December">December</option>
+                            </select>
+                        </div>
+                        <label class="col-sm-2 col-form-label">Year:</label>
+                        <div class="col-sm-3">
+                            <input type="number" class="form-control" v-model="endingYear" min="1900" max="2100" />
+                        </div>
+                    </div>
+
+                    <fieldset class="border rounded p-3 mb-4 bg-white shadow-sm position-relative mt-2">
+                        <legend class="float-none w-auto px-2 fs-6 text-primary fw-semibold mb-0 position-absolute" style="top: -12px; background: white; font-size: 0.85rem !important;">Budget Amount Option</legend>
+                        <div class="row mt-2">
+                            <div class="col-sm-6">
+                                <div class="form-check mb-2">
+                                    <input class="form-check-input" type="radio" name="budgetAmountOption" id="bao1" value="1" v-model="budgetAmountOption">
+                                    <label class="form-check-label text-dark fw-medium" for="bao1">Different</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="budgetAmountOption" id="bao2" value="2" v-model="budgetAmountOption">
+                                    <label class="form-check-label text-dark fw-medium" for="bao2">Same as Last Year</label>
+                                </div>
+                            </div>
+                            <div class="col-sm-6">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" name="budgetAmountOption" id="bao3" value="3" v-model="budgetAmountOption">
+                                    <label class="form-check-label text-dark fw-medium" for="bao3">Percentage of Last Year's</label>
+                                </div>
+                            </div>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="border rounded p-3 mb-4 bg-white shadow-sm">
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="allocationMethod" id="am1" value="1" v-model="allocationMethod">
+                            <label class="form-check-label text-dark fw-medium" for="am1">Enter an amount to be added for each period</label>
+                        </div>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="allocationMethod" id="am2" value="2" v-model="allocationMethod">
+                            <label class="form-check-label text-dark fw-medium" for="am2">Enter an amount to be shared equally</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="allocationMethod" id="am3" value="3" v-model="allocationMethod">
+                            <label class="form-check-label text-dark fw-medium" for="am3">Enter an amount for each individual period</label>
+                        </div>
+                    </fieldset>
+
+                    <fieldset class="border rounded p-3 bg-white shadow-sm position-relative mt-2">
+                        <legend class="float-none w-auto px-2 fs-6 text-primary fw-semibold mb-0 position-absolute" style="top: -12px; background: white; font-size: 0.85rem !important;">Budget to Add</legend>
+                        <div class="d-flex gap-4 mt-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="budgetToAdd" id="bta1" value="1" v-model="budgetToAdd">
+                                <label class="form-check-label text-dark fw-medium" for="bta1">Budget</label>
+                            </div>
+                            <div class="form-check">
+                                <input class="form-check-input" type="radio" name="budgetToAdd" id="bta2" value="2" v-model="budgetToAdd">
+                                <label class="form-check-label text-dark fw-medium" for="bta2">Revised</label>
+                            </div>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @@click="addSetup" :disabled="isLoading">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="ti ti-alert-triangle fs-40"></i>
+                    </div>
+                    <h5 class="mb-2">Are you sure?</h5>
+                    <p class="text-muted mb-4">You won't be able to revert this action!</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @@click="deleteSetup" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Yes, delete it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/module-js/gl/budget.js" asp-append-version="true"></script>

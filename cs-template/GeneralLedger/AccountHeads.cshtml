@@ -1,0 +1,215 @@
+@using Newtonsoft.Json
+@using RhyoliteOrbitUi.Models.GeneralLedger
+@{
+    ViewData["Title"] = "General Ledger | Account Heads";
+    Layout = "~/Views/Shared/_generalLedgerLayout.cshtml";
+    PagedRecords<AccountHead> pagedAccountHeads = Model.PagedAccountHeads;
+}
+
+<div class="content" id="app" v-cloak>
+    <div class="page-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
+        <div class="page-title">
+            <h4 class="fw-bold mb-1">Account Heads</h4>
+            <h6 class="text-muted fs-13 mb-0">Manage and organize your primary account heads.</h6>
+        </div>
+        
+        <div class="page-btn">
+            <a href="#" @@click.prevent="resetModal" class="btn btn-primary d-inline-flex align-items-center shadow-sm">
+                <i class="ti ti-circle-plus me-2 fs-16"></i>Add Account Head
+            </a>
+        </div>
+    </div>
+                    
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3 py-3 border-bottom-0">
+            <div class="search-set">
+                <div class="search-input position-relative">
+                    <span class="btn-searchset position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"><i class="ti ti-search fs-14"></i></span>
+                    <input type="search" class="form-control form-control-sm ps-5" placeholder="Search accounts..." style="width: 250px;">
+                </div>
+            </div>
+             
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="thead-light">
+                    <tr>
+                        <th>Account Head</th>
+                        <th>Account Type</th>
+                        <th class="text-end no-sort">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if(pagedAccountHeads?.Data != null && pagedAccountHeads.Data.Any())
+                    {
+                        @foreach (var accountHead in pagedAccountHeads.Data)
+                        {
+                            <tr class="transition-all">
+                                <td>
+                                    <span class="fw-bold text-dark">@accountHead.Name</span>
+                                </td>
+                                <td>
+                                    @{
+                                        string accountType = accountHead.AccountHeadType switch
+                                        {
+                                            0 => "Assets",
+                                            1 => "Liabilities",
+                                            2 => "Equity",
+                                            3 => "Revenue",
+                                            4 => "Expense",
+                                            _ => "Unknown"
+                                        };
+                                    }
+                                    <span class="badge bg-secondary-transparent text-secondary px-3 py-1.5 rounded-pill fs-12">@accountType</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                         
+                                        <a href="#" @@click.prevent="viewSetupDetails({ Id: '@accountHead.Id', Name: '@(accountHead.Name?.Replace("'", "\\'"))', AccountHeadType: @accountHead.AccountHeadType })" class="btn btn-sm btn-icon btn-outline-light hover-bg-primary text-secondary border-0" title="Edit">
+                                            <i class="ti ti-edit fs-16 text-primary"></i>
+                                        </a>
+                                        <a href="#" @@click.prevent="initDeleteSetup('@accountHead.Id')" class="btn btn-sm btn-icon btn-outline-light hover-bg-danger text-secondary border-0" title="Delete">
+                                            <i class="ti ti-trash fs-16 text-danger"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="3" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="ti ti-file-text fs-40 text-muted mb-2"></i>
+                                    <h5 class="text-muted fw-normal">No account heads found</h5>
+                                    <p class="text-muted-light small mb-0">Try creating a new one or adjusting your search term.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+                
+                
+            </div>
+        </div>
+        
+        <div class="dataTables_paginate paging_simple_numbers justify-content-between d-flex align-items-center" id="DataTables_Table_0_paginate">
+            
+            @if (pagedAccountHeads != null)
+            {
+                <!-- Summary -->
+                <div class="text-muted fs-14">
+                    Showing {{ @pagedAccountHeads.LowerBound }} to {{ @pagedAccountHeads.UpperBound }} of {{ @pagedAccountHeads.TotalCount }} entries
+                </div>
+
+                <!-- Pagination -->
+                <ul class="pagination">
+
+                    @{
+                        int counter = 1;
+                        int initPage = 1;
+                        int currentPage = pagedAccountHeads.PageNo;
+                        int pages = pagedAccountHeads.TotalPages;
+                        if (currentPage > 9 && pages > 10)
+                        {
+                            initPage = currentPage - 5;
+                        }
+                    }
+
+                    @for (int i = initPage; i <= pages; i++)
+                    {
+                        string active = string.Empty;
+                        if (i == currentPage)
+                        {
+                            active = "active";
+                        }
+
+                        string? url = Url.Action("AccountHeads", "GeneralLedger", new { 
+                            pageNo = i, 
+                            pageSize = pagedAccountHeads.PageSize,
+                            query = Model.Query 
+                        });
+
+                        <li class="paginate_button page-item @active">
+                            <a href="@url" aria-controls="DataTables_Table_0" role="link" aria-current="page" data-dt-idx="0" tabindex="0" class="page-link">@i</a>
+                        </li>
+
+                        counter++;
+
+                        if (counter > 10)
+                        {
+                            break;
+                        }
+                    }
+
+                </ul>
+            }
+            
+        </div>
+
+
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal fade" id="setupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <h5 class="modal-title">{{ modalTitle }}</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" v-model="name" placeholder="Enter account head name">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Account Type</label>
+                        <select class="form-select" v-model="accountHeadType">
+                            <option value="0">Assets</option>
+                            <option value="1">Liabilities</option>
+                            <option value="2">Equity</option>
+                            <option value="3">Revenue</option>
+                            <option value="4">Expense</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @@click="addSetup" :disabled="isLoading">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="ti ti-alert-triangle fs-40"></i>
+                    </div>
+                    <h5 class="mb-2">Are you sure?</h5>
+                    <p class="text-muted mb-4">You won't be able to revert this action!</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @@click="deleteSetup" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Yes, delete it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/module-js/gl/setups/account-heads.js" asp-append-version="true"></script>

@@ -1,0 +1,253 @@
+@using Newtonsoft.Json
+@using RhyoliteOrbitUi.Models.GeneralLedger
+@{
+    ViewData["Title"] = "Setups | Account Control";
+    Layout = "~/Views/Shared/_generalLedgerLayout.cshtml";
+    PagedRecords<CoaControl> pagedAccountControls = Model.PagedAccountControls;
+}
+
+<div class="content" id="app" v-cloak>
+    <div class="page-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
+        <div class="page-title">
+            <h4 class="fw-bold mb-1">Chart of Account Control</h4>
+            <h6 class="text-muted fs-13 mb-0">Define account groupings and numerical ranges.</h6>
+        </div>
+        
+        <div class="page-btn">
+            <a href="#" @@click.prevent="resetModal" class="btn btn-primary d-inline-flex align-items-center shadow-sm">
+                <i class="ti ti-circle-plus me-2 fs-16"></i>Add Account Control
+            </a>
+        </div>
+    </div>
+                    
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3 py-3 border-bottom-0">
+            <div class="search-set">
+                <div class="search-input position-relative">
+                    <span class="btn-searchset position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"><i class="ti ti-search fs-14"></i></span>
+                    <input type="search" class="form-control form-control-sm ps-5" placeholder="Search controls..." style="width: 250px;">
+                </div>
+            </div>
+            
+            <div class="d-flex align-items-center gap-2">
+                <select class="form-select form-select-sm" style="width: auto;">
+                    <option value="">Filter by Account Head</option>
+                    <option value="1">Assets</option>
+                    <option value="2">Liability</option>
+                    <option value="3">Revenue</option>
+                </select>
+                <button class="btn btn-sm btn-outline-light border shadow-sm d-inline-flex align-items-center text-dark">
+                    <i class="ti ti-filter me-1"></i> Filter
+                </button>
+            </div>
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="thead-light">
+                    <tr>
+                        <th>Hierarchy Name</th>
+                        <th>Control Name</th>
+                        <th>Account Range</th>
+                        <th>Capacity</th>
+                        <th class="text-end no-sort">Actions</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    @if(pagedAccountControls?.Data != null && pagedAccountControls.Data.Any())
+                    {
+                        var allData = pagedAccountControls.Data.ToList();
+                        var rootItems = allData.Where(x => x.ParentControlId == Guid.Empty).OrderBy(x => x.AccountHeadType).ToList();
+
+                        (int Min, int Max) GetHierarchyRange(CoaControl node, List<CoaControl> allDataList)
+                        {
+                            int min = node.MinAccount;
+                            int max = node.MaxAccount;
+                            var nodeChildren = allDataList.Where(x => x.ParentControlId == node.Id).ToList();
+                            foreach (var child in nodeChildren)
+                            {
+                                var childRange = GetHierarchyRange(child, allDataList);
+                                if (childRange.Min < min) min = childRange.Min;
+                                if (childRange.Max > max) max = childRange.Max;
+                            }
+                            return (min, max);
+                        }
+
+                        void RenderNode(CoaControl item, List<CoaControl> allData, int depth)
+                        {
+                            var children = allData.Where(x => x.ParentControlId == item.Id).OrderBy(x => x.MinAccount).ToList();
+                            var hasChildren = children.Any();
+                            var paddingLeft = depth > 0 ? (2.2 + (depth - 1) * 1.5) : 0;
+                            var rowStyle = depth > 0 ? "display: none;" : "";
+                            var cursorStyle = hasChildren ? "pointer" : "default";
+                            var hierarchyRange = GetHierarchyRange(item, allData);
+
+                            <tr class="transition-all tree-row @(depth > 0 ? "bg-light" : "")"
+                                data-id="@item.Id"
+                                data-parent-id="@item.ParentControlId"
+                                data-level="@depth"
+                                style="@rowStyle cursor: @cursorStyle;"
+                                data-expanded="false">
+                                <td>
+                                    <div class="d-flex align-items-center gap-2" style="padding-left: @(paddingLeft)rem;">
+                                        @if (hasChildren)
+                                        {
+                                            <i class="ti ti-chevron-right fs-16 text-muted toggle-icon"></i>
+                                        }
+                                        else if (depth > 0)
+                                        {
+                                            <span class="text-muted" style="width: 16px; text-align: center; display: inline-block;">-</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="width: 16px;"></span>
+                                        }
+                                        <i class="ti ti-folder fs-18" style="color: #891a3c;"></i>
+                                        <span class="fw-bold">@item.Name</span>
+                                    </div>
+                                </td>
+                                <td class="text-muted">@item.Name</td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-semibold text-dark">@hierarchyRange.Min <span class="text-muted fw-normal mx-1">to</span> @hierarchyRange.Max</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-secondary-transparent text-secondary px-3 py-1.5 rounded-pill fs-12">@((hierarchyRange.Max - hierarchyRange.Min + 1).ToString("N0")) accts</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="#" @@click.prevent="viewSetupDetails({ Id: '@item.Id', Name: '@(item.Name?.Replace("'", "\\'"))', MinAccount: @item.MinAccount, MaxAccount: @item.MaxAccount, AccountHeadId: '@item.AccountHeadId', AccountHeadType: @item.AccountHeadType, ParentControlId: '@item.ParentControlId' })" class="btn btn-sm btn-icon btn-outline-light hover-bg-primary text-secondary border-0" title="Edit">
+                                            <i class="ti ti-edit fs-16 text-primary"></i>
+                                        </a>
+                                        <a href="#" @@click.prevent="initDeleteSetup('@item.Id')" class="btn btn-sm btn-icon btn-outline-light hover-bg-danger text-secondary border-0" title="Delete">
+                                            <i class="ti ti-trash fs-16 text-danger"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+
+                            if (hasChildren)
+                            {
+                                foreach (var child in children)
+                                {
+                                    RenderNode(child, allData, depth + 1);
+                                }
+                            }
+                        }
+
+                        foreach (var rootItem in rootItems)
+                        {
+                            RenderNode(rootItem, allData, 0);
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="ti ti-file-text fs-40 text-muted mb-2"></i>
+                                    <h5 class="text-muted fw-normal">No account controls found</h5>
+                                    <p class="text-muted-light small mb-0">Try creating a new one or adjusting your search term.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <div class="card-footer border-top-0 d-flex justify-content-between align-items-center">
+            <div class="text-muted fs-14">
+                Showing 1 to @(pagedAccountControls?.Data?.Count ?? 0) of @(pagedAccountControls?.TotalCount ?? 0) entries
+            </div>
+            <div class="d-flex gap-2">
+                <button class="btn btn-sm btn-light disabled">Previous</button>
+                <button class="btn btn-sm btn-primary">1</button>
+                <button class="btn btn-sm btn-light disabled">Next</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal fade" id="setupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <div class="page-title">
+                        <h4>{{modalTitle}}</h4>
+                    </div>
+                    
+                    <button type="button" class="close bg-danger text-white fs-16" @@click="closeCoaControlSetupModal" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                    
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label class="form-label">Name</label>
+                        <input type="text" class="form-control" v-model="name" placeholder="Enter control name">
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Min Account</label>
+                            <input type="number" class="form-control" v-model="minAccount" placeholder="e.g. 1000">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Max Account</label>
+                            <input type="number" class="form-control" v-model="maxAccount" placeholder="e.g. 1999">
+                        </div>
+                    </div>
+                     
+                    <div class="mb-3">
+                        <label class="form-label">Account Head</label>
+                        <select class="form-select" v-model="accountHeadId">
+                            <option value="">Select Account Head</option>
+                            <option v-for="head in accountHeadList" :value="head.id">{{ head.name }}</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Parent Control</label>
+                        <select class="form-select" v-model="parentControlId">
+                            <option value="">None (Top Level)</option>
+                            <option v-for="ctrl in accountControlList" :value="ctrl.id || ctrl.Id">{{ ctrl.formattedName || ctrl.name || ctrl.subGroupName }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @@click="addSetup" :disabled="isLoading">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="ti ti-alert-triangle fs-40"></i>
+                    </div>
+                    <h5 class="mb-2">Are you sure?</h5>
+                    <p class="text-muted mb-4">You won't be able to revert this action!</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @@click="deleteSetup" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Yes, delete it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/module-js/gl/setups/account-controls.js" asp-append-version="true"></script>

@@ -1,0 +1,258 @@
+@using Newtonsoft.Json
+@using RhyoliteOrbitUi.Models.GeneralLedger
+@{
+    ViewData["Title"] = "Setups | Bank Accounts";
+    Layout = "~/Views/Shared/_generalLedgerLayout.cshtml";
+    PagedRecords<BankAccount> pagedBankAccounts = Model.PagedBankAccounts;
+}
+
+<div class="content" id="app" v-cloak>
+    <div class="page-header d-flex align-items-center justify-content-between flex-wrap row-gap-3">
+        <div class="page-title">
+            <h4 class="fw-bold mb-1">Bank Accounts</h4>
+            <h6 class="text-muted fs-13 mb-0">View and manage company bank accounts.</h6>
+        </div>
+        
+        <div class="page-btn d-flex align-items-center gap-3">
+            <a href="#" @@click.prevent="resetModal" class="btn btn-primary d-inline-flex align-items-center shadow-sm">
+                <i class="ti ti-circle-plus me-2 fs-16"></i>Add Bank Account
+            </a>
+        </div>
+    </div>
+                    
+    <div class="card">
+        <div class="card-header d-flex align-items-center justify-content-between flex-wrap row-gap-3 py-3 border-bottom-0">
+            <div class="search-set">
+                <div class="search-input position-relative">
+                    <span class="btn-searchset position-absolute top-50 start-0 translate-middle-y ms-3 text-muted"><i class="ti ti-search fs-14"></i></span>
+                    <input type="search" class="form-control form-control-sm ps-5" placeholder="Search accounts..." style="width: 250px;">
+                </div>
+            </div>
+             
+        </div>
+
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="thead-light">
+                        <tr>
+                            <th>Bank Info</th>
+                            <th>Ledger Account</th>
+                            <th>Currency</th>
+                            <th>Account Type</th>
+                            <th class="text-end no-sort">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @if(pagedBankAccounts?.Data != null && pagedBankAccounts.Data.Any())
+                    {
+                        @foreach (var account in pagedBankAccounts.Data)
+                        {
+                            <tr class="transition-all">
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-dark">@account.BankName</span>
+                                        <span class="fs-13 text-muted mt-1">@account.BankBranchName - #@account.AccountNo</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-bold text-dark">@account.AccountName</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-warning-transparent text-warning px-3 py-1.5 rounded-pill fs-12" title="@account.CurrencyName">@account.CurrencyCode</span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info-transparent text-info px-3 py-1.5 rounded-pill fs-12">@account.AccountType</span>
+                                </td>
+                                <td class="text-end">
+                                    <div class="d-inline-flex gap-2">
+                                        <a href="#" @@click.prevent='viewSetupDetails(@Html.Raw(JsonConvert.SerializeObject(account)))' class="btn btn-sm btn-icon btn-outline-light hover-bg-primary text-secondary border-0" title="Edit">
+                                            <i class="ti ti-edit fs-16 text-primary"></i>
+                                        </a>
+                                        <a href="#" @@click.prevent="initDeleteSetup('@account.Id')" class="btn btn-sm btn-icon btn-outline-light hover-bg-danger text-secondary border-0" title="Delete">
+                                            <i class="ti ti-trash fs-16 text-danger"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    }
+                    else
+                    {
+                        <tr>
+                            <td colspan="5" class="text-center py-5">
+                                <div class="d-flex flex-column align-items-center">
+                                    <i class="ti ti-file-text fs-40 text-muted mb-2"></i>
+                                    <h5 class="text-muted fw-normal">No bank accounts found</h5>
+                                    <p class="text-muted-light small mb-0">Try creating a new one or adjusting your search term.</p>
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        @if (pagedBankAccounts != null)
+        {
+            <div class="card-footer border-top-0 d-flex justify-content-between align-items-center">
+                <div class="text-muted fs-14">
+                    Showing @pagedBankAccounts.LowerBound to @pagedBankAccounts.UpperBound of @pagedBankAccounts.TotalCount entries
+                </div>
+                <div class="d-flex gap-2">
+                    <ul class="pagination">
+
+                        @{
+                            int counter = 1;
+                            int initPage = 1;
+                            int currentPage = pagedBankAccounts.PageNo;
+                            int pages = pagedBankAccounts.TotalPages;
+                            if (currentPage > 9 && pages > 10)
+                            {
+                                initPage = currentPage - 5;
+                            }
+                        }
+
+                        @for (int i = initPage; i <= pages; i++)
+                        {
+                            string active = string.Empty;
+                            if (i == currentPage)
+                            {
+                                active = "active";
+                            }
+
+                            string url = Url.Action("BankAccounts", "GeneralLedger", new { 
+                                pageNo = i, 
+                                pageSize = pagedBankAccounts.PageSize,
+                                query = Model.Query 
+                            });
+
+                            <li class="paginate_button page-item @active">
+                                <a href="@url" aria-controls="DataTables_Table_0" role="link" aria-current="page" data-dt-idx="0" tabindex="0" class="page-link">@i</a>
+                            </li>
+
+                            counter++;
+
+                            if (counter > 10)
+                            {
+                                break;
+                            }
+                        }
+
+                    </ul>
+                </div>
+            </div>
+        }
+        
+    </div>
+
+    <!-- Setup Modal -->
+    <div class="modal fade" id="setupModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-lg">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-header">
+                    <div class="page-title">
+                        <h4>{{modalTitle}}</h4>
+                    </div>
+                    <button type="button" class="close bg-danger text-white fs-16" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Bank Name</label>
+                            <input type="text" class="form-control" v-model="bankName" placeholder="Enter bank name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Branch Name</label>
+                            <input type="text" class="form-control" v-model="bankBranchName" placeholder="Enter branch name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Account Number</label>
+                            <input type="text" class="form-control" v-model="accountNo" placeholder="Enter account number">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Account Type</label>
+                            <input type="text" class="form-control" v-model="accountType" placeholder="e.g. Checking, Savings">
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">General Ledger Account</label>
+                            <select class="form-select" v-model="accountId">
+                                <option value="">Select Ledger Account</option>
+                                <option v-for="acc in accountDetailList" :value="acc.id || acc.Id">{{ acc.accountName || acc.AccountName }} ({{ acc.accountNo || acc.AccountNo }})</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Currency</label>
+                            <select class="form-select" v-model="currencyId">
+                                <option value="">Select Currency</option>
+                                <option v-for="curr in currencyList" :value="curr.id || curr.Id">{{ curr.name || curr.Name }} ({{ curr.code || curr.Code }})</option>
+                            </select>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Address</label>
+                            <input type="text" class="form-control" v-model="address" placeholder="Bank address">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Location</label>
+                            <input type="text" class="form-control" v-model="location" placeholder="City/Region">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact Person</label>
+                            <input type="text" class="form-control" v-model="contactPerson" placeholder="Name">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Contact Number</label>
+                            <input type="text" class="form-control" v-model="contactNo" placeholder="Phone">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cheque Book Start</label>
+                            <input type="text" class="form-control" v-model="chequeBookStart" placeholder="e.g. 000001">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Cheque Book End</label>
+                            <input type="text" class="form-control" v-model="chequeBookEnd" placeholder="e.g. 000100">
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" @@click="addSetup" :disabled="isLoading">
+                        <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        Save Changes
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Delete Modal -->
+    <div class="modal fade" id="deleteModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-dialog-centered modal-sm">
+            <div class="modal-content border-0 shadow">
+                <div class="modal-body text-center p-4">
+                    <div class="text-danger mb-3">
+                        <i class="ti ti-alert-triangle fs-40"></i>
+                    </div>
+                    <h5 class="mb-2">Are you sure?</h5>
+                    <p class="text-muted mb-4">You won't be able to revert this action!</p>
+                    <div class="d-flex justify-content-center gap-2">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                        <button type="button" class="btn btn-danger" @@click="deleteSetup" :disabled="isLoading">
+                            <span v-if="isLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                            Yes, delete it
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="~/module-js/gl/setups/bank-accounts.js" asp-append-version="true"></script>
