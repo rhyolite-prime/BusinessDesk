@@ -29,7 +29,9 @@ export default defineNuxtConfig({
   },
   typescript: {
     strict: true,
-    typeCheck: true,
+    // The Nuxt CLI typecheck and production build validate types; skip the
+    // dev-server checker, which mis-resolves Nuxt's generated app/server globals.
+    typeCheck: 'build',
   },
 =======
 
