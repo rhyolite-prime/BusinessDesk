@@ -37,6 +37,61 @@ export interface LedgerBankAccount {
   isActive: boolean
 }
 
+export interface LedgerImprestCategory {
+  id: string
+  name: string
+}
+
+export interface LedgerPettyCashRecipient {
+  id: string
+  recipient: string
+  phoneNo: string
+  email: string
+}
+
+export interface LedgerDefaultGlNumbers {
+  id: string
+  accountPayablesBankAccountId: string
+  payrollBankAccountId: string
+  salesBankAccountId: string
+  accountsReceivableBankAccountId: string
+  accountsReceivableAccountId: string
+  accountsPayableAccountId: string
+  withholdingTaxAccountId: string
+  imprestCategoryId: string
+  creditPurchasesAccountId: string
+  advanceFromCustomerAccountId: string
+  covidTaxReceivedAccountId: string
+  communicationsServiceTaxReceivedAccountId: string
+  inventoryAccountId: string
+  salesRevenueAccountId: string
+  stockPurchasesAccountId: string
+  currentEarningsAccountId: string
+  retainedEarningsAccountId: string
+  vatReceivedAccountId: string
+  vatRate: number
+  imprestGlAccountId: string
+  pettyCashGlAccountId: string
+  purchasesBankAccountId: string
+  advanceToSupplierAccountId: string
+  covidTaxPaidAccountId: string
+  communicationsServiceTaxPaidAccountId: string
+  goodsInTransitAccountId: string
+  unrealizedFxLossAccountId: string
+  unrealizedFxGainAccountId: string
+  realizedFxLossAccountId: string
+  realizedFxGainAccountId: string
+  vatPaidAccountId: string
+  getflReceivedAccountId: string
+  getflPaidAccountId: string
+  nhilReceivedAccountId: string
+  nhilPaidAccountId: string
+  socialSecurityEmployerPortionDefaultExpenseGl: string
+  socialSecurityEmployeePortionDefaultExpenseGl: string
+  socialSecurityEmployerPortionDefaultLiabilityGl: string
+  socialSecurityEmployeePortionDefaultLiabilityGl: string
+}
+
 export const ledgerSetupIds = {
   assets: 'head-assets',
   currentAssets: 'head-current-assets',
@@ -106,6 +161,62 @@ const bankAccountSeed: LedgerBankAccount[] = [
   },
 ]
 
+const imprestCategorySeed: LedgerImprestCategory[] = [
+  { id: 'imprest-category-travel', name: 'Travel advance' },
+  { id: 'imprest-category-field', name: 'Field operations' },
+  { id: 'imprest-category-training', name: 'Training expenses' },
+  { id: 'imprest-category-emergency', name: 'Emergency support' },
+]
+
+const pettyCashRecipientSeed: LedgerPettyCashRecipient[] = [
+  { id: 'petty-cash-recipient-ama', recipient: 'Ama Owusu', phoneNo: '+233 24 555 0101', email: 'ama.owusu@example.com' },
+  { id: 'petty-cash-recipient-kwame', recipient: 'Kwame Osei', phoneNo: '+233 20 555 0202', email: 'kwame.osei@example.com' },
+  { id: 'petty-cash-recipient-abena', recipient: 'Abena Mensah', phoneNo: '+233 50 555 0303', email: 'abena.mensah@example.com' },
+]
+
+const defaultGlNumbersSeed: LedgerDefaultGlNumbers = {
+  id: 'default-gl-demo',
+  accountPayablesBankAccountId: 'bank-account-demo-1',
+  payrollBankAccountId: 'bank-account-demo-1',
+  salesBankAccountId: 'bank-account-demo-1',
+  accountsReceivableBankAccountId: 'bank-account-demo-2',
+  accountsReceivableAccountId: 'acc-1100',
+  accountsPayableAccountId: 'acc-2000',
+  withholdingTaxAccountId: 'acc-2200',
+  imprestCategoryId: 'imprest-category-travel',
+  creditPurchasesAccountId: 'acc-5000',
+  advanceFromCustomerAccountId: 'acc-2000',
+  covidTaxReceivedAccountId: 'acc-2200',
+  communicationsServiceTaxReceivedAccountId: 'acc-2200',
+  inventoryAccountId: 'acc-1500',
+  salesRevenueAccountId: 'acc-4000',
+  stockPurchasesAccountId: 'acc-5000',
+  currentEarningsAccountId: 'acc-3000',
+  retainedEarningsAccountId: 'acc-3000',
+  vatReceivedAccountId: 'acc-2200',
+  vatRate: 0.15,
+  imprestGlAccountId: 'acc-1000',
+  pettyCashGlAccountId: 'acc-1000',
+  purchasesBankAccountId: 'bank-account-demo-1',
+  advanceToSupplierAccountId: 'acc-1100',
+  covidTaxPaidAccountId: 'acc-5000',
+  communicationsServiceTaxPaidAccountId: 'acc-5000',
+  goodsInTransitAccountId: 'acc-1500',
+  unrealizedFxLossAccountId: 'acc-5100',
+  unrealizedFxGainAccountId: 'acc-4000',
+  realizedFxLossAccountId: 'acc-5100',
+  realizedFxGainAccountId: 'acc-4000',
+  vatPaidAccountId: 'acc-5000',
+  getflReceivedAccountId: 'acc-2200',
+  getflPaidAccountId: 'acc-5000',
+  nhilReceivedAccountId: 'acc-2200',
+  nhilPaidAccountId: 'acc-5000',
+  socialSecurityEmployerPortionDefaultExpenseGl: 'acc-5000',
+  socialSecurityEmployeePortionDefaultExpenseGl: 'acc-5000',
+  socialSecurityEmployerPortionDefaultLiabilityGl: 'acc-2200',
+  socialSecurityEmployeePortionDefaultLiabilityGl: 'acc-2200',
+}
+
 function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
@@ -114,6 +225,9 @@ export function useLedgerSetup() {
   const accountHeads = useState<LedgerAccountHead[]>('ledger-setup-account-heads', () => accountHeadSeed.map((head) => ({ ...head })))
   const accountControls = useState<LedgerAccountControl[]>('ledger-setup-account-controls', () => accountControlSeed.map((control) => ({ ...control })))
   const bankAccounts = useState<LedgerBankAccount[]>('ledger-setup-bank-accounts', () => bankAccountSeed.map((account) => ({ ...account })))
+  const imprestCategories = useState<LedgerImprestCategory[]>('ledger-setup-imprest-categories', () => imprestCategorySeed.map((category) => ({ ...category })))
+  const pettyCashRecipients = useState<LedgerPettyCashRecipient[]>('ledger-setup-petty-cash-recipients', () => pettyCashRecipientSeed.map((recipient) => ({ ...recipient })))
+  const defaultGlNumbers = useState<LedgerDefaultGlNumbers | null>('ledger-setup-default-gl-numbers', () => ({ ...defaultGlNumbersSeed }))
 
   function accountHeadPath(id: string | null | undefined) {
     const path: string[] = []
@@ -190,10 +304,57 @@ export function useLedgerSetup() {
     bankAccounts.value = bankAccounts.value.filter((account) => account.id !== id)
   }
 
+  function saveImprestCategory(input: Omit<LedgerImprestCategory, 'id'> & { id?: string }) {
+    const id = input.id || makeId('imprest-category')
+    const category = { id, name: input.name.trim() }
+    const index = imprestCategories.value.findIndex((item) => item.id === id)
+    if (index >= 0) imprestCategories.value[index] = category
+    else imprestCategories.value.unshift(category)
+    return category
+  }
+
+  function removeImprestCategory(id: string) {
+    if (defaultGlNumbers.value?.imprestCategoryId === id) return false
+    imprestCategories.value = imprestCategories.value.filter((category) => category.id !== id)
+    return true
+  }
+
+  function savePettyCashRecipient(input: Omit<LedgerPettyCashRecipient, 'id'> & { id?: string }) {
+    const id = input.id || makeId('petty-cash-recipient')
+    const recipient = {
+      id,
+      recipient: input.recipient.trim(),
+      phoneNo: input.phoneNo.trim(),
+      email: input.email.trim().toLowerCase(),
+    }
+    const index = pettyCashRecipients.value.findIndex((item) => item.id === id)
+    if (index >= 0) pettyCashRecipients.value[index] = recipient
+    else pettyCashRecipients.value.unshift(recipient)
+    return recipient
+  }
+
+  function removePettyCashRecipient(id: string) {
+    pettyCashRecipients.value = pettyCashRecipients.value.filter((recipient) => recipient.id !== id)
+  }
+
+  function saveDefaultGlNumbers(input: Omit<LedgerDefaultGlNumbers, 'id'> & { id?: string }) {
+    const id = input.id || defaultGlNumbers.value?.id || makeId('default-gl')
+    const saved = { ...input, id }
+    defaultGlNumbers.value = saved
+    return saved
+  }
+
+  function removeDefaultGlNumbers(id: string) {
+    if (defaultGlNumbers.value?.id === id) defaultGlNumbers.value = null
+  }
+
   return {
     accountHeads,
     accountControls,
     bankAccounts,
+    imprestCategories,
+    pettyCashRecipients,
+    defaultGlNumbers,
     accountHeadPath,
     accountControlPath,
     saveAccountHead,
@@ -202,5 +363,11 @@ export function useLedgerSetup() {
     removeAccountControl,
     saveBankAccount,
     removeBankAccount,
+    saveImprestCategory,
+    removeImprestCategory,
+    savePettyCashRecipient,
+    removePettyCashRecipient,
+    saveDefaultGlNumbers,
+    removeDefaultGlNumbers,
   }
 }

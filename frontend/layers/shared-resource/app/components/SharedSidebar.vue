@@ -50,6 +50,7 @@ const ledgerGroups: NavigationGroup[] = [
         ],
       },
       { label: 'Budget', to: '/ledger/budgets', icon: 'scale' },
+      { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
       {
         label: 'Journal',
         icon: 'document-text',
@@ -69,9 +70,18 @@ const ledgerGroups: NavigationGroup[] = [
       {
         label: 'Accountable Imprest',
         icon: 'wallet',
-        children: [soon('Imprest Categories', 'list-bullet'), soon('Imprests', 'banknotes')],
+        children: [
+          { label: 'Imprest Categories', to: '/ledger/imprest-categories', icon: 'list-bullet' },
+          soon('Imprests', 'banknotes'),
+        ],
       },
-      soon('Petty Cash', 'banknotes'),
+      {
+        label: 'Petty Cash',
+        icon: 'banknotes',
+        children: [
+          { label: 'Petty Cash Recipients', to: '/ledger/petty-cash-recipients', icon: 'users' },
+        ],
+      },
       {
         label: 'Reports',
         icon: 'chart-bar-square',
