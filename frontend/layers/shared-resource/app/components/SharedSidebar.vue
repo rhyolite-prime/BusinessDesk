@@ -22,29 +22,127 @@ interface NavigationLink {
   to?: string
   icon: string
   comingSoon?: boolean
+  children?: NavigationLink[]
 }
 
 interface NavigationGroup {
   title: string
+  icon: string
   links: NavigationLink[]
 }
 
+const soon = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
+const reportItem = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
+
 const ledgerGroups: NavigationGroup[] = [
   {
-    title: 'General ledger',
+    title: 'General Ledger',
+    icon: 'book-open',
     links: [
-      { label: 'Chart of accounts', to: '/ledger/accounts', icon: 'building-library' },
-      { label: 'Journal entries', to: '/ledger/journals', icon: 'document-text' },
-      { label: 'Payments', icon: 'credit-card', comingSoon: true },
-      { label: 'Receipts', icon: 'banknotes', comingSoon: true },
-      { label: 'Budgets', icon: 'scale', comingSoon: true },
-    ],
-  },
-  {
-    title: 'Reports & insights',
-    links: [
-      { label: 'Financial reports', icon: 'chart-bar-square', comingSoon: true },
-      { label: 'Activity log', icon: 'clock', comingSoon: true },
+      {
+        label: 'Account Setup',
+        icon: 'cog-6-tooth',
+        children: [
+          { label: 'Account Heads', to: '/ledger/accounts', icon: 'building-library' },
+          soon('Bank Account', 'wallet'),
+          soon('Chart of Account Control', 'cog-6-tooth'),
+          { label: 'Chart of Account Detail', to: '/ledger/accounts', icon: 'document-text' },
+        ],
+      },
+      soon('Budget', 'scale'),
+      {
+        label: 'Journal',
+        icon: 'document-text',
+        children: [
+          { label: 'Journal', to: '/ledger/journals/new', icon: 'pencil-square' },
+          { label: 'Journal History', to: '/ledger/journals', icon: 'clock' },
+        ],
+      },
+      {
+        label: 'Vouchers',
+        icon: 'credit-card',
+        children: [soon('Voucher'), soon('Voucher History', 'clock')],
+      },
+      {
+        label: 'Accountable Imprest',
+        icon: 'wallet',
+        children: [soon('Imprest Categories', 'list-bullet'), soon('Imprests', 'banknotes')],
+      },
+      soon('Petty Cash', 'banknotes'),
+      {
+        label: 'Reports',
+        icon: 'chart-bar-square',
+        children: [
+          reportItem('Trial Balance'),
+          reportItem('Balance Sheet'),
+          {
+            label: 'Operating Statement',
+            icon: 'chart-bar-square',
+            children: [
+              reportItem('Basic'),
+              reportItem('Budget', 'scale'),
+              reportItem('Budget New', 'scale'),
+              reportItem('Prior Period', 'clock'),
+              reportItem('Expenditure Returns'),
+              reportItem('Comparative Operating Statement'),
+              reportItem('Revenue', 'banknotes'),
+              reportItem('Cross-Tab', 'list-bullet'),
+              reportItem('Cross-Tab Quarters', 'list-bullet'),
+            ],
+          },
+          {
+            label: 'Voucher',
+            icon: 'credit-card',
+            children: [
+              reportItem('Voucher'),
+              reportItem('Official Voucher'),
+              reportItem('VAT Returns'),
+              reportItem('Receipt Voucher', 'banknotes'),
+            ],
+          },
+          {
+            label: 'Accountable Imprest',
+            icon: 'wallet',
+            children: [
+              reportItem('Statement'),
+              reportItem('By Employee', 'identification'),
+              reportItem('By Category', 'list-bullet'),
+              reportItem('Overdue Imprest', 'clock'),
+            ],
+          },
+          {
+            label: 'Reconciliation',
+            icon: 'arrow-path',
+            children: [
+              reportItem('Reconciliation'),
+              reportItem('Statement'),
+              reportItem('Statement History', 'clock'),
+              reportItem('Reconciliation History', 'clock'),
+            ],
+          },
+          reportItem('Income Expenditure'),
+          reportItem('GL Transaction Reports', 'chart-bar-square'),
+          {
+            label: 'Petty Cash',
+            icon: 'banknotes',
+            children: [
+              reportItem('By Account'),
+              reportItem('By OU', 'building-office'),
+              reportItem('By Batch'),
+              reportItem('By Recipient/Beneficiary', 'user'),
+            ],
+          },
+          {
+            label: 'H/W',
+            icon: 'building-office',
+            children: [
+              reportItem('General'),
+              reportItem('By Date', 'calendar-days'),
+              reportItem('Posted Cheques', 'credit-card'),
+            ],
+          },
+        ],
+      },
     ],
   },
 ]
@@ -52,16 +150,18 @@ const ledgerGroups: NavigationGroup[] = [
 const moduleGroups = computed<NavigationGroup[]>(() => [
   {
     title: `${props.moduleName} workflows`,
+    icon: 'document-text',
     links: [
-      { label: 'Records & transactions', icon: 'document-text', comingSoon: true },
-      { label: 'Approvals', icon: 'shield-check', comingSoon: true },
+      soon('Records & transactions'),
+      soon('Approvals', 'shield-check'),
     ],
   },
   {
     title: 'Insights & reports',
+    icon: 'chart-bar-square',
     links: [
-      { label: 'Operational reports', icon: 'chart-bar-square', comingSoon: true },
-      { label: 'Activity log', icon: 'clock', comingSoon: true },
+      soon('Operational reports', 'chart-bar-square'),
+      soon('Activity log', 'clock'),
     ],
   },
 ])
@@ -69,7 +169,6 @@ const moduleGroups = computed<NavigationGroup[]>(() => [
 const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : moduleGroups.value)
 const ledgerSetupLinks: NavigationLink[] = [
   { label: 'Accounting units', icon: 'building-office', comingSoon: true },
-  { label: 'Bank accounts', icon: 'wallet', comingSoon: true },
   { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
 ]
 const moduleSetupLinks: NavigationLink[] = [
@@ -117,36 +216,25 @@ function isActive(path?: string) {
       </NuxtLink>
 
       <section v-for="group in groups" :key="group.title">
-        <p class="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">{{ group.title }}</p>
+        <p class="mb-1.5 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+          <AppIcon :name="group.icon" :size="13" />
+          {{ group.title }}
+        </p>
         <div class="space-y-0.5">
-          <template v-for="link in group.links" :key="link.to ?? link.label">
-            <NuxtLink
-              v-if="link.to"
-              :to="link.to"
-              class="flex items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium transition-colors"
-              :class="isActive(link.to) ? 'nav-active' : 'hover:bg-white/5 hover:text-white'"
-              @click="emit('close')"
-            >
-              <AppIcon :name="link.icon" :size="18" />
-              <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
-            </NuxtLink>
-            <button
-              v-else
-              type="button"
-              disabled
-              :title="comingSoonTitle(link.label)"
-              class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
-            >
-              <AppIcon :name="link.icon" :size="18" />
-              <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
-              <span class="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>
-            </button>
-          </template>
+          <SharedSidebarNavItem
+            v-for="link in group.links"
+            :key="link.label"
+            :item="link"
+            :workspace-name="props.moduleName"
+            @navigate="emit('close')"
+          />
         </div>
       </section>
 
       <section>
-        <p class="mb-1.5 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">Configuration</p>
+        <p class="mb-1.5 flex items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.12em] text-white/40">
+          <AppIcon name="cog-6-tooth" :size="13" /> Configuration
+        </p>
         <div class="space-y-0.5">
           <button
             v-for="link in setupLinks"
