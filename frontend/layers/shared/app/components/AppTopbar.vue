@@ -1,206 +1,152 @@
 <script setup lang="ts">
 const mobileOpen = useState('tl-sidebar-mobile', () => false)
 const router = useRouter()
-const { brand, presets, applyPreset, activePreset } = useBrand()
-const { date } = useFormat()
-
-// ── session ──
+const { presets, applyPreset, activePreset } = useBrand()
 const { data: me } = await useAsyncData('me', () => $fetch('/api/auth/me'))
+const { sections } = useNavigation()
 
-// ── pending approvals (maker-checker) ──
-const { data: pending } = await useAsyncData('topbar-tasks',
-  () => $fetch<any>('/api/system/tasks', { query: { status: 'pending', size: 6 } }))
-const pendingCount = computed(() => pending.value?.totalFilteredCount ?? 0)
-const showBell = ref(false)
-const showTheme = ref(false)
-
-// ── global search ──
-const q = ref('')
+const query = ref('')
 const debounced = ref('')
-let t: any
-watch(q, v => { clearTimeout(t); t = setTimeout(() => { debounced.value = v.trim() }, 280) })
-const { data: results, pending: searching } = await useAsyncData('topbar-search',
-  () => debounced.value.length >= 2 ? $fetch('/api/search', { query: { q: debounced.value } }) : Promise.resolve(null),
-  { watch: [debounced] })
+const showTheme = ref(false)
+const showUser = ref(false)
+const searchInput = ref<HTMLInputElement | null>(null)
+let searchTimer: ReturnType<typeof setTimeout> | undefined
 
-const groups = computed(() => {
-  if (!results.value) return []
-  return [
-    { key: 'clients', label: 'Clients', icon: 'user', items: results.value.clients },
-    { key: 'loans', label: 'Loan Accounts', icon: 'banknotes', items: results.value.loans },
-    { key: 'savings', label: 'Savings Accounts', icon: 'wallet', items: results.value.savings },
-    { key: 'groups', label: 'Groups', icon: 'user-group', items: results.value.groups },
-    { key: 'staff', label: 'Staff', icon: 'identification', items: results.value.staff },
-  ].filter(g => g.items?.length)
+watch(query, (value) => {
+  clearTimeout(searchTimer)
+  searchTimer = setTimeout(() => { debounced.value = value.trim() }, 250)
+})
+
+const searchResults = computed(() => {
+  const term = debounced.value.toLowerCase()
+  if (term.length < 2) return []
+  return sections.value.flatMap(section => section.items
+    .filter(item => `${section.label} ${item.label}`.toLowerCase().includes(term))
+    .map(item => ({ ...item, section: section.label })))
 })
 
 function go(to: string) {
-  q.value = ''; debounced.value = ''
+  query.value = ''
+  debounced.value = ''
+  showTheme.value = false
+  showUser.value = false
   router.push(to)
 }
 
-const showUser = ref(false)
-
 async function logout() {
-  try { await $fetch('/api/auth/logout', { method: 'POST' }) } catch (e) { /* noop */ }
+  try { await $fetch('/api/auth/logout', { method: 'POST' }) } catch { /* session may already be expired */ }
   await router.push('/login')
 }
 
 function closePopovers() {
-  showBell.value = false; showTheme.value = false; showUser.value = false
+  showTheme.value = false
+  showUser.value = false
 }
-if (import.meta.client) {
-  onMounted(() => document.addEventListener('click', (e) => {
-    if (!(e.target as HTMLElement).closest('[data-popover]')) closePopovers()
-  }))
+
+function handleDocumentClick(event: MouseEvent) {
+  if (!(event.target as HTMLElement).closest('[data-popover]')) closePopovers()
 }
+
+onMounted(() => document.addEventListener('click', handleDocumentClick))
+onBeforeUnmount(() => {
+  clearTimeout(searchTimer)
+  document.removeEventListener('click', handleDocumentClick)
+})
 </script>
 
 <template>
-  <header class="sticky top-0 z-30 bg-surface/90 backdrop-blur border-b border-line">
-    <div class="flex items-center gap-3 px-4 sm:px-6 h-16">
-      <button class="lg:hidden text-ink-soft p-1.5 -ml-1.5" @click="mobileOpen = true">
-        <AppIcon name="bars-3" :size="22" />
+  <header class="sticky top-0 z-30 border-b border-line bg-surface/90 backdrop-blur">
+    <div class="flex h-16 items-center gap-3 px-4 sm:px-6">
+      <button type="button" class="-ml-1.5 rounded-lg p-1.5 text-ink-soft transition hover:bg-canvas lg:hidden" aria-label="Open navigation" @click="mobileOpen = true">
+        <AppIcon name="bars-3" :size="21" />
       </button>
 
-      <!-- Global cross-module search -->
-      <div class="relative flex-1 max-w-xl" data-popover>
-        <span class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint">
-          <AppIcon name="magnifying-glass" :size="17" />
-        </span>
-        <input v-model="q" type="text"
-          placeholder="Search clients, loan and savings accounts, groups, staff…"
-          class="w-full pl-10 pr-8 py-2.5 rounded-full bg-canvas border border-transparent text-sm
-                 focus:outline-none focus:bg-white focus:border-primary/40 focus:ring-2 focus:ring-primary/20 transition" />
-        <button v-if="q" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint hover:text-ink"
-          @click="q = ''"><AppIcon name="x-mark" :size="15" /></button>
+      <div class="relative mx-auto min-w-0 max-w-xl flex-1" data-popover>
+        <div class="relative">
+          <AppIcon name="magnifying-glass" :size="17" class="absolute left-3 top-1/2 -translate-y-1/2 text-ink-faint" />
+          <input
+            ref="searchInput"
+            v-model="query"
+            type="search"
+            autocomplete="off"
+            placeholder="Search ERP workspaces…"
+            class="w-full rounded-full border border-transparent bg-canvas py-2.5 pl-10 pr-10 text-sm text-ink placeholder:text-ink-faint transition focus:border-primary/30 focus:bg-surface focus:outline-none focus:ring-2 focus:ring-primary/15"
+            @keydown.enter.prevent="searchResults[0] && go(searchResults[0].to)"
+            @keydown.esc="query = ''; debounced = ''"
+          >
+          <button v-if="query" type="button" class="absolute right-3 top-1/2 -translate-y-1/2 text-ink-faint transition hover:text-ink" aria-label="Clear search" @click="query = ''; debounced = ''; searchInput?.focus()">
+            <AppIcon name="x-mark" :size="15" />
+          </button>
+        </div>
 
         <Transition name="pop">
-          <div v-if="debounced.length >= 2"
-            class="absolute mt-2 w-full bg-surface border border-line rounded-xl shadow-xl overflow-hidden">
-            <div v-if="searching" class="px-4 py-6 text-center text-xs text-ink-faint">Searching…</div>
-            <div v-else-if="!groups.length" class="px-4 py-6 text-center text-xs text-ink-faint">
-              No matches for “{{ debounced }}”.
-            </div>
+          <div v-if="debounced.length >= 2" class="absolute left-0 right-0 mt-2 overflow-hidden rounded-xl border border-line bg-surface shadow-xl">
+            <p v-if="!searchResults.length" class="px-4 py-6 text-center text-xs text-ink-faint">No ERP workspaces match “{{ debounced }}”.</p>
             <div v-else class="max-h-[60vh] overflow-y-auto py-2">
-              <div v-for="g in groups" :key="g.key">
-                <p class="px-4 pt-2 pb-1 text-[10px] font-bold uppercase tracking-wider text-ink-faint flex items-center gap-1.5">
-                  <AppIcon :name="g.icon" :size="12" /> {{ g.label }}
-                </p>
-                <button v-for="item in g.items" :key="g.key + item.id"
-                  class="w-full text-left px-4 py-2 hover:bg-primary-soft/60 flex items-center gap-3"
-                  @click="go(item.to)">
-                  <span class="min-w-0 flex-1">
-                    <span class="block text-sm font-medium text-ink truncate">{{ item.label }}</span>
-                    <span class="block text-[11px] text-ink-faint truncate">{{ item.sub }}</span>
-                  </span>
-                  <Badge size="sm" :tone="item.status === 'active' ? 'green' : item.status === 'pending' || item.status === 'submitted' ? 'amber' : item.status === 'closed' || item.status === 'rejected' || item.status === 'writtenoff' ? 'gray' : 'blue'">
-                    {{ item.status }}
-                  </Badge>
-                  <AppIcon name="chevron-right" :size="14" class="text-ink-faint" />
-                </button>
-              </div>
+              <p class="px-4 pb-1 pt-1 text-[10px] font-bold uppercase tracking-wider text-ink-faint">ERP workspaces</p>
+              <button
+                v-for="item in searchResults"
+                :key="item.to"
+                type="button"
+                class="flex w-full items-center gap-3 px-4 py-2.5 text-left transition hover:bg-primary-soft/60"
+                @click="go(item.to)"
+              >
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm font-medium text-ink">{{ item.label }}</span>
+                  <span class="mt-0.5 block truncate text-[11px] text-ink-faint">{{ item.section }}</span>
+                </span>
+                <AppIcon name="arrow-right" :size="14" class="shrink-0 text-ink-faint" />
+              </button>
             </div>
           </div>
         </Transition>
       </div>
 
-      <div class="flex items-center gap-1.5 ml-auto">
-        <!-- Brand / white-label switcher -->
+      <div class="ml-auto flex shrink-0 items-center gap-1.5">
         <div class="relative" data-popover>
-          <button class="p-2 rounded-lg text-ink-soft hover:bg-canvas relative" title="White-label theme"
-            @click="showTheme = !showTheme; showBell = false">
+          <button type="button" class="relative rounded-lg p-2 text-ink-soft transition hover:bg-canvas" title="White-label theme" aria-label="White-label theme" @click="showTheme = !showTheme; showUser = false">
             <AppIcon name="sparkles" :size="19" />
           </button>
           <Transition name="pop">
-            <div v-if="showTheme" class="absolute right-0 mt-2 w-72 bg-surface border border-line rounded-xl shadow-xl p-3">
-              <p class="text-[10px] font-bold uppercase tracking-wider text-ink-faint px-1 pb-2">White-label theme</p>
-              <button v-for="p in presets" :key="p.key"
-                class="w-full flex items-center gap-3 px-2 py-2 rounded-lg hover:bg-canvas text-left"
-                @click="applyPreset(p); showTheme = false">
+            <div v-if="showTheme" class="absolute right-0 mt-2 w-72 rounded-xl border border-line bg-surface p-3 shadow-xl">
+              <p class="px-1 pb-2 text-[10px] font-bold uppercase tracking-wider text-ink-faint">White-label theme</p>
+              <button v-for="preset in presets" :key="preset.key" type="button" class="flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left hover:bg-canvas" @click="applyPreset(preset); showTheme = false">
                 <span class="flex -space-x-1.5">
-                  <span class="w-5 h-5 rounded-full ring-2 ring-white" :style="{ background: p.theme.primary }" />
-                  <span class="w-5 h-5 rounded-full ring-2 ring-white" :style="{ background: p.theme.accent }" />
+                  <span class="h-5 w-5 rounded-full ring-2 ring-white" :style="{ background: preset.theme.primary }" />
+                  <span class="h-5 w-5 rounded-full ring-2 ring-white" :style="{ background: preset.theme.accent }" />
                 </span>
-                <span class="text-xs font-medium text-ink flex-1">{{ p.label }}</span>
-                <AppIcon v-if="activePreset === p.key" name="check" :size="15" class="text-primary" />
+                <span class="flex-1 text-xs font-medium text-ink">{{ preset.label }}</span>
+                <AppIcon v-if="activePreset === preset.key" name="check" :size="15" class="text-primary" />
               </button>
-              <p class="text-[10px] text-ink-faint px-1 pt-2 leading-relaxed">
-                Tenants set their brand once in <code>app.config.ts</code> — colours, name, currency.
-              </p>
+              <p class="px-1 pt-2 text-[10px] leading-relaxed text-ink-faint">Organizations can set their name, colours, and currency in one place.</p>
             </div>
           </Transition>
         </div>
 
-        <!-- Notifications / pending maker-checker tasks -->
-        <div class="relative" data-popover>
-          <button class="p-2 rounded-lg text-ink-soft hover:bg-canvas relative"
-            @click="showBell = !showBell; showTheme = false">
-            <AppIcon name="bell" :size="19" />
-            <span v-if="pendingCount"
-              class="absolute -top-0.5 -right-0.5 min-w-4 h-4 px-1 rounded-full bg-red-500 text-white text-[9px] font-bold flex items-center justify-center">
-              {{ pendingCount }}
+        <div class="relative ml-1 border-l border-line pl-2" data-popover>
+          <button type="button" class="flex items-center gap-2 rounded-lg p-1 transition hover:bg-canvas sm:gap-2.5" aria-label="Open account menu" :aria-expanded="showUser" @click="showUser = !showUser; showTheme = false">
+            <span class="flex h-9 w-9 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary">
+              {{ me?.name?.split(' ').map((word: string) => word[0]).join('').slice(0, 2) ?? 'BD' }}
             </span>
-          </button>
-          <Transition name="pop">
-            <div v-if="showBell" class="absolute right-0 mt-2 w-80 bg-surface border border-line rounded-xl shadow-xl overflow-hidden">
-              <div class="px-4 py-3 border-b border-line flex items-center justify-between">
-                <p class="text-sm font-semibold text-ink">Pending approvals</p>
-                <Badge size="sm" tone="amber">{{ pendingCount }} awaiting</Badge>
-              </div>
-              <div class="max-h-80 overflow-y-auto">
-                <button v-for="t in pending?.pageItems ?? []" :key="t.id"
-                  class="w-full text-left px-4 py-3 border-b border-line/60 hover:bg-primary-soft/50"
-                  @click="go('/system/tasks')">
-                  <p class="text-xs font-semibold text-ink flex items-center gap-2">
-                    <AppIcon name="shield-check" :size="13" class="text-primary" />{{ t.action }}
-                  </p>
-                  <p class="text-[11px] text-ink-faint truncate mt-0.5">{{ t.entityLabel }}</p>
-                  <p class="text-[10px] text-ink-faint mt-0.5">by {{ t.makerName }} · {{ date(t.createdDate) }}</p>
-                </button>
-              </div>
-              <NuxtLink to="/system/tasks"
-                class="block px-4 py-2.5 text-center text-xs font-semibold text-primary hover:bg-primary-soft/60">
-                Open maker-checker queue →
-              </NuxtLink>
-            </div>
-          </Transition>
-        </div>
-
-        <!-- User menu -->
-        <div class="relative pl-2 ml-1 border-l border-line" data-popover>
-          <button class="flex items-center gap-2.5 p-1 rounded-lg hover:bg-canvas"
-            @click="showUser = !showUser; showBell = false; showTheme = false">
-            <span class="w-9 h-9 rounded-full bg-primary text-on-primary flex items-center justify-center text-xs font-bold">
-              {{ me?.name?.split(' ').map((w: string) => w[0]).join('').slice(0, 2) ?? 'AM' }}
+            <span class="hidden max-w-[140px] text-left leading-tight sm:block">
+              <span class="block truncate text-xs font-semibold text-ink">{{ me?.name ?? 'BusinessDesk user' }}</span>
+              <span class="block truncate text-[10px] text-ink-faint">{{ me?.username ?? 'ERP workspace' }}</span>
             </span>
-            <span class="hidden sm:block leading-tight text-left">
-              <span class="block text-xs font-semibold text-ink">{{ me?.name ?? '…' }}</span>
-              <span class="block text-[10px] text-ink-faint">{{ me?.roleNames?.[0] ?? '' }}</span>
-            </span>
-            <AppIcon name="chevron-down" :size="14" class="text-ink-faint hidden sm:block" />
+            <AppIcon name="chevron-down" :size="14" class="hidden text-ink-faint sm:block" />
           </button>
 
           <Transition name="pop">
-            <div v-if="showUser" class="absolute right-0 mt-2 w-64 bg-surface border border-line rounded-xl shadow-xl overflow-hidden">
-              <div class="px-4 py-3 border-b border-line bg-canvas/50">
-                <p class="text-sm font-semibold text-ink">{{ me?.name }}</p>
-                <p class="text-[11px] text-ink-faint truncate">{{ me?.username }} · {{ me?.officeName }}</p>
+            <div v-if="showUser" class="absolute right-0 mt-2 w-64 overflow-hidden rounded-xl border border-line bg-surface shadow-xl">
+              <div class="border-b border-line bg-canvas/50 px-4 py-3">
+                <p class="text-sm font-semibold text-ink">{{ me?.name ?? 'BusinessDesk user' }}</p>
+                <p class="truncate text-[11px] text-ink-faint">{{ me?.username }}</p>
               </div>
               <div class="py-1.5">
-                <NuxtLink to="/profile" class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink-soft hover:bg-primary-soft/60" @click="showUser = false">
-                  <AppIcon name="user" :size="17" class="text-ink-faint" /> View profile
+                <NuxtLink to="/modules" class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink-soft hover:bg-primary-soft/60" @click="showUser = false">
+                  <AppIcon name="home" :size="17" class="text-ink-faint" /> Switch workspace
                 </NuxtLink>
-                <NuxtLink to="/settings" class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink-soft hover:bg-primary-soft/60" @click="showUser = false">
-                  <AppIcon name="cog-6-tooth" :size="17" class="text-ink-faint" /> Settings
-                </NuxtLink>
-                <NuxtLink :to="'/settings?tab=security'" class="flex items-center gap-3 px-4 py-2.5 text-sm text-ink-soft hover:bg-primary-soft/60" @click="showUser = false">
-                  <AppIcon name="shield-check" :size="17" class="text-ink-faint" /> Reset password &amp; 2FA
-                </NuxtLink>
-              </div>
-              <div class="border-t border-line py-1.5">
-                <button class="w-full flex items-center gap-3 px-4 py-2.5 text-sm text-red-600 hover:bg-red-50" @click="logout">
-                  <AppIcon name="arrow-left-on-rectangle" :size="17" /> Log out
+                <button type="button" class="flex w-full items-center gap-3 px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50" @click="logout">
+                  <AppIcon name="arrow-left-on-rectangle" :size="17" /> Sign out
                 </button>
               </div>
             </div>

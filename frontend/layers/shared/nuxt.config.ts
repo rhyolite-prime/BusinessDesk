@@ -2,13 +2,13 @@ import { fileURLToPath } from 'node:url'
 import tailwindcss from '@tailwindcss/vite'
 
 /**
- * shared-resource layer
- * ─────────────────────
- * Inherited by every business module layer. Owns:
+ * Shared BusinessDesk ERP layer
+ * ────────────────────────────
+ * Inherited by the active app and authentication layer. Owns:
  *  - Tailwind v4 + white-label design tokens
  *  - The UI component kit, layout chrome (sidebar/topbar)
  *  - Framework composables (API client, navigation, toasts, formatting)
- *  - The mock core-banking database + Nitro API plumbing (server/)
+ *  - Demo seed data + Nitro API plumbing for the active ERP/auth shell (server/)
  */
 const layerRoot = fileURLToPath(new URL('.', import.meta.url))
 const layerApp = fileURLToPath(new URL('./app', import.meta.url))
