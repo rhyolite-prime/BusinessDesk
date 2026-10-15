@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.5)
+cmake_minimum_required(VERSION 3.8)
 project(BusinessDeskApi CXX)
 
 # Custom file extension configuration
@@ -39,6 +39,10 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION})
 find_package(Drogon CONFIG REQUIRED)
 target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
 
+if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
+    target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
+endif()
+
 # ##############################################################################
 
 if (CMAKE_CXX_STANDARD LESS 17)
@@ -53,6 +57,7 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
+aux_source_directory(services/ledger LEDGER_SERVICE_SRC)
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
@@ -73,11 +78,15 @@ target_sources(${PROJECT_NAME}
                ${CTL_SRC}
                ${FILTER_SRC}
                ${PLUGIN_SRC}
-               ${MODEL_SRC})
+               ${MODEL_SRC}
+               ${LEDGER_SERVICE_SRC})
 # ##############################################################################
 # uncomment the following line for dynamically loading views
 # set_property(TARGET ${PROJECT_NAME} PROPERTY ENABLE_EXPORTS ON)
 
 # ##############################################################################
 
-add_subdirectory(test)
+include(CTest)
+if (BUILD_TESTING)
+    add_subdirectory(test)
+endif()

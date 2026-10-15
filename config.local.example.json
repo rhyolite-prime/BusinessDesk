@@ -1,0 +1,30 @@
+{
+  "listeners": [
+    {
+      "address": "0.0.0.0",
+      "port": 5555,
+      "https": false
+    }
+  ],
+  "db_clients": [
+    {
+      "name": "default",
+      "rdbms": "postgresql",
+      "host": "127.0.0.1",
+      "port": 5432,
+      "dbname": "businessdesk",
+      "user": "businessdesk_app",
+      "passwd": "replace-with-a-local-secret",
+      "is_fast": false,
+      "number_of_connections": 4,
+      "timeout": 5,
+      "auto_batch": false
+    }
+  ],
+  "app": {
+    "number_of_threads": 1,
+    "enable_session": false,
+    "document_root": "./public",
+    "use_implicit_page": false
+  }
+}
