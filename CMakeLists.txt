@@ -28,14 +28,14 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
-        services/gl/GlService.h
-        services/gl/GlService.cc
-        services/hr/HrService.h
-        services/hr/HrService.cc
-        services/payroll/PayrollService.h
-        services/payroll/PayrollService.cc
-        services/sm/SchoolService.h
-        services/sm/SchoolService.cc
+        domain_services/gl/GlService.h
+        domain_services/gl/GlService.cc
+        domain_services/hr/HrService.h
+        domain_services/hr/HrService.cc
+        domain_services/payroll/PayrollService.h
+        domain_services/payroll/PayrollService.cc
+        domain_services/sm/SchoolService.h
+        domain_services/sm/SchoolService.cc
         dto/BaseGlDto.h)
 
 # ##############################################################################
@@ -66,7 +66,7 @@ aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)
 aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
-aux_source_directory(services/ledger LEDGER_SERVICE_SRC)
+aux_source_directory(domain_services/ledger LEDGER_SERVICE_SRC)
 
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})

@@ -31,7 +31,7 @@ The current GL controller only exposes journal validation. ORM-backed account an
 
 ```sh
 g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I. \
-  services/ledger/ledger_service.cc test/ledger_service_unit_test.cc \
+  domain_services/ledger/ledger_service.cc test/ledger_service_unit_test.cc \
   -o /tmp/businessdesk-ledger-service-test
 /tmp/businessdesk-ledger-service-test
 ```

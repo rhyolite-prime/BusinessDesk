@@ -49,7 +49,7 @@ const departmentSeed = [
   { code: 'OPS', name: 'Operations', description: 'Field operations and service delivery', status: 'Active' },
   { code: 'SAL', name: 'Sales & Marketing', description: 'Sales, partnerships and customer growth', status: 'Active' },
   { code: 'IT', name: 'Information Technology', description: 'Business systems, infrastructure and security', status: 'Active' },
-  { code: 'HR', name: 'Human Resources', description: 'People operations and employee services', status: 'Active' },
+  { code: 'HR', name: 'Human Resources', description: 'People operations and employee domain_services', status: 'Active' },
 ]
 
 const allowanceSeed = [
