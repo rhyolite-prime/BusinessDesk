@@ -4,6 +4,10 @@
 # Local runtime configuration may contain credentials
 /config.local.json
 
+# Build directory
+/build/
+.DS_Store
+
 # Nuxt-generated output and JavaScript dependencies
 **/node_modules/
 **/.nuxt/

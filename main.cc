@@ -1,44 +1,45 @@
 #include <drogon/drogon.h>
-
-#include <cstdlib>
-#include <exception>
 #include <filesystem>
 #include <iostream>
-#include <string>
 
-int main(int argc, char *argv[])
-{
-    std::string configPath;
-    if (argc > 1)
-    {
-        configPath = argv[1];
-    }
-    else if (const char *environmentPath = std::getenv("BUSINESSDESK_CONFIG"))
-    {
-        configPath = environmentPath;
-    }
-    else
-    {
-        configPath = "config.local.json";
+int main() {
+    //Load config file
+    if (std::filesystem::exists("config.json")) {
+        drogon::app().loadConfigFile("config.json");
+    } else if (std::filesystem::exists("../config.json")) {
+        drogon::app().loadConfigFile("../config.json");
+    } else if (std::filesystem::exists("config.local.json")) {
+        drogon::app().loadConfigFile("config.local.json");
+    } else if (std::filesystem::exists("../config.local.json")) {
+        drogon::app().loadConfigFile("../config.local.json");
+    } else {
+        std::cerr << "Warning: Could not find config.json or config.local.json" << std::endl;
     }
 
-    if (!std::filesystem::exists(configPath))
-    {
-        std::cerr << "Drogon config not found: " << configPath
-                  << "\nCopy config.local.example.json to config.local.json, set local PostgreSQL credentials, "
-                     "then start the API again."
-                  << std::endl;
-        return 2;
-    }
+    drogon::app().registerPostHandlingAdvice(
+      [](const drogon::HttpRequestPtr &req,
+         const drogon::HttpResponsePtr &resp) {
+        // Array of allowed origins
+        const std::vector<std::string> allowedOrigins = {
+            "http://localhost:5005",
+            "https://erp.rhyoliteprime.com"
+        };
 
-    try
-    {
-        drogon::app().loadConfigFile(configPath).run();
-    }
-    catch (const std::exception &error)
-    {
-        std::cerr << "BusinessDesk API failed to start: " << error.what() << std::endl;
-        return 1;
-    }
+        auto origin = req->getHeader("Origin");
+
+        if (std::find(allowedOrigins.begin(), allowedOrigins.end(), origin) != allowedOrigins.end()) {
+          resp->addHeader("Access-Control-Allow-Origin", origin);
+          resp->addHeader("Access-Control-Allow-Credentials", "true");
+        }
+
+        // Add CORS headers to every response
+        resp->addHeader("Access-Control-Allow-Methods",
+                        "GET, POST, PUT, DELETE, OPTIONS");
+        resp->addHeader("Access-Control-Allow-Headers",
+                        "Content-Type, Authorization, Referer, User-Agent, "
+                        "Accept, X-Requested-With, Origin");
+      });
+
+    drogon::app().run();
     return 0;
 }
