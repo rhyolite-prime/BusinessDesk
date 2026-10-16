@@ -196,7 +196,7 @@ const defaultGlNumbersSeed: LedgerDefaultGlNumbers = {
   vatReceivedAccountId: 'acc-2200',
   vatRate: 0.15,
   imprestGlAccountId: 'acc-1000',
-  pettyCashGlAccountId: 'acc-1000',
+  pettyCashGlAccountId: 'acc-12307',
   purchasesBankAccountId: 'bank-account-demo-1',
   advanceToSupplierAccountId: 'acc-1100',
   covidTaxPaidAccountId: 'acc-5000',

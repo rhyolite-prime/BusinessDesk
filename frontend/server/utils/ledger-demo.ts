@@ -2,6 +2,7 @@ import type { AccountsResponse, DashboardResponse, JournalsResponse, LedgerAccou
 
 export const demoAccounts: LedgerAccount[] = [
   { id: 'acc-1000', accountNumber: '1000', name: 'Cash on Hand', group: 'Current Assets', accountType: 'Asset', currency: 'GHS', accountHeaderId: 'control-petty-cash', balance: '12450.00', status: 'Active' },
+  { id: 'acc-12307', accountNumber: '12307', name: 'Petty Cash — CBS', group: 'Current Assets', accountType: 'Asset', currency: 'GHS', accountHeaderId: 'control-petty-cash', balance: '1482.00', status: 'Active' },
   { id: 'acc-1010', accountNumber: '1010', name: 'Bank — Main Operating', group: 'Current Assets', accountType: 'Asset', currency: 'GHS', accountHeaderId: 'control-bank-accounts', balance: '548219.75', status: 'Active' },
   { id: 'acc-1020', accountNumber: '1020', name: 'Bank — USD Account', group: 'Current Assets', accountType: 'Asset', currency: 'USD', accountHeaderId: 'control-bank-accounts', balance: '18750.00', status: 'Active' },
   { id: 'acc-1100', accountNumber: '1100', name: 'Trade Receivables', group: 'Current Assets', accountType: 'Asset', currency: 'GHS', accountHeaderId: 'control-receivables', balance: '193420.83', status: 'Active' },
@@ -11,6 +12,11 @@ export const demoAccounts: LedgerAccount[] = [
   { id: 'acc-3000', accountNumber: '3000', name: 'Stated Capital', group: 'Equity', accountType: 'Equity', currency: 'GHS', accountHeaderId: 'control-share-capital', balance: '400000.00', status: 'Active' },
   { id: 'acc-4000', accountNumber: '4000', name: 'Service Revenue', group: 'Revenue', accountType: 'Revenue', currency: 'GHS', accountHeaderId: 'control-operating-revenue', balance: '389250.00', status: 'Active' },
   { id: 'acc-5000', accountNumber: '5000', name: 'Operating Expenses', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '124180.43', status: 'Active' },
+  { id: 'acc-50016', accountNumber: '50016', name: 'Transport & Travels', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '0.00', status: 'Active' },
+  { id: 'acc-50018', accountNumber: '50018', name: 'Food & Entertainment', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '0.00', status: 'Active' },
+  { id: 'acc-50023', accountNumber: '50023', name: 'PC Hardware Software', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '0.00', status: 'Active' },
+  { id: 'acc-50029', accountNumber: '50029', name: 'Postal Expenses', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '0.00', status: 'Active' },
+  { id: 'acc-50050', accountNumber: '50050', name: 'Telephone & Communications', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-operating-expenses', balance: '0.00', status: 'Active' },
   { id: 'acc-5100', accountNumber: '5100', name: 'Foreign Exchange Loss', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-fx-loss', balance: '1820.14', status: 'Inactive' },
 ]
 

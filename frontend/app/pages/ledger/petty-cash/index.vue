@@ -29,6 +29,7 @@ interface PettyCashForm {
 interface ProposedJournalLine {
   key: string
   accountId: string
+  accountDisplay?: string
   description: string
   referenceNumber: string
   transactionDate: string
@@ -37,6 +38,20 @@ interface ProposedJournalLine {
   debitUnits: bigint
   creditUnits: bigint
   groupedCount: number
+}
+
+interface ValidPettyCashExpenseLine {
+  line: LedgerPettyCashLine
+  amount: bigint
+  account: LedgerAccount
+}
+
+interface ConsolidatedAccountAllocation {
+  key: string
+  accountId: string
+  organizationUnitId: string
+  amountUnits: bigint
+  transactionCount: number
 }
 
 const api = useLedgerApi()
@@ -99,17 +114,48 @@ const incompleteLineCount = computed(() => lines.value.filter((line) => {
     || account.currency.toUpperCase() !== form.currencyCode
     || !isRealIsoDate(line.transactionDate)
 }).length)
+const validExpenseLines = computed<ValidPettyCashExpenseLine[]>(() => lines.value.flatMap((line) => {
+  const amount = parseLedgerAmount(line.amount)
+  const account = expenseAccounts.value.find((item) => item.id === line.expenseAccountId)
+  if (amount === null || amount <= BigInt(0) || !account || account.currency.toUpperCase() !== form.currencyCode || !isRealIsoDate(line.transactionDate)) return []
+  return [{ line, amount, account }]
+}))
+const consolidatedAccountAllocations = computed<ConsolidatedAccountAllocation[]>(() => {
+  const groups = new Map<string, ConsolidatedAccountAllocation>()
+  for (const { line, amount, account } of validExpenseLines.value) {
+    const key = `${account.id}::${line.organizationUnitId || 'unassigned'}`
+    const allocation = groups.get(key)
+    if (allocation) {
+      allocation.amountUnits += amount
+      allocation.transactionCount += 1
+    }
+    else {
+      groups.set(key, {
+        key,
+        accountId: account.id,
+        organizationUnitId: line.organizationUnitId,
+        amountUnits: amount,
+        transactionCount: 1,
+      })
+    }
+  }
+  return [...groups.values()]
+})
+const consolidatedAccountCount = computed(() => new Set(validExpenseLines.value.map(({ account }) => account.id)).size)
+const consolidatedOrganizationUnitName = computed(() => {
+  const names = new Set(validExpenseLines.value.map(({ line }) => organizationUnitName(line.organizationUnitId)))
+  if (!names.size) return 'Not assigned'
+  return names.size === 1 ? [...names][0]! : 'Multiple units'
+})
+const consolidatedRecipientName = computed(() => {
+  const recipients = new Set(validExpenseLines.value.map(({ line }) => line.recipientName.trim()).filter(Boolean))
+  return recipients.size === 1 ? [...recipients][0]! : recipients.size > 1 ? 'Multiple recipients' : ''
+})
 const previewLines = computed<ProposedJournalLine[]>(() => {
-  const expenseLines = lines.value.flatMap((line) => {
-    const amount = parseLedgerAmount(line.amount)
-    const account = expenseAccounts.value.find((item) => item.id === line.expenseAccountId)
-    if (amount === null || amount <= BigInt(0) || !account || account.currency.toUpperCase() !== form.currencyCode || !isRealIsoDate(line.transactionDate)) return []
-    return [{ line, amount, account }]
-  })
   const debits: ProposedJournalLine[] = []
 
   if (journalMode.value === 'non-consolidated') {
-    for (const { line, amount, account } of expenseLines) {
+    for (const { line, amount, account } of validExpenseLines.value) {
       debits.push({
         key: line.id,
         accountId: account.id,
@@ -124,45 +170,24 @@ const previewLines = computed<ProposedJournalLine[]>(() => {
       })
     }
   }
-  else {
-    const groups = new Map<string, { account: LedgerAccount; organizationUnitId: string; amount: bigint; count: number; description: string; recipients: Set<string> }>()
-    for (const { line, amount, account } of expenseLines) {
-      // Keep account and organizational-unit coding intact when consolidating.
-      const groupKey = `${account.id}::${line.organizationUnitId || 'unassigned'}`
-      const group = groups.get(groupKey)
-      if (group) {
-        group.amount += amount
-        group.count += 1
-        if (line.recipientName.trim()) group.recipients.add(line.recipientName.trim())
-      }
-      else {
-        groups.set(groupKey, {
-          account,
-          organizationUnitId: line.organizationUnitId,
-          amount,
-          count: 1,
-          description: line.description.trim() || 'Petty cash expense',
-          recipients: line.recipientName.trim() ? new Set([line.recipientName.trim()]) : new Set(),
-        })
-      }
-    }
-
-    for (const [key, group] of groups) {
-      debits.push({
-        key,
-        accountId: group.account.id,
-        description: group.count === 1
-          ? group.description
-          : `Consolidated petty cash expenses (${group.count} transactions)`,
-        referenceNumber: form.batchNumber,
-        transactionDate: form.batchDate,
-        organizationUnitName: organizationUnitName(group.organizationUnitId),
-        recipientName: group.recipients.size === 1 ? [...group.recipients][0]! : group.recipients.size > 1 ? 'Multiple recipients' : '',
-        debitUnits: group.amount,
-        creditUnits: BigInt(0),
-        groupedCount: group.count,
-      })
-    }
+  else if (validExpenseLines.value.length) {
+    const firstAccount = validExpenseLines.value[0]!.account
+    const accountId = consolidatedAccountCount.value === 1 ? firstAccount.id : ''
+    debits.push({
+      key: 'petty-cash-consolidated-debit',
+      accountId,
+      accountDisplay: consolidatedAccountCount.value === 1
+        ? accountLabel(firstAccount.id)
+        : `Expense A/C (${consolidatedAccountCount.value} G/L accounts)`,
+      description: `Consolidated petty cash expenses (${validExpenseLines.value.length} transactions)`,
+      referenceNumber: form.batchNumber,
+      transactionDate: form.batchDate,
+      organizationUnitName: consolidatedOrganizationUnitName.value,
+      recipientName: consolidatedRecipientName.value,
+      debitUnits: validExpenseLines.value.reduce((total, item) => total + item.amount, BigInt(0)),
+      creditUnits: BigInt(0),
+      groupedCount: validExpenseLines.value.length,
+    })
   }
 
   const creditAccount = activeAccounts.value.find((account) => account.id === form.pettyCashAccountId && account.currency.toUpperCase() === form.currencyCode)
@@ -596,14 +621,14 @@ else startNewBatch()
               <div class="grid grid-cols-2 gap-2">
                 <label class="flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2.5 transition" :class="journalMode === 'consolidated' ? 'border-brand-500 bg-brand-50/70 dark:border-brand-700 dark:bg-brand-950/30' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'">
                   <input v-model="journalMode" type="radio" name="petty-cash-journal-mode" value="consolidated" :disabled="isReadOnly" class="mt-0.5 accent-[#1e5d50] disabled:opacity-50" />
-                  <span><span class="block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Consolidated</span><span class="mt-0.5 block text-[9px] leading-relaxed text-slate-500">Group matching expense debits.</span></span>
+                  <span><span class="block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Consolidated</span><span class="mt-0.5 block text-[9px] leading-relaxed text-slate-500">Combine all expense debits into one transaction.</span></span>
                 </label>
                 <label class="flex cursor-pointer items-start gap-2 rounded-lg border px-3 py-2.5 transition" :class="journalMode === 'non-consolidated' ? 'border-brand-500 bg-brand-50/70 dark:border-brand-700 dark:bg-brand-950/30' : 'border-slate-200 hover:border-slate-300 dark:border-slate-700 dark:hover:border-slate-600'">
                   <input v-model="journalMode" type="radio" name="petty-cash-journal-mode" value="non-consolidated" :disabled="isReadOnly" class="mt-0.5 accent-[#1e5d50] disabled:opacity-50" />
                   <span><span class="block text-[11px] font-semibold text-slate-800 dark:text-slate-200">Non-consolidated</span><span class="mt-0.5 block text-[9px] leading-relaxed text-slate-500">Keep every expense line separate.</span></span>
                 </label>
               </div>
-              <p v-if="journalMode === 'consolidated'" class="mt-2 text-[10px] leading-relaxed text-slate-400">Expense lines combine when their G/L account and organizational unit match, preserving ledger coding.</p>
+              <p v-if="journalMode === 'consolidated'" class="mt-2 text-[10px] leading-relaxed text-slate-400">All valid expense lines appear as one debit transaction. The original G/L account allocations remain available below.</p>
             </fieldset>
 
             <div class="grid grid-cols-2 gap-2">
@@ -618,7 +643,7 @@ else startNewBatch()
                 <thead class="bg-slate-50/70 text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-3 py-2.5">Account / description</th><th class="px-3 py-2.5 text-right">Debit</th><th class="px-3 py-2.5 text-right">Credit</th></tr></thead>
                 <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
                   <tr v-for="journalLine in previewLines" :key="journalLine.key" class="align-top">
-                    <td class="px-3 py-2.5"><span class="block text-[10px] font-semibold text-slate-800 dark:text-slate-200">{{ accountLabel(journalLine.accountId) }}</span><span class="mt-0.5 block max-w-[235px] truncate text-[9px] text-slate-500" :title="journalLine.description">{{ journalLine.description }}</span><span class="mt-0.5 block text-[9px] text-slate-400">{{ formatDate(journalLine.transactionDate) }} · {{ journalLine.referenceNumber || 'No reference' }}<template v-if="journalLine.organizationUnitName !== '—'"> · {{ journalLine.organizationUnitName }}</template><template v-if="journalLine.recipientName"> · {{ journalLine.recipientName }}</template></span><span v-if="journalLine.groupedCount > 1" class="mt-1 inline-flex rounded-full bg-brand-50 px-1.5 py-0.5 text-[8px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">{{ journalLine.groupedCount }} entries combined</span></td>
+                    <td class="px-3 py-2.5"><span class="block text-[10px] font-semibold text-slate-800 dark:text-slate-200">{{ journalLine.accountDisplay || accountLabel(journalLine.accountId) }}</span><span class="mt-0.5 block max-w-[235px] truncate text-[9px] text-slate-500" :title="journalLine.description">{{ journalLine.description }}</span><span class="mt-0.5 block text-[9px] text-slate-400">{{ formatDate(journalLine.transactionDate) }} · {{ journalLine.referenceNumber || 'No reference' }}<template v-if="journalLine.organizationUnitName !== '—'"> · {{ journalLine.organizationUnitName }}</template><template v-if="journalLine.recipientName"> · {{ journalLine.recipientName }}</template></span><span v-if="journalLine.groupedCount > 1" class="mt-1 inline-flex rounded-full bg-brand-50 px-1.5 py-0.5 text-[8px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300">{{ journalLine.groupedCount }} entries combined</span></td>
                     <td class="whitespace-nowrap px-3 py-2.5 text-right text-[10px] tabular-nums text-slate-700 dark:text-slate-300">{{ journalLine.debitUnits > zeroAmount ? formatMoneyUnits(journalLine.debitUnits) : '—' }}</td>
                     <td class="whitespace-nowrap px-3 py-2.5 text-right text-[10px] tabular-nums text-slate-700 dark:text-slate-300">{{ journalLine.creditUnits > zeroAmount ? formatMoneyUnits(journalLine.creditUnits) : '—' }}</td>
                   </tr>
@@ -628,7 +653,23 @@ else startNewBatch()
               </table>
             </div>
 
-            <div class="flex items-start gap-2 border-t border-slate-100 pt-3 text-[10px] leading-relaxed text-slate-400 dark:border-slate-800"><span class="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-slate-100 text-[9px] font-bold dark:bg-slate-800">i</span><p>The credit is posted to the selected Petty Cash G/L. Consolidated mode groups expense debits with matching account and organizational-unit coding; non-consolidated mode preserves each entered debit.</p></div>
+            <details v-if="journalMode === 'consolidated' && consolidatedAccountAllocations.length" class="overflow-hidden rounded-lg border border-slate-100 dark:border-slate-800">
+              <summary class="cursor-pointer px-3 py-2.5 text-[10px] font-semibold text-brand-700 hover:bg-brand-50/60 dark:text-brand-300 dark:hover:bg-brand-950/20">View underlying G/L allocation ({{ consolidatedAccountAllocations.length }} splits)</summary>
+              <div class="overflow-x-auto border-t border-slate-100 dark:border-slate-800">
+                <table class="w-full min-w-[420px] text-left">
+                  <thead class="bg-slate-50/70 text-[9px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-3 py-2">Expense account / unit</th><th class="px-3 py-2 text-right">Rows</th><th class="px-3 py-2 text-right">Debit allocation</th></tr></thead>
+                  <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+                    <tr v-for="allocation in consolidatedAccountAllocations" :key="allocation.key">
+                      <td class="px-3 py-2"><span class="block text-[10px] font-semibold text-slate-700 dark:text-slate-300">{{ accountLabel(allocation.accountId) }}</span><span class="mt-0.5 block text-[9px] text-slate-400">{{ organizationUnitName(allocation.organizationUnitId) }}</span></td>
+                      <td class="px-3 py-2 text-right text-[10px] tabular-nums text-slate-500">{{ allocation.transactionCount }}</td>
+                      <td class="px-3 py-2 text-right text-[10px] tabular-nums text-slate-700 dark:text-slate-300">{{ formatMoneyUnits(allocation.amountUnits) }}</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </details>
+
+            <div class="flex items-start gap-2 border-t border-slate-100 pt-3 text-[10px] leading-relaxed text-slate-400 dark:border-slate-800"><span class="mt-0.5 grid h-4 w-4 shrink-0 place-items-center rounded-full bg-slate-100 text-[9px] font-bold dark:bg-slate-800">i</span><p>The credit is posted to the selected Petty Cash G/L. Consolidated mode displays one debit transaction and retains its account split for review; non-consolidated mode preserves every expense debit as entered.</p></div>
           </div>
         </section>
 

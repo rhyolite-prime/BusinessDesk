@@ -10,4 +10,5 @@ export const ledgerOrganizationalUnits: LedgerOrganizationalUnit[] = [
   { id: 'ou-operations', name: 'Operations', path: 'Head Office / Operations' },
   { id: 'ou-sales', name: 'Sales & Marketing', path: 'Head Office / Sales & Marketing' },
   { id: 'ou-kumasi', name: 'Kumasi Branch', path: 'Kumasi Branch' },
+  { id: 'ou-cbs', name: 'Central Business School', path: 'Central Business School' },
 ]
