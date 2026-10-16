@@ -1,6 +1,10 @@
 #include "DmController.h"
 
-void DmController::asyncHandleHttpRequest(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback)
+#include "ApiResponseStub.h"
+
+void DmController::asyncHandleHttpRequest(
+    const HttpRequestPtr &request,
+    std::function<void(const HttpResponsePtr &)> &&callback)
 {
-    // write your application logic here
+    callback(business_desk::http::makeNotImplementedResponse(request));
 }

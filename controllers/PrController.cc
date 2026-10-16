@@ -1,6 +1,10 @@
 #include "PrController.h"
 
-void PrController::asyncHandleHttpRequest(const HttpRequestPtr& req, std::function<void (const HttpResponsePtr &)> &&callback)
+#include "ApiResponseStub.h"
+
+void PrController::asyncHandleHttpRequest(
+    const HttpRequestPtr &request,
+    std::function<void(const HttpResponsePtr &)> &&callback)
 {
-    // write your application logic here
+    callback(business_desk::http::makeNotImplementedResponse(request));
 }

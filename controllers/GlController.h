@@ -2,6 +2,8 @@
 
 #include <drogon/HttpController.h>
 
+#include <string>
+
 using namespace drogon;
 
 class GlController : public drogon::HttpController<GlController>
