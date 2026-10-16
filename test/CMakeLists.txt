@@ -9,8 +9,8 @@ ParseAndAddDrogonTests(${PROJECT_NAME})
 # Keep this target at C++17 so domain validation remains easy to test in a
 # lightweight toolchain; the production API target uses C++20 for coroutines.
 add_executable(BusinessDeskLedgerServiceTest
-               ledger_service_unit_test.cc
-               ../services/ledger/ledger_service_rules.cc)
+               test_main.cc
+)
 target_include_directories(BusinessDeskLedgerServiceTest
                            PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/..)
 set_target_properties(BusinessDeskLedgerServiceTest PROPERTIES
