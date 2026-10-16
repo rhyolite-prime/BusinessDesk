@@ -8,6 +8,9 @@
 
 namespace
 {
+using businessdesk::dto::AccountControlInput;
+using businessdesk::dto::AccountDetailInput;
+using businessdesk::dto::AccountHeadInput;
 using businessdesk::ledger::JournalDraft;
 using businessdesk::ledger::JournalLineDraft;
 using businessdesk::ledger::LedgerService;
@@ -75,6 +78,38 @@ int main()
                                     {line("cash", "0.000000", "0"), line("revenue", "0", "1")}};
         expect(!service.validateJournalDraft(zeroLine).valid,
                "A journal line with no debit or credit must be rejected.");
+
+        const std::string groupId = "41e5df34-3b77-4c50-90a3-d8c22df6d1a2";
+        const std::string controlId = "4f33008b-7b54-4df3-9ce2-7a3e39f67a13";
+        const AccountHeadInput validHead{"Current assets", std::nullopt, 0, 10, true};
+        expect(service.validateAccountHeadInput(validHead).empty(),
+               "A valid account head should pass pure validation.");
+        const AccountHeadInput invalidHead{"   ", std::string("not-a-uuid"), 9, -1, true};
+        expect(service.validateAccountHeadInput(invalidHead).size() == 4,
+               "Empty names, invalid parents/types, and negative sort orders should be rejected.");
+
+        const AccountControlInput validControl{groupId, std::nullopt, "Cash", 1000, 1099, true};
+        expect(service.validateAccountControlInput(validControl).empty(),
+               "A valid control range should pass pure validation.");
+        const AccountControlInput invalidControl{groupId, std::nullopt, "Broken range", 1100, 1000, true};
+        expect(!service.validateAccountControlInput(invalidControl).empty(),
+               "An inverted control range must be rejected.");
+
+        const AccountDetailInput validDetail{controlId,
+                                             groupId,
+                                             "1001",
+                                             "Petty cash",
+                                             "active",
+                                             std::nullopt,
+                                             true,
+                                             false};
+        expect(service.validateAccountDetailInput(validDetail).empty(),
+               "A numeric posting account with valid IDs and status should pass pure validation.");
+        auto invalidDetail = validDetail;
+        invalidDetail.accountNumber = "10A1";
+        invalidDetail.status = "posted";
+        expect(service.validateAccountDetailInput(invalidDetail).size() == 2,
+               "Non-numeric account numbers and unsupported statuses should be rejected.");
 
         std::cout << "LedgerService validation tests passed.\n";
         return 0;

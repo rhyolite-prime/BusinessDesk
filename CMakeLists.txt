@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.8)
+cmake_minimum_required(VERSION 3.12)
 project(BusinessDeskApi CXX)
 
 # Custom file extension configuration
@@ -9,19 +9,11 @@ if(NOT DEFINED DEFAULT_HEADER_EXTENSION)
     set(DEFAULT_HEADER_EXTENSION "h" CACHE STRING "Default header file extension (e.g., h, hpp, hxx)")
 endif()
 
-include(CheckIncludeFileCXX)
-
-check_include_file_cxx(any HAS_ANY)
-check_include_file_cxx(string_view HAS_STRING_VIEW)
-check_include_file_cxx(coroutine HAS_COROUTINE)
-if (NOT "${CMAKE_CXX_STANDARD}" STREQUAL "")
-    # Do nothing
-elseif (HAS_ANY AND HAS_STRING_VIEW AND HAS_COROUTINE)
+# Drogon's coroutine ORM/controller APIs require C++20.
+if (NOT DEFINED CMAKE_CXX_STANDARD OR "${CMAKE_CXX_STANDARD}" STREQUAL "")
     set(CMAKE_CXX_STANDARD 20)
-elseif (HAS_ANY AND HAS_STRING_VIEW)
-    set(CMAKE_CXX_STANDARD 17)
-else ()
-    set(CMAKE_CXX_STANDARD 14)
+elseif (CMAKE_CXX_STANDARD LESS 20)
+    message(FATAL_ERROR "C++20 or higher is required for Drogon coroutines")
 endif ()
 
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
@@ -54,13 +46,7 @@ endif()
 
 # ##############################################################################
 
-if (CMAKE_CXX_STANDARD LESS 17)
-    message(FATAL_ERROR "c++17 or higher is required")
-elseif (CMAKE_CXX_STANDARD LESS 20)
-    message(STATUS "use c++17")
-else ()
-    message(STATUS "use c++20")
-endif ()
+message(STATUS "Using C++${CMAKE_CXX_STANDARD} for the application target")
 
 aux_source_directory(controllers CTL_SRC)
 aux_source_directory(filters FILTER_SRC)

@@ -71,7 +71,7 @@ These are roadmap candidates, not vendor-specific clones. Product references inf
 
 ## 2. Repository assessment
 
-The checkout began as a Drogon starter (`main.cc`, `CMakeLists.txt`, `config.json`, `models/model.json`, and a test stub). The repository now also contains `database/migrations/`, a partial `frontend/` Nuxt 4 app, `controllers/ledger_controller.h/.cc`, `../domain_services`, and a pure GL service test. The migration and UI are initial implementations, not yet connected to PostgreSQL-backed ORM persistence; the controller currently exposes only journal validation.
+The checkout began as a Drogon starter (`main.cc`, `CMakeLists.txt`, `config.json`, `models/model.json`, and a test stub). The repository now also contains `database/migrations/`, a partial `frontend/` Nuxt 4 app, `controllers/ledger_controller.h/.cc`, `services/ledger/ledger_service.h/.cc`, and a pure GL service test. The migration and UI are initial implementations, not yet connected to PostgreSQL-backed ORM persistence; the controller currently exposes only journal validation.
 
 The C# reference lives in `cs-template/TopazERP.*`:
 
