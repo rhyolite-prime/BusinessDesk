@@ -29,7 +29,8 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/sm/SchoolService.h
         domain_services/sm/SchoolService.cc
         dto/BaseGlDto.h
-        dto/BaseApiResponse.h)
+        dto/BaseApiResponse.h
+        contants/BusinessDeskConsts.h)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method

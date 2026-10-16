@@ -286,7 +286,7 @@ function isActive(path?: string) {
           <AppIcon name="arrow-left-on-rectangle" :size="17" />
         </button>
       </div>
-      <p class="px-2 pt-1 text-[10px] leading-relaxed text-white/35">BusinessDesk ERP · {{ props.moduleName }} workspace</p>
+      <p class="px-2 pt-1 text-[10px] leading-relaxed text-white/35">BusinessDesk 720 · {{ props.moduleName }} workspace</p>
     </div>
   </aside>
 </template>

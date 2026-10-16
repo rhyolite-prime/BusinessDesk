@@ -36,7 +36,7 @@ onMounted(initializeTheme)
         <slot />
       </main>
       <footer class="px-4 pb-6 pt-2 text-center text-[11px] text-slate-400 sm:px-6 lg:px-9">
-        BusinessDesk ERP · {{ currentModule.name }} workspace
+        BusinessDesk 720 · {{ currentModule.name }} workspace
       </footer>
     </div>
   </div>

@@ -4,7 +4,7 @@
  */
 export default defineAppConfig({
   brand: {
-    productName: 'BusinessDesk ERP',
+    productName: 'BusinessDesk 720',
     institutionName: 'BusinessDesk',
     institutionShort: 'BusinessDesk',
     tagline: 'One workspace for finance and operations',

@@ -49,9 +49,9 @@ export default defineNuxtConfig({
   app: {
     head: {
       titleTemplate: '%s · BusinessDesk',
-      title: 'BusinessDesk ERP',
+      title: 'BusinessDesk 720',
       meta: [
-        { name: 'description', content: 'BusinessDesk ERP workspaces for finance, operations, people, and industry workflows.' },
+        { name: 'description', content: 'BusinessDesk 720 workspaces for finance, operations, people, and industry workflows.' },
         { name: 'theme-color', content: '#f7f8fa' },
       ],
     },

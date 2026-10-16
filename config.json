@@ -317,7 +317,7 @@
     ],
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method.
     "custom_config": {
-        "JwtBearer": {
+        "JwtBearer": {  
             "JwtSecurityKey": "",
             "JwtIssuer": "GD720",
             "JwtAudience": "GD720_Users",
