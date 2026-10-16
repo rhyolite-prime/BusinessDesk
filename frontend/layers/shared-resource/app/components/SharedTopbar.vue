@@ -50,6 +50,7 @@ const pageTitle = computed(() => {
   if (route.path === '/ledger/imprest-categories') return 'Imprest Categories'
   if (route.path === '/ledger/imprests/payroll-loans') return 'Convert Outstanding Balance to Payroll Loans'
   if (route.path.startsWith('/ledger/imprests')) return 'Accountable imprests'
+  if (route.path === '/ledger/petty-cash') return 'Petty Cash Transactions'
   if (route.path === '/ledger/petty-cash-recipients') return 'Petty Cash Recipients'
   if (route.path === '/ledger/bank-accounts') return 'Bank Accounts'
   if (route.path.startsWith('/ledger/accounts')) return 'Chart of Account Detail'
@@ -70,6 +71,7 @@ const fallbackSearchItems = computed(() => isLedgerWorkspace.value
       { label: 'Imprest Categories', detail: 'Maintain accountable imprest classifications', to: '/ledger/imprest-categories' },
       { label: 'Accountable imprests', detail: 'Issue, retire, refund and write off imprests', to: '/ledger/imprests' },
       { label: 'Convert outstanding balance to payroll loans', detail: 'Select open imprest balances and create payroll deduction loans', to: '/ledger/imprests/payroll-loans' },
+      { label: 'Petty Cash Transactions', detail: 'Record petty cash expense batches and preview journal entries', to: '/ledger/petty-cash' },
       { label: 'Petty Cash Recipients', detail: 'Maintain the petty cash recipient directory', to: '/ledger/petty-cash-recipients' },
       { label: 'Journal register', detail: 'Review journal batches', to: '/ledger/journals' },
       { label: 'New journal draft', detail: 'Record an accounting entry', to: '/ledger/journals/new' },
