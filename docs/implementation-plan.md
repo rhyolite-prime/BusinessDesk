@@ -6,10 +6,10 @@
 
 ### Implementation tracker (current repository state)
 
-- **Implemented:** PostgreSQL 15+ initial migration and rollback script; lowercase `snake_case` tables; Nuxt 4/Tailwind shared-resource shell; GL dashboard, chart-of-accounts page, journal list and draft form; demo-backed same-origin APIs; one C++ `LedgerService` with exact decimal draft/approval validation; one `LedgerController` validation route; pure C++ validation tests.
-- **Verified:** Nuxt typecheck and production build pass; C++ `LedgerService` unit test compiles under `g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror` and passes; demo API routes return expected responses.
-- **Not yet verified/implemented:** migration has not been applied to PostgreSQL; Drogon controller and application have not been compiled because CMake, Drogon, and PostgreSQL tooling are absent in the current environment; no ORM models, persisted account/journal endpoints, tenant/auth context, posting transactions, approvals, or GL reports exist yet. Demo writes are process-local and are not durable.
-- **Next implementation increment:** set up a PostgreSQL/Drogon-capable environment, apply and test the migration, generate ORM models, then implement persisted account and journal reads/draft creation in the same `LedgerService`/`LedgerController` pair before expanding posting workflows.
+- **Implemented:** PostgreSQL 15+ initial migration and rollback script; lowercase `snake_case` tables and generated Drogon ORM models; Nuxt 4/Tailwind shared-resource shell; GL dashboard, chart-of-accounts page, journal list and draft form; demo-backed same-origin APIs; one C++ `LedgerService` with exact-decimal journal validation and coroutine ORM CRUD for account heads, control headers, and detail/posting accounts; one `LedgerController` with journal validation plus account-setup CRUD routes; pure C++ validation tests.
+- **Verified:** Nuxt typecheck and production build pass (from the preceding frontend work); framework-independent C++ `LedgerService` validation tests compile under `g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror` and pass. Re-run them after current changes. Demo API routes return expected responses.
+- **Not yet verified/implemented:** the Drogon controller/application and C++20 ORM service have not been compiled in this environment because CMake and Drogon are unavailable; the migration and account setup routes have not been exercised against PostgreSQL. The provisional tenant/accounting-unit headers are not authenticated identity. Journal persistence/posting, production authentication/authorization, approvals, and GL reports remain future work. Demo writes are process-local and are not durable.
+- **Next implementation increment:** compile and run the C++20 Drogon application against PostgreSQL, exercise the account-setup CRUD and transaction/constraint behavior, replace caller-supplied scope headers with verified auth claims, and add API-level tests before expanding journal posting workflows.
 
 **Guiding rule:** Use the legacy C# application to discover workflows and terminology, but treat it as a compatibility reference—not as the specification for accounting rules or as code to port line-for-line. Treat the procurement tender as a baseline capability checklist, not as the product boundary.
 
@@ -71,7 +71,7 @@ These are roadmap candidates, not vendor-specific clones. Product references inf
 
 ## 2. Repository assessment
 
-The checkout began as a Drogon starter (`main.cc`, `CMakeLists.txt`, `config.json`, `models/model.json`, and a test stub). The repository now also contains `database/migrations/`, a partial `frontend/` Nuxt 4 app, `controllers/ledger_controller.h/.cc`, `services/ledger/ledger_service.h/.cc`, and a pure GL service test. The migration and UI are initial implementations, not yet connected to PostgreSQL-backed ORM persistence; the controller currently exposes only journal validation.
+The checkout began as a Drogon starter (`main.cc`, `CMakeLists.txt`, `config.json`, `models/model.json`, and a test stub). The repository now also contains `database/migrations/`, a partial `frontend/` Nuxt 4 app, generated ORM models, `controllers/ledger_controller.h/.cc`, `services/ledger/ledger_service.h/.cc`, framework-independent ledger rules, and pure GL service tests. The controller exposes journal validation and account-setup CRUD; these Drogon routes and persistence are implemented in source but still require a full build and PostgreSQL-backed verification.
 
 The C# reference lives in `cs-template/TopazERP.*`:
 
@@ -88,15 +88,17 @@ Keep the Drogon API and Nuxt app as clear peers in the repository. Proposed star
 
 ```text
 controllers/
-  ledger_controller.h/.cc    # one LedgerController; all GL routes stay here
+  ledger_controller.h/.cc      # one LedgerController; all GL routes stay here
 services/ledger/
-  ledger_service.h/.cc       # one LedgerService class for all GL use cases
-models/                     # Drogon ORM-generated persistence models
+  ledger_service.h/.cc         # one LedgerService class for all GL use cases
+  ledger_service_rules.cc      # framework-independent validation rules
+dto/
+  LedgerAccountSetupDto.h      # request/response DTOs; not persistence entities
+models/                       # Drogon ORM persistence models
   model.json
   ...
 test/
   ledger_service_unit_test.cc
-dto/ledger/                 # request/response DTOs; not persistence entities
 database/migrations/
   001_create_ledger_schema.sql  # all table identifiers lowercase snake_case
   001_create_ledger_schema.down.sql
@@ -116,7 +118,7 @@ frontend/
 
 Use the Drogon model generator for ORM model classes only. Keep `restful_api_controllers` disabled in `models/model.json`: generated CRUD controllers would bypass GL posting rules and conflict with the single-controller design. Add routes to `LedgerController`; route handlers should validate/parse input, enforce authorization, call `LedgerService`, and return consistent HTTP responses. `LedgerService` should use generated ORM models/`Mapper` APIs and database transactions for ordinary operations and posting workflows.
 
-The database naming convention does not dictate the public JSON naming convention: PostgreSQL identifiers stay lowercase `snake_case`, while the current API DTOs use `camelCase` and are explicitly mapped at the boundary. The first C++ route is `POST /api/v1/ledger/journals/validate`; it accepts `batchDate`, `description`, and `lines[]` (`accountId`, `description`, `debit`, `credit`) and returns `valid`, `balanced`, six-decimal `debitTotal`/`creditTotal`, and `errors[]`. A structurally valid but unbalanced draft is allowed; approval validation rejects it. Nuxt server routes proxy to Drogon through server-only runtime configuration and keep browser requests same-origin. Persisted CRUD routes remain future work.
+The database naming convention does not dictate the public JSON naming convention: PostgreSQL identifiers stay lowercase `snake_case`, while the current API DTOs use `camelCase` and are explicitly mapped at the boundary. The C++ journal-validation route is `POST /api/v1/ledger/journals/validate`; it accepts `batchDate`, `description`, and `lines[]` (`accountId`, `description`, `debit`, `credit`) and returns `valid`, `balanced`, six-decimal `debitTotal`/`creditTotal`, and `errors[]`. A structurally valid but unbalanced draft is allowed; approval validation rejects it. Account setup routes provide CRUD for `/api/v1/ledger/account-heads`, `/api/v1/ledger/account-controls`, and `/api/v1/ledger/accounts`. Their contract, inputs, hierarchy rules, and current scope limitation are documented in [ledger account setup API](ledger-account-setup-api.md). Nuxt server routes proxy through server-only runtime configuration and keep browser requests same-origin; the frontend demo writes remain process-local until integrated with the database-backed API.
 
 ### Module-level separation of concerns (applies to every module)
 
@@ -186,7 +188,7 @@ The account enquiry should show current posted balances with currency/unit filte
 
 For each vertical slice, deliver in this order: request/response DTO and validation → service method using Drogon ORM → controller route → API/integration tests → Nuxt API composable and page → browser test. Use explicit pagination/filtering and never return persistence entities directly as public API contracts. Design an import staging workflow before adding large chart/recipient uploads: validate rows, show preview/errors, detect duplicates, require confirmation, and preserve an import audit record.
 
-**Current status:** The Nuxt dashboard, account list/create form, and journal list/draft form use demo-backed API routes. They are not yet connected to persisted ORM setup data; account-group/currency setup, real account queries, tenant scoping, and browser automation remain pending.
+**Current status:** The single `LedgerService`/`LedgerController` now include scoped coroutine-ORM CRUD for account heads, control headers, and detail accounts, with hierarchy/range checks and soft deletes. These handlers still need a C++20 Drogon build and PostgreSQL integration run. The Nuxt account screen and journal UI remain demo-backed and are not connected to persisted setup data; accounting-unit/currency setup, frontend API integration, verified-auth tenant scope, and browser automation remain pending.
 
 **Exit criteria:** users can configure multiple accounting units, account groups, accounts/subaccounts, currencies and GL setup from the UI; account balances and transaction drill-down are tenant/unit scoped; invalid references and duplicate account numbers are rejected predictably.
 
@@ -207,7 +209,7 @@ Treat period close/reopen as a permissioned workflow. Before close, report unpos
 
 Choose one source of truth for balances. Prefer posted journal lines as the accounting ledger, with `AccountBalance`/account balance columns treated as rebuildable projections rather than competing truths. Add reconciliation tests that compare the projection to journal-line aggregates by account, subaccount, accounting unit, cost centre, and currency.
 
-**Current status:** The C++ `LedgerService` now validates dates, line structure, exact six-decimal totals, and the draft-vs-approval balance rule; `LedgerController` exposes `POST /api/v1/ledger/journals/validate`. The service test passes standalone. No account/journal ORM persistence, sequence allocation, period checks, authorization, approvals, transactional posting, or reversal endpoints have been implemented. Nuxt demo writes remain process-local.
+**Current status:** The C++ `LedgerService` validates dates, line structure, exact six-decimal totals, and the draft-vs-approval balance rule; `LedgerController` exposes `POST /api/v1/ledger/journals/validate`. Account-setup ORM persistence is implemented separately in the same service/controller pair, but journal persistence, sequence allocation, period checks, verified authorization, approvals, transactional posting, and reversal endpoints are not implemented. The standalone rules test passes. Nuxt demo writes remain process-local.
 
 **Exit criteria:** balanced posting is atomic; unbalanced, cross-tenant/unit, unauthorized, closed-period, and duplicate-post attempts fail safely; approval and reversal trails are complete; a rollback leaves no partial journal or balance changes; concurrent sequence allocation does not duplicate batch numbers.
 
