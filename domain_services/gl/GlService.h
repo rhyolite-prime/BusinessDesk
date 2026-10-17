@@ -11,7 +11,7 @@
 namespace business_desk::services {
 
     class GlService {
-
+      public:
         //account head
         drogon::Task<dto::BaseApiResponse> getAllAccountHeads(int pageNo, int pageSize, const std::string &query);
         drogon::Task<dto::BaseApiResponse> createAccountHead(const dto::AccountHeadDto &dto);

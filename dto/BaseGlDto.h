@@ -7,7 +7,65 @@
 
 #include <json/json.h>
 
+#include <algorithm>
+#include <cctype>
+#include <exception>
+#include <string>
+
+#include "contants/BusinessDeskConsts.h"
+
 namespace business_desk::dto {
+
+    // Normalizes a free-form token for case/space-insensitive comparison.
+    inline std::string normalizeToken(const std::string &value) {
+        std::string normalized;
+        normalized.reserve(value.size());
+        for (char c : value) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+            }
+        }
+        return normalized;
+    }
+
+    // Maps a standard account type name ("Asset", "Assets", ...) or numeric
+    // code ("0".."4") onto the corresponding AccountType code. Returns
+    // AccountType::Unknown (-1) when the value cannot be resolved.
+    inline int32_t parseStandardAccountType(const Json::Value &value) {
+        if (value.isInt()) {
+            return value.asInt();
+        }
+        if (value.isUInt()) {
+            return static_cast<int32_t>(value.asUInt());
+        }
+        if (value.isString()) {
+            std::string normalized = normalizeToken(value.asString());
+            if (normalized.size() > 1 && normalized.back() == 's') {
+                normalized.pop_back();
+            }
+            if (normalized == "asset") {
+                return static_cast<int32_t>(constants::AccountType::Asset);
+            }
+            if (normalized == "liability") {
+                return static_cast<int32_t>(constants::AccountType::Liability);
+            }
+            if (normalized == "equity") {
+                return static_cast<int32_t>(constants::AccountType::Equity);
+            }
+            if (normalized == "revenue") {
+                return static_cast<int32_t>(constants::AccountType::Revenue);
+            }
+            if (normalized == "expense") {
+                return static_cast<int32_t>(constants::AccountType::Expense);
+            }
+            try {
+                return std::stoi(normalized);
+            } catch (const std::exception &) {
+                return static_cast<int32_t>(constants::AccountType::Unknown);
+            }
+        }
+        return static_cast<int32_t>(constants::AccountType::Unknown);
+    }
 
     class AccountHeadDto {
     public:
@@ -31,8 +89,8 @@ namespace business_desk::dto {
     private:
         std::string accountHeadName_;
         std::string parentHeadId_;
-        int32_t accountType_ {0};
-        bool isActive_ {false};
+        int32_t accountType_ {static_cast<int32_t>(constants::AccountType::Asset)};
+        bool isActive_ {true};
 
     };
 
@@ -46,8 +104,8 @@ namespace business_desk::dto {
             parentHeadId_ = json["parentHeadId"].asString();
         }
 
-        if (json.isMember("accountType") && json["accountType"].isString()) {
-            accountType_ = json["accountType"].asInt();
+        if (json.isMember("accountType")) {
+            accountType_ = parseStandardAccountType(json["accountType"]);
         }
 
 
@@ -283,7 +341,7 @@ namespace business_desk::dto {
     private:
         std::string account_name_;
         int account_no_ = 0;
-        int status_ = 0;                       // enum AccountStatus mapped to int
+        int status_ = static_cast<int>(constants::AccountStatus::Active);  // enum AccountStatus mapped to int
         std::string account_control_id_;       // Guid -> std::string
         std::string account_control_name_;
         std::string currency_id_;              // Guid -> std::string
@@ -308,7 +366,18 @@ namespace business_desk::dto {
             if (json["status"].isInt()) {
                 status_ = json["status"].asInt();
             } else if (json["status"].isString()) {
-                status_ = std::stoi(json["status"].asString());
+                const std::string normalizedStatus = normalizeToken(json["status"].asString());
+                if (normalizedStatus == "active") {
+                    status_ = static_cast<int>(constants::AccountStatus::Active);
+                } else if (normalizedStatus == "inactive") {
+                    status_ = static_cast<int>(constants::AccountStatus::Inactive);
+                } else {
+                    try {
+                        status_ = std::stoi(normalizedStatus);
+                    } catch (const std::exception &) {
+                        status_ = static_cast<int>(constants::AccountStatus::Unknown);
+                    }
+                }
             }
         }
 
