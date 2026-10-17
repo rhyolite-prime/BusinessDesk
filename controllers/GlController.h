@@ -23,13 +23,18 @@ class GlController : public drogon::HttpController<GlController>
     ADD_METHOD_TO(GlController::createAccountControl,std::string(PREFIX) + "account-controls",drogon::HttpMethod::Post);
     ADD_METHOD_TO(GlController::getAccountControl, std::string(PREFIX) + "account-controls/{1}", drogon::HttpMethod::Get);
     ADD_METHOD_TO(GlController::updateAccountControl, std::string(PREFIX) + "account-controls/{1}",drogon::HttpMethod::Put);
-    ADD_METHOD_TO(GlController::deleteAccountControl, std::string(PREFIX) + "account-controls/{1}", drogon::HttpMethod::Delete);
+    ADD_METHOD_TO(GlController::deleteAccountControl, std::string(PREFIX) + "account-controls/{1}",drogon::HttpMethod::Delete);
 
     ADD_METHOD_TO(GlController::listAccountDetails, std::string(PREFIX) + "accounts", drogon::HttpMethod::Get);
     ADD_METHOD_TO(GlController::createAccountDetail, std::string(PREFIX) + "accounts",drogon::HttpMethod::Post);
     ADD_METHOD_TO(GlController::getAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Get);
     ADD_METHOD_TO(GlController::updateAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Put);
     ADD_METHOD_TO(GlController::deleteAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Delete);
+
+    ADD_METHOD_TO(GlController::listBankAccounts, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Get);
+    ADD_METHOD_TO(GlController::createBankAccount, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Post);
+    ADD_METHOD_TO(GlController::updateBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Put);
+    ADD_METHOD_TO(GlController::deleteBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Delete);
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> validateJournal(drogon::HttpRequestPtr request);
@@ -50,6 +55,10 @@ class GlController : public drogon::HttpController<GlController>
     drogon::Task<drogon::HttpResponsePtr> createAccountDetail(drogon::HttpRequestPtr request);
     drogon::Task<drogon::HttpResponsePtr> getAccountDetail(drogon::HttpRequestPtr request, std::string id);
     drogon::Task<drogon::HttpResponsePtr> updateAccountDetail(drogon::HttpRequestPtr request,std::string id);
-    drogon::Task<drogon::HttpResponsePtr> deleteAccountDetail(drogon::HttpRequestPtr request, std::string id);
-};
+    drogon::Task<drogon::HttpResponsePtr> deleteAccountDetail(drogon::HttpRequestPtr request,std::string id);
 
+    drogon::Task<drogon::HttpResponsePtr> listBankAccounts(drogon::HttpRequestPtr request);
+    drogon::Task<drogon::HttpResponsePtr> createBankAccount(drogon::HttpRequestPtr request);
+    drogon::Task<drogon::HttpResponsePtr> updateBankAccount(drogon::HttpRequestPtr request,std::string id);
+    drogon::Task<drogon::HttpResponsePtr> deleteBankAccount(drogon::HttpRequestPtr request,std::string id);
+};
