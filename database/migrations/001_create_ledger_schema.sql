@@ -13,17 +13,17 @@ CREATE TABLE core_currencies (
     decimal_places smallint NOT NULL DEFAULT 2 CHECK (decimal_places BETWEEN 0 AND 6),
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint
+    deleted_by_user_id uuid
 );
 
 CREATE TABLE core_accounting_units (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     code varchar(40) NOT NULL,
     name varchar(160) NOT NULL,
     base_currency_id uuid NOT NULL REFERENCES core_currencies(id),
@@ -31,19 +31,19 @@ CREATE TABLE core_accounting_units (
     fiscal_year_start_month smallint NOT NULL DEFAULT 1 CHECK (fiscal_year_start_month BETWEEN 1 AND 12),
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT uq_core_accounting_units_tenant_code UNIQUE (tenant_id, code),
     CONSTRAINT uq_core_accounting_units_tenant_id UNIQUE (tenant_id, id)
 );
 
 CREATE TABLE core_currency_rates (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     currency_id uuid NOT NULL REFERENCES core_currencies(id),
     rate_type varchar(30) NOT NULL DEFAULT 'spot',
@@ -51,7 +51,7 @@ CREATE TABLE core_currency_rates (
     rate numeric(20,10) NOT NULL CHECK (rate > 0),
     source varchar(80),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_core_currency_rates_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_core_currency_rates_unit_currency_type_date
@@ -60,7 +60,7 @@ CREATE TABLE core_currency_rates (
 
 CREATE TABLE gl_account_groups (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     parent_group_id uuid,
     name varchar(160) NOT NULL,
@@ -68,12 +68,12 @@ CREATE TABLE gl_account_groups (
     sort_order integer NOT NULL DEFAULT 0,
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_account_groups_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_account_groups_parent FOREIGN KEY (tenant_id, accounting_unit_id, parent_group_id)
@@ -85,7 +85,7 @@ CREATE TABLE gl_account_groups (
 
 CREATE TABLE gl_account_controls (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     account_group_id uuid NOT NULL,
     parent_account_header_id uuid,
@@ -94,12 +94,12 @@ CREATE TABLE gl_account_controls (
     max_account integer NOT NULL,
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT ck_gl_account_controls_range CHECK (min_account <= max_account),
     CONSTRAINT fk_gl_account_controls_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
@@ -112,7 +112,7 @@ CREATE TABLE gl_account_controls (
 
 CREATE TABLE gl_accounts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     account_header_id uuid,
     account_group_id uuid NOT NULL,
@@ -124,12 +124,12 @@ CREATE TABLE gl_accounts (
     allow_manual_posting boolean NOT NULL DEFAULT true,
     is_control_account boolean NOT NULL DEFAULT false,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_accounts_header FOREIGN KEY (tenant_id, accounting_unit_id, account_header_id)
@@ -142,22 +142,22 @@ CREATE TABLE gl_accounts (
 
 CREATE TABLE gl_accounting_periods (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     period integer NOT NULL CHECK (period BETWEEN 190001 AND 299912),
     period_start_date date NOT NULL,
     period_end_date date NOT NULL,
     last_closed_at timestamptz,
     status varchar(20) NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'closed', 'locked')),
-    closed_by_user_id bigint,
+    closed_by_user_id uuid,
     close_reason text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT ck_gl_accounting_periods_date_order CHECK (period_start_date <= period_end_date),
     CONSTRAINT fk_gl_accounting_periods_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
@@ -167,7 +167,7 @@ CREATE TABLE gl_accounting_periods (
 
 CREATE TABLE gl_account_balances (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     account_id uuid NOT NULL,
     organization_unit_id uuid,
@@ -188,7 +188,7 @@ CREATE TABLE gl_account_balances (
 
 CREATE TABLE gl_bank_accounts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     bank_id uuid,
     bank_name varchar(160),
@@ -208,12 +208,12 @@ CREATE TABLE gl_bank_accounts (
     date_opened date,
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_bank_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_bank_accounts_gl_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
@@ -224,7 +224,7 @@ CREATE TABLE gl_bank_accounts (
 
 CREATE TABLE gl_default_accounts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     accounts_payables_bank_account_id uuid,
     payroll_bank_account_id uuid,
@@ -266,12 +266,12 @@ CREATE TABLE gl_default_accounts (
     social_security_employer_liability_account_id uuid,
     social_security_employee_liability_account_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_default_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_gl_default_accounts_unit UNIQUE (tenant_id, accounting_unit_id)
@@ -279,7 +279,7 @@ CREATE TABLE gl_default_accounts (
 
 CREATE TABLE gl_budgets (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     account_id uuid NOT NULL,
     organization_unit_id uuid,
@@ -290,12 +290,12 @@ CREATE TABLE gl_budgets (
     end_date date NOT NULL,
     status varchar(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'submitted', 'approved', 'closed')),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT ck_gl_budgets_date_order CHECK (begin_date <= end_date),
     CONSTRAINT fk_gl_budgets_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
         REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
@@ -306,7 +306,7 @@ CREATE TABLE gl_budgets (
 
 CREATE TABLE gl_budget_details (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     budget_id uuid NOT NULL,
     month smallint NOT NULL CHECK (month BETWEEN 1 AND 12),
@@ -314,7 +314,7 @@ CREATE TABLE gl_budget_details (
     budget_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (budget_amount >= 0),
     revised_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (revised_amount >= 0),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_gl_budget_details_budget FOREIGN KEY (tenant_id, accounting_unit_id, budget_id)
         REFERENCES gl_budgets (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT uq_gl_budget_details_period UNIQUE (tenant_id, accounting_unit_id, budget_id, year, month)
@@ -322,7 +322,7 @@ CREATE TABLE gl_budget_details (
 
 CREATE TABLE gl_journal_batch_sequences (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     prefix varchar(10) NOT NULL DEFAULT '',
     suffix varchar(10) NOT NULL DEFAULT '',
@@ -330,12 +330,12 @@ CREATE TABLE gl_journal_batch_sequences (
     next_batch_number integer NOT NULL DEFAULT 1,
     sequence_increment integer NOT NULL DEFAULT 1 CHECK (sequence_increment > 0),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_journal_batch_sequences_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_gl_journal_batch_sequences_unit UNIQUE (tenant_id, accounting_unit_id)
@@ -343,7 +343,7 @@ CREATE TABLE gl_journal_batch_sequences (
 
 CREATE TABLE gl_journal_batches (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     batch_number varchar(40) NOT NULL,
     transaction_source varchar(40) NOT NULL DEFAULT 'general_journal',
@@ -359,21 +359,21 @@ CREATE TABLE gl_journal_batches (
     reversal_of_batch_id uuid,
     idempotency_key varchar(120),
     submitted_at timestamptz,
-    submitted_by_user_id bigint,
+    submitted_by_user_id uuid,
     approved_at timestamptz,
-    approved_by_user_id bigint,
+    approved_by_user_id uuid,
     posted_at timestamptz,
-    posted_by_user_id bigint,
+    posted_by_user_id uuid,
     reversed_at timestamptz,
-    reversed_by_user_id bigint,
+    reversed_by_user_id uuid,
     reversal_reason text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_journal_batches_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_journal_batches_period FOREIGN KEY (tenant_id, accounting_unit_id, period_id)
@@ -388,7 +388,7 @@ CREATE TABLE gl_journal_batches (
 
 CREATE TABLE gl_journal_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     journal_batch_id uuid NOT NULL,
     account_id uuid NOT NULL,
@@ -422,12 +422,12 @@ CREATE TABLE gl_journal_lines (
     standard_account_type smallint NOT NULL,
     batch_number varchar(40) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT ck_gl_journal_lines_one_side CHECK (NOT (debit_amount > 0 AND credit_amount > 0)),
     CONSTRAINT fk_gl_journal_lines_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
         REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
@@ -438,7 +438,7 @@ CREATE TABLE gl_journal_lines (
 
 CREATE TABLE gl_journal_history (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     journal_batch_id uuid NOT NULL,
     batch_number varchar(40) NOT NULL,
@@ -447,21 +447,21 @@ CREATE TABLE gl_journal_history (
     total_debit numeric(20,6) NOT NULL,
     journal_details jsonb NOT NULL DEFAULT '[]'::jsonb,
     captured_at timestamptz NOT NULL DEFAULT now(),
-    captured_by_user_id bigint,
+    captured_by_user_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_journal_history_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
         REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id)
 );
 
 CREATE TABLE gl_deleted_journals (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     batch_number varchar(40) NOT NULL,
     batch_description varchar(200) NOT NULL,
@@ -471,20 +471,20 @@ CREATE TABLE gl_deleted_journals (
     debit_amount numeric(20,6) NOT NULL DEFAULT 0,
     credit_amount numeric(20,6) NOT NULL DEFAULT 0,
     deleted_by varchar(160),
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     deletion_reason text,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_actor_user_id bigint
+    deleted_by_actor_user_id uuid
 );
 
 CREATE TABLE gl_payment_vouchers (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     batch_number varchar(40) NOT NULL,
     batch_description varchar(200),
@@ -542,12 +542,12 @@ CREATE TABLE gl_payment_vouchers (
     journal_batch_id uuid,
     idempotency_key varchar(120),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_payment_vouchers_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_payment_vouchers_bank_account FOREIGN KEY (tenant_id, accounting_unit_id, bank_account_id)
@@ -561,7 +561,7 @@ CREATE TABLE gl_payment_vouchers (
 
 CREATE TABLE gl_payment_voucher_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     payment_voucher_id uuid NOT NULL,
     debit_account_id uuid NOT NULL,
@@ -582,7 +582,7 @@ CREATE TABLE gl_payment_voucher_lines (
     has_imprest boolean NOT NULL DEFAULT false,
     line_type varchar(40) NOT NULL DEFAULT 'regular',
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_gl_payment_voucher_lines_voucher FOREIGN KEY (tenant_id, accounting_unit_id, payment_voucher_id)
         REFERENCES gl_payment_vouchers (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_payment_voucher_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
@@ -591,7 +591,7 @@ CREATE TABLE gl_payment_voucher_lines (
 
 CREATE TABLE gl_payment_voucher_retentions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     payment_voucher_id uuid NOT NULL,
     description varchar(200),
@@ -601,12 +601,12 @@ CREATE TABLE gl_payment_voucher_retentions (
     amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (amount >= 0),
     total_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (total_amount >= 0),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_payment_voucher_retentions_voucher FOREIGN KEY (tenant_id, accounting_unit_id, payment_voucher_id)
         REFERENCES gl_payment_vouchers (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_payment_voucher_retentions_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
@@ -615,7 +615,7 @@ CREATE TABLE gl_payment_voucher_retentions (
 
 CREATE TABLE gl_cash_receipts (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     receipt_number varchar(40) NOT NULL,
     receipt_date date NOT NULL,
@@ -632,12 +632,12 @@ CREATE TABLE gl_cash_receipts (
     journal_batch_id uuid,
     idempotency_key varchar(120),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_cash_receipts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_cash_receipts_bank_account FOREIGN KEY (tenant_id, accounting_unit_id, cash_bank_account_id)
@@ -652,7 +652,7 @@ CREATE TABLE gl_cash_receipts (
 
 CREATE TABLE gl_cash_receipt_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     cash_receipt_id uuid NOT NULL,
     offset_account_id uuid NOT NULL,
@@ -661,7 +661,7 @@ CREATE TABLE gl_cash_receipt_lines (
     line_description varchar(300),
     amount numeric(20,6) NOT NULL CHECK (amount > 0),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_gl_cash_receipt_lines_receipt FOREIGN KEY (tenant_id, accounting_unit_id, cash_receipt_id)
         REFERENCES gl_cash_receipts (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_cash_receipt_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, offset_account_id)
@@ -670,16 +670,16 @@ CREATE TABLE gl_cash_receipt_lines (
 
 CREATE TABLE gl_imprest_categories (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     name varchar(160) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprest_categories_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_gl_imprest_categories_tenant_unit_name UNIQUE (tenant_id, accounting_unit_id, name),
@@ -688,7 +688,7 @@ CREATE TABLE gl_imprest_categories (
 
 CREATE TABLE gl_imprests (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     employee_id uuid NOT NULL,
     employee_identifier varchar(80),
@@ -720,12 +720,12 @@ CREATE TABLE gl_imprests (
     posted_to_gl boolean NOT NULL DEFAULT false,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprests_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_imprests_category FOREIGN KEY (tenant_id, accounting_unit_id, imprest_category_id)
@@ -742,7 +742,7 @@ CREATE TABLE gl_imprests (
 
 CREATE TABLE gl_imprest_refunds (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     imprest_id uuid NOT NULL,
     employee_id uuid NOT NULL,
@@ -750,7 +750,7 @@ CREATE TABLE gl_imprest_refunds (
     amount numeric(20,6) NOT NULL CHECK (amount > 0),
     currency_id uuid NOT NULL REFERENCES core_currencies(id),
     exchange_rate numeric(20,10) NOT NULL DEFAULT 1 CHECK (exchange_rate > 0),
-    authorized_by_user_id bigint,
+    authorized_by_user_id uuid,
     refund_type varchar(40),
     receipt_date date,
     receipt_number varchar(80),
@@ -763,12 +763,12 @@ CREATE TABLE gl_imprest_refunds (
     posted_to_gl boolean NOT NULL DEFAULT false,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprest_refunds_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
         REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
     CONSTRAINT fk_gl_imprest_refunds_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
@@ -783,7 +783,7 @@ CREATE TABLE gl_imprest_refunds (
 
 CREATE TABLE gl_imprest_retirements (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     imprest_id uuid NOT NULL,
     employee_id uuid NOT NULL,
@@ -797,12 +797,12 @@ CREATE TABLE gl_imprest_retirements (
     posted_to_gl boolean NOT NULL DEFAULT false,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprest_retirements_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
         REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
     CONSTRAINT fk_gl_imprest_retirements_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
@@ -814,7 +814,7 @@ CREATE TABLE gl_imprest_retirements (
 
 CREATE TABLE gl_imprest_retirement_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     imprest_retirement_id uuid NOT NULL,
     receipt_date date,
@@ -825,12 +825,12 @@ CREATE TABLE gl_imprest_retirement_lines (
     credit_account_id uuid NOT NULL,
     organization_unit_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprest_retirement_lines_retirement FOREIGN KEY (tenant_id, accounting_unit_id, imprest_retirement_id)
         REFERENCES gl_imprest_retirements (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_imprest_retirement_lines_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
@@ -841,7 +841,7 @@ CREATE TABLE gl_imprest_retirement_lines (
 
 CREATE TABLE gl_imprest_write_offs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     imprest_id uuid NOT NULL,
     employee_id uuid NOT NULL,
@@ -849,7 +849,7 @@ CREATE TABLE gl_imprest_write_offs (
     amount numeric(20,6) NOT NULL CHECK (amount > 0),
     currency_id uuid NOT NULL REFERENCES core_currencies(id),
     exchange_rate numeric(20,10) NOT NULL DEFAULT 1 CHECK (exchange_rate > 0),
-    authorized_by_user_id bigint,
+    authorized_by_user_id uuid,
     written_off_by varchar(160),
     debit_account_id uuid NOT NULL,
     credit_account_id uuid NOT NULL,
@@ -859,12 +859,12 @@ CREATE TABLE gl_imprest_write_offs (
     posted_to_gl boolean NOT NULL DEFAULT false,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_imprest_write_offs_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
         REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
     CONSTRAINT fk_gl_imprest_write_offs_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
@@ -879,18 +879,18 @@ CREATE TABLE gl_imprest_write_offs (
 
 CREATE TABLE gl_petty_cash_recipients (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     recipient varchar(200) NOT NULL,
     phone_number varchar(80),
     email varchar(254),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_petty_cash_recipients_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_gl_petty_cash_recipients_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
@@ -898,7 +898,7 @@ CREATE TABLE gl_petty_cash_recipients (
 
 CREATE TABLE gl_petty_cash_transactions (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     batch_date date NOT NULL,
     batch_number varchar(40) NOT NULL,
@@ -916,12 +916,12 @@ CREATE TABLE gl_petty_cash_transactions (
     is_posted boolean NOT NULL DEFAULT false,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT fk_gl_petty_cash_transactions_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_petty_cash_transactions_account FOREIGN KEY (tenant_id, accounting_unit_id, petty_cash_account_id)
@@ -934,7 +934,7 @@ CREATE TABLE gl_petty_cash_transactions (
 
 CREATE TABLE gl_petty_cash_transaction_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     petty_cash_transaction_id uuid NOT NULL,
     transaction_date date NOT NULL,
@@ -948,7 +948,7 @@ CREATE TABLE gl_petty_cash_transaction_lines (
     recipient_id uuid,
     recipient_name varchar(200),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_gl_petty_cash_transaction_lines_transaction FOREIGN KEY (tenant_id, accounting_unit_id, petty_cash_transaction_id)
         REFERENCES gl_petty_cash_transactions (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_petty_cash_transaction_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, expense_account_id)
@@ -957,7 +957,7 @@ CREATE TABLE gl_petty_cash_transaction_lines (
 
 CREATE TABLE gl_approval_policies (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     transaction_type varchar(40) NOT NULL,
     minimum_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (minimum_amount >= 0),
@@ -965,9 +965,9 @@ CREATE TABLE gl_approval_policies (
     preparer_may_approve boolean NOT NULL DEFAULT false,
     is_active boolean NOT NULL DEFAULT true,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     CONSTRAINT fk_gl_approval_policies_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT uq_gl_approval_policies_type UNIQUE (tenant_id, accounting_unit_id, transaction_type, minimum_amount)
@@ -975,14 +975,14 @@ CREATE TABLE gl_approval_policies (
 
 CREATE TABLE gl_approval_events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     entity_type varchar(40) NOT NULL,
     entity_id uuid NOT NULL,
     action varchar(30) NOT NULL CHECK (action IN ('submitted', 'approved', 'rejected', 'posted', 'reversed', 'voided')),
     from_status varchar(24),
     to_status varchar(24) NOT NULL,
-    actor_user_id bigint NOT NULL,
+    actor_user_id uuid NOT NULL,
     reason text,
     occurred_at timestamptz NOT NULL DEFAULT now(),
     request_id varchar(100),
@@ -992,12 +992,12 @@ CREATE TABLE gl_approval_events (
 
 CREATE TABLE gl_activity_audit_events (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid,
     entity_type varchar(80) NOT NULL,
     entity_id uuid NOT NULL,
     action varchar(30) NOT NULL CHECK (action IN ('created', 'updated', 'deleted', 'submitted', 'approved', 'rejected', 'posted', 'reversed', 'imported', 'closed', 'reopened')),
-    actor_user_id bigint NOT NULL,
+    actor_user_id uuid NOT NULL,
     occurred_at timestamptz NOT NULL DEFAULT now(),
     request_id varchar(100),
     before_data jsonb,
@@ -1008,7 +1008,7 @@ CREATE TABLE gl_activity_audit_events (
 
 CREATE TABLE gl_import_batches (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     import_type varchar(40) NOT NULL,
     source_file_name varchar(255) NOT NULL,
@@ -1018,7 +1018,7 @@ CREATE TABLE gl_import_batches (
     valid_rows integer NOT NULL DEFAULT 0 CHECK (valid_rows >= 0),
     error_rows integer NOT NULL DEFAULT 0 CHECK (error_rows >= 0),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint NOT NULL,
+    created_by_user_id uuid NOT NULL,
     completed_at timestamptz,
     CONSTRAINT fk_gl_import_batches_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
@@ -1027,7 +1027,7 @@ CREATE TABLE gl_import_batches (
 
 CREATE TABLE gl_import_rows (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     import_batch_id uuid NOT NULL,
     row_number integer NOT NULL CHECK (row_number > 0),
@@ -1042,7 +1042,7 @@ CREATE TABLE gl_import_rows (
 
 CREATE TABLE gl_bank_reconciliations (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     bank_account_id uuid NOT NULL,
     statement_number varchar(80) NOT NULL,
@@ -1053,9 +1053,9 @@ CREATE TABLE gl_bank_reconciliations (
     status varchar(24) NOT NULL DEFAULT 'draft'
         CHECK (status IN ('draft', 'pending_approval', 'approved', 'reconciled', 'voided')),
     reconciled_at timestamptz,
-    reconciled_by_user_id bigint,
+    reconciled_by_user_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint NOT NULL,
+    created_by_user_id uuid NOT NULL,
     CONSTRAINT ck_gl_bank_reconciliations_date_order CHECK (statement_start_date <= statement_end_date),
     CONSTRAINT fk_gl_bank_reconciliations_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
@@ -1067,7 +1067,7 @@ CREATE TABLE gl_bank_reconciliations (
 
 CREATE TABLE gl_bank_reconciliation_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     reconciliation_id uuid NOT NULL,
     external_transaction_id varchar(120),
@@ -1088,7 +1088,7 @@ CREATE TABLE gl_bank_reconciliation_lines (
 
 CREATE TABLE gl_budget_composites (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     code varchar(40) NOT NULL,
     name varchar(160) NOT NULL,
@@ -1096,12 +1096,12 @@ CREATE TABLE gl_budget_composites (
     end_date date NOT NULL,
     status varchar(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft', 'approved', 'closed')),
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     last_modified_at timestamptz,
-    last_modified_by_user_id bigint,
+    last_modified_by_user_id uuid,
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
-    deleted_by_user_id bigint,
+    deleted_by_user_id uuid,
     CONSTRAINT ck_gl_budget_composites_dates CHECK (begin_date <= end_date),
     CONSTRAINT fk_gl_budget_composites_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
@@ -1111,12 +1111,12 @@ CREATE TABLE gl_budget_composites (
 
 CREATE TABLE gl_budget_composite_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     composite_id uuid NOT NULL,
     budget_id uuid NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint,
+    created_by_user_id uuid,
     CONSTRAINT fk_gl_budget_composite_lines_composite FOREIGN KEY (tenant_id, accounting_unit_id, composite_id)
         REFERENCES gl_budget_composites (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
     CONSTRAINT fk_gl_budget_composite_lines_budget FOREIGN KEY (tenant_id, accounting_unit_id, budget_id)
@@ -1126,7 +1126,7 @@ CREATE TABLE gl_budget_composite_lines (
 
 CREATE TABLE gl_fx_revaluation_runs (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     revaluation_date date NOT NULL,
     currency_id uuid NOT NULL REFERENCES core_currencies(id),
@@ -1138,11 +1138,11 @@ CREATE TABLE gl_fx_revaluation_runs (
     total_loss numeric(20,6) NOT NULL DEFAULT 0,
     journal_batch_id uuid,
     created_at timestamptz NOT NULL DEFAULT now(),
-    created_by_user_id bigint NOT NULL,
+    created_by_user_id uuid NOT NULL,
     approved_at timestamptz,
-    approved_by_user_id bigint,
+    approved_by_user_id uuid,
     posted_at timestamptz,
-    posted_by_user_id bigint,
+    posted_by_user_id uuid,
     CONSTRAINT fk_gl_fx_revaluation_runs_unit FOREIGN KEY (tenant_id, accounting_unit_id)
         REFERENCES core_accounting_units (tenant_id, id),
     CONSTRAINT fk_gl_fx_revaluation_runs_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
@@ -1153,7 +1153,7 @@ CREATE TABLE gl_fx_revaluation_runs (
 
 CREATE TABLE gl_fx_revaluation_lines (
     id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-    tenant_id integer NOT NULL,
+    tenant_id uuid NOT NULL,
     accounting_unit_id uuid NOT NULL,
     revaluation_run_id uuid NOT NULL,
     account_id uuid NOT NULL,
