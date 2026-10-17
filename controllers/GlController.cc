@@ -1,10 +1,16 @@
 #include "GlController.h"
-
+#include "constants/ErrorCodes.h"
 #include "ApiResponseStub.h"
+#include "plugins/BusinessDeskServicePlugin.h"
+
+using namespace business_desk::constants;
 
 drogon::Task<drogon::HttpResponsePtr> GlController::validateJournal(
     drogon::HttpRequestPtr request)
 {
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
     co_return business_desk::http::makeNotImplementedResponse(request);
 }
 
@@ -14,10 +20,31 @@ drogon::Task<drogon::HttpResponsePtr> GlController::listAccountHeads(
     co_return business_desk::http::makeNotImplementedResponse(request);
 }
 
-drogon::Task<drogon::HttpResponsePtr> GlController::createAccountHead(
-    drogon::HttpRequestPtr request)
+drogon::Task<drogon::HttpResponsePtr> GlController::createAccountHead(drogon::HttpRequestPtr req)
 {
-    co_return business_desk::http::makeNotImplementedResponse(request);
+    const auto jsonBody = req->getJsonObject();
+
+    if (!jsonBody) {
+        business_desk::dto::BaseApiResponse response;
+        response.success = false;
+        response.message = "Invalid JSON body.";
+        response.error["code"] = ERR_VALIDATION;
+        response.error["message"] = "Expected a JSON object with a question field.";
+        auto httpResponse = HttpResponse::newHttpJsonResponse(response.toJson());
+        httpResponse->setStatusCode(k400BadRequest);
+        co_return httpResponse;
+    }
+
+    business_desk::dto::AccountHeadDto dto;
+    dto.fromJson(*jsonBody);
+
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
+    auto result = co_await glService.createAccountHead(dto);
+    auto resp = HttpResponse::newHttpJsonResponse(result.toJson());
+    co_return resp;
+
 }
 
 drogon::Task<drogon::HttpResponsePtr> GlController::getAccountHead(

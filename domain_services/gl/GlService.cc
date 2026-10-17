@@ -10,7 +10,7 @@
 using namespace drogon::orm;
 using drogon_model::BusinessDesk::GlAccountGroups;
 
-namespace business_desk::services {
+namespace business_desk::domain_services {
 
     drogon::Task<dto::BaseApiResponse> GlService::getAllAccountHeads(int pageNo, int pageSize, const std::string &query) {
 
