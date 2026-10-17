@@ -40,7 +40,7 @@ curl -s -X POST http://localhost:5004/api/v1/ledger/account-heads \
 ```
 
 **List** — `GET /account-heads?pageNo=1&pageSize=20&query=current`
-(`query` filters on name, case-insensitive; both pagination params optional)
+(`query` filters on name, case-sensitive; both pagination params optional)
 
 ```bash
 curl -s "http://localhost:5004/api/v1/ledger/account-heads?pageNo=1&pageSize=20"
@@ -189,6 +189,41 @@ Error codes map to HTTP status: `validation_error` → `400`, `not_found` →
 4. `GET /account-heads?query=current`, then `PUT` + `DELETE` each resource by
    id
 5. Repeat with `POST /bank-accounts`
+
+## Not yet wired
+
+- `GET .../{id}` single-resource reads for heads/controls/details return
+  `501 Not Implemented` — `GlService` exposes no get-by-id methods yet.
+- `POST /journals/validate` remains `501 Not Implemented` (journal validation
+  is outside the account-setup service).
+
+## Accounting units
+
+**Create** — `POST /accounting-units` (returns `201 Created`)
+
+```json
+{
+  "code": "HQ",
+  "name": "Head Office — Consolidated",
+  "baseCurrencyId": "8b7c6d5e-...",
+  "timeZone": "Africa/Accra",
+  "fiscalYearStartMonth": 1,
+  "isActive": true
+}
+```
+
+`code`, `name`, and `baseCurrencyId` are required; `code` is unique
+per tenant. `fiscalYearStartMonth` is 1–12 (default 1), `timeZone`
+defaults to `UTC`, `isActive` defaults to `true`.
+
+**List** — `GET /accounting-units?pageNo=1&pageSize=20&query=head`
+(`query` matches code or name, case-sensitive)
+
+**Update** — `PUT /accounting-units/{id}` (same body shape as create)
+
+**Delete** (soft) — `DELETE /accounting-units/{id}`; blocked while
+the unit still has chart of accounts, periods, balances, or bank
+accounts.
 
 ## Not yet wired
 

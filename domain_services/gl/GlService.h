@@ -36,6 +36,12 @@ namespace business_desk::domain_services {
         drogon::Task<dto::BaseApiResponse> updateCoaDetail(const dto::ChartOfAccountDetailDto &dto, const std::string &id);
         drogon::Task<dto::BaseApiResponse> deleteCoaDetail(const std::string &id);
 
+        //accounting unit
+        drogon::Task<dto::BaseApiResponse> getAllAccountingUnits(int pageNo, int pageSize, const std::string &query);
+        drogon::Task<dto::BaseApiResponse> createAccountingUnit(const dto::AccountingUnitDto &dto);
+        drogon::Task<dto::BaseApiResponse> updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id);
+        drogon::Task<dto::BaseApiResponse> deleteAccountingUnit(const std::string &id);
+
     };
 
 }

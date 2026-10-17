@@ -385,3 +385,69 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteBankAccount(
     auto result = co_await glService.deleteBankAccount(id);
     co_return toApiResponse(result, drogon::k200OK);
 }
+
+drogon::Task<drogon::HttpResponsePtr> GlController::listAccountingUnits(
+    drogon::HttpRequestPtr request)
+{
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
+    const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
+    const int pageSize = parseIntegerParam(request, "pageSize", 20, 1);
+    const std::string query = request->getParameter("query");
+
+    auto result = co_await glService.getAllAccountingUnits(pageNo, pageSize, query);
+    co_return toApiResponse(result, drogon::k200OK);
+}
+
+drogon::Task<drogon::HttpResponsePtr> GlController::createAccountingUnit(
+    drogon::HttpRequestPtr request)
+{
+    const auto jsonBody = parseJsonObject(request);
+    if (jsonBody.isNull())
+    {
+        co_return makeBadRequestResponse(
+            request, "Expected a JSON object with the accounting unit fields.");
+    }
+
+    business_desk::dto::AccountingUnitDto dto;
+    dto.fromJson(jsonBody);
+
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
+    auto result = co_await glService.createAccountingUnit(dto);
+    co_return toApiResponse(result, drogon::k201Created);
+}
+
+drogon::Task<drogon::HttpResponsePtr> GlController::updateAccountingUnit(
+    drogon::HttpRequestPtr request,
+    std::string id)
+{
+    const auto jsonBody = parseJsonObject(request);
+    if (jsonBody.isNull())
+    {
+        co_return makeBadRequestResponse(
+            request, "Expected a JSON object with the accounting unit fields.");
+    }
+
+    business_desk::dto::AccountingUnitDto dto;
+    dto.fromJson(jsonBody);
+
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
+    auto result = co_await glService.updateAccountingUnit(dto, id);
+    co_return toApiResponse(result, drogon::k200OK);
+}
+
+drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountingUnit(
+    drogon::HttpRequestPtr request,
+    std::string id)
+{
+    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto &glService = plugin->getGlService();
+
+    auto result = co_await glService.deleteAccountingUnit(id);
+    co_return toApiResponse(result, drogon::k200OK);
+}

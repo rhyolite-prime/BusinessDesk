@@ -8,7 +8,11 @@
 #include "GlAccountControls.h"
 #include "GlAccountGroups.h"
 #include "GlAccounts.h"
+#include "GlAccountBalances.h"
 #include "GlBankAccounts.h"
+#include "CoreAccountingUnits.h"
+#include "CoreCurrencies.h"
+#include "GlAccountingPeriods.h"
 
 #include "constants/BusinessDeskConsts.h"
 
@@ -24,7 +28,11 @@ using namespace drogon::orm;
 using drogon_model::BusinessDesk::GlAccountControls;
 using drogon_model::BusinessDesk::GlAccountGroups;
 using drogon_model::BusinessDesk::GlAccounts;
+using drogon_model::BusinessDesk::GlAccountBalances;
 using drogon_model::BusinessDesk::GlBankAccounts;
+using drogon_model::BusinessDesk::CoreAccountingUnits;
+using drogon_model::BusinessDesk::CoreCurrencies;
+using drogon_model::BusinessDesk::GlAccountingPeriods;
 
 namespace {
 
@@ -179,6 +187,38 @@ drogon::Task<std::string> validateAccountControlSiblings(const drogon::orm::DbCl
         if (!(sibling.getValueOfMaxAccount() < minAccount || sibling.getValueOfMinAccount() > maxAccount)) {
             co_return std::string("An active account control with an overlapping account number range already exists.");
         }
+    }
+    co_return std::string();
+}
+
+drogon::Task<std::string> validateBaseCurrency(const drogon::orm::DbClientPtr &dbClient,
+                                                  const std::string &baseCurrencyId) {
+    auto mp = drogon::orm::CoroMapper<CoreCurrencies>(dbClient);
+    auto currencies = co_await mp.findBy(Criteria(CoreCurrencies::Cols::_id, CompareOperator::EQ, baseCurrencyId) &&
+                                             Criteria(CoreCurrencies::Cols::_is_deleted, CompareOperator::EQ, false));
+    if (currencies.empty()) {
+        co_return std::string("Base currency not found.");
+    }
+    if (!currencies.front().getValueOfIsActive()) {
+        co_return std::string("Base currency must be active.");
+    }
+    co_return std::string();
+}
+
+// Checks whether an accounting unit code is already taken. The unique
+// constraint on (tenant, code) covers soft-deleted rows, so the check
+// ignores is_deleted. An empty selfId means the check runs for a create.
+drogon::Task<std::string> validateAccountingUnitCode(const drogon::orm::DbClientPtr &dbClient,
+                                                          const std::string &code,
+                                                          const std::string &selfId) {
+    auto mp = drogon::orm::CoroMapper<CoreAccountingUnits>(dbClient);
+    Criteria codeCriteria(CoreAccountingUnits::Cols::_code, CompareOperator::EQ, code);
+    if (!selfId.empty()) {
+        codeCriteria = codeCriteria && Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::NE, selfId);
+    }
+    auto existing = co_await mp.findBy(codeCriteria);
+    if (!existing.empty()) {
+        co_return std::string("An accounting unit with this code already exists.");
     }
     co_return std::string();
 }
@@ -1187,6 +1227,209 @@ namespace business_desk::domain_services {
 
       } catch (const DrogonDbException &e) {
         co_return makeErrorResponse("database_error", "Database error while deleting account detail.", e.base().what());
+      }
+
+    }
+
+    drogon::Task<dto::BaseApiResponse> GlService::getAllAccountingUnits(int pageNo, int pageSize, const std::string &query) {
+
+    auto dbClient = drogon::app().getDbClient();
+    auto mp = drogon::orm::CoroMapper<CoreAccountingUnits>(dbClient);
+
+    // 1. Build the search criteria; soft-deleted rows never surface.
+    Criteria searchCriteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false);
+    if (!query.empty()) {
+      std::string likeQuery = "%" + query + "%";
+      searchCriteria = searchCriteria &&
+                       (Criteria(CoreAccountingUnits::Cols::_code, CompareOperator::Like, likeQuery) ||
+                        Criteria(CoreAccountingUnits::Cols::_name, CompareOperator::Like, likeQuery));
+    }
+
+    try {
+      // 2. Get the total count matching the criteria
+      size_t totalCount = co_await mp.count(searchCriteria);
+
+      // 3. Find the paginated data
+      Json::Value data = Json::arrayValue;
+      if (totalCount > 0) {
+        int offset = (pageNo - 1) * pageSize;
+        auto accountingUnits = co_await mp.limit(pageSize).offset(offset).findBy(searchCriteria);
+
+        // 4. Map the persisted rows onto the camelCase API contract
+        for (const auto &accountingUnit : accountingUnits) {
+
+          Json::Value accountingUnitJson = accountingUnit.toJson();
+          Json::Value camelCaseAccountingUnit;
+
+          camelCaseAccountingUnit["id"] = accountingUnitJson["id"];
+          camelCaseAccountingUnit["code"] = accountingUnitJson["code"];
+          camelCaseAccountingUnit["name"] = accountingUnitJson["name"];
+          camelCaseAccountingUnit["baseCurrencyId"] = accountingUnitJson["base_currency_id"];
+          camelCaseAccountingUnit["timeZone"] = accountingUnitJson["time_zone"];
+          camelCaseAccountingUnit["fiscalYearStartMonth"] = accountingUnitJson["fiscal_year_start_month"];
+          camelCaseAccountingUnit["isActive"] = accountingUnitJson["is_active"];
+          camelCaseAccountingUnit["createdAt"] = accountingUnitJson["created_at"];
+          camelCaseAccountingUnit["lastModifiedAt"] = accountingUnitJson["last_modified_at"];
+          data.append(camelCaseAccountingUnit);
+        }
+      }
+
+      co_return makePaginatedResponse(totalCount, pageNo, pageSize, data);
+
+    } catch (const drogon::orm::DrogonDbException &e) {
+      co_return makeErrorResponse("database_error", "Database error while fetching accounting units.", e.base().what());
+    }
+
+    }
+
+    drogon::Task<dto::BaseApiResponse> GlService::createAccountingUnit(const dto::AccountingUnitDto &dto) {
+
+      if (dto.getCode().empty()) {
+        co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
+      }
+      if (dto.getName().empty()) {
+        co_return makeErrorResponse("validation_error", "Accounting unit name is required.");
+      }
+      if (dto.getBaseCurrencyId().empty()) {
+        co_return makeErrorResponse("validation_error", "Base currency is required.");
+      }
+      if (dto.getFiscalYearStartMonth() < 1 || dto.getFiscalYearStartMonth() > 12) {
+        co_return makeErrorResponse("validation_error", "Fiscal year start month must be between 1 and 12.");
+      }
+
+      auto dbClient = drogon::app().getDbClient();
+      auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
+
+      try {
+        auto currencyError = co_await validateBaseCurrency(dbClient, dto.getBaseCurrencyId());
+        if (!currencyError.empty()) {
+          co_return makeErrorResponse("validation_error", currencyError);
+        }
+
+        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), std::string());
+        if (!codeError.empty()) {
+          co_return makeErrorResponse("conflict", codeError);
+        }
+
+        CoreAccountingUnits newAccountingUnit;
+        newAccountingUnit.setCode(dto.getCode());
+        newAccountingUnit.setName(dto.getName());
+        newAccountingUnit.setBaseCurrencyId(dto.getBaseCurrencyId());
+        newAccountingUnit.setTimeZone(dto.getTimeZone().empty() ? std::string("UTC") : dto.getTimeZone());
+        newAccountingUnit.setFiscalYearStartMonth(static_cast<short>(dto.getFiscalYearStartMonth()));
+        newAccountingUnit.setIsActive(dto.getIsActive());
+
+        auto result = co_await mp.insert(newAccountingUnit);
+        dto::BaseApiResponse response;
+        response.success = true;
+        response.result = result.toJson();
+        co_return response;
+
+      } catch (const DrogonDbException &e) {
+        co_return makeErrorResponse("database_error", "Database error while creating accounting unit.", e.base().what());
+      }
+
+    }
+
+    drogon::Task<dto::BaseApiResponse> GlService::updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id) {
+
+      if (dto.getCode().empty()) {
+        co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
+      }
+      if (dto.getName().empty()) {
+        co_return makeErrorResponse("validation_error", "Accounting unit name is required.");
+      }
+      if (dto.getBaseCurrencyId().empty()) {
+        co_return makeErrorResponse("validation_error", "Base currency is required.");
+      }
+      if (dto.getFiscalYearStartMonth() < 1 || dto.getFiscalYearStartMonth() > 12) {
+        co_return makeErrorResponse("validation_error", "Fiscal year start month must be between 1 and 12.");
+      }
+
+      auto dbClient = drogon::app().getDbClient();
+      auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
+
+      try {
+        auto existing = co_await mp.findBy(Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::EQ, id) &&
+                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false));
+        if (existing.empty()) {
+          co_return makeErrorResponse("not_found", "Accounting unit not found.");
+        }
+        auto accountingUnit = existing.front();
+
+        auto currencyError = co_await validateBaseCurrency(dbClient, dto.getBaseCurrencyId());
+        if (!currencyError.empty()) {
+          co_return makeErrorResponse("validation_error", currencyError);
+        }
+
+        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), id);
+        if (!codeError.empty()) {
+          co_return makeErrorResponse("conflict", codeError);
+        }
+
+        accountingUnit.setCode(dto.getCode());
+        accountingUnit.setName(dto.getName());
+        accountingUnit.setBaseCurrencyId(dto.getBaseCurrencyId());
+        accountingUnit.setTimeZone(dto.getTimeZone().empty() ? std::string("UTC") : dto.getTimeZone());
+        accountingUnit.setFiscalYearStartMonth(static_cast<short>(dto.getFiscalYearStartMonth()));
+        accountingUnit.setIsActive(dto.getIsActive());
+        accountingUnit.setLastModifiedAt(trantor::Date::now());
+
+        co_await mp.update(accountingUnit);
+
+        dto::BaseApiResponse response;
+        response.success = true;
+        response.result = accountingUnit.toJson();
+        co_return response;
+
+      } catch (const DrogonDbException &e) {
+        co_return makeErrorResponse("database_error", "Database error while updating accounting unit.", e.base().what());
+      }
+
+    }
+
+    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountingUnit(const std::string &id) {
+
+      auto dbClient = drogon::app().getDbClient();
+      auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
+      auto groupMapper = CoroMapper<GlAccountGroups>(dbClient);
+      auto controlMapper = CoroMapper<GlAccountControls>(dbClient);
+      auto accountMapper = CoroMapper<GlAccounts>(dbClient);
+      auto periodMapper = CoroMapper<GlAccountingPeriods>(dbClient);
+      auto balanceMapper = CoroMapper<GlAccountBalances>(dbClient);
+      auto bankMapper = CoroMapper<GlBankAccounts>(dbClient);
+
+      try {
+        auto existing = co_await mp.findBy(Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::EQ, id) &&
+                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false));
+        if (existing.empty()) {
+          co_return makeErrorResponse("not_found", "Accounting unit not found.");
+        }
+
+        // The composite foreign keys keep soft-deleted rows in place, so
+        // every physical dependent row blocks the delete. The setup tables
+        // below are the roots of the unit's ledger; journals, budgets, and
+        // reconciliations cannot exist without them.
+        const auto groupCount = co_await groupMapper.count(Criteria(GlAccountGroups::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto controlCount = co_await controlMapper.count(Criteria(GlAccountControls::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto accountCount = co_await accountMapper.count(Criteria(GlAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto periodCount = co_await periodMapper.count(Criteria(GlAccountingPeriods::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto balanceCount = co_await balanceMapper.count(Criteria(GlAccountBalances::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto bankCount = co_await bankMapper.count(Criteria(GlBankAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        if (groupCount > 0 || controlCount > 0 || accountCount > 0 ||
+            periodCount > 0 || balanceCount > 0 || bankCount > 0) {
+          co_return makeErrorResponse("conflict", "Accounting unit cannot be deleted while it still has chart of accounts, periods, balances, or bank accounts.");
+        }
+
+        auto accountingUnit = existing.front();
+        accountingUnit.setIsDeleted(true);
+        accountingUnit.setDeletedAt(trantor::Date::now());
+        co_await mp.update(accountingUnit);
+
+        co_return makeDeletedResponse(id);
+
+      } catch (const DrogonDbException &e) {
+        co_return makeErrorResponse("database_error", "Database error while deleting accounting unit.", e.base().what());
       }
 
     }

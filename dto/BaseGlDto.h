@@ -425,5 +425,37 @@ namespace business_desk::dto {
 
     }
 
+    class AccountingUnitDto {
+    public:
+
+        AccountingUnitDto() = default;
+
+        void fromJson(const Json::Value& json);
+
+        // Getters
+        [[nodiscard]] const std::string& getCode() const { return code_; }
+        [[nodiscard]] const std::string& getName() const { return name_; }
+        [[nodiscard]] const std::string& getBaseCurrencyId() const { return base_currency_id_; }
+        [[nodiscard]] const std::string& getTimeZone() const { return time_zone_; }
+        [[nodiscard]] int getFiscalYearStartMonth() const { return fiscal_year_start_month_; }
+        [[nodiscard]] bool getIsActive() const { return is_active_; }
+
+        // Setters
+        void setCode(const std::string& value) { code_ = value; }
+        void setName(const std::string& value) { name_ = value; }
+        void setBaseCurrencyId(const std::string& value) { base_currency_id_ = value; }
+        void setTimeZone(const std::string& value) { time_zone_ = value; }
+        void setFiscalYearStartMonth(const int value) { fiscal_year_start_month_ = value; }
+        void setIsActive(const bool value) { is_active_ = value; }
+
+    private:
+        std::string code_;
+        std::string name_;
+        std::string base_currency_id_;
+        std::string time_zone_ {"UTC"};
+        int fiscal_year_start_month_ {1};
+        bool is_active_ {true};
+    };
+
 }
 #endif //BUSINESSDESKAPI_BASEGLDTO_H
