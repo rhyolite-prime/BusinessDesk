@@ -1,39 +1,9 @@
-/* This is a JSON format configuration file
- */
 {
-    /*
-    //ssl:The global SSL settings. "key" and "cert" are the path to the SSL key and certificate. While
-    //    "conf" is an array of 1 or 2-element tuples that supplies file style options for `SSL_CONF_cmd`.
-    "ssl": {
-        "cert": "../../trantor/trantor/tests/server.crt",
-        "key": "../../trantor/trantor/tests/server.key",
-        "conf": [
-            //["Options", "-SessionTicket"], 
-            //["Options", "Compression"]
-        ]
-    },
     "listeners": [
         {
-            //address: Ip address,0.0.0.0 by default
             "address": "0.0.0.0",
-            //port: Port number
-            "port": 80,
-            //https: If true, use https for security,false by default
+            "port": 5004,
             "https": false
-        },
-        {
-            "address": "0.0.0.0",
-            "port": 443,
-            "https": true,
-            //cert,key: Cert file path and key file path, empty by default,
-            //if empty, use the global setting
-            "cert": "",
-            "key": "",
-            //use_old_tls: enable the TLS1.0/1.1, false by default
-            "use_old_tls": false,
-            "ssl_conf": [
-                //["MinProtocol", "TLSv1.3"]
-            ]
         }
     ],
     "db_clients": [
@@ -49,20 +19,21 @@
             //port: Server port, 5432 by default
             "port": 5432,
             //dbname: Database name
-            "dbname": "test",
+            "dbname": "BusinessDesk",
             //user: 'postgres' by default
-            "user": "",
+            "user": "postgres",
             //passwd: '' by default
-            "passwd": "",
+            "passwd": "postgres",
+            //"passwd": "postgres",
             //is_fast: false by default, if it is true, the client is faster but user can't call
             //any synchronous interface of it.
             "is_fast": false,
-            //client_encoding: The character set used by the client. it is empty string by default which 
+            //client_encoding: The character set used by the client. it is empty string by default which
             //means use the default character set.
             //"client_encoding": "",
-            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-            //connections per IO thread, otherwise it is the total number of all connections.  
-            "number_of_connections": 1,
+            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+            //connections per IO thread, otherwise it is the total number of all connections.
+            "number_of_connections": 2,
             //timeout: -1.0 by default, in seconds, the timeout for executing a SQL query.
             //zero or negative value means no timeout.
             "timeout": -1.0,
@@ -91,24 +62,24 @@
             //is_fast: false by default, if it is true, the client is faster but user can't call
             //any synchronous interface of it.
             "is_fast": false,
-            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of  
-            //connections per IO thread, otherwise it is the total number of all connections.  
+            //number_of_connections: 1 by default, if the 'is_fast' is true, the number is the number of
+            //connections per IO thread, otherwise it is the total number of all connections.
             "number_of_connections": 1,
             //timeout: -1.0 by default, in seconds, the timeout for executing a command.
             //zero or negative value means no timeout.
             "timeout": -1.0
         }
-    ],*/
+    ],
     "app": {
         //number_of_threads: The number of IO threads, 1 by default, if the value is set to 0, the number of threads
         //is the number of CPU cores
-        "number_of_threads": 1,
+        "number_of_threads": 4,
         //enable_session: False by default
         "enable_session": false,
         "session_timeout": 0,
         //string value of SameSite attribute of the Set-Cookie HTTP response header
         //valid value is either 'Null' (default), 'Lax', 'Strict' or 'None'
-        "session_same_site" : "Null",
+        "session_same_site": "Null",
         //session_cookie_key: The cookie key of the session, "JSESSIONID" by default
         "session_cookie_key": "JSESSIONID",
         //session_max_age: The max age of the session cookie, -1 by default
@@ -131,7 +102,7 @@
                 "value": "field-value"
             }
         ],*/
-        //upload_path: The path to save the uploaded file. "uploads" by default. 
+        //upload_path: The path to save the uploaded file. "uploads" by default.
         //If the path isn't prefixed with /, ./ or ../,
         //it is relative path of document_root path
         "upload_path": "uploads",
@@ -162,26 +133,24 @@
             // "text/markdown": "md",
             // "text/gemini": ["gmi", "gemini"]
         },
-        //locations: An array of locations of static files for GET requests.
+        //locations: An array of locations of x  files for GET requests.
         "locations": [
             {
-                //uri_prefix: The URI prefix of the location prefixed with "/", the default value is "" that disables the location.
-                //"uri_prefix": "/.well-known/acme-challenge/",
-                //default_content_type: The default content type of the static files without
-                //an extension. empty string by default.
-                "default_content_type": "text/plain",
-                //alias: The location in file system, if it is prefixed with "/", it 
-                //presents an absolute path, otherwise it presents a relative path to 
-                //the document_root path. 
-                //The default value is "" which means use the document root path as the location base path.
-                "alias": "",
-                //is_case_sensitive: indicates whether the URI prefix is case sensitive.
+                "uri_prefix": "/assets",
+                "default_content_type": "",
+                "alias": "../public",
                 "is_case_sensitive": false,
-                //allow_all: true by default. If it is set to false, only static files with a valid extension can be accessed.
                 "allow_all": true,
-                //is_recursive: true by default. If it is set to false, files in sub directories can't be accessed.
                 "is_recursive": true,
-                //filters: string array, the filters applied to the location.
+                "filters": []
+            },
+            {
+                "uri_prefix": "/media",
+                "default_content_type": "application/octet-stream",
+                "alias": "../media",
+                "is_case_sensitive": false,
+                "allow_all": true,
+                "is_recursive": true,
                 "filters": []
             }
         ],
@@ -198,20 +167,20 @@
         "dynamic_views_path": [
             "./views"
         ],
-        //dynamic_views_output_path: Default by an empty string which means the output path of source 
-        //files is the path where the csp files locate. If the path isn't prefixed with /, it is relative 
+        //dynamic_views_output_path: Default by an empty string which means the output path of source
+        //files is the path where the csp files locate. If the path isn't prefixed with /, it is relative
         //path of the current working directory.
         "dynamic_views_output_path": "",
         //json_parser_stack_limit: 1000 by default, the maximum number of stack depth when reading a json string by the jsoncpp library.
         "json_parser_stack_limit": 1000,
         //enable_unicode_escaping_in_json: true by default, enable unicode escaping in json.
         "enable_unicode_escaping_in_json": true,
-        //float_precision_in_json: set precision of float number in json. 
+        //float_precision_in_json: set precision of float number in json.
         "float_precision_in_json": {
-            //precision: 0 by default, 0 means use the default precision of the jsoncpp lib. 
+            //precision: 0 by default, 0 means use the default precision of the jsoncpp lib.
             "precision": 0,
-            //precision_type: must be "significant" or "decimal", defaults to "significant" that means 
-            //setting max number of significant digits in string, "decimal" means setting max number of 
+            //precision_type: must be "significant" or "decimal", defaults to "significant" that means
+            //setting max number of significant digits in string, "decimal" means setting max number of
             //digits after "." in string
             "precision_type": "significant"
         },
@@ -242,7 +211,7 @@
         "handle_sig_term": true,
         //relaunch_on_error: False by default, if true, the program will be restart by the parent after exiting;
         "relaunch_on_error": false,
-        //use_sendfile: True by default, if true, the program 
+        //use_sendfile: True by default, if true, the program
         //uses sendfile() system-call to send static files to clients;
         "use_sendfile": true,
         //use_gzip: True by default, use gzip to compress the response body's content;
@@ -266,37 +235,37 @@
         //        ]
         //    }
         //],
-        //idle_connection_timeout: Defaults to 60 seconds, the lifetime 
+        //idle_connection_timeout: Defaults to 60 seconds, the lifetime
         //of the connection without read or write
         "idle_connection_timeout": 60,
         //server_header_field: Set the 'Server' header field in each response sent by drogon,
         //empty string by default with which the 'Server' header field is set to "Server: drogon/version string\r\n"
         "server_header_field": "",
-        //enable_server_header: Set true to force drogon to add a 'Server' header to each HTTP response. The default 
+        //enable_server_header: Set true to force drogon to add a 'Server' header to each HTTP response. The default
         //value is true.
         "enable_server_header": true,
-        //enable_date_header: Set true to force drogon to add a 'Date' header to each HTTP response. The default 
+        //enable_date_header: Set true to force drogon to add a 'Date' header to each HTTP response. The default
         //value is true.
         "enable_date_header": true,
-        //keepalive_requests: Set the maximum number of requests that can be served through one keep-alive connection. 
+        //keepalive_requests: Set the maximum number of requests that can be served through one keep-alive connection.
         //After the maximum number of requests are made, the connection is closed.
         //The default value of 0 means no limit.
         "keepalive_requests": 0,
-        //pipelining_requests: Set the maximum number of unhandled requests that can be cached in pipelining buffer. 
+        //pipelining_requests: Set the maximum number of unhandled requests that can be cached in pipelining buffer.
         //After the maximum number of requests are made, the connection is closed.
         //The default value of 0 means no limit.
         "pipelining_requests": 0,
-        //gzip_static: If it is set to true, when the client requests a static file, drogon first finds the compressed 
+        //gzip_static: If it is set to true, when the client requests a static file, drogon first finds the compressed
         //file with the extension ".gz" in the same path and send the compressed file to the client.
         //The default value of gzip_static is true.
         "gzip_static": true,
-        //br_static: If it is set to true, when the client requests a static file, drogon first finds the compressed 
+        //br_static: If it is set to true, when the client requests a static file, drogon first finds the compressed
         //file with the extension ".br" in the same path and send the compressed file to the client.
         //The default value of br_static is true.
         "br_static": true,
         //client_max_body_size: Set the maximum body size of HTTP requests received by drogon. The default value is "1M".
         //One can set it to "1024", "1k", "10M", "1G", etc. Setting it to "" means no limit.
-        "client_max_body_size": "1M",
+        "client_max_body_size": "100M",
         //max_memory_body_size: Set the maximum body size in memory of HTTP requests received by drogon. The default value is "64K" bytes.
         //If the body size of a HTTP request exceeds this limit, the body is stored to a temporary file for processing.
         //Setting it to "" means no limit.
@@ -317,6 +286,7 @@
     },
     //plugins: Define all plugins running in the application
     "plugins": [
+
         {
             //name: The class name of the plugin
             "name": "drogon::plugin::PromExporter",
@@ -345,6 +315,766 @@
             }
         }
     ],
-    //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method. 
-    "custom_config": {}
+    //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method.
+    "custom_config": {
+        "JwtBearer": {  
+            "JwtSecurityKey": "",
+            "JwtIssuer": "GD720",
+            "JwtAudience": "GD720_Users",
+            "JwtExpirationTime": 3600
+        },
+        "QuartzSchedulerApi": {
+            "BaseUrl": "https://scheduler.richcreationsdevelopment.com",
+            "CampaignCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/campaigns/run-scheduled-campaign",
+            "DailyNewsUpdateCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/news-papers/dispatch-daily-news-update",
+            "SubscriptionRenewalReminderCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/subscription/dispatch-subscription-reminder",
+            "PartnerInvoiceGenerationCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/admin/generate-partner-invoices",
+            "NewspaperEntitlementCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/admin/regenerate-newspaper-entitlements"
+        },
+        "HostPermissions": [
+            {
+                "systemName": "api.manage",
+                "friendlyName": "Manage API Keys",
+                "subPermissions": [
+                    {
+                        "id": 1,
+                        "systemName": "api.keys.create",
+                        "friendlyName": "Create API Keys"
+                    },
+                    {
+                        "id": 2,
+                        "systemName": "api.keys.revoke",
+                        "friendlyName": "Revoke API Key"
+                    },
+                    {
+                        "id": 3,
+                        "systemName": "api.keys.delete",
+                        "friendlyName": "Delete API Key"
+                    }
+                ]
+            },
+            {
+                "systemName": "subscribers.manage",
+                "friendlyName": "Manage Subscribers",
+                "subPermissions": [
+                    {
+                        "id": 4,
+                        "systemName": "subscribers.create",
+                        "friendlyName": "Create Subscriber"
+                    },
+                    {
+                        "id": 5,
+                        "systemName": "subscribers.bulk_upload",
+                        "friendlyName": "Upload Bulk Subscribers via Excel/CSV"
+                    },
+                    {
+                        "id": 6,
+                        "systemName": "subscribers.update",
+                        "friendlyName": "Update Subscriber"
+                    },
+                    {
+                        "id": 7,
+                        "systemName": "subscribers.delete",
+                        "friendlyName": "Delete Subscriber"
+                    }
+                ]
+            },
+            {
+                "systemName": "settings.manage",
+                "friendlyName": "Manage Settings",
+                "subPermissions": [
+                    {
+                        "id": 8,
+                        "systemName": "settings.update",
+                        "friendlyName": "Update Settings"
+                    }
+                ]
+            },
+            {
+                "systemName": "users.manage",
+                "friendlyName": "Manage Users",
+                "subPermissions": [
+                    {
+                        "id": 9,
+                        "systemName": "users.create",
+                        "friendlyName": "Create/Invite User"
+                    },
+                    {
+                        "id": 10,
+                        "systemName": "users.edit",
+                        "friendlyName": "Edit User"
+                    },
+                    {
+                        "id": 11,
+                        "systemName": "users.delete",
+                        "friendlyName": "Delete User"
+                    }
+                ]
+            },
+            {
+                "systemName": "reports.manage",
+                "friendlyName": "Manage Reports",
+                "subPermissions": [
+                    {
+                        "id": 12,
+                        "systemName": "reports.view",
+                        "friendlyName": "View Reports"
+                    },
+                    {
+                        "id": 13,
+                        "systemName": "reports.export",
+                        "friendlyName": "Export Report Data"
+                    }
+                ]
+            }
+        ],
+        "AdminPermissions": [
+            {
+                "systemName": "dashboard",
+                "friendlyName": "Dashboard",
+                "subPermissions": [
+                    {
+                        "id": 1,
+                        "systemName": "dashboard.view",
+                        "friendlyName": "View Dashboard"
+                    }
+                ]
+            },
+            {
+                "systemName": "subscribers.manage",
+                "friendlyName": "Manage Subscribers",
+                "subPermissions": [
+                    {
+                        "id": 2,
+                        "systemName": "subscribers.view",
+                        "friendlyName": "View Subscribers"
+                    },
+                    {
+                        "id": 3,
+                        "systemName": "subscribers.create",
+                        "friendlyName": "Create Subscriber"
+                    },
+                    {
+                        "id": 4,
+                        "systemName": "subscribers.update",
+                        "friendlyName": "Update Subscriber"
+                    },
+                    {
+                        "id": 5,
+                        "systemName": "subscribers.delete",
+                        "friendlyName": "Delete Subscriber"
+                    },
+                    {
+                        "id": 6,
+                        "systemName": "subscribers.assign_subscription",
+                        "friendlyName": "Assign Subscription"
+                    },
+                    {
+                        "id": 7,
+                        "systemName": "subscribers.view_subscriptions",
+                        "friendlyName": "View Subscriptions"
+                    },
+                    {
+                        "id": 8,
+                        "systemName": "subscribers.activate_account",
+                        "friendlyName": "Activate Subscriber Account"
+                    },
+                    {
+                        "id": 9,
+                        "systemName": "subscribers.deactivate_account",
+                        "friendlyName": "DeActivate Subscriber Account"
+                    }
+                ]
+            },
+            {
+                "systemName": "content.manage",
+                "friendlyName": "Manage Content",
+                "subPermissions": [
+
+                    {
+                        "id": 12,
+                        "systemName": "content.newspapers.view",
+                        "friendlyName": "View Newspapers"
+                    },
+                    {
+                        "id": 13,
+                        "systemName": "content.newspapers.ingest",
+                        "friendlyName": "Ingest Newspapers"
+                    },
+                    {
+                        "id": 14,
+                        "systemName": "content.newspapers.edit",
+                        "friendlyName": "Edit Newspapers"
+                    },
+                    {
+                        "id": 15,
+                        "systemName": "content.newspapers.publish",
+                        "friendlyName": "Publish Newspapers"
+                    },
+                    {
+                        "id": 16,
+                        "systemName": "content.newspapers.make_free",
+                        "friendlyName": "Waive Newspapers Fees"
+                    },
+                    {
+                        "id": 17,
+                        "systemName": "content.newspapers.delete",
+                        "friendlyName": "Delete Newspapers"
+                    },
+                    {
+                        "id": 18,
+                        "systemName": "content.videos.view",
+                        "friendlyName": "View Videos"
+                    },
+                    {
+                        "id": 19,
+                        "systemName": "content.videos.create",
+                        "friendlyName": "Create Videos"
+                    },
+                    {
+                        "id": 20,
+                        "systemName": "content.videos.update",
+                        "friendlyName": "Update Videos"
+                    },
+                    {
+                        "id": 21,
+                        "systemName": "content.videos.delete",
+                        "friendlyName": "Delete Videos"
+                    },
+                    {
+                        "id": 22,
+                        "systemName": "content.audios.view",
+                        "friendlyName": "View Videos"
+                    },
+                    {
+                        "id": 23,
+                        "systemName": "content.audios.create",
+                        "friendlyName": "Create Audios"
+                    },
+                    {
+                        "id": 24,
+                        "systemName": "content.audios.update",
+                        "friendlyName": "Update Audios"
+                    },
+                    {
+                        "id": 25,
+                        "systemName": "content.audios.delete",
+                        "friendlyName": "Delete Audios"
+                    }
+                ]
+            },
+            {
+                "systemName": "content.archives.manage",
+                "friendlyName": "Manage Archived Content",
+                "subPermissions": [
+                    {
+                        "id": 24,
+                        "systemName": "content.archives.dashboard.view",
+                        "friendlyName": "View Archives Dashboard"
+                    },
+                    {
+                        "id": 25,
+                        "systemName": "content.archives.newspapers.view",
+                        "friendlyName": "View Archived Newspapers"
+                    },
+                    {
+                        "id": 26,
+                        "systemName": "content.archives.newspapers.ingest",
+                        "friendlyName": "Ingest Archived Newspapers"
+                    },
+                    {
+                        "id": 27,
+                        "systemName": "content.archives.newspapers.edit",
+                        "friendlyName": "Edit Archived Newspapers"
+                    },
+                    {
+                        "id": 28,
+                        "systemName": "content.archives.enterprise_subscrbers.view",
+                        "friendlyName": "View Enterprise Subscribers"
+                    },
+                    {
+                        "id": 28,
+                        "systemName": "content.archives.enterprise_subscrbers.create",
+                        "friendlyName": "Create Enterprise Subscriber"
+                    },
+                    {
+                        "id": 29,
+                        "systemName": "content.archives.enterprise_subscrbers.update",
+                        "friendlyName": "Update Enterprise Subscriber"
+                    },
+                    {
+                        "id": 30,
+                        "systemName": "content.archives.enterprise_subscrbers.delete",
+                        "friendlyName": "Delete Enterprise Subscriber"
+                    },
+                    {
+                        "id": 31,
+                        "systemName": "content.archives.access_credits.configure",
+                        "friendlyName": "Configure Access Credits"
+                    }
+                ]
+            },
+            {
+                "systemName": "commercial_partners.manage",
+                "friendlyName": "Manage Partners",
+                "subPermissions": [
+                    {
+                        "id": 32,
+                        "systemName": "commercial_partners.view",
+                        "friendlyName": "View Commercial Partners"
+                    },
+                    {
+                        "id": 33,
+                        "systemName": "commercial_partners.create",
+                        "friendlyName": "Create Commercial Partner"
+                    },
+                    {
+                        "id": 34,
+                        "systemName": "commercial_partners.update",
+                        "friendlyName": "Update Commercial Partner"
+                    },
+                    {
+                        "id": 35,
+                        "systemName": "commercial_partners.delete",
+                        "friendlyName": "Delete Commercial Partner"
+                    },
+                    {
+                        "id": 36,
+                        "systemName": "commercial_partners.subscription.assign",
+                        "friendlyName": "Assign Partner Subscription"
+                    },
+                    {
+                        "id": 37,
+                        "systemName": "commercial_partners.admin_users.view",
+                        "friendlyName": "View Partner Admin Users"
+                    },
+                    {
+                        "id": 38,
+                        "systemName": "commercial_partners.subscribers.view",
+                        "friendlyName": "View Partner Subscribers"
+                    },
+                    {
+                        "id": 39,
+                        "systemName": "commercial_partners.subaccount.enable_or_disable",
+                        "friendlyName": "Enable/Disable Partner Subaccount"
+                    },
+                    {
+                        "id": 40,
+                        "systemName": "commercial_partners.quota.update",
+                        "friendlyName": "Update Partner Quota"
+                    },
+                    {
+                        "id": 41,
+                        "systemName": "commercial_partners.status.update",
+                        "friendlyName": "Update Partner Status"
+                    },
+                    {
+                        "id": 42,
+                        "systemName": "commercial_partners.api_key.view",
+                        "friendlyName": "View Partner API Keys"
+                    },
+                    {
+                        "id": 43,
+                        "systemName": "partners.api_key.create",
+                        "friendlyName": "Create Partner API Key"
+                    },
+                    {
+                        "id": 44,
+                        "systemName": "partners.api_key.revoke",
+                        "friendlyName": "Revoke Partner API Key"
+                    },
+                    {
+                        "id": 45,
+                        "systemName": "partners.api_logs.view",
+                        "friendlyName": "View Partner API Logs"
+                    },
+                    {
+                        "id": 46,
+                        "systemName": "partners.invoices.view",
+                        "friendlyName": "View Partner Invoices"
+                    },
+                    {
+                        "id": 47,
+                        "systemName": "partners.invoices.mark_as_paid",
+                        "friendlyName": "Manually Settle Partner Invoices"
+                    },
+                    {
+                        "id": 48,
+                        "systemName": "partners.invoices.make_part_payment",
+                        "friendlyName": "Apply Partial Payment To Partner Invoices"
+                    },
+                    {
+                        "id": 49,
+                        "systemName": "partners.invoices.make_full_payment",
+                        "friendlyName": "Apply Full Payment To Partner Invoices"
+                    },
+                    {
+                        "id": 50,
+                        "systemName": "partners.invoices.download",
+                        "friendlyName": "Download Partner Invoices"
+                    },
+                    {
+                        "id": 51,
+                        "systemName": "partners.invoices.delete",
+                        "friendlyName": "Delete Partner Invoices"
+                    }
+                ]
+            },
+            {
+                "systemName": "affiliates.manage",
+                "friendlyName": "Manage Affiliates",
+                "subPermissions": [
+                    {
+                        "id": 52,
+                        "systemName": "affiliates.dashboard.view",
+                        "friendlyName": "View Affiliate Dashboard"
+                    },
+                    {
+                        "id": 52,
+                        "systemName": "affiliates.view",
+                        "friendlyName": "View Affiliates"
+                    },
+                    {
+                        "id": 53,
+                        "systemName": "affiliates.create",
+                        "friendlyName": "Create Affiliates"
+                    },
+                    {
+                        "id": 54,
+                        "systemName": "affiliates.update",
+                        "friendlyName": "Update Affiliates"
+                    },
+                    {
+                        "id": 55,
+                        "systemName": "affiliates.delete",
+                        "friendlyName": "Delete Affiliates"
+                    },
+                    {
+                        "id": 56,
+                        "systemName": "affiliates.reset_password",
+                        "friendlyName": "Reset Affiliate Password"
+                    },
+                    {
+                        "id": 57,
+                        "systemName": "affiliates.earnings.view",
+                        "friendlyName": "View Affiliate Earnings"
+                    },
+                    {
+                        "id": 58,
+                        "systemName": "affiliates.account.suspend",
+                        "friendlyName": "Suspend Affiliate Account"
+                    },
+                    {
+                        "id": 59,
+                        "systemName": "affiliates.applications.view",
+                        "friendlyName": "View Affiliate Applications"
+                    },
+                    {
+                        "id": 60,
+                        "systemName": "affiliates.applications.update_status",
+                        "friendlyName": "Update Affiliate Application Status"
+                    },
+                    {
+                        "id": 61,
+                        "systemName": "affiliates.commssions.view",
+                        "friendlyName": "View Affiliate Commissions"
+                    },
+                    {
+                        "id": 62,
+                        "systemName": "affiliates.payouts.view",
+                        "friendlyName": "View Affiliate Payouts"
+                    },
+                    {
+                        "id": 63,
+                        "systemName": "affiliates.settings.view",
+                        "friendlyName": "View Affiliate Settings"
+                    },
+                    {
+                        "id": 64,
+                        "systemName": "affiliates.settings.update",
+                        "friendlyName": "Edit Affiliate Settings"
+                    }
+                ]
+            },
+            {
+                "systemName": "subscription_plans.manage",
+                "friendlyName": "Manage Subscription Plans",
+                "subPermissions": [
+                    {
+                        "id": 65,
+                        "systemName": "subscription_plans.view",
+                        "friendlyName": "View Subscription Plans"
+                    },
+                    {
+                        "id": 66,
+                        "systemName": "subscription_plans.create",
+                        "friendlyName": "Create Subscription Plans"
+                    },
+                    {
+                        "id": 67,
+                        "systemName": "subscription_plans.update",
+                        "friendlyName": "Update Subscription Plans"
+                    },
+                    {
+                        "id": 68,
+                        "systemName": "subscription_plans.delete",
+                        "friendlyName": "Delete Subscription Plans"
+                    }
+                ]
+            },
+            {
+                "systemName": "payments.manage",
+                "friendlyName": "Manage Payments",
+                "subPermissions": [
+                    {
+                        "id": 69,
+                        "systemName": "payments.view",
+                        "friendlyName": "View Payments"
+                    }
+                ]
+            },
+            {
+                "systemName": "campaigns.manage",
+                "friendlyName": "Manage Campaigns",
+                "subPermissions": [
+                    {
+                        "id": 70,
+                        "systemName": "campaigns.view",
+                        "friendlyName": "View Campaigns"
+                    },
+                    {
+                        "id": 71,
+                        "systemName": "campaigns.create",
+                        "friendlyName": "Create Campaigns"
+                    },
+                    {
+                        "id": 72,
+                        "systemName": "campaigns.publish",
+                        "friendlyName": "Publish Campaigns"
+                    },
+                    {
+                        "id": 73,
+                        "systemName": "campaigns.archive",
+                        "friendlyName": "Archive Campaigns"
+                    }
+                ]
+            },
+            {
+                "systemName": "coupons.manage",
+                "friendlyName": "Manage Coupons",
+                "subPermissions": [
+                    {
+                        "id": 74,
+                        "systemName": "coupons.view",
+                        "friendlyName": "View Coupons"
+                    },
+                    {
+                        "id": 75,
+                        "systemName": "coupons.create",
+                        "friendlyName": "Create Coupons"
+                    },
+                    {
+                        "id": 76,
+                        "systemName": "coupons.update",
+                        "friendlyName": "Update Coupons"
+                    },
+                    {
+                        "id": 77,
+                        "systemName": "coupons.delete",
+                        "friendlyName": "Delete Coupons"
+                    }
+                ]
+            },
+            {
+                "systemName": "adverts.manage",
+                "friendlyName": "Manage Advertisement",
+                "subPermissions": [
+                    {
+                        "id": 78,
+                        "systemName": "adverts.categories.view",
+                        "friendlyName": "View Advert Categories"
+                    },
+                    {
+                        "id": 79,
+                        "systemName": "adverts.categories.create",
+                        "friendlyName": "Create Advert Categories"
+                    },
+                    {
+                        "id": 80,
+                        "systemName": "adverts.categories.update",
+                        "friendlyName": "Update Advert Categories"
+                    },
+                    {
+                        "id": 81,
+                        "systemName": "adverts.categories.delete",
+                        "friendlyName": "Delete Advert Categories"
+                    },
+                    {
+                        "id": 82,
+                        "systemName": "adverts.sizes.view",
+                        "friendlyName": "View Advert Sizes"
+                    },
+                    {
+                        "id": 83,
+                        "systemName": "adverts.sizes.create",
+                        "friendlyName": "Create Advert Sizes"
+                    },
+                    {
+                        "id": 84,
+                        "systemName": "adverts.sizes.update",
+                        "friendlyName": "Update Advert Sizes"
+                    },
+                    {
+                        "id": 85,
+                        "systemName": "adverts.sizes.delete",
+                        "friendlyName": "Delete Advert Sizes"
+                    },
+                    {
+                        "id": 86,
+                        "systemName": "adverts.publication_slots.view",
+                        "friendlyName": "View Publication Slots"
+                    },
+                    {
+                        "id": 87,
+                        "systemName": "adverts.publication_slots.create",
+                        "friendlyName": "Create Publication Slots"
+                    },
+                    {
+                        "id": 88,
+                        "systemName": "adverts.publication_slots.update",
+                        "friendlyName": "Update Publication Slots"
+                    },
+                    {
+                        "id": 89,
+                        "systemName": "adverts.publication_slots.delete",
+                        "friendlyName": "Delete Publication Slots"
+                    },
+                    {
+                        "id": 90,
+                        "systemName": "adverts.ad_request.view",
+                        "friendlyName": "View Ad Requests"
+                    },
+                    {
+                        "id": 91,
+                        "systemName": "adverts.ad_request.change_state",
+                        "friendlyName": "Update Ad Request"
+                    }
+                ]
+            },
+            {
+                "systemName": "user_management.manage",
+                "friendlyName": "Manage Users",
+                "subPermissions": [
+                    {
+                        "id": 93,
+                        "systemName": "user_management.roles.view",
+                        "friendlyName": "View Roles"
+                    },
+                    {
+                        "id": 94,
+                        "systemName": "user_management.roles.create",
+                        "friendlyName": "Create Roles"
+                    },
+                    {
+                        "id": 95,
+                        "systemName": "user_management.roles.update",
+                        "friendlyName": "Update Roles"
+                    },
+                    {
+                        "id": 96,
+                        "systemName": "user_management.roles.delete",
+                        "friendlyName": "Delete Roles"
+                    },
+                    {
+                        "id": 97,
+                        "systemName": "user_management.users.view",
+                        "friendlyName": "View Users"
+                    },
+                    {
+                        "id": 98,
+                        "systemName": "user_management.users.create",
+                        "friendlyName": "Create Users"
+                    },
+                    {
+                        "id": 99,
+                        "systemName": "user_management.users.update",
+                        "friendlyName": "Update Users"
+                    },
+                    {
+                        "id": 100,
+                        "systemName": "user_management.users.delete",
+                        "friendlyName": "Delete Users"
+                    },
+                    {
+                        "id": 101,
+                        "systemName": "user_management.users.invitations.view",
+                        "friendlyName": "View User Invitations"
+                    }
+                ]
+            },
+            {
+                "systemName": "support_ticket.manage",
+                "friendlyName": "Manage Support Tickets",
+                "subPermissions": [
+                    {
+                        "id": 102,
+                        "systemName": "support_ticket.view",
+                        "friendlyName": "View Support Tickets"
+                    },
+                    {
+                        "id": 103,
+                        "systemName": "support_ticket.change_state",
+                        "friendlyName": "Update Support Ticket Status"
+                    }
+                ]
+            },
+            {
+                "systemName": "reports.manage",
+                "friendlyName": "Run Reports",
+                "subPermissions": [
+                    {
+                        "id": 104,
+                        "systemName": "reports.revenue_and_financial.run",
+                        "friendlyName": "Run Revenue & Financial Reports"
+                    },
+                    {
+                        "id": 105,
+                        "systemName": "reports.user_and_subscriber.run",
+                        "friendlyName": "Run User & Subscriber Reports"
+                    },
+                    {
+                        "id": 106,
+                        "systemName": "reports.content_and_newspaper.run",
+                        "friendlyName": "Run Content & Newspaper Reports"
+                    },
+                    {
+                        "id": 107,
+                        "systemName": "reports.commercial_partners.run",
+                        "friendlyName": "Run Commercial Partner Reports"
+                    },
+                    {
+                        "id": 108,
+                        "systemName": "reports.marketing_and_campaigns.run",
+                        "friendlyName": "Run Marketing & Campaigns Reports"
+                    },
+                    {
+                        "id": 109,
+                        "systemName": "reports.admin_and_security.run",
+                        "friendlyName": "Run Admin & Security Reports"
+                    }
+                ]
+            },
+            {
+                "systemName": "settings.manage",
+                "friendlyName": "Manage System Settings",
+                "subPermissions": [
+                    {
+                        "id": 110,
+                        "systemName": "settings.update",
+                        "friendlyName": "Update System Settings"
+                    }
+                ]
+            }
+        ]
+    }
 }
