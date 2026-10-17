@@ -210,9 +210,13 @@ drogon::Task<std::string> validateBaseCurrency(const drogon::orm::DbClientPtr &d
 // ignores is_deleted. An empty selfId means the check runs for a create.
 drogon::Task<std::string> validateAccountingUnitCode(const drogon::orm::DbClientPtr &dbClient,
                                                           const std::string &code,
-                                                          const std::string &selfId) {
+                                                          const std::string &selfId,
+                                                          const std::string &tenantId) {
     auto mp = drogon::orm::CoroMapper<CoreAccountingUnits>(dbClient);
     Criteria codeCriteria(CoreAccountingUnits::Cols::_code, CompareOperator::EQ, code);
+    if (!tenantId.empty()) {
+        codeCriteria = codeCriteria && Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::EQ, tenantId);
+    }
     if (!selfId.empty()) {
         codeCriteria = codeCriteria && Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::NE, selfId);
     }
@@ -275,7 +279,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createAccountHead(const dto::AccountHeadDto &dto) {
+    drogon::Task<dto::BaseApiResponse> GlService::createAccountHead(const dto::AccountHeadDto &dto, const utils::AuditIdentity &identity) {
 
       if (dto.getAccountHeadName().empty()) {
         co_return makeErrorResponse("validation_error", "Account head name is required.");
@@ -305,6 +309,7 @@ namespace business_desk::domain_services {
         }
         newAccountGroup.setStandardAccountType(static_cast<short>(dto.getAccountType()));
 
+        utils::applyCreateAudit(newAccountGroup, identity);
         auto result = co_await mp.insert(newAccountGroup);
         dto::BaseApiResponse response;
         response.success = true;
@@ -317,7 +322,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateAccountHead(const dto::AccountHeadDto &dto, const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateAccountHead(const dto::AccountHeadDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
 
       if (dto.getAccountHeadName().empty()) {
         co_return makeErrorResponse("validation_error", "Account head name is required.");
@@ -385,7 +390,7 @@ namespace business_desk::domain_services {
           accountGroup.setParentGroupId(dto.getParentHeadId());
         }
         accountGroup.setStandardAccountType(static_cast<short>(dto.getAccountType()));
-        accountGroup.setLastModifiedAt(trantor::Date::now());
+        utils::applyUpdateAudit(accountGroup, identity);
 
         co_await mp.update(accountGroup);
 
@@ -400,7 +405,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountHead(const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountHead(const std::string &id, const utils::AuditIdentity &identity) {
 
       auto dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<GlAccountGroups>(dbClient);
@@ -428,7 +433,7 @@ namespace business_desk::domain_services {
 
         auto accountGroup = existing.front();
         accountGroup.setIsDeleted(true);
-        accountGroup.setDeletedAt(trantor::Date::now());
+        utils::applyDeleteAudit(accountGroup, identity);
         co_await mp.update(accountGroup);
 
         co_return makeDeletedResponse(id);
@@ -502,7 +507,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createBankAccount(const dto::BankAccountDto &dto) {
+    drogon::Task<dto::BaseApiResponse> GlService::createBankAccount(const dto::BankAccountDto &dto, const utils::AuditIdentity &identity) {
 
       if (dto.getBankName().empty()) {
         co_return makeErrorResponse("validation_error", "Bank name is required.");
@@ -595,6 +600,7 @@ namespace business_desk::domain_services {
         }
         newBankAccount.setIsActive(true);
 
+        utils::applyCreateAudit(newBankAccount, identity);
         auto result = co_await mp.insert(newBankAccount);
         response.success = true;
         response.result = result.toJson();
@@ -609,7 +615,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateBankAccount(const dto::BankAccountDto &dto, const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateBankAccount(const dto::BankAccountDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
 
       if (dto.getBankName().empty()) {
         co_return makeErrorResponse("validation_error", "Bank name is required.");
@@ -706,7 +712,7 @@ namespace business_desk::domain_services {
             bankAccount.setDateOpenedToNull();
           }
         }
-        bankAccount.setLastModifiedAt(trantor::Date::now());
+        utils::applyUpdateAudit(bankAccount, identity);
 
         co_await mp.update(bankAccount);
         response.success = true;
@@ -722,7 +728,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteBankAccount(const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteBankAccount(const std::string &id, const utils::AuditIdentity &identity) {
 
       auto dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<GlBankAccounts>(dbClient);
@@ -737,7 +743,7 @@ namespace business_desk::domain_services {
 
         auto bankAccount = existing.front();
         bankAccount.setIsDeleted(true);
-        bankAccount.setDeletedAt(trantor::Date::now());
+        utils::applyDeleteAudit(bankAccount, identity);
         co_await mp.update(bankAccount);
 
         co_return makeDeletedResponse(id);
@@ -796,7 +802,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createCoaControl(const dto::ChartOfAccountControlDto &dto) {
+    drogon::Task<dto::BaseApiResponse> GlService::createCoaControl(const dto::ChartOfAccountControlDto &dto, const utils::AuditIdentity &identity) {
 
       if (dto.getName().empty()) {
         co_return makeErrorResponse("validation_error", "Account control name is required.");
@@ -836,6 +842,7 @@ namespace business_desk::domain_services {
         newAccountControl.setMaxAccount(dto.getMaxAccount());
         newAccountControl.setIsActive(true);
 
+        utils::applyCreateAudit(newAccountControl, identity);
         auto result = co_await mp.insert(newAccountControl);
         dto::BaseApiResponse response;
         response.success = true;
@@ -848,7 +855,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateCoaControl(const dto::ChartOfAccountControlDto &dto, const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateCoaControl(const dto::ChartOfAccountControlDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
 
       if (dto.getName().empty()) {
         co_return makeErrorResponse("validation_error", "Account control name is required.");
@@ -927,7 +934,7 @@ namespace business_desk::domain_services {
         accountControl.setAccountHeaderName(dto.getName());
         accountControl.setMinAccount(dto.getMinAccount());
         accountControl.setMaxAccount(dto.getMaxAccount());
-        accountControl.setLastModifiedAt(trantor::Date::now());
+        utils::applyUpdateAudit(accountControl, identity);
 
         co_await mp.update(accountControl);
 
@@ -942,7 +949,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteCoaControl(const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteCoaControl(const std::string &id, const utils::AuditIdentity &identity) {
 
       auto dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<GlAccountControls>(dbClient);
@@ -966,7 +973,7 @@ namespace business_desk::domain_services {
 
         auto accountControl = existing.front();
         accountControl.setIsDeleted(true);
-        accountControl.setDeletedAt(trantor::Date::now());
+        utils::applyDeleteAudit(accountControl, identity);
         co_await mp.update(accountControl);
 
         co_return makeDeletedResponse(id);
@@ -1030,7 +1037,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createCoaDetail(const dto::ChartOfAccountDetailDto &dto) {
+    drogon::Task<dto::BaseApiResponse> GlService::createCoaDetail(const dto::ChartOfAccountDetailDto &dto, const utils::AuditIdentity &identity) {
 
       if (dto.getAccountName().empty()) {
         co_return makeErrorResponse("validation_error", "Account name is required.");
@@ -1096,6 +1103,7 @@ namespace business_desk::domain_services {
         newAccount.setAllowManualPosting(true);
         newAccount.setIsControlAccount(false);
 
+        utils::applyCreateAudit(newAccount, identity);
         auto result = co_await mp.insert(newAccount);
         dto::BaseApiResponse response;
         response.success = true;
@@ -1108,7 +1116,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateCoaDetail(const dto::ChartOfAccountDetailDto &dto, const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateCoaDetail(const dto::ChartOfAccountDetailDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
 
       if (dto.getAccountName().empty()) {
         co_return makeErrorResponse("validation_error", "Account name is required.");
@@ -1191,7 +1199,7 @@ namespace business_desk::domain_services {
           account.setCurrencyId(dto.getCurrencyId());
         }
         account.setStandardAccountType(standardAccountType);
-        account.setLastModifiedAt(trantor::Date::now());
+        utils::applyUpdateAudit(account, identity);
 
         co_await mp.update(account);
 
@@ -1206,7 +1214,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteCoaDetail(const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteCoaDetail(const std::string &id, const utils::AuditIdentity &identity) {
 
       auto dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<GlAccounts>(dbClient);
@@ -1220,7 +1228,7 @@ namespace business_desk::domain_services {
 
         auto account = existing.front();
         account.setIsDeleted(true);
-        account.setDeletedAt(trantor::Date::now());
+        utils::applyDeleteAudit(account, identity);
         co_await mp.update(account);
 
         co_return makeDeletedResponse(id);
@@ -1282,7 +1290,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createAccountingUnit(const dto::AccountingUnitDto &dto) {
+    drogon::Task<dto::BaseApiResponse> GlService::createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity) {
 
       if (dto.getCode().empty()) {
         co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
@@ -1306,7 +1314,7 @@ namespace business_desk::domain_services {
           co_return makeErrorResponse("validation_error", currencyError);
         }
 
-        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), std::string());
+        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), std::string(), identity.tenantId);
         if (!codeError.empty()) {
           co_return makeErrorResponse("conflict", codeError);
         }
@@ -1319,6 +1327,7 @@ namespace business_desk::domain_services {
         newAccountingUnit.setFiscalYearStartMonth(static_cast<short>(dto.getFiscalYearStartMonth()));
         newAccountingUnit.setIsActive(dto.getIsActive());
 
+        utils::applyCreateAudit(newAccountingUnit, identity);
         auto result = co_await mp.insert(newAccountingUnit);
         dto::BaseApiResponse response;
         response.success = true;
@@ -1331,7 +1340,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
 
       if (dto.getCode().empty()) {
         co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
@@ -1362,7 +1371,7 @@ namespace business_desk::domain_services {
           co_return makeErrorResponse("validation_error", currencyError);
         }
 
-        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), id);
+        auto codeError = co_await validateAccountingUnitCode(dbClient, dto.getCode(), id, identity.tenantId);
         if (!codeError.empty()) {
           co_return makeErrorResponse("conflict", codeError);
         }
@@ -1373,7 +1382,7 @@ namespace business_desk::domain_services {
         accountingUnit.setTimeZone(dto.getTimeZone().empty() ? std::string("UTC") : dto.getTimeZone());
         accountingUnit.setFiscalYearStartMonth(static_cast<short>(dto.getFiscalYearStartMonth()));
         accountingUnit.setIsActive(dto.getIsActive());
-        accountingUnit.setLastModifiedAt(trantor::Date::now());
+        utils::applyUpdateAudit(accountingUnit, identity);
 
         co_await mp.update(accountingUnit);
 
@@ -1388,7 +1397,7 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountingUnit(const std::string &id) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity) {
 
       auto dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
@@ -1423,7 +1432,7 @@ namespace business_desk::domain_services {
 
         auto accountingUnit = existing.front();
         accountingUnit.setIsDeleted(true);
-        accountingUnit.setDeletedAt(trantor::Date::now());
+        utils::applyDeleteAudit(accountingUnit, identity);
         co_await mp.update(accountingUnit);
 
         co_return makeDeletedResponse(id);

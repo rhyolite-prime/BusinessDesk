@@ -94,7 +94,7 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
 
     if (decoded.has_payload_claim("tenantUserEmail")) {
       auto tenantUserEmail = decoded.get_payload_claim("tenantUserEmail").as_string();
-      req->attributes()->insert(tenantUserEmail, tenantUserEmail);
+      req->attributes()->insert("tenantUserEmail", tenantUserEmail);
     }
 
     if (decoded.has_payload_claim("permissions")) {
