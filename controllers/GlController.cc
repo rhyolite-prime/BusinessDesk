@@ -105,7 +105,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::validateJournal(
 drogon::Task<drogon::HttpResponsePtr> GlController::listAccountHeads(
     drogon::HttpRequestPtr request)
 {
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
@@ -130,7 +130,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::createAccountHead(
     business_desk::dto::AccountHeadDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.createAccountHead(dto, identity);
@@ -159,7 +159,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::updateAccountHead(
     business_desk::dto::AccountHeadDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.updateAccountHead(dto, id, identity);
@@ -171,7 +171,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountHead(
     std::string id)
 {
     const auto identity = business_desk::utils::extractAuditIdentity(request);
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.deleteAccountHead(id, identity);
@@ -181,7 +181,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountHead(
 drogon::Task<drogon::HttpResponsePtr> GlController::listAccountControls(
     drogon::HttpRequestPtr request)
 {
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
@@ -206,7 +206,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::createAccountControl(
     business_desk::dto::ChartOfAccountControlDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.createCoaControl(dto, identity);
@@ -235,7 +235,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::updateAccountControl(
     business_desk::dto::ChartOfAccountControlDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.updateCoaControl(dto, id, identity);
@@ -247,7 +247,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountControl(
     std::string id)
 {
     const auto identity = business_desk::utils::extractAuditIdentity(request);
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.deleteCoaControl(id, identity);
@@ -257,7 +257,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountControl(
 drogon::Task<drogon::HttpResponsePtr> GlController::listAccountDetails(
     drogon::HttpRequestPtr request)
 {
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
@@ -282,7 +282,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::createAccountDetail(
     business_desk::dto::ChartOfAccountDetailDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.createCoaDetail(dto, identity);
@@ -311,7 +311,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::updateAccountDetail(
     business_desk::dto::ChartOfAccountDetailDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.updateCoaDetail(dto, id, identity);
@@ -323,7 +323,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountDetail(
     std::string id)
 {
     const auto identity = business_desk::utils::extractAuditIdentity(request);
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.deleteCoaDetail(id, identity);
@@ -333,7 +333,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountDetail(
 drogon::Task<drogon::HttpResponsePtr> GlController::listBankAccounts(
     drogon::HttpRequestPtr request)
 {
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
@@ -358,7 +358,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::createBankAccount(
     business_desk::dto::BankAccountDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.createBankAccount(dto, identity);
@@ -380,7 +380,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::updateBankAccount(
     business_desk::dto::BankAccountDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.updateBankAccount(dto, id, identity);
@@ -392,7 +392,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteBankAccount(
     std::string id)
 {
     const auto identity = business_desk::utils::extractAuditIdentity(request);
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.deleteBankAccount(id, identity);
@@ -402,7 +402,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteBankAccount(
 drogon::Task<drogon::HttpResponsePtr> GlController::listAccountingUnits(
     drogon::HttpRequestPtr request)
 {
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     const int pageNo = parseIntegerParam(request, "pageNo", 1, 1);
@@ -427,7 +427,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::createAccountingUnit(
     business_desk::dto::AccountingUnitDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.createAccountingUnit(dto, identity);
@@ -449,7 +449,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::updateAccountingUnit(
     business_desk::dto::AccountingUnitDto dto;
     dto.fromJson(jsonBody);
 
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.updateAccountingUnit(dto, id, identity);
@@ -461,7 +461,7 @@ drogon::Task<drogon::HttpResponsePtr> GlController::deleteAccountingUnit(
     std::string id)
 {
     const auto identity = business_desk::utils::extractAuditIdentity(request);
-    auto plugin = app().getPlugin<gnp::plugins::BusinessDeskServicePlugin>();
+    auto plugin = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>();
     auto &glService = plugin->getGlService();
 
     auto result = co_await glService.deleteAccountingUnit(id, identity);

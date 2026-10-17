@@ -33,13 +33,19 @@ const std::string UserGroups::Cols::_active_users = "\"active_users\"";
 
 const std::string UserGroups::Cols::_blocked_users = "\"blocked_users\"";
 
-const std::string UserGroups::Cols::_created_by = "\"created_by\"";
-
 const std::string UserGroups::Cols::_created_at = "\"created_at\"";
 
-const std::string UserGroups::Cols::_modified_by = "\"modified_by\"";
+const std::string UserGroups::Cols::_created_by_user_id = "\"created_by_user_id\"";
 
-const std::string UserGroups::Cols::_modified_at = "\"modified_at\"";
+const std::string UserGroups::Cols::_last_modified_at = "\"last_modified_at\"";
+
+const std::string UserGroups::Cols::_last_modified_by_user_id = "\"last_modified_by_user_id\"";
+
+const std::string UserGroups::Cols::_is_deleted = "\"is_deleted\"";
+
+const std::string UserGroups::Cols::_deleted_at = "\"deleted_at\"";
+
+const std::string UserGroups::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
 
 const std::string UserGroups::primaryKeyName = "id";
@@ -57,10 +63,13 @@ const std::vector<typename UserGroups::MetaData> UserGroups::metaData_={
 {"roles","std::string","jsonb",0,0,0,0},
 {"active_users","int32_t","integer",4,0,0,1},
 {"blocked_users","int32_t","integer",4,0,0,1},
-{"created_by","std::string","uuid",0,0,0,0},
-{"created_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"modified_by","std::string","uuid",0,0,0,0},
-{"modified_at","::trantor::Date","timestamp with time zone",0,0,0,0}
+{"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
+{"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
+{"is_deleted","bool","boolean",1,0,0,1},
+{"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &UserGroups::getColumnName(size_t index) noexcept(false)
@@ -122,13 +131,6 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        if(!r["created_by"].isNull())
-        {
-
-            createdBy_=std::make_shared<std::string>(r["created_by"].as<std::string>());
-
-        }
-
         if(!r["created_at"].isNull())
         {
             auto timeStr = r["created_at"].as<std::string>();
@@ -153,16 +155,16 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        if(!r["modified_by"].isNull())
+        if(!r["created_by_user_id"].isNull())
         {
 
-            modifiedBy_=std::make_shared<std::string>(r["modified_by"].as<std::string>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
-        if(!r["modified_at"].isNull())
+        if(!r["last_modified_at"].isNull())
         {
-            auto timeStr = r["modified_at"].as<std::string>();
+            auto timeStr = r["last_modified_at"].as<std::string>();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -180,15 +182,60 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+
+        if(!r["last_modified_by_user_id"].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
+
+        }
+
+        if(!r["is_deleted"].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r["is_deleted"].as<bool>());
+
+        }
+
+        if(!r["deleted_at"].isNull())
+        {
+            auto timeStr = r["deleted_at"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["deleted_by_user_id"].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
+
         }
 
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 11 > r.size())
+        if(offset + 14 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -254,14 +301,6 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
         index = offset + 7;
         if(!r[index].isNull())
         {
-
-            createdBy_=std::make_shared<std::string>(r[index].as<std::string>());
-
-        }
-
-        index = offset + 8;
-        if(!r[index].isNull())
-        {
             auto timeStr = r[index].as<std::string>();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
@@ -284,15 +323,15 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 9;
+        index = offset + 8;
         if(!r[index].isNull())
         {
 
-            modifiedBy_=std::make_shared<std::string>(r[index].as<std::string>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
-        index = offset + 10;
+        index = offset + 9;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -313,8 +352,57 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+
+        index = offset + 10;
+        if(!r[index].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 11;
+        if(!r[index].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r[index].as<bool>());
+
+        }
+
+        index = offset + 12;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 13;
+        if(!r[index].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
         }
 
     }
@@ -323,7 +411,7 @@ UserGroups::UserGroups(const Row &r, const ssize_t indexOffset) noexcept
 
 UserGroups::UserGroups(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 14)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -397,16 +485,7 @@ UserGroups::UserGroups(const Json::Value &pJson, const std::vector<std::string> 
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            createdBy_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
-    {
-        dirtyFlag_[8] = true;
-        if(!pJson[pMasqueradingVector[8]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[8]].asString();
+            auto timeStr = pJson[pMasqueradingVector[7]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -429,21 +508,21 @@ UserGroups::UserGroups(const Json::Value &pJson, const std::vector<std::string> 
         }
     }
 
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
     {
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            modifiedBy_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
-    {
-        dirtyFlag_[10] = true;
-        if(!pJson[pMasqueradingVector[10]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[10]].asString();
+            auto timeStr = pJson[pMasqueradingVector[9]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -461,8 +540,63 @@ UserGroups::UserGroups(const Json::Value &pJson, const std::vector<std::string> 
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+    }
+
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[11]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[12]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -534,18 +668,9 @@ UserGroups::UserGroups(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("created_by"))
-    {
-        dirtyFlag_[7]=true;
-        if(!pJson["created_by"].isNull())
-        {
-            createdBy_=std::make_shared<std::string>(pJson["created_by"].asString());
-        }
-    }
-
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[8]=true;
+        dirtyFlag_[7]=true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -571,21 +696,21 @@ UserGroups::UserGroups(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("modified_by"))
+    if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[9]=true;
-        if(!pJson["modified_by"].isNull())
+        dirtyFlag_[8]=true;
+        if(!pJson["created_by_user_id"].isNull())
         {
-            modifiedBy_=std::make_shared<std::string>(pJson["modified_by"].asString());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
-    if(pJson.isMember("modified_at"))
+    if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[10]=true;
-        if(!pJson["modified_at"].isNull())
+        dirtyFlag_[9]=true;
+        if(!pJson["last_modified_at"].isNull())
         {
-            auto timeStr = pJson["modified_at"].asString();
+            auto timeStr = pJson["last_modified_at"].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -603,8 +728,63 @@ UserGroups::UserGroups(const Json::Value &pJson) noexcept(false)
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[10]=true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[11]=true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[12]=true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[13]=true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -613,7 +793,7 @@ UserGroups::UserGroups(const Json::Value &pJson) noexcept(false)
 void UserGroups::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 14)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -686,16 +866,7 @@ void UserGroups::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            createdBy_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
-    {
-        dirtyFlag_[8] = true;
-        if(!pJson[pMasqueradingVector[8]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[8]].asString();
+            auto timeStr = pJson[pMasqueradingVector[7]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -718,21 +889,21 @@ void UserGroups::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
+    {
+        dirtyFlag_[8] = true;
+        if(!pJson[pMasqueradingVector[8]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
     {
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            modifiedBy_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
-    {
-        dirtyFlag_[10] = true;
-        if(!pJson[pMasqueradingVector[10]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[10]].asString();
+            auto timeStr = pJson[pMasqueradingVector[9]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -750,8 +921,63 @@ void UserGroups::updateByMasqueradedJson(const Json::Value &pJson,
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+    }
+
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[11]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[12]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -822,18 +1048,9 @@ void UserGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("created_by"))
-    {
-        dirtyFlag_[7] = true;
-        if(!pJson["created_by"].isNull())
-        {
-            createdBy_=std::make_shared<std::string>(pJson["created_by"].asString());
-        }
-    }
-
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[8] = true;
+        dirtyFlag_[7] = true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -859,21 +1076,21 @@ void UserGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("modified_by"))
+    if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[9] = true;
-        if(!pJson["modified_by"].isNull())
+        dirtyFlag_[8] = true;
+        if(!pJson["created_by_user_id"].isNull())
         {
-            modifiedBy_=std::make_shared<std::string>(pJson["modified_by"].asString());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
-    if(pJson.isMember("modified_at"))
+    if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[10] = true;
-        if(!pJson["modified_at"].isNull())
+        dirtyFlag_[9] = true;
+        if(!pJson["last_modified_at"].isNull())
         {
-            auto timeStr = pJson["modified_at"].asString();
+            auto timeStr = pJson["last_modified_at"].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -891,8 +1108,63 @@ void UserGroups::updateByJson(const Json::Value &pJson) noexcept(false)
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                modifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1062,33 +1334,6 @@ void UserGroups::setBlockedUsers(const int32_t &pBlockedUsers) noexcept
     dirtyFlag_[6] = true;
 }
 
-const std::string &UserGroups::getValueOfCreatedBy() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(createdBy_)
-        return *createdBy_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &UserGroups::getCreatedBy() const noexcept
-{
-    return createdBy_;
-}
-void UserGroups::setCreatedBy(const std::string &pCreatedBy) noexcept
-{
-    createdBy_ = std::make_shared<std::string>(pCreatedBy);
-    dirtyFlag_[7] = true;
-}
-void UserGroups::setCreatedBy(std::string &&pCreatedBy) noexcept
-{
-    createdBy_ = std::make_shared<std::string>(std::move(pCreatedBy));
-    dirtyFlag_[7] = true;
-}
-void UserGroups::setCreatedByToNull() noexcept
-{
-    createdBy_.reset();
-    dirtyFlag_[7] = true;
-}
-
 const ::trantor::Date &UserGroups::getValueOfCreatedAt() const noexcept
 {
     static const ::trantor::Date defaultValue = ::trantor::Date();
@@ -1103,61 +1348,149 @@ const std::shared_ptr<::trantor::Date> &UserGroups::getCreatedAt() const noexcep
 void UserGroups::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
 {
     createdAt_ = std::make_shared<::trantor::Date>(pCreatedAt);
-    dirtyFlag_[8] = true;
-}
-void UserGroups::setCreatedAtToNull() noexcept
-{
-    createdAt_.reset();
-    dirtyFlag_[8] = true;
+    dirtyFlag_[7] = true;
 }
 
-const std::string &UserGroups::getValueOfModifiedBy() const noexcept
+const std::string &UserGroups::getValueOfCreatedByUserId() const noexcept
 {
     static const std::string defaultValue = std::string();
-    if(modifiedBy_)
-        return *modifiedBy_;
+    if(createdByUserId_)
+        return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<std::string> &UserGroups::getModifiedBy() const noexcept
+const std::shared_ptr<std::string> &UserGroups::getCreatedByUserId() const noexcept
 {
-    return modifiedBy_;
+    return createdByUserId_;
 }
-void UserGroups::setModifiedBy(const std::string &pModifiedBy) noexcept
+void UserGroups::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    modifiedBy_ = std::make_shared<std::string>(pModifiedBy);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[8] = true;
+}
+void UserGroups::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
+    dirtyFlag_[8] = true;
+}
+void UserGroups::setCreatedByUserIdToNull() noexcept
+{
+    createdByUserId_.reset();
+    dirtyFlag_[8] = true;
+}
+
+const ::trantor::Date &UserGroups::getValueOfLastModifiedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(lastModifiedAt_)
+        return *lastModifiedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &UserGroups::getLastModifiedAt() const noexcept
+{
+    return lastModifiedAt_;
+}
+void UserGroups::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
+{
+    lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
     dirtyFlag_[9] = true;
 }
-void UserGroups::setModifiedBy(std::string &&pModifiedBy) noexcept
+void UserGroups::setLastModifiedAtToNull() noexcept
 {
-    modifiedBy_ = std::make_shared<std::string>(std::move(pModifiedBy));
-    dirtyFlag_[9] = true;
-}
-void UserGroups::setModifiedByToNull() noexcept
-{
-    modifiedBy_.reset();
+    lastModifiedAt_.reset();
     dirtyFlag_[9] = true;
 }
 
-const ::trantor::Date &UserGroups::getValueOfModifiedAt() const noexcept
+const std::string &UserGroups::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const ::trantor::Date defaultValue = ::trantor::Date();
-    if(modifiedAt_)
-        return *modifiedAt_;
+    static const std::string defaultValue = std::string();
+    if(lastModifiedByUserId_)
+        return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<::trantor::Date> &UserGroups::getModifiedAt() const noexcept
+const std::shared_ptr<std::string> &UserGroups::getLastModifiedByUserId() const noexcept
 {
-    return modifiedAt_;
+    return lastModifiedByUserId_;
 }
-void UserGroups::setModifiedAt(const ::trantor::Date &pModifiedAt) noexcept
+void UserGroups::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    modifiedAt_ = std::make_shared<::trantor::Date>(pModifiedAt);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
     dirtyFlag_[10] = true;
 }
-void UserGroups::setModifiedAtToNull() noexcept
+void UserGroups::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
 {
-    modifiedAt_.reset();
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[10] = true;
+}
+void UserGroups::setLastModifiedByUserIdToNull() noexcept
+{
+    lastModifiedByUserId_.reset();
+    dirtyFlag_[10] = true;
+}
+
+const bool &UserGroups::getValueOfIsDeleted() const noexcept
+{
+    static const bool defaultValue = bool();
+    if(isDeleted_)
+        return *isDeleted_;
+    return defaultValue;
+}
+const std::shared_ptr<bool> &UserGroups::getIsDeleted() const noexcept
+{
+    return isDeleted_;
+}
+void UserGroups::setIsDeleted(const bool &pIsDeleted) noexcept
+{
+    isDeleted_ = std::make_shared<bool>(pIsDeleted);
+    dirtyFlag_[11] = true;
+}
+
+const ::trantor::Date &UserGroups::getValueOfDeletedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(deletedAt_)
+        return *deletedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &UserGroups::getDeletedAt() const noexcept
+{
+    return deletedAt_;
+}
+void UserGroups::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
+{
+    deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
+    dirtyFlag_[12] = true;
+}
+void UserGroups::setDeletedAtToNull() noexcept
+{
+    deletedAt_.reset();
+    dirtyFlag_[12] = true;
+}
+
+const std::string &UserGroups::getValueOfDeletedByUserId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(deletedByUserId_)
+        return *deletedByUserId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &UserGroups::getDeletedByUserId() const noexcept
+{
+    return deletedByUserId_;
+}
+void UserGroups::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[13] = true;
+}
+void UserGroups::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
+    dirtyFlag_[13] = true;
+}
+void UserGroups::setDeletedByUserIdToNull() noexcept
+{
+    deletedByUserId_.reset();
+    dirtyFlag_[13] = true;
 }
 
 void UserGroups::updateId(const uint64_t id)
@@ -1175,10 +1508,13 @@ const std::vector<std::string> &UserGroups::insertColumns() noexcept
         "roles",
         "active_users",
         "blocked_users",
-        "created_by",
         "created_at",
-        "modified_by",
-        "modified_at"
+        "created_by_user_id",
+        "last_modified_at",
+        "last_modified_by_user_id",
+        "is_deleted",
+        "deleted_at",
+        "deleted_by_user_id"
 
     };
     return inCols;
@@ -1273,18 +1609,6 @@ void UserGroups::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[7])
     {
-        if(getCreatedBy())
-        {
-            binder << getValueOfCreatedBy();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[8])
-    {
         if(getCreatedAt())
         {
             binder << getValueOfCreatedAt();
@@ -1295,11 +1619,23 @@ void UserGroups::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[8])
+    {
+        if(getCreatedByUserId())
+        {
+            binder << getValueOfCreatedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
     if(dirtyFlag_[9])
     {
-        if(getModifiedBy())
+        if(getLastModifiedAt())
         {
-            binder << getValueOfModifiedBy();
+            binder << getValueOfLastModifiedAt();
         }
         else
         {
@@ -1309,9 +1645,45 @@ void UserGroups::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[10])
     {
-        if(getModifiedAt())
+        if(getLastModifiedByUserId())
         {
-            binder << getValueOfModifiedAt();
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[11])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[12])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[13])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
         }
         else
         {
@@ -1378,6 +1750,21 @@ const std::vector<std::string> UserGroups::updateColumns() const
     if(dirtyFlag_[10])
     {
         ret.push_back(getColumnName(10));
+    }
+
+    if(dirtyFlag_[11])
+    {
+        ret.push_back(getColumnName(11));
+    }
+
+    if(dirtyFlag_[12])
+    {
+        ret.push_back(getColumnName(12));
+    }
+
+    if(dirtyFlag_[13])
+    {
+        ret.push_back(getColumnName(13));
     }
 
     return ret;
@@ -1472,18 +1859,6 @@ void UserGroups::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[7])
     {
-        if(getCreatedBy())
-        {
-            binder << getValueOfCreatedBy();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[8])
-    {
         if(getCreatedAt())
         {
             binder << getValueOfCreatedAt();
@@ -1494,11 +1869,23 @@ void UserGroups::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[8])
+    {
+        if(getCreatedByUserId())
+        {
+            binder << getValueOfCreatedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
     if(dirtyFlag_[9])
     {
-        if(getModifiedBy())
+        if(getLastModifiedAt())
         {
-            binder << getValueOfModifiedBy();
+            binder << getValueOfLastModifiedAt();
         }
         else
         {
@@ -1508,9 +1895,45 @@ void UserGroups::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[10])
     {
-        if(getModifiedAt())
+        if(getLastModifiedByUserId())
         {
-            binder << getValueOfModifiedAt();
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[11])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[12])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[13])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
         }
         else
         {
@@ -1600,17 +2023,6 @@ Json::Value UserGroups::toJson() const
         ret["blocked_users"]=Json::Value();
     }
 
-    if(getCreatedBy())
-    {
-
-        ret["created_by"]=getValueOfCreatedBy();
-
-    }
-    else
-    {
-        ret["created_by"]=Json::Value();
-    }
-
     if(getCreatedAt())
     {
 
@@ -1622,26 +2034,70 @@ Json::Value UserGroups::toJson() const
         ret["created_at"]=Json::Value();
     }
 
-    if(getModifiedBy())
+    if(getCreatedByUserId())
     {
 
-        ret["modified_by"]=getValueOfModifiedBy();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
     {
-        ret["modified_by"]=Json::Value();
+        ret["created_by_user_id"]=Json::Value();
     }
 
-    if(getModifiedAt())
+    if(getLastModifiedAt())
     {
 
-        ret["modified_at"]=getModifiedAt()->toDbStringLocal();
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
 
     }
     else
     {
-        ret["modified_at"]=Json::Value();
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
     }
 
     return ret;
@@ -1656,7 +2112,7 @@ Json::Value UserGroups::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 11)
+    if(pMasqueradingVector.size() == 14)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -1759,10 +2215,10 @@ Json::Value UserGroups::toMasqueradedJson(
 
         if(!pMasqueradingVector[7].empty())
         {
-            if(getCreatedBy())
+            if(getCreatedAt())
             {
 
-                ret[pMasqueradingVector[7]]=getValueOfCreatedBy();
+                ret[pMasqueradingVector[7]]=getCreatedAt()->toDbStringLocal();
 
             }
             else
@@ -1773,10 +2229,10 @@ Json::Value UserGroups::toMasqueradedJson(
 
         if(!pMasqueradingVector[8].empty())
         {
-            if(getCreatedAt())
+            if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[8]]=getCreatedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[8]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1787,10 +2243,10 @@ Json::Value UserGroups::toMasqueradedJson(
 
         if(!pMasqueradingVector[9].empty())
         {
-            if(getModifiedBy())
+            if(getLastModifiedAt())
             {
 
-                ret[pMasqueradingVector[9]]=getValueOfModifiedBy();
+                ret[pMasqueradingVector[9]]=getLastModifiedAt()->toDbStringLocal();
 
             }
             else
@@ -1801,15 +2257,57 @@ Json::Value UserGroups::toMasqueradedJson(
 
         if(!pMasqueradingVector[10].empty())
         {
-            if(getModifiedAt())
+            if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[10]]=getModifiedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[10]]=getValueOfLastModifiedByUserId();
 
             }
             else
             {
                 ret[pMasqueradingVector[10]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[11].empty())
+        {
+            if(getIsDeleted())
+            {
+
+                ret[pMasqueradingVector[11]]=getValueOfIsDeleted();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[11]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[12].empty())
+        {
+            if(getDeletedAt())
+            {
+
+                ret[pMasqueradingVector[12]]=getDeletedAt()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[12]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[13].empty())
+        {
+            if(getDeletedByUserId())
+            {
+
+                ret[pMasqueradingVector[13]]=getValueOfDeletedByUserId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[13]]=Json::Value();
             }
         }
 
@@ -1894,17 +2392,6 @@ Json::Value UserGroups::toMasqueradedJson(
         ret["blocked_users"]=Json::Value();
     }
 
-    if(getCreatedBy())
-    {
-
-        ret["created_by"]=getValueOfCreatedBy();
-
-    }
-    else
-    {
-        ret["created_by"]=Json::Value();
-    }
-
     if(getCreatedAt())
     {
 
@@ -1916,26 +2403,70 @@ Json::Value UserGroups::toMasqueradedJson(
         ret["created_at"]=Json::Value();
     }
 
-    if(getModifiedBy())
+    if(getCreatedByUserId())
     {
 
-        ret["modified_by"]=getValueOfModifiedBy();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
     {
-        ret["modified_by"]=Json::Value();
+        ret["created_by_user_id"]=Json::Value();
     }
 
-    if(getModifiedAt())
+    if(getLastModifiedAt())
     {
 
-        ret["modified_at"]=getModifiedAt()->toDbStringLocal();
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
 
     }
     else
     {
-        ret["modified_at"]=Json::Value();
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
     }
 
     return ret;
@@ -1992,27 +2523,45 @@ bool UserGroups::validateJsonForCreation(const Json::Value &pJson, std::string &
             return false;
     }
 
-    if(pJson.isMember("created_by"))
-    {
-        if(!validJsonOfField(7, "created_by", pJson["created_by"], err, true))
-            return false;
-    }
-
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(8, "created_at", pJson["created_at"], err, true))
+        if(!validJsonOfField(7, "created_at", pJson["created_at"], err, true))
             return false;
     }
 
-    if(pJson.isMember("modified_by"))
+    if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(9, "modified_by", pJson["modified_by"], err, true))
+        if(!validJsonOfField(8, "created_by_user_id", pJson["created_by_user_id"], err, true))
             return false;
     }
 
-    if(pJson.isMember("modified_at"))
+    if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(10, "modified_at", pJson["modified_at"], err, true))
+        if(!validJsonOfField(9, "last_modified_at", pJson["last_modified_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(10, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(11, "is_deleted", pJson["is_deleted"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(12, "deleted_at", pJson["deleted_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(13, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
             return false;
     }
 
@@ -2022,7 +2571,7 @@ bool UserGroups::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                     const std::vector<std::string> &pMasqueradingVector,
                                                     std::string &err)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 14)
     {
         err = "Bad masquerading vector";
         return false;
@@ -2145,6 +2694,36 @@ bool UserGroups::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 
       }
 
+      if(!pMasqueradingVector[11].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[11]))
+          {
+              if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[12].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[12]))
+          {
+              if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[13].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[13]))
+          {
+              if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -2204,27 +2783,45 @@ bool UserGroups::validateJsonForUpdate(const Json::Value &pJson, std::string &er
             return false;
     }
 
-    if(pJson.isMember("created_by"))
-    {
-        if(!validJsonOfField(7, "created_by", pJson["created_by"], err, false))
-            return false;
-    }
-
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(8, "created_at", pJson["created_at"], err, false))
+        if(!validJsonOfField(7, "created_at", pJson["created_at"], err, false))
             return false;
     }
 
-    if(pJson.isMember("modified_by"))
+    if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(9, "modified_by", pJson["modified_by"], err, false))
+        if(!validJsonOfField(8, "created_by_user_id", pJson["created_by_user_id"], err, false))
             return false;
     }
 
-    if(pJson.isMember("modified_at"))
+    if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(10, "modified_at", pJson["modified_at"], err, false))
+        if(!validJsonOfField(9, "last_modified_at", pJson["last_modified_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(10, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(11, "is_deleted", pJson["is_deleted"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(12, "deleted_at", pJson["deleted_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(13, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
             return false;
     }
 
@@ -2234,7 +2831,7 @@ bool UserGroups::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                   const std::vector<std::string> &pMasqueradingVector,
                                                   std::string &err)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 14)
     {
         err = "Bad masquerading vector";
         return false;
@@ -2310,6 +2907,24 @@ bool UserGroups::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
       {
           if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+      {
+          if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+      {
+          if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+      {
+          if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, false))
               return false;
       }
 
@@ -2459,7 +3074,8 @@ bool UserGroups::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
 
             if(!pJson.isString())
@@ -2501,6 +3117,52 @@ bool UserGroups::validJsonOfField(size_t index,
             break;
 
         case 10:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 11:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 12:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 13:
 
             if(pJson.isNull())
             {

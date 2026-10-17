@@ -54,10 +54,13 @@ class UserGroups
         static const std::string _roles;
         static const std::string _active_users;
         static const std::string _blocked_users;
-        static const std::string _created_by;
         static const std::string _created_at;
-        static const std::string _modified_by;
-        static const std::string _modified_at;
+        static const std::string _created_by_user_id;
+        static const std::string _last_modified_at;
+        static const std::string _last_modified_by_user_id;
+        static const std::string _is_deleted;
+        static const std::string _deleted_at;
+        static const std::string _deleted_by_user_id;
 
     };
 
@@ -178,16 +181,6 @@ class UserGroups
     ///Set the value of the column blocked_users
     void setBlockedUsers(const int32_t &pBlockedUsers) noexcept;
 
-    /**  For column created_by  */
-    ///Get the value of the column created_by, returns the default value if the column is null
-    const std::string &getValueOfCreatedBy() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getCreatedBy() const noexcept;
-    ///Set the value of the column created_by
-    void setCreatedBy(const std::string &pCreatedBy) noexcept;
-    void setCreatedBy(std::string &&pCreatedBy) noexcept;
-    void setCreatedByToNull() noexcept;
-
     /**  For column created_at  */
     ///Get the value of the column created_at, returns the default value if the column is null
     const ::trantor::Date &getValueOfCreatedAt() const noexcept;
@@ -195,30 +188,66 @@ class UserGroups
     const std::shared_ptr<::trantor::Date> &getCreatedAt() const noexcept;
     ///Set the value of the column created_at
     void setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept;
-    void setCreatedAtToNull() noexcept;
 
-    /**  For column modified_by  */
-    ///Get the value of the column modified_by, returns the default value if the column is null
-    const std::string &getValueOfModifiedBy() const noexcept;
+    /**  For column created_by_user_id  */
+    ///Get the value of the column created_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getModifiedBy() const noexcept;
-    ///Set the value of the column modified_by
-    void setModifiedBy(const std::string &pModifiedBy) noexcept;
-    void setModifiedBy(std::string &&pModifiedBy) noexcept;
-    void setModifiedByToNull() noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
+    ///Set the value of the column created_by_user_id
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
+    void setCreatedByUserIdToNull() noexcept;
 
-    /**  For column modified_at  */
-    ///Get the value of the column modified_at, returns the default value if the column is null
-    const ::trantor::Date &getValueOfModifiedAt() const noexcept;
+    /**  For column last_modified_at  */
+    ///Get the value of the column last_modified_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfLastModifiedAt() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<::trantor::Date> &getModifiedAt() const noexcept;
-    ///Set the value of the column modified_at
-    void setModifiedAt(const ::trantor::Date &pModifiedAt) noexcept;
-    void setModifiedAtToNull() noexcept;
+    const std::shared_ptr<::trantor::Date> &getLastModifiedAt() const noexcept;
+    ///Set the value of the column last_modified_at
+    void setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept;
+    void setLastModifiedAtToNull() noexcept;
+
+    /**  For column last_modified_by_user_id  */
+    ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
+    ///Set the value of the column last_modified_by_user_id
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserIdToNull() noexcept;
+
+    /**  For column is_deleted  */
+    ///Get the value of the column is_deleted, returns the default value if the column is null
+    const bool &getValueOfIsDeleted() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<bool> &getIsDeleted() const noexcept;
+    ///Set the value of the column is_deleted
+    void setIsDeleted(const bool &pIsDeleted) noexcept;
+
+    /**  For column deleted_at  */
+    ///Get the value of the column deleted_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfDeletedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getDeletedAt() const noexcept;
+    ///Set the value of the column deleted_at
+    void setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept;
+    void setDeletedAtToNull() noexcept;
+
+    /**  For column deleted_by_user_id  */
+    ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfDeletedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
+    ///Set the value of the column deleted_by_user_id
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
+    void setDeletedByUserIdToNull() noexcept;
 
 
 
-    static size_t getColumnNumber() noexcept {  return 11;  }
+    static size_t getColumnNumber() noexcept {  return 14;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -248,10 +277,13 @@ class UserGroups
     std::shared_ptr<std::string> roles_;
     std::shared_ptr<int32_t> activeUsers_;
     std::shared_ptr<int32_t> blockedUsers_;
-    std::shared_ptr<std::string> createdBy_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<std::string> modifiedBy_;
-    std::shared_ptr<::trantor::Date> modifiedAt_;
+    std::shared_ptr<std::string> createdByUserId_;
+    std::shared_ptr<::trantor::Date> lastModifiedAt_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
+    std::shared_ptr<bool> isDeleted_;
+    std::shared_ptr<::trantor::Date> deletedAt_;
+    std::shared_ptr<std::string> deletedByUserId_;
 
     struct MetaData
     {
@@ -264,7 +296,7 @@ class UserGroups
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[11]={ false };
+    bool dirtyFlag_[14]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -333,31 +365,49 @@ class UserGroups
         {
             needSelection=true;
         }
-
-        if(dirtyFlag_[7])
-        {
-            sql += "created_by,";
-            ++parametersCount;
-        }
         sql += "created_at,";
         ++parametersCount;
 
-        if(!dirtyFlag_[8])
+        if(!dirtyFlag_[7])
         {
             needSelection=true;
+        }
+
+        if(dirtyFlag_[8])
+        {
+            sql += "created_by_user_id,";
+            ++parametersCount;
         }
 
         if(dirtyFlag_[9])
         {
-            sql += "modified_by,";
+            sql += "last_modified_at,";
             ++parametersCount;
         }
-        sql += "modified_at,";
+
+        if(dirtyFlag_[10])
+        {
+            sql += "last_modified_by_user_id,";
+            ++parametersCount;
+        }
+        sql += "is_deleted,";
         ++parametersCount;
 
-        if(!dirtyFlag_[10])
+        if(!dirtyFlag_[11])
         {
             needSelection=true;
+        }
+
+        if(dirtyFlag_[12])
+        {
+            sql += "deleted_at,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[13])
+        {
+            sql += "deleted_by_user_id,";
+            ++parametersCount;
         }
 
         if(parametersCount > 0)
@@ -452,17 +502,17 @@ class UserGroups
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[8])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[9])
@@ -481,9 +531,33 @@ class UserGroups
 
         }
 
+        if(dirtyFlag_[11])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
         else
         {
             sql +="default,";
+        }
+
+        if(dirtyFlag_[12])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[13])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
         }
 
         if(parametersCount > 0)

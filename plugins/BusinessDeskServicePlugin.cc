@@ -8,7 +8,7 @@
 
 using namespace drogon;
 
-namespace gnp::plugins {
+namespace business_desk::plugins {
 
 void BusinessDeskServicePlugin::initAndStart(const Json::Value &config)
 {
@@ -20,4 +20,4 @@ void BusinessDeskServicePlugin::shutdown()
     /// Shutdown the plugin
 }
 
-} // namespace gnp::plugins
+} // namespace business_desk::plugins

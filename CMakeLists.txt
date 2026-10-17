@@ -41,7 +41,26 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         dto/RoleDto.h
         dto/UserGroupDto.h
         dto/UserDto.h
+        dto/PasskeyLoginDto.h
+        domain_services/permissions/PermissionService.h
+        domain_services/permissions/PermissionService.cc
 )
+
+# ##############################################################################
+# External dependencies (git submodules under external_deps/)
+# ##############################################################################
+
+# Bcrypt.cpp — compiled static library
+# Its CMakeLists.txt declares cmake_minimum_required(VERSION 3.2) which modern
+# CMake rejects. Override the policy floor so it builds without modification.
+set(CMAKE_POLICY_VERSION_MINIMUM 3.12)
+add_subdirectory(external_deps/Bcrypt.cpp)
+
+# jwt-cpp — header-only INTERFACE library (disable examples/tests to avoid
+# pulling in nlohmann-json and other test-only deps at configure time)
+set(JWT_BUILD_EXAMPLES OFF CACHE BOOL "" FORCE)
+set(JWT_BUILD_TESTS    OFF CACHE BOOL "" FORCE)
+add_subdirectory(external_deps/jwt-cpp)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
@@ -51,7 +70,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
 #
 # and comment out the following lines
 find_package(Drogon CONFIG REQUIRED)
-target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon)
+target_link_libraries(${PROJECT_NAME} PRIVATE Drogon::Drogon bcrypt jwt-cpp::jwt-cpp)
 
 if (CMAKE_CXX_COMPILER_ID MATCHES "GNU|Clang")
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra -Wpedantic)
