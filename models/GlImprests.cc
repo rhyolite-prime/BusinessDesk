@@ -8033,51 +8033,7 @@ void GlImprests::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlImprests::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlImprests::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlImprests::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlImprests::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -8097,9 +8053,9 @@ CoreAccountingUnits GlImprests::getAccountingUnit(const DbClientPtr &clientPtr) 
     return CoreAccountingUnits(r[0]);
 }
 
-void GlImprests::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(CoreAccountingUnits)> &rcb,
-                                   const ExceptionCallback &ecb) const
+void GlImprests::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                        const std::function<void(CoreAccountingUnits)> &rcb,
+                                        const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -8121,95 +8077,7 @@ void GlImprests::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlImprestCategories GlImprests::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImprestCategories(r[0]);
-}
-
-void GlImprests::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlImprestCategories)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImprestCategories(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImprestCategories GlImprests::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImprestCategories(r[0]);
-}
-
-void GlImprests::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlImprestCategories)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImprestCategories(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImprestCategories GlImprests::getImprestCategory(const DbClientPtr &clientPtr) const {
+GlImprestCategories GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_imprest_categories where id = $1";
     Result r(nullptr);
     {
@@ -8229,9 +8097,9 @@ GlImprestCategories GlImprests::getImprestCategory(const DbClientPtr &clientPtr)
     return GlImprestCategories(r[0]);
 }
 
-void GlImprests::getImprestCategory(const DbClientPtr &clientPtr,
-                                    const std::function<void(GlImprestCategories)> &rcb,
-                                    const ExceptionCallback &ecb) const
+void GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr,
+                                        const std::function<void(GlImprestCategories)> &rcb,
+                                        const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_imprest_categories where id = $1";
     *clientPtr << sql
@@ -8248,94 +8116,6 @@ void GlImprests::getImprestCategory(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlImprestCategories(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlImprests::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlImprests::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlImprests::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlImprests::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccounts)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
                     }
                }
                >> ecb;
@@ -8429,95 +8209,7 @@ void GlImprests::getCreditAccount(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlJournalBatches GlImprests::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlImprests::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlImprests::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlImprests::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlJournalBatches)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlImprests::getJournalBatch(const DbClientPtr &clientPtr) const {
+GlJournalBatches GlImprests::getGlJournalBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     Result r(nullptr);
     {
@@ -8537,9 +8229,9 @@ GlJournalBatches GlImprests::getJournalBatch(const DbClientPtr &clientPtr) const
     return GlJournalBatches(r[0]);
 }
 
-void GlImprests::getJournalBatch(const DbClientPtr &clientPtr,
-                                 const std::function<void(GlJournalBatches)> &rcb,
-                                 const ExceptionCallback &ecb) const
+void GlImprests::getGlJournalBatches(const DbClientPtr &clientPtr,
+                                     const std::function<void(GlJournalBatches)> &rcb,
+                                     const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     *clientPtr << sql

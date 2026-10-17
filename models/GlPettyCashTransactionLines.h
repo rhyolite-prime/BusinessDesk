@@ -283,35 +283,15 @@ class GlPettyCashTransactionLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlPettyCashTransactions getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlPettyCashTransactions)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlPettyCashTransactions getGlPettyCashTransactions(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlPettyCashTransactions(const drogon::orm::DbClientPtr &clientPtr,
+                                    const std::function<void(GlPettyCashTransactions)> &rcb,
+                                    const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlPettyCashTransactions getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlPettyCashTransactions)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlPettyCashTransactions getPettyCashTransaction(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getPettyCashTransaction(const drogon::orm::DbClientPtr &clientPtr,
-                                 const std::function<void(GlPettyCashTransactions)> &rcb,
-                                 const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getExpenseAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getExpenseAccount(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlAccounts)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlPettyCashTransactionLines>;

@@ -203,20 +203,10 @@ class GlImportRows
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlImportBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlImportBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImportBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlImportBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImportBatches getImportBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getImportBatch(const drogon::orm::DbClientPtr &clientPtr,
-                        const std::function<void(GlImportBatches)> &rcb,
-                        const drogon::orm::ExceptionCallback &ecb) const;
+    GlImportBatches getGlImportBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImportBatches(const drogon::orm::DbClientPtr &clientPtr,
+                            const std::function<void(GlImportBatches)> &rcb,
+                            const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImportRows>;

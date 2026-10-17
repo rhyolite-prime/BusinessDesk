@@ -253,35 +253,15 @@ class GlFxRevaluationLines
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlFxRevaluationRuns getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlFxRevaluationRuns)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlFxRevaluationRuns getGlFxRevaluationRuns(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlFxRevaluationRuns(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlFxRevaluationRuns)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlFxRevaluationRuns getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlFxRevaluationRuns)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlFxRevaluationRuns getRevaluationRun(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getRevaluationRun(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlFxRevaluationRuns)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccount(const drogon::orm::DbClientPtr &clientPtr,
-                    const std::function<void(GlAccounts)> &rcb,
-                    const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlAccounts)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlFxRevaluationLines>;

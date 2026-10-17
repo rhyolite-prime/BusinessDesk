@@ -3224,51 +3224,7 @@ bool GlBankReconciliations::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlBankReconciliations::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlBankReconciliations::getTenant(const DbClientPtr &clientPtr,
-                                      const std::function<void(CoreAccountingUnits)> &rcb,
-                                      const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlBankReconciliations::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlBankReconciliations::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -3288,9 +3244,9 @@ CoreAccountingUnits GlBankReconciliations::getAccountingUnit(const DbClientPtr &
     return CoreAccountingUnits(r[0]);
 }
 
-void GlBankReconciliations::getAccountingUnit(const DbClientPtr &clientPtr,
-                                              const std::function<void(CoreAccountingUnits)> &rcb,
-                                              const ExceptionCallback &ecb) const
+void GlBankReconciliations::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                   const std::function<void(CoreAccountingUnits)> &rcb,
+                                                   const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -3312,95 +3268,7 @@ void GlBankReconciliations::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlBankAccounts GlBankReconciliations::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBankAccounts(r[0]);
-}
-
-void GlBankReconciliations::getTenant(const DbClientPtr &clientPtr,
-                                      const std::function<void(GlBankAccounts)> &rcb,
-                                      const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBankAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBankAccounts GlBankReconciliations::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBankAccounts(r[0]);
-}
-
-void GlBankReconciliations::getAccountingUnit(const DbClientPtr &clientPtr,
-                                              const std::function<void(GlBankAccounts)> &rcb,
-                                              const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBankAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBankAccounts GlBankReconciliations::getBankAccount(const DbClientPtr &clientPtr) const {
+GlBankAccounts GlBankReconciliations::getGlBankAccounts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_bank_accounts where id = $1";
     Result r(nullptr);
     {
@@ -3420,9 +3288,9 @@ GlBankAccounts GlBankReconciliations::getBankAccount(const DbClientPtr &clientPt
     return GlBankAccounts(r[0]);
 }
 
-void GlBankReconciliations::getBankAccount(const DbClientPtr &clientPtr,
-                                           const std::function<void(GlBankAccounts)> &rcb,
-                                           const ExceptionCallback &ecb) const
+void GlBankReconciliations::getGlBankAccounts(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlBankAccounts)> &rcb,
+                                              const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_bank_accounts where id = $1";
     *clientPtr << sql

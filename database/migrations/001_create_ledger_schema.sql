@@ -37,8 +37,7 @@ CREATE TABLE core_accounting_units (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT uq_core_accounting_units_tenant_code UNIQUE (tenant_id, code),
-    CONSTRAINT uq_core_accounting_units_tenant_id UNIQUE (tenant_id, id)
+    CONSTRAINT uq_core_accounting_units_tenant_code UNIQUE (tenant_id, code)
 );
 
 CREATE TABLE core_currency_rates (
@@ -52,8 +51,8 @@ CREATE TABLE core_currency_rates (
     source varchar(80),
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_core_currency_rates_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
+    CONSTRAINT fk_core_currency_rates_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
     CONSTRAINT uq_core_currency_rates_unit_currency_type_date
         UNIQUE (tenant_id, accounting_unit_id, currency_id, rate_type, effective_date)
 );
@@ -74,11 +73,10 @@ CREATE TABLE gl_account_groups (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_account_groups_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_account_groups_parent FOREIGN KEY (tenant_id, accounting_unit_id, parent_group_id)
-        REFERENCES gl_account_groups (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_account_groups_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_account_groups_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_account_groups_parent FOREIGN KEY (parent_group_id)
+        REFERENCES gl_account_groups (id),
     CONSTRAINT uq_gl_account_groups_parent_name UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, parent_group_id, name)
 );
@@ -101,13 +99,12 @@ CREATE TABLE gl_account_controls (
     deleted_at timestamptz,
     deleted_by_user_id uuid,
     CONSTRAINT ck_gl_account_controls_range CHECK (min_account <= max_account),
-    CONSTRAINT fk_gl_account_controls_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_account_controls_group FOREIGN KEY (tenant_id, accounting_unit_id, account_group_id)
-        REFERENCES gl_account_groups (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_account_controls_parent FOREIGN KEY (tenant_id, accounting_unit_id, parent_account_header_id)
-        REFERENCES gl_account_controls (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_account_controls_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_account_controls_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_account_controls_group FOREIGN KEY (account_group_id)
+        REFERENCES gl_account_groups (id),
+    CONSTRAINT fk_gl_account_controls_parent FOREIGN KEY (parent_account_header_id)
+        REFERENCES gl_account_controls (id)
 );
 
 CREATE TABLE gl_accounts (
@@ -130,13 +127,12 @@ CREATE TABLE gl_accounts (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_accounts_header FOREIGN KEY (tenant_id, accounting_unit_id, account_header_id)
-        REFERENCES gl_account_controls (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_accounts_group FOREIGN KEY (tenant_id, accounting_unit_id, account_group_id)
-        REFERENCES gl_account_groups (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_accounts_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_accounts_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_accounts_header FOREIGN KEY (account_header_id)
+        REFERENCES gl_account_controls (id),
+    CONSTRAINT fk_gl_accounts_group FOREIGN KEY (account_group_id)
+        REFERENCES gl_account_groups (id),
     CONSTRAINT uq_gl_accounts_tenant_unit_number UNIQUE (tenant_id, accounting_unit_id, account_number)
 );
 
@@ -159,10 +155,9 @@ CREATE TABLE gl_accounting_periods (
     deleted_at timestamptz,
     deleted_by_user_id uuid,
     CONSTRAINT ck_gl_accounting_periods_date_order CHECK (period_start_date <= period_end_date),
-    CONSTRAINT fk_gl_accounting_periods_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_accounting_periods_tenant_unit_period UNIQUE (tenant_id, accounting_unit_id, period),
-    CONSTRAINT uq_gl_accounting_periods_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_accounting_periods_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT uq_gl_accounting_periods_tenant_unit_period UNIQUE (tenant_id, accounting_unit_id, period)
 );
 
 CREATE TABLE gl_account_balances (
@@ -180,8 +175,8 @@ CREATE TABLE gl_account_balances (
     buy_rate numeric(20,10) NOT NULL DEFAULT 1 CHECK (buy_rate > 0),
     sell_rate numeric(20,10) NOT NULL DEFAULT 1 CHECK (sell_rate > 0),
     updated_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_gl_account_balances_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_account_balances_account FOREIGN KEY (account_id)
+        REFERENCES gl_accounts (id),
     CONSTRAINT uq_gl_account_balances_dimensions UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, account_id, organization_unit_id, cost_center_id, currency_id)
 );
@@ -214,11 +209,10 @@ CREATE TABLE gl_bank_accounts (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_bank_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_bank_accounts_gl_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_bank_accounts_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_bank_accounts_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_bank_accounts_gl_account FOREIGN KEY (account_id)
+        REFERENCES gl_accounts (id),
     CONSTRAINT uq_gl_bank_accounts_tenant_unit_number UNIQUE (tenant_id, accounting_unit_id, account_number)
 );
 
@@ -272,8 +266,8 @@ CREATE TABLE gl_default_accounts (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_default_accounts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
+    CONSTRAINT fk_gl_default_accounts_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
     CONSTRAINT uq_gl_default_accounts_unit UNIQUE (tenant_id, accounting_unit_id)
 );
 
@@ -297,11 +291,10 @@ CREATE TABLE gl_budgets (
     deleted_at timestamptz,
     deleted_by_user_id uuid,
     CONSTRAINT ck_gl_budgets_date_order CHECK (begin_date <= end_date),
-    CONSTRAINT fk_gl_budgets_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_budgets_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_budgets_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_budgets_account FOREIGN KEY (account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_budgets_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_budget_details (
@@ -315,8 +308,8 @@ CREATE TABLE gl_budget_details (
     revised_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (revised_amount >= 0),
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_gl_budget_details_budget FOREIGN KEY (tenant_id, accounting_unit_id, budget_id)
-        REFERENCES gl_budgets (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_budget_details_budget FOREIGN KEY (budget_id)
+        REFERENCES gl_budgets (id) ON DELETE CASCADE,
     CONSTRAINT uq_gl_budget_details_period UNIQUE (tenant_id, accounting_unit_id, budget_id, year, month)
 );
 
@@ -336,8 +329,8 @@ CREATE TABLE gl_journal_batch_sequences (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_journal_batch_sequences_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
+    CONSTRAINT fk_gl_journal_batch_sequences_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
     CONSTRAINT uq_gl_journal_batch_sequences_unit UNIQUE (tenant_id, accounting_unit_id)
 );
 
@@ -374,13 +367,12 @@ CREATE TABLE gl_journal_batches (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_journal_batches_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_journal_batches_period FOREIGN KEY (tenant_id, accounting_unit_id, period_id)
-        REFERENCES gl_accounting_periods (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_journal_batches_reversal FOREIGN KEY (tenant_id, accounting_unit_id, reversal_of_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_journal_batches_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_journal_batches_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_journal_batches_period FOREIGN KEY (period_id)
+        REFERENCES gl_accounting_periods (id),
+    CONSTRAINT fk_gl_journal_batches_reversal FOREIGN KEY (reversal_of_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_journal_batches_number UNIQUE (tenant_id, accounting_unit_id, batch_number),
     CONSTRAINT uq_gl_journal_batches_idempotency UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, idempotency_key)
@@ -429,11 +421,10 @@ CREATE TABLE gl_journal_lines (
     deleted_at timestamptz,
     deleted_by_user_id uuid,
     CONSTRAINT ck_gl_journal_lines_one_side CHECK (NOT (debit_amount > 0 AND credit_amount > 0)),
-    CONSTRAINT fk_gl_journal_lines_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_journal_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_journal_lines_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_journal_lines_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_journal_lines_account FOREIGN KEY (account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_journal_history (
@@ -455,8 +446,8 @@ CREATE TABLE gl_journal_history (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_journal_history_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_journal_history_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id)
 );
 
 CREATE TABLE gl_deleted_journals (
@@ -548,13 +539,12 @@ CREATE TABLE gl_payment_vouchers (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_payment_vouchers_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_payment_vouchers_bank_account FOREIGN KEY (tenant_id, accounting_unit_id, bank_account_id)
-        REFERENCES gl_bank_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_payment_vouchers_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_payment_vouchers_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_payment_vouchers_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_payment_vouchers_bank_account FOREIGN KEY (bank_account_id)
+        REFERENCES gl_bank_accounts (id),
+    CONSTRAINT fk_gl_payment_vouchers_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_payment_vouchers_idempotency UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, idempotency_key)
 );
@@ -583,10 +573,10 @@ CREATE TABLE gl_payment_voucher_lines (
     line_type varchar(40) NOT NULL DEFAULT 'regular',
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_gl_payment_voucher_lines_voucher FOREIGN KEY (tenant_id, accounting_unit_id, payment_voucher_id)
-        REFERENCES gl_payment_vouchers (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_payment_voucher_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_payment_voucher_lines_voucher FOREIGN KEY (payment_voucher_id)
+        REFERENCES gl_payment_vouchers (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_payment_voucher_lines_account FOREIGN KEY (debit_account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_payment_voucher_retentions (
@@ -607,10 +597,10 @@ CREATE TABLE gl_payment_voucher_retentions (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_payment_voucher_retentions_voucher FOREIGN KEY (tenant_id, accounting_unit_id, payment_voucher_id)
-        REFERENCES gl_payment_vouchers (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_payment_voucher_retentions_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_payment_voucher_retentions_voucher FOREIGN KEY (payment_voucher_id)
+        REFERENCES gl_payment_vouchers (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_payment_voucher_retentions_account FOREIGN KEY (credit_account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_cash_receipts (
@@ -638,13 +628,12 @@ CREATE TABLE gl_cash_receipts (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_cash_receipts_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_cash_receipts_bank_account FOREIGN KEY (tenant_id, accounting_unit_id, cash_bank_account_id)
-        REFERENCES gl_bank_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_cash_receipts_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_cash_receipts_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_cash_receipts_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_cash_receipts_bank_account FOREIGN KEY (cash_bank_account_id)
+        REFERENCES gl_bank_accounts (id),
+    CONSTRAINT fk_gl_cash_receipts_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_cash_receipts_number UNIQUE (tenant_id, accounting_unit_id, receipt_number),
     CONSTRAINT uq_gl_cash_receipts_idempotency UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, idempotency_key)
@@ -662,10 +651,10 @@ CREATE TABLE gl_cash_receipt_lines (
     amount numeric(20,6) NOT NULL CHECK (amount > 0),
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_gl_cash_receipt_lines_receipt FOREIGN KEY (tenant_id, accounting_unit_id, cash_receipt_id)
-        REFERENCES gl_cash_receipts (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_cash_receipt_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, offset_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_cash_receipt_lines_receipt FOREIGN KEY (cash_receipt_id)
+        REFERENCES gl_cash_receipts (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_cash_receipt_lines_account FOREIGN KEY (offset_account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_imprest_categories (
@@ -680,10 +669,9 @@ CREATE TABLE gl_imprest_categories (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprest_categories_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_imprest_categories_tenant_unit_name UNIQUE (tenant_id, accounting_unit_id, name),
-    CONSTRAINT uq_gl_imprest_categories_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_imprest_categories_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT uq_gl_imprest_categories_tenant_unit_name UNIQUE (tenant_id, accounting_unit_id, name)
 );
 
 CREATE TABLE gl_imprests (
@@ -726,17 +714,16 @@ CREATE TABLE gl_imprests (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprests_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_imprests_category FOREIGN KEY (tenant_id, accounting_unit_id, imprest_category_id)
-        REFERENCES gl_imprest_categories (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprests_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprests_credit_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprests_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_imprests_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_imprests_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_imprests_category FOREIGN KEY (imprest_category_id)
+        REFERENCES gl_imprest_categories (id),
+    CONSTRAINT fk_gl_imprests_debit_account FOREIGN KEY (debit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprests_credit_account FOREIGN KEY (credit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprests_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_imprests_number UNIQUE (tenant_id, accounting_unit_id, imprest_number)
 );
 
@@ -769,16 +756,16 @@ CREATE TABLE gl_imprest_refunds (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprest_refunds_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
-        REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_refunds_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_refunds_credit_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_refunds_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_refunds_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id)
+    CONSTRAINT fk_gl_imprest_refunds_imprest FOREIGN KEY (imprest_id)
+        REFERENCES gl_imprests (id),
+    CONSTRAINT fk_gl_imprest_refunds_debit_account FOREIGN KEY (debit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprest_refunds_credit_account FOREIGN KEY (credit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprest_refunds_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
+    CONSTRAINT fk_gl_imprest_refunds_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_imprest_retirements (
@@ -803,13 +790,12 @@ CREATE TABLE gl_imprest_retirements (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprest_retirements_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
-        REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_retirements_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_retirements_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_imprest_retirements_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_imprest_retirements_imprest FOREIGN KEY (imprest_id)
+        REFERENCES gl_imprests (id),
+    CONSTRAINT fk_gl_imprest_retirements_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
+    CONSTRAINT fk_gl_imprest_retirements_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_imprest_retirement_lines (
@@ -831,12 +817,12 @@ CREATE TABLE gl_imprest_retirement_lines (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprest_retirement_lines_retirement FOREIGN KEY (tenant_id, accounting_unit_id, imprest_retirement_id)
-        REFERENCES gl_imprest_retirements (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_imprest_retirement_lines_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_retirement_lines_credit_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_imprest_retirement_lines_retirement FOREIGN KEY (imprest_retirement_id)
+        REFERENCES gl_imprest_retirements (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_imprest_retirement_lines_debit_account FOREIGN KEY (debit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprest_retirement_lines_credit_account FOREIGN KEY (credit_account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_imprest_write_offs (
@@ -865,16 +851,16 @@ CREATE TABLE gl_imprest_write_offs (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_imprest_write_offs_imprest FOREIGN KEY (tenant_id, accounting_unit_id, imprest_id)
-        REFERENCES gl_imprests (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_write_offs_debit_account FOREIGN KEY (tenant_id, accounting_unit_id, debit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_write_offs_credit_account FOREIGN KEY (tenant_id, accounting_unit_id, credit_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_write_offs_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_imprest_write_offs_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id)
+    CONSTRAINT fk_gl_imprest_write_offs_imprest FOREIGN KEY (imprest_id)
+        REFERENCES gl_imprests (id),
+    CONSTRAINT fk_gl_imprest_write_offs_debit_account FOREIGN KEY (debit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprest_write_offs_credit_account FOREIGN KEY (credit_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_imprest_write_offs_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
+    CONSTRAINT fk_gl_imprest_write_offs_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_petty_cash_recipients (
@@ -891,9 +877,8 @@ CREATE TABLE gl_petty_cash_recipients (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_petty_cash_recipients_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_petty_cash_recipients_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_petty_cash_recipients_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_petty_cash_transactions (
@@ -922,13 +907,12 @@ CREATE TABLE gl_petty_cash_transactions (
     is_deleted boolean NOT NULL DEFAULT false,
     deleted_at timestamptz,
     deleted_by_user_id uuid,
-    CONSTRAINT fk_gl_petty_cash_transactions_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_petty_cash_transactions_account FOREIGN KEY (tenant_id, accounting_unit_id, petty_cash_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT fk_gl_petty_cash_transactions_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_petty_cash_transactions_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_petty_cash_transactions_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_petty_cash_transactions_account FOREIGN KEY (petty_cash_account_id)
+        REFERENCES gl_accounts (id),
+    CONSTRAINT fk_gl_petty_cash_transactions_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_petty_cash_transactions_batch UNIQUE (tenant_id, accounting_unit_id, batch_number)
 );
 
@@ -949,10 +933,10 @@ CREATE TABLE gl_petty_cash_transaction_lines (
     recipient_name varchar(200),
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_gl_petty_cash_transaction_lines_transaction FOREIGN KEY (tenant_id, accounting_unit_id, petty_cash_transaction_id)
-        REFERENCES gl_petty_cash_transactions (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_petty_cash_transaction_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, expense_account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_petty_cash_transaction_lines_transaction FOREIGN KEY (petty_cash_transaction_id)
+        REFERENCES gl_petty_cash_transactions (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_petty_cash_transaction_lines_account FOREIGN KEY (expense_account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE TABLE gl_approval_policies (
@@ -968,8 +952,8 @@ CREATE TABLE gl_approval_policies (
     created_by_user_id uuid,
     last_modified_at timestamptz,
     last_modified_by_user_id uuid,
-    CONSTRAINT fk_gl_approval_policies_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
+    CONSTRAINT fk_gl_approval_policies_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
     CONSTRAINT uq_gl_approval_policies_type UNIQUE (tenant_id, accounting_unit_id, transaction_type, minimum_amount)
 );
 
@@ -986,8 +970,8 @@ CREATE TABLE gl_approval_events (
     reason text,
     occurred_at timestamptz NOT NULL DEFAULT now(),
     request_id varchar(100),
-    CONSTRAINT fk_gl_approval_events_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id)
+    CONSTRAINT fk_gl_approval_events_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_activity_audit_events (
@@ -1002,8 +986,8 @@ CREATE TABLE gl_activity_audit_events (
     request_id varchar(100),
     before_data jsonb,
     after_data jsonb,
-    CONSTRAINT fk_gl_activity_audit_events_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id)
+    CONSTRAINT fk_gl_activity_audit_events_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_import_batches (
@@ -1020,9 +1004,8 @@ CREATE TABLE gl_import_batches (
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid NOT NULL,
     completed_at timestamptz,
-    CONSTRAINT fk_gl_import_batches_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_import_batches_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_import_batches_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id)
 );
 
 CREATE TABLE gl_import_rows (
@@ -1035,8 +1018,8 @@ CREATE TABLE gl_import_rows (
     validation_errors jsonb NOT NULL DEFAULT '[]'::jsonb,
     status varchar(20) NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'valid', 'error', 'imported', 'skipped')),
     created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_gl_import_rows_batch FOREIGN KEY (tenant_id, accounting_unit_id, import_batch_id)
-        REFERENCES gl_import_batches (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_import_rows_batch FOREIGN KEY (import_batch_id)
+        REFERENCES gl_import_batches (id) ON DELETE CASCADE,
     CONSTRAINT uq_gl_import_rows_batch_row UNIQUE (tenant_id, accounting_unit_id, import_batch_id, row_number)
 );
 
@@ -1057,12 +1040,11 @@ CREATE TABLE gl_bank_reconciliations (
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid NOT NULL,
     CONSTRAINT ck_gl_bank_reconciliations_date_order CHECK (statement_start_date <= statement_end_date),
-    CONSTRAINT fk_gl_bank_reconciliations_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_bank_reconciliations_bank FOREIGN KEY (tenant_id, accounting_unit_id, bank_account_id)
-        REFERENCES gl_bank_accounts (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_bank_reconciliations_statement UNIQUE (tenant_id, accounting_unit_id, bank_account_id, statement_number),
-    CONSTRAINT uq_gl_bank_reconciliations_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_bank_reconciliations_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_bank_reconciliations_bank FOREIGN KEY (bank_account_id)
+        REFERENCES gl_bank_accounts (id),
+    CONSTRAINT uq_gl_bank_reconciliations_statement UNIQUE (tenant_id, accounting_unit_id, bank_account_id, statement_number)
 );
 
 CREATE TABLE gl_bank_reconciliation_lines (
@@ -1078,10 +1060,10 @@ CREATE TABLE gl_bank_reconciliation_lines (
     match_status varchar(20) NOT NULL DEFAULT 'unmatched' CHECK (match_status IN ('unmatched', 'suggested', 'matched', 'ignored')),
     imported_data jsonb,
     created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_gl_bank_reconciliation_lines_statement FOREIGN KEY (tenant_id, accounting_unit_id, reconciliation_id)
-        REFERENCES gl_bank_reconciliations (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_bank_reconciliation_lines_journal_line FOREIGN KEY (tenant_id, accounting_unit_id, matched_journal_line_id)
-        REFERENCES gl_journal_lines (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_bank_reconciliation_lines_statement FOREIGN KEY (reconciliation_id)
+        REFERENCES gl_bank_reconciliations (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_bank_reconciliation_lines_journal_line FOREIGN KEY (matched_journal_line_id)
+        REFERENCES gl_journal_lines (id),
     CONSTRAINT uq_gl_bank_reconciliation_external_id UNIQUE NULLS NOT DISTINCT
         (tenant_id, accounting_unit_id, reconciliation_id, external_transaction_id)
 );
@@ -1103,10 +1085,9 @@ CREATE TABLE gl_budget_composites (
     deleted_at timestamptz,
     deleted_by_user_id uuid,
     CONSTRAINT ck_gl_budget_composites_dates CHECK (begin_date <= end_date),
-    CONSTRAINT fk_gl_budget_composites_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT uq_gl_budget_composites_code UNIQUE (tenant_id, accounting_unit_id, code),
-    CONSTRAINT uq_gl_budget_composites_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_budget_composites_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT uq_gl_budget_composites_code UNIQUE (tenant_id, accounting_unit_id, code)
 );
 
 CREATE TABLE gl_budget_composite_lines (
@@ -1117,10 +1098,10 @@ CREATE TABLE gl_budget_composite_lines (
     budget_id uuid NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
     created_by_user_id uuid,
-    CONSTRAINT fk_gl_budget_composite_lines_composite FOREIGN KEY (tenant_id, accounting_unit_id, composite_id)
-        REFERENCES gl_budget_composites (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_budget_composite_lines_budget FOREIGN KEY (tenant_id, accounting_unit_id, budget_id)
-        REFERENCES gl_budgets (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_budget_composite_lines_composite FOREIGN KEY (composite_id)
+        REFERENCES gl_budget_composites (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_budget_composite_lines_budget FOREIGN KEY (budget_id)
+        REFERENCES gl_budgets (id),
     CONSTRAINT uq_gl_budget_composite_lines_budget UNIQUE (tenant_id, accounting_unit_id, composite_id, budget_id)
 );
 
@@ -1143,11 +1124,10 @@ CREATE TABLE gl_fx_revaluation_runs (
     approved_by_user_id uuid,
     posted_at timestamptz,
     posted_by_user_id uuid,
-    CONSTRAINT fk_gl_fx_revaluation_runs_unit FOREIGN KEY (tenant_id, accounting_unit_id)
-        REFERENCES core_accounting_units (tenant_id, id),
-    CONSTRAINT fk_gl_fx_revaluation_runs_batch FOREIGN KEY (tenant_id, accounting_unit_id, journal_batch_id)
-        REFERENCES gl_journal_batches (tenant_id, accounting_unit_id, id),
-    CONSTRAINT uq_gl_fx_revaluation_runs_tenant_unit_id UNIQUE (tenant_id, accounting_unit_id, id),
+    CONSTRAINT fk_gl_fx_revaluation_runs_unit FOREIGN KEY (accounting_unit_id)
+        REFERENCES core_accounting_units (id),
+    CONSTRAINT fk_gl_fx_revaluation_runs_batch FOREIGN KEY (journal_batch_id)
+        REFERENCES gl_journal_batches (id),
     CONSTRAINT uq_gl_fx_revaluation_runs_date_currency UNIQUE (tenant_id, accounting_unit_id, revaluation_date, currency_id, rate_type)
 );
 
@@ -1165,10 +1145,10 @@ CREATE TABLE gl_fx_revaluation_lines (
     revalued_base_balance numeric(20,6) NOT NULL,
     gain_loss_amount numeric(20,6) NOT NULL,
     created_at timestamptz NOT NULL DEFAULT now(),
-    CONSTRAINT fk_gl_fx_revaluation_lines_run FOREIGN KEY (tenant_id, accounting_unit_id, revaluation_run_id)
-        REFERENCES gl_fx_revaluation_runs (tenant_id, accounting_unit_id, id) ON DELETE CASCADE,
-    CONSTRAINT fk_gl_fx_revaluation_lines_account FOREIGN KEY (tenant_id, accounting_unit_id, account_id)
-        REFERENCES gl_accounts (tenant_id, accounting_unit_id, id)
+    CONSTRAINT fk_gl_fx_revaluation_lines_run FOREIGN KEY (revaluation_run_id)
+        REFERENCES gl_fx_revaluation_runs (id) ON DELETE CASCADE,
+    CONSTRAINT fk_gl_fx_revaluation_lines_account FOREIGN KEY (account_id)
+        REFERENCES gl_accounts (id)
 );
 
 CREATE INDEX ix_core_currency_rates_lookup

@@ -239,35 +239,15 @@ class GlBankReconciliationLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlBankReconciliations getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBankReconciliations)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlBankReconciliations getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr,
+                                  const std::function<void(GlBankReconciliations)> &rcb,
+                                  const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlBankReconciliations getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlBankReconciliations)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankReconciliations getReconciliation(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getReconciliation(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlBankReconciliations)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalLines getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalLines)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalLines getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
+    GlJournalLines getGlJournalLines(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalLines(const drogon::orm::DbClientPtr &clientPtr,
                            const std::function<void(GlJournalLines)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalLines getMatchedJournalLine(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getMatchedJournalLine(const drogon::orm::DbClientPtr &clientPtr,
-                               const std::function<void(GlJournalLines)> &rcb,
-                               const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBankReconciliationLines>;

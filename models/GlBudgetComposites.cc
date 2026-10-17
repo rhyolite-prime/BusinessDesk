@@ -3492,51 +3492,7 @@ bool GlBudgetComposites::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlBudgetComposites::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlBudgetComposites::getTenant(const DbClientPtr &clientPtr,
-                                   const std::function<void(CoreAccountingUnits)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlBudgetComposites::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlBudgetComposites::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -3556,9 +3512,9 @@ CoreAccountingUnits GlBudgetComposites::getAccountingUnit(const DbClientPtr &cli
     return CoreAccountingUnits(r[0]);
 }
 
-void GlBudgetComposites::getAccountingUnit(const DbClientPtr &clientPtr,
-                                           const std::function<void(CoreAccountingUnits)> &rcb,
-                                           const ExceptionCallback &ecb) const
+void GlBudgetComposites::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                                const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

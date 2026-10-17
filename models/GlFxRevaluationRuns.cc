@@ -3882,51 +3882,7 @@ void GlFxRevaluationRuns::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(CoreAccountingUnits)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlFxRevaluationRuns::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -3946,9 +3902,9 @@ CoreAccountingUnits GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &cl
     return CoreAccountingUnits(r[0]);
 }
 
-void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(CoreAccountingUnits)> &rcb,
-                                            const ExceptionCallback &ecb) const
+void GlFxRevaluationRuns::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                 const std::function<void(CoreAccountingUnits)> &rcb,
+                                                 const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -3970,95 +3926,7 @@ void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlJournalBatches GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(GlJournalBatches)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(GlJournalBatches)> &rcb,
-                                            const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientPtr) const {
+GlJournalBatches GlFxRevaluationRuns::getGlJournalBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     Result r(nullptr);
     {
@@ -4078,9 +3946,9 @@ GlJournalBatches GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientP
     return GlJournalBatches(r[0]);
 }
 
-void GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientPtr,
-                                          const std::function<void(GlJournalBatches)> &rcb,
-                                          const ExceptionCallback &ecb) const
+void GlFxRevaluationRuns::getGlJournalBatches(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlJournalBatches)> &rcb,
+                                              const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     *clientPtr << sql

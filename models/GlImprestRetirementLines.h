@@ -301,30 +301,10 @@ class GlImprestRetirementLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlImprestRetirements getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlImprestRetirements)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestRetirements getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlImprestRetirements)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestRetirements getImprestRetirement(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getImprestRetirement(const drogon::orm::DbClientPtr &clientPtr,
-                              const std::function<void(GlImprestRetirements)> &rcb,
-                              const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    GlImprestRetirements getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr,
+                                 const std::function<void(GlImprestRetirements)> &rcb,
+                                 const drogon::orm::ExceptionCallback &ecb) const;
 
     GlAccounts getDebitAccount(const drogon::orm::DbClientPtr &clientPtr) const;
     void getDebitAccount(const drogon::orm::DbClientPtr &clientPtr,

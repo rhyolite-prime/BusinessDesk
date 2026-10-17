@@ -295,20 +295,10 @@ class GlJournalHistory
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlJournalBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getJournalBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getJournalBatch(const drogon::orm::DbClientPtr &clientPtr,
-                         const std::function<void(GlJournalBatches)> &rcb,
-                         const drogon::orm::ExceptionCallback &ecb) const;
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlJournalHistory>;

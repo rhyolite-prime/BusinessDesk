@@ -278,45 +278,20 @@ class GlAccountControls
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountGroups getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountGroups)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountGroups getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountGroups)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountGroups getAccountGroup(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountGroup(const drogon::orm::DbClientPtr &clientPtr,
-                         const std::function<void(GlAccountGroups)> &rcb,
-                         const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountControls getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountControls)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountControls getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountControls)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountControls getParentAccountHeader(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getParentAccountHeader(const drogon::orm::DbClientPtr &clientPtr,
-                                const std::function<void(GlAccountControls)> &rcb,
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlAccountGroups getGlAccountGroups(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountGroups(const drogon::orm::DbClientPtr &clientPtr,
+                            const std::function<void(GlAccountGroups)> &rcb,
+                            const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlAccountControls getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr,
+                              const std::function<void(GlAccountControls)> &rcb,
+                              const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlAccountControls>;

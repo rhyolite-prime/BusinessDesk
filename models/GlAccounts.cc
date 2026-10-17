@@ -4225,51 +4225,7 @@ void GlAccounts::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -4289,9 +4245,9 @@ CoreAccountingUnits GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) 
     return CoreAccountingUnits(r[0]);
 }
 
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(CoreAccountingUnits)> &rcb,
-                                   const ExceptionCallback &ecb) const
+void GlAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                        const std::function<void(CoreAccountingUnits)> &rcb,
+                                        const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -4313,95 +4269,7 @@ void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccountControls GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountControls(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountControls)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountControls(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountControls GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountControls(r[0]);
-}
-
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccountControls)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountControls(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountControls GlAccounts::getAccountHeader(const DbClientPtr &clientPtr) const {
+GlAccountControls GlAccounts::getGlAccountControls(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_account_controls where id = $1";
     Result r(nullptr);
     {
@@ -4421,9 +4289,9 @@ GlAccountControls GlAccounts::getAccountHeader(const DbClientPtr &clientPtr) con
     return GlAccountControls(r[0]);
 }
 
-void GlAccounts::getAccountHeader(const DbClientPtr &clientPtr,
-                                  const std::function<void(GlAccountControls)> &rcb,
-                                  const ExceptionCallback &ecb) const
+void GlAccounts::getGlAccountControls(const DbClientPtr &clientPtr,
+                                      const std::function<void(GlAccountControls)> &rcb,
+                                      const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_account_controls where id = $1";
     *clientPtr << sql
@@ -4445,95 +4313,7 @@ void GlAccounts::getAccountHeader(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccountGroups GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountGroups(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountGroups)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountGroups(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountGroups GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountGroups(r[0]);
-}
-
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccountGroups)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountGroups(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountGroups GlAccounts::getAccountGroup(const DbClientPtr &clientPtr) const {
+GlAccountGroups GlAccounts::getGlAccountGroups(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_account_groups where id = $1";
     Result r(nullptr);
     {
@@ -4553,9 +4333,9 @@ GlAccountGroups GlAccounts::getAccountGroup(const DbClientPtr &clientPtr) const 
     return GlAccountGroups(r[0]);
 }
 
-void GlAccounts::getAccountGroup(const DbClientPtr &clientPtr,
-                                 const std::function<void(GlAccountGroups)> &rcb,
-                                 const ExceptionCallback &ecb) const
+void GlAccounts::getGlAccountGroups(const DbClientPtr &clientPtr,
+                                    const std::function<void(GlAccountGroups)> &rcb,
+                                    const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_account_groups where id = $1";
     *clientPtr << sql

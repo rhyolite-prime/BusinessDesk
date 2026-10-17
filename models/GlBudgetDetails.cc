@@ -2241,95 +2241,7 @@ bool GlBudgetDetails::validJsonOfField(size_t index,
     return true;
 }
 
-GlBudgets GlBudgetDetails::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_budgets where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBudgets(r[0]);
-}
-
-void GlBudgetDetails::getTenant(const DbClientPtr &clientPtr,
-                                const std::function<void(GlBudgets)> &rcb,
-                                const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_budgets where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBudgets(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBudgets GlBudgetDetails::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_budgets where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBudgets(r[0]);
-}
-
-void GlBudgetDetails::getAccountingUnit(const DbClientPtr &clientPtr,
-                                        const std::function<void(GlBudgets)> &rcb,
-                                        const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_budgets where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBudgets(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBudgets GlBudgetDetails::getBudget(const DbClientPtr &clientPtr) const {
+GlBudgets GlBudgetDetails::getGlBudgets(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_budgets where id = $1";
     Result r(nullptr);
     {
@@ -2349,9 +2261,9 @@ GlBudgets GlBudgetDetails::getBudget(const DbClientPtr &clientPtr) const {
     return GlBudgets(r[0]);
 }
 
-void GlBudgetDetails::getBudget(const DbClientPtr &clientPtr,
-                                const std::function<void(GlBudgets)> &rcb,
-                                const ExceptionCallback &ecb) const
+void GlBudgetDetails::getGlBudgets(const DbClientPtr &clientPtr,
+                                   const std::function<void(GlBudgets)> &rcb,
+                                   const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_budgets where id = $1";
     *clientPtr << sql

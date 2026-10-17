@@ -435,45 +435,20 @@ class GlJournalBatches
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlAccountingPeriods)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlAccountingPeriods getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountingPeriods)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountingPeriods getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountingPeriods)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountingPeriods getPeriod(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getPeriod(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountingPeriods)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getReversalOfBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getReversalOfBatch(const drogon::orm::DbClientPtr &clientPtr,
-                            const std::function<void(GlJournalBatches)> &rcb,
-                            const drogon::orm::ExceptionCallback &ecb) const;
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlJournalBatches>;

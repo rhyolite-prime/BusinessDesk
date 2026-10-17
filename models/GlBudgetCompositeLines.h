@@ -187,35 +187,15 @@ class GlBudgetCompositeLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlBudgetComposites getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBudgetComposites)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlBudgetComposites getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr,
+                               const std::function<void(GlBudgetComposites)> &rcb,
+                               const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlBudgetComposites getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlBudgetComposites)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgetComposites getComposite(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getComposite(const drogon::orm::DbClientPtr &clientPtr,
-                      const std::function<void(GlBudgetComposites)> &rcb,
+    GlBudgets getGlBudgets(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBudgets(const drogon::orm::DbClientPtr &clientPtr,
+                      const std::function<void(GlBudgets)> &rcb,
                       const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgets getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBudgets)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgets getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlBudgets)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgets getBudget(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getBudget(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBudgets)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBudgetCompositeLines>;

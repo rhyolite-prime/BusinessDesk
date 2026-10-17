@@ -213,20 +213,10 @@ class GlBudgetDetails
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlBudgets getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBudgets)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgets getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlBudgets)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBudgets getBudget(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getBudget(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBudgets)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlBudgets getGlBudgets(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBudgets(const drogon::orm::DbClientPtr &clientPtr,
+                      const std::function<void(GlBudgets)> &rcb,
+                      const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBudgetDetails>;
