@@ -67,6 +67,14 @@ aux_source_directory(plugins PLUGIN_SRC)
 aux_source_directory(models MODEL_SRC)
 aux_source_directory(domain_services/ledger LEDGER_SERVICE_SRC)
 
+# Drogon-generated model files routinely have unused parameters (e.g. 'id',
+# 'isForCreation') that we cannot fix without losing regeneration capability.
+# Suppress the warning only for those files to keep the build log clean.
+foreach(_model_src ${MODEL_SRC})
+    set_source_files_properties(${_model_src} PROPERTIES
+        COMPILE_OPTIONS "-Wno-unused-parameter")
+endforeach()
+
 drogon_create_views(${PROJECT_NAME} ${CMAKE_CURRENT_SOURCE_DIR}/views
                     ${CMAKE_CURRENT_BINARY_DIR})
 # use the following line to create views with namespaces.

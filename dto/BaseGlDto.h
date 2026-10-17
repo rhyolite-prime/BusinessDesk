@@ -457,5 +457,44 @@ namespace business_desk::dto {
         bool is_active_ {true};
     };
 
+    inline void AccountingUnitDto::fromJson(const Json::Value& json) {
+        if (json.isMember("code") && json["code"].isString()) {
+            code_ = json["code"].asString();
+        }
+        if (json.isMember("name") && json["name"].isString()) {
+            name_ = json["name"].asString();
+        }
+        if (json.isMember("baseCurrencyId") && json["baseCurrencyId"].isString()) {
+            base_currency_id_ = json["baseCurrencyId"].asString();
+        }
+        if (json.isMember("timeZone") && json["timeZone"].isString()) {
+            time_zone_ = json["timeZone"].asString();
+        }
+        if (json.isMember("fiscalYearStartMonth")) {
+            if (json["fiscalYearStartMonth"].isInt()) {
+                fiscal_year_start_month_ = json["fiscalYearStartMonth"].asInt();
+            } else if (json["fiscalYearStartMonth"].isString()) {
+                try {
+                    fiscal_year_start_month_ = std::stoi(json["fiscalYearStartMonth"].asString());
+                } catch (...) {
+                }
+            }
+        }
+        if (json.isMember("isActive")) {
+            if (json["isActive"].isBool()) {
+                is_active_ = json["isActive"].asBool();
+            } else if (json["isActive"].isString()) {
+                const auto s = json["isActive"].asString();
+                if (s == "true" || s == "1") {
+                    is_active_ = true;
+                } else if (s == "false" || s == "0") {
+                    is_active_ = false;
+                }
+            } else if (json["isActive"].isInt()) {
+                is_active_ = json["isActive"].asInt() != 0;
+            }
+        }
+    }
+
 }
 #endif //BUSINESSDESKAPI_BASEGLDTO_H
