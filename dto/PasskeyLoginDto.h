@@ -11,7 +11,7 @@ namespace business_desk::dto {
   class PasskeyLoginDto {
 public:
   PasskeyLoginDto() = default;
-  explicit PasskeyLoginDto(const Json::Value &json);
+  explicit PasskeyLoginDto(const Json::Value &json) { fromJson(json); }
 
   void fromJson(const Json::Value &json);
 
@@ -48,6 +48,7 @@ private:
 
 
   inline void PasskeyLoginDto::fromJson(const Json::Value &json) {
+  account_id_ = json.get("accountId", "").asString();
   if (json.isMember("id") && !json["id"].isNull()) {
     credential_id_ = json["id"].asString();
   } else if (json.isMember("credentialId") && !json["credentialId"].isNull()) {
@@ -93,7 +94,7 @@ private:
 
   public:
     SigninDto() = default;
-    explicit SigninDto(const Json::Value& json);
+    explicit SigninDto(const Json::Value& json) { fromJson(json); }
 
     void fromJson(const Json::Value& json);
 

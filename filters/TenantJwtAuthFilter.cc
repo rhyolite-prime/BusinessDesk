@@ -8,6 +8,8 @@
 #include <jwt-cpp/jwt.h>
 #include <drogon/HttpAppFramework.h>
 #include "dto/BaseApiResponse.h"
+#include <stdexcept>
+#include <unordered_set>
 
 using namespace drogon;
 
@@ -28,15 +30,13 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
 
   // Extract the Authorization header
   auto authHeader = req->getHeader("Authorization");
-  LOG_DEBUG << "Authorization header (capitalized): '" << authHeader << "'";
 
   if (authHeader.empty()) {
     authHeader = req->getHeader("authorization");
-    LOG_DEBUG << "Authorization header (lowercase): '" << authHeader << "'";
   }
 
   if (authHeader.empty() || authHeader.substr(0, 7) != "Bearer ") {
-    LOG_WARN << "Authorization header is missing or invalid. Header value: '" << authHeader << "'";
+    LOG_WARN << "Authorization header is missing or invalid";
     business_desk::dto::BaseApiResponse response;
     response.success = false;
     response.error["message"] = "Authorization header is missing or invalid";
@@ -59,13 +59,31 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
 
     LOG_DEBUG << "JWT Issuer from config: " << jwtIssuer;
 
+    if (jwtSecurityKey.empty() || jwtIssuer.empty())
+      throw std::runtime_error("JWT configuration is invalid");
+
     // Verify token
     auto verifier = jwt::verify()
                         .allow_algorithm(jwt::algorithm::hs256{jwtSecurityKey})
                         .with_issuer(jwtIssuer);
 
+
+    const auto audience = customConfig["JwtBearer"]["JwtAudience"].asString();
+    if (!audience.empty()) verifier.with_audience(audience);
     auto decoded = jwt::decode(token);
     verifier.verify(decoded);
+    if (!decoded.has_payload_claim("exp") || !decoded.has_payload_claim("permissions"))
+      throw std::runtime_error("Missing required claims");
+    if (!decoded.has_payload_claim("tenantId") || decoded.get_payload_claim("tenantId").as_string().empty())
+      throw std::runtime_error("Missing tenantId claim");
+    if (!decoded.has_payload_claim("tenantName") || decoded.get_payload_claim("tenantName").as_string().empty())
+      throw std::runtime_error("Missing tenantName claim");
+    if (!decoded.has_payload_claim("tenantUserId") || decoded.get_payload_claim("tenantUserId").as_string().empty())
+      throw std::runtime_error("Missing tenantUserId claim");
+    if (!decoded.has_payload_claim("tenantUserEmail") || decoded.get_payload_claim("tenantUserEmail").as_string().empty())
+      throw std::runtime_error("Missing tenantUserEmail claim");
+    if (decoded.has_payload_claim("hostUserId")) throw std::runtime_error("Wrong token scope");
+
 
     LOG_DEBUG << "Token verified successfully";
 
@@ -102,8 +120,11 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
       std::unordered_set<std::string> permissionsSet;
       Json::Value permissionsJson;
       Json::Reader reader;
-      if (!permissionsStr.empty() && reader.parse(permissionsStr, permissionsJson) && permissionsJson.isArray()) {
+      if (!reader.parse(permissionsStr, permissionsJson) || !permissionsJson.isArray())
+        throw std::runtime_error("Invalid permissions claim");
+      {
         for (const auto& perm : permissionsJson) {
+          if (!perm.isString()) throw std::runtime_error("Invalid permission");
           if (perm.isString()) {
             permissionsSet.insert(perm.asString());
           }
@@ -121,7 +142,7 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
     LOG_ERROR << "Token validation failed: " << e.what();
     business_desk::dto::BaseApiResponse response;
     response.success = false;
-    response.error["message"] = std::string("Token validation failed: ") + e.what();
+    response.error["message"] = "Invalid or expired authentication token";
     auto resp = HttpResponse::newHttpJsonResponse(response.toJson());
     resp->setStatusCode(k401Unauthorized);
     fcb(resp);

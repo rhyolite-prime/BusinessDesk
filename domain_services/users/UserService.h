@@ -22,7 +22,7 @@ namespace business_desk::domain_services {
 
         drogon::Task<dto::BaseApiResponse> createUser(const dto::UserDto &dto, const utils::AuditIdentity &identity);
 
-        drogon::Task<dto::BaseApiResponse> updateUser(const dto::UserDto &dto, const std::string &roleId, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> updateUser(const dto::UserDto &dto, const std::string &userId, const utils::AuditIdentity &identity);
 
         drogon::Task<dto::BaseApiResponse> deleteUser(const std::string &userId, const utils::AuditIdentity &identity);
 

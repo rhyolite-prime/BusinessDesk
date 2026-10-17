@@ -34,8 +34,8 @@ namespace business_desk::dto {
         // Setters
         void setTitle(const std::string& title) { title_ = title; }
         void setDescription(const std::string& description) { description_ = description; }
-        void setParentId(const std::string& parent_id) { parent_id_ = parent_id; }
-        void setRoles(const std::vector<RoleItem> &value) { roles_ = value; }
+        void setParentId(const std::string& parent_id) { parent_id_ = parent_id; has_parent_id_ = true; }
+        void setRoles(const std::vector<RoleItem> &value) { roles_ = value; has_roles_ = true; }
 
     private:
 

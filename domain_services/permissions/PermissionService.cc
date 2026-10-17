@@ -43,13 +43,14 @@ namespace business_desk::domain_services {
                 if (groupId.isString()) {
                     try {
                         auto group = co_await userGroupMapper.findByPrimaryKey(groupId.asString());
+                        if (group.getValueOfIsDeleted()) continue;
                         Json::Value groupRolesJson;
                         std::string groupRolesStr = group.getValueOfRoles();
                         if (!groupRolesStr.empty() && reader.parse(groupRolesStr, groupRolesJson) && groupRolesJson.isArray()) {
                             for (const auto& roleId : groupRolesJson) {
-                                if (roleId.isString()) {
-                                    uniqueRoleIds.insert(roleId.asString());
-                                }
+                                if (roleId.isString()) uniqueRoleIds.insert(roleId.asString());
+                                else if (roleId.isObject() && roleId["id"].isString())
+                                    uniqueRoleIds.insert(roleId["id"].asString());
                             }
                         }
                     } catch (const drogon::orm::DrogonDbException &) {
@@ -65,6 +66,7 @@ namespace business_desk::domain_services {
             for (const auto& roleId : uniqueRoleIds) {
                 try {
                     auto role = co_await roleMapper.findByPrimaryKey(roleId);
+                    if (role.getValueOfTenantId() != user.getValueOfTenantId()) continue;
                     Json::Value rolePermissionsJson;
                     std::string rolePermissionsStr = role.getValueOfPermissions();
                     if (!rolePermissionsStr.empty() && reader.parse(rolePermissionsStr, rolePermissionsJson) && rolePermissionsJson.isArray()) {
