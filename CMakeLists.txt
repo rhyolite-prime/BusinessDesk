@@ -31,7 +31,17 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         dto/BaseGlDto.h
         dto/BaseApiResponse.h
         constants/BusinessDeskConsts.h
-        constants/ErrorCodes.h)
+        constants/ErrorCodes.h
+        domain_services/roles/RoleService.h
+        domain_services/roles/RoleService.cc
+        domain_services/users/UserService.h
+        domain_services/users/UserService.cc
+        domain_services/tenants/TenantService.h
+        domain_services/tenants/TenantService.cc
+        dto/RoleDto.h
+        dto/UserGroupDto.h
+        dto/UserDto.h
+)
 
 # ##############################################################################
 # If you include the drogon source code locally in your project, use this method
