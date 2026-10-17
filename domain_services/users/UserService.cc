@@ -335,7 +335,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
             // Users has no soft-delete/audit columns: retain references and disable login.
             user.setIsActive(false);
             user.setIsLockedOut(true);
-            user.setUpdatedAt(trantor::Date::now());
+            
             co_await mapper.update(user);
             dto::BaseApiResponse response;
             response.success = true;

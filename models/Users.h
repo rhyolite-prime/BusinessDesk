@@ -60,8 +60,6 @@ class Users
         static const std::string _phone_verified_at;
         static const std::string _is_locked_out;
         static const std::string _is_active;
-        static const std::string _created_at;
-        static const std::string _updated_at;
         static const std::string _is_host_admin_user;
         static const std::string _is_tenant_admin_user;
         static const std::string _tenant_id;
@@ -76,6 +74,13 @@ class Users
         static const std::string _roles;
         static const std::string _profile_image;
         static const std::string _user_groups;
+        static const std::string _created_at;
+        static const std::string _created_by_user_id;
+        static const std::string _last_modified_at;
+        static const std::string _last_modified_by_user_id;
+        static const std::string _is_deleted;
+        static const std::string _deleted_at;
+        static const std::string _deleted_by_user_id;
 
     };
 
@@ -254,23 +259,6 @@ class Users
     ///Set the value of the column is_active
     void setIsActive(const bool &pIsActive) noexcept;
 
-    /**  For column created_at  */
-    ///Get the value of the column created_at, returns the default value if the column is null
-    const ::trantor::Date &getValueOfCreatedAt() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<::trantor::Date> &getCreatedAt() const noexcept;
-    ///Set the value of the column created_at
-    void setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept;
-
-    /**  For column updated_at  */
-    ///Get the value of the column updated_at, returns the default value if the column is null
-    const ::trantor::Date &getValueOfUpdatedAt() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<::trantor::Date> &getUpdatedAt() const noexcept;
-    ///Set the value of the column updated_at
-    void setUpdatedAt(const ::trantor::Date &pUpdatedAt) noexcept;
-    void setUpdatedAtToNull() noexcept;
-
     /**  For column is_host_admin_user  */
     ///Get the value of the column is_host_admin_user, returns the default value if the column is null
     const bool &getValueOfIsHostAdminUser() const noexcept;
@@ -412,9 +400,73 @@ class Users
     void setUserGroups(std::string &&pUserGroups) noexcept;
     void setUserGroupsToNull() noexcept;
 
+    /**  For column created_at  */
+    ///Get the value of the column created_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfCreatedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getCreatedAt() const noexcept;
+    ///Set the value of the column created_at
+    void setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept;
+
+    /**  For column created_by_user_id  */
+    ///Get the value of the column created_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfCreatedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
+    ///Set the value of the column created_by_user_id
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
+    void setCreatedByUserIdToNull() noexcept;
+
+    /**  For column last_modified_at  */
+    ///Get the value of the column last_modified_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfLastModifiedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getLastModifiedAt() const noexcept;
+    ///Set the value of the column last_modified_at
+    void setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept;
+    void setLastModifiedAtToNull() noexcept;
+
+    /**  For column last_modified_by_user_id  */
+    ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
+    ///Set the value of the column last_modified_by_user_id
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserIdToNull() noexcept;
+
+    /**  For column is_deleted  */
+    ///Get the value of the column is_deleted, returns the default value if the column is null
+    const bool &getValueOfIsDeleted() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<bool> &getIsDeleted() const noexcept;
+    ///Set the value of the column is_deleted
+    void setIsDeleted(const bool &pIsDeleted) noexcept;
+
+    /**  For column deleted_at  */
+    ///Get the value of the column deleted_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfDeletedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getDeletedAt() const noexcept;
+    ///Set the value of the column deleted_at
+    void setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept;
+    void setDeletedAtToNull() noexcept;
+
+    /**  For column deleted_by_user_id  */
+    ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfDeletedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
+    ///Set the value of the column deleted_by_user_id
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
+    void setDeletedByUserIdToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 29;  }
+
+    static size_t getColumnNumber() noexcept {  return 34;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -450,8 +502,6 @@ class Users
     std::shared_ptr<::trantor::Date> phoneVerifiedAt_;
     std::shared_ptr<bool> isLockedOut_;
     std::shared_ptr<bool> isActive_;
-    std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<::trantor::Date> updatedAt_;
     std::shared_ptr<bool> isHostAdminUser_;
     std::shared_ptr<bool> isTenantAdminUser_;
     std::shared_ptr<std::string> tenantId_;
@@ -466,6 +516,13 @@ class Users
     std::shared_ptr<std::string> roles_;
     std::shared_ptr<std::vector<char>> profileImage_;
     std::shared_ptr<std::string> userGroups_;
+    std::shared_ptr<::trantor::Date> createdAt_;
+    std::shared_ptr<std::string> createdByUserId_;
+    std::shared_ptr<::trantor::Date> lastModifiedAt_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
+    std::shared_ptr<bool> isDeleted_;
+    std::shared_ptr<::trantor::Date> deletedAt_;
+    std::shared_ptr<std::string> deletedByUserId_;
 
     struct MetaData
     {
@@ -478,7 +535,7 @@ class Users
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[29]={ false };
+    bool dirtyFlag_[34]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -584,52 +641,40 @@ class Users
         {
             needSelection=true;
         }
-
-        if(dirtyFlag_[13])
-        {
-            sql += "created_at,";
-            ++parametersCount;
-        }
-
-        if(dirtyFlag_[14])
-        {
-            sql += "updated_at,";
-            ++parametersCount;
-        }
         sql += "is_host_admin_user,";
         ++parametersCount;
 
-        if(!dirtyFlag_[15])
+        if(!dirtyFlag_[13])
         {
             needSelection=true;
         }
         sql += "is_tenant_admin_user,";
         ++parametersCount;
 
-        if(!dirtyFlag_[16])
+        if(!dirtyFlag_[14])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[17])
+        if(dirtyFlag_[15])
         {
             sql += "tenant_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[18])
+        if(dirtyFlag_[16])
         {
             sql += "credential_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[19])
+        if(dirtyFlag_[17])
         {
             sql += "public_key,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[20])
+        if(dirtyFlag_[18])
         {
             sql += "public_key_algorithm,";
             ++parametersCount;
@@ -637,50 +682,94 @@ class Users
         sql += "sign_count,";
         ++parametersCount;
 
-        if(!dirtyFlag_[21])
+        if(!dirtyFlag_[19])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[22])
+        if(dirtyFlag_[20])
         {
             sql += "user_handle,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[23])
+        if(dirtyFlag_[21])
         {
             sql += "transports,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[24])
+        if(dirtyFlag_[22])
         {
             sql += "credential_type,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[25])
+        if(dirtyFlag_[23])
         {
             sql += "last_active,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[26])
+        if(dirtyFlag_[24])
         {
             sql += "roles,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[27])
+        if(dirtyFlag_[25])
         {
             sql += "profile_image,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[28])
+        if(dirtyFlag_[26])
         {
             sql += "user_groups,";
+            ++parametersCount;
+        }
+        sql += "created_at,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[27])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[28])
+        {
+            sql += "created_by_user_id,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[29])
+        {
+            sql += "last_modified_at,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[30])
+        {
+            sql += "last_modified_by_user_id,";
+            ++parametersCount;
+        }
+        sql += "is_deleted,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[31])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[32])
+        {
+            sql += "deleted_at,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[33])
+        {
+            sql += "deleted_by_user_id,";
             ++parametersCount;
         }
 
@@ -829,12 +918,22 @@ class Users
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[14])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[15])
@@ -845,22 +944,12 @@ class Users
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[16])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[17])
@@ -887,6 +976,11 @@ class Users
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[20])
         {
 
@@ -901,11 +995,6 @@ class Users
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[22])
@@ -956,7 +1045,57 @@ class Users
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[28])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[29])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[30])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[31])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
+        }
+
+        if(dirtyFlag_[32])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[33])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
