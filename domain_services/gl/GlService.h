@@ -8,10 +8,10 @@
 #include "dto/BaseApiResponse.h"
 #include "dto/BaseGlDto.h"
 
-namespace business_desk::services {
+namespace business_desk::domain_services {
 
     class GlService {
-      public:
+    public:
         //account head
         drogon::Task<dto::BaseApiResponse> getAllAccountHeads(int pageNo, int pageSize, const std::string &query);
         drogon::Task<dto::BaseApiResponse> createAccountHead(const dto::AccountHeadDto &dto);

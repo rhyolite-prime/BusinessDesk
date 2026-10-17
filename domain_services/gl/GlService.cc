@@ -10,7 +10,7 @@
 #include "GlAccounts.h"
 #include "GlBankAccounts.h"
 
-#include "contants/BusinessDeskConsts.h"
+#include "constants/BusinessDeskConsts.h"
 
 #include <trantor/utils/Date.h>
 
@@ -185,7 +185,7 @@ drogon::Task<std::string> validateAccountControlSiblings(const drogon::orm::DbCl
 
 } // namespace
 
-namespace business_desk::services {
+namespace business_desk::domain_services {
 
     drogon::Task<dto::BaseApiResponse> GlService::getAllAccountHeads(int pageNo, int pageSize, const std::string &query) {
 

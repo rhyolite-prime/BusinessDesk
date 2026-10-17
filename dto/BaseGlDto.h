@@ -12,7 +12,7 @@
 #include <exception>
 #include <string>
 
-#include "contants/BusinessDeskConsts.h"
+#include "constants/BusinessDeskConsts.h"
 
 namespace business_desk::dto {
 
