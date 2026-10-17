@@ -69,7 +69,7 @@ const std::string GlBudgets::tableName = "\"gl_budgets\"";
 
 const std::vector<typename GlBudgets::MetaData> GlBudgets::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"account_id","std::string","uuid",0,0,0,1},
 {"organization_unit_id","std::string","uuid",0,0,0,0},
@@ -80,12 +80,12 @@ const std::vector<typename GlBudgets::MetaData> GlBudgets::metaData_={
 {"end_date","::trantor::Date","date",0,0,0,1},
 {"status","std::string","character varying",20,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlBudgets::getColumnName(size_t index) noexcept(false)
@@ -108,7 +108,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -210,7 +210,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -241,7 +241,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -279,7 +279,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -306,7 +306,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -419,7 +419,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -452,7 +452,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -493,7 +493,7 @@ GlBudgets::GlBudgets(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -523,7 +523,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson, const std::vector<std::string> &p
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -653,7 +653,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson, const std::vector<std::string> &p
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -690,7 +690,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson, const std::vector<std::string> &p
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -736,7 +736,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson, const std::vector<std::string> &p
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -759,7 +759,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -889,7 +889,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[12]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -926,7 +926,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -972,7 +972,7 @@ GlBudgets::GlBudgets(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1000,7 +1000,7 @@ void GlBudgets::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1130,7 +1130,7 @@ void GlBudgets::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -1167,7 +1167,7 @@ void GlBudgets::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1213,7 +1213,7 @@ void GlBudgets::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -1235,7 +1235,7 @@ void GlBudgets::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1365,7 +1365,7 @@ void GlBudgets::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[12] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1402,7 +1402,7 @@ void GlBudgets::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1448,7 +1448,7 @@ void GlBudgets::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1481,20 +1481,25 @@ const typename GlBudgets::PrimaryKeyType & GlBudgets::getPrimaryKey() const
     return *id_;
 }
 
-const int32_t &GlBudgets::getValueOfTenantId() const noexcept
+const std::string &GlBudgets::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlBudgets::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlBudgets::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlBudgets::setTenantId(const int32_t &pTenantId) noexcept
+void GlBudgets::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlBudgets::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1723,20 +1728,25 @@ void GlBudgets::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[11] = true;
 }
 
-const int64_t &GlBudgets::getValueOfCreatedByUserId() const noexcept
+const std::string &GlBudgets::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBudgets::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBudgets::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlBudgets::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlBudgets::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[12] = true;
+}
+void GlBudgets::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[12] = true;
 }
 void GlBudgets::setCreatedByUserIdToNull() noexcept
@@ -1767,20 +1777,25 @@ void GlBudgets::setLastModifiedAtToNull() noexcept
     dirtyFlag_[13] = true;
 }
 
-const int64_t &GlBudgets::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlBudgets::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBudgets::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBudgets::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlBudgets::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlBudgets::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlBudgets::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[14] = true;
 }
 void GlBudgets::setLastModifiedByUserIdToNull() noexcept
@@ -1828,20 +1843,25 @@ void GlBudgets::setDeletedAtToNull() noexcept
     dirtyFlag_[16] = true;
 }
 
-const int64_t &GlBudgets::getValueOfDeletedByUserId() const noexcept
+const std::string &GlBudgets::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBudgets::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBudgets::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlBudgets::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlBudgets::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[17] = true;
+}
+void GlBudgets::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[17] = true;
 }
 void GlBudgets::setDeletedByUserIdToNull() noexcept
@@ -2558,7 +2578,7 @@ Json::Value GlBudgets::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2580,7 +2600,7 @@ Json::Value GlBudgets::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2613,7 +2633,7 @@ Json::Value GlBudgets::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2809,7 +2829,7 @@ Json::Value GlBudgets::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[12]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[12]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2837,7 +2857,7 @@ Json::Value GlBudgets::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[14]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[14]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2879,7 +2899,7 @@ Json::Value GlBudgets::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[17]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[17]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3027,7 +3047,7 @@ Json::Value GlBudgets::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3049,7 +3069,7 @@ Json::Value GlBudgets::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3082,7 +3102,7 @@ Json::Value GlBudgets::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3750,7 +3770,7 @@ bool GlBudgets::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3945,7 +3965,7 @@ bool GlBudgets::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3975,7 +3995,7 @@ bool GlBudgets::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4021,7 +4041,7 @@ bool GlBudgets::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

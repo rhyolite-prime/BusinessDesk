@@ -67,7 +67,7 @@ const std::string GlPaymentVoucherRetentions::tableName = "\"gl_payment_voucher_
 
 const std::vector<typename GlPaymentVoucherRetentions::MetaData> GlPaymentVoucherRetentions::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"payment_voucher_id","std::string","uuid",0,0,0,1},
 {"description","std::string","character varying",200,0,0,0},
@@ -77,12 +77,12 @@ const std::vector<typename GlPaymentVoucherRetentions::MetaData> GlPaymentVouche
 {"amount","std::string","numeric",0,0,0,1},
 {"total_amount","std::string","numeric",0,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlPaymentVoucherRetentions::getColumnName(size_t index) noexcept(false)
@@ -105,7 +105,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -192,7 +192,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -223,7 +223,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -261,7 +261,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -288,7 +288,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -385,7 +385,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -418,7 +418,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -459,7 +459,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Row &r, const ssize
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -489,7 +489,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -598,7 +598,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -635,7 +635,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -681,7 +681,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson,
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -704,7 +704,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -813,7 +813,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson)
         dirtyFlag_[11]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -850,7 +850,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson)
         dirtyFlag_[13]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -896,7 +896,7 @@ GlPaymentVoucherRetentions::GlPaymentVoucherRetentions(const Json::Value &pJson)
         dirtyFlag_[16]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -924,7 +924,7 @@ void GlPaymentVoucherRetentions::updateByMasqueradedJson(const Json::Value &pJso
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1033,7 +1033,7 @@ void GlPaymentVoucherRetentions::updateByMasqueradedJson(const Json::Value &pJso
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -1070,7 +1070,7 @@ void GlPaymentVoucherRetentions::updateByMasqueradedJson(const Json::Value &pJso
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -1116,7 +1116,7 @@ void GlPaymentVoucherRetentions::updateByMasqueradedJson(const Json::Value &pJso
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -1138,7 +1138,7 @@ void GlPaymentVoucherRetentions::updateByJson(const Json::Value &pJson) noexcept
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1247,7 +1247,7 @@ void GlPaymentVoucherRetentions::updateByJson(const Json::Value &pJson) noexcept
         dirtyFlag_[11] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1284,7 +1284,7 @@ void GlPaymentVoucherRetentions::updateByJson(const Json::Value &pJson) noexcept
         dirtyFlag_[13] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1330,7 +1330,7 @@ void GlPaymentVoucherRetentions::updateByJson(const Json::Value &pJson) noexcept
         dirtyFlag_[16] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1363,20 +1363,25 @@ const typename GlPaymentVoucherRetentions::PrimaryKeyType & GlPaymentVoucherRete
     return *id_;
 }
 
-const int32_t &GlPaymentVoucherRetentions::getValueOfTenantId() const noexcept
+const std::string &GlPaymentVoucherRetentions::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlPaymentVoucherRetentions::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherRetentions::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlPaymentVoucherRetentions::setTenantId(const int32_t &pTenantId) noexcept
+void GlPaymentVoucherRetentions::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlPaymentVoucherRetentions::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1578,20 +1583,25 @@ void GlPaymentVoucherRetentions::setCreatedAt(const ::trantor::Date &pCreatedAt)
     dirtyFlag_[10] = true;
 }
 
-const int64_t &GlPaymentVoucherRetentions::getValueOfCreatedByUserId() const noexcept
+const std::string &GlPaymentVoucherRetentions::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPaymentVoucherRetentions::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherRetentions::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlPaymentVoucherRetentions::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlPaymentVoucherRetentions::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlPaymentVoucherRetentions::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[11] = true;
 }
 void GlPaymentVoucherRetentions::setCreatedByUserIdToNull() noexcept
@@ -1622,20 +1632,25 @@ void GlPaymentVoucherRetentions::setLastModifiedAtToNull() noexcept
     dirtyFlag_[12] = true;
 }
 
-const int64_t &GlPaymentVoucherRetentions::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlPaymentVoucherRetentions::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPaymentVoucherRetentions::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherRetentions::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlPaymentVoucherRetentions::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlPaymentVoucherRetentions::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[13] = true;
+}
+void GlPaymentVoucherRetentions::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[13] = true;
 }
 void GlPaymentVoucherRetentions::setLastModifiedByUserIdToNull() noexcept
@@ -1683,20 +1698,25 @@ void GlPaymentVoucherRetentions::setDeletedAtToNull() noexcept
     dirtyFlag_[15] = true;
 }
 
-const int64_t &GlPaymentVoucherRetentions::getValueOfDeletedByUserId() const noexcept
+const std::string &GlPaymentVoucherRetentions::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPaymentVoucherRetentions::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherRetentions::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlPaymentVoucherRetentions::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlPaymentVoucherRetentions::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[16] = true;
+}
+void GlPaymentVoucherRetentions::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[16] = true;
 }
 void GlPaymentVoucherRetentions::setDeletedByUserIdToNull() noexcept
@@ -2372,7 +2392,7 @@ Json::Value GlPaymentVoucherRetentions::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2394,7 +2414,7 @@ Json::Value GlPaymentVoucherRetentions::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2427,7 +2447,7 @@ Json::Value GlPaymentVoucherRetentions::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2609,7 +2629,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2637,7 +2657,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[13]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[13]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2679,7 +2699,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[16]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[16]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -2816,7 +2836,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2838,7 +2858,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2871,7 +2891,7 @@ Json::Value GlPaymentVoucherRetentions::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3499,7 +3519,7 @@ bool GlPaymentVoucherRetentions::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3672,7 +3692,7 @@ bool GlPaymentVoucherRetentions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3702,7 +3722,7 @@ bool GlPaymentVoucherRetentions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3748,7 +3768,7 @@ bool GlPaymentVoucherRetentions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

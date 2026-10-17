@@ -67,7 +67,7 @@ const std::string GlJournalHistory::tableName = "\"gl_journal_history\"";
 
 const std::vector<typename GlJournalHistory::MetaData> GlJournalHistory::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"journal_batch_id","std::string","uuid",0,0,0,1},
 {"batch_number","std::string","character varying",40,0,0,1},
@@ -76,14 +76,14 @@ const std::vector<typename GlJournalHistory::MetaData> GlJournalHistory::metaDat
 {"total_debit","std::string","numeric",0,0,0,1},
 {"journal_details","std::string","jsonb",0,0,0,1},
 {"captured_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"captured_by_user_id","int64_t","bigint",8,0,0,0},
+{"captured_by_user_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlJournalHistory::getColumnName(size_t index) noexcept(false)
@@ -106,7 +106,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -190,7 +190,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r["captured_by_user_id"].isNull())
         {
 
-            capturedByUserId_=std::make_shared<int64_t>(r["captured_by_user_id"].as<int64_t>());
+            capturedByUserId_=std::make_shared<std::string>(r["captured_by_user_id"].as<std::string>());
 
         }
 
@@ -221,7 +221,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -252,7 +252,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -290,7 +290,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -317,7 +317,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -410,7 +410,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            capturedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            capturedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -443,7 +443,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -476,7 +476,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -517,7 +517,7 @@ GlJournalHistory::GlJournalHistory(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -547,7 +547,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -653,7 +653,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            capturedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            capturedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -690,7 +690,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -727,7 +727,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -773,7 +773,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -796,7 +796,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -902,7 +902,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10]=true;
         if(!pJson["captured_by_user_id"].isNull())
         {
-            capturedByUserId_=std::make_shared<int64_t>((int64_t)pJson["captured_by_user_id"].asInt64());
+            capturedByUserId_=std::make_shared<std::string>(pJson["captured_by_user_id"].asString());
         }
     }
 
@@ -939,7 +939,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[12]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -976,7 +976,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1022,7 +1022,7 @@ GlJournalHistory::GlJournalHistory(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1050,7 +1050,7 @@ void GlJournalHistory::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1156,7 +1156,7 @@ void GlJournalHistory::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            capturedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            capturedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -1193,7 +1193,7 @@ void GlJournalHistory::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -1230,7 +1230,7 @@ void GlJournalHistory::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1276,7 +1276,7 @@ void GlJournalHistory::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -1298,7 +1298,7 @@ void GlJournalHistory::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1404,7 +1404,7 @@ void GlJournalHistory::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10] = true;
         if(!pJson["captured_by_user_id"].isNull())
         {
-            capturedByUserId_=std::make_shared<int64_t>((int64_t)pJson["captured_by_user_id"].asInt64());
+            capturedByUserId_=std::make_shared<std::string>(pJson["captured_by_user_id"].asString());
         }
     }
 
@@ -1441,7 +1441,7 @@ void GlJournalHistory::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[12] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1478,7 +1478,7 @@ void GlJournalHistory::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1524,7 +1524,7 @@ void GlJournalHistory::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1557,20 +1557,25 @@ const typename GlJournalHistory::PrimaryKeyType & GlJournalHistory::getPrimaryKe
     return *id_;
 }
 
-const int32_t &GlJournalHistory::getValueOfTenantId() const noexcept
+const std::string &GlJournalHistory::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlJournalHistory::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlJournalHistory::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlJournalHistory::setTenantId(const int32_t &pTenantId) noexcept
+void GlJournalHistory::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlJournalHistory::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1740,20 +1745,25 @@ void GlJournalHistory::setCapturedAt(const ::trantor::Date &pCapturedAt) noexcep
     dirtyFlag_[9] = true;
 }
 
-const int64_t &GlJournalHistory::getValueOfCapturedByUserId() const noexcept
+const std::string &GlJournalHistory::getValueOfCapturedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(capturedByUserId_)
         return *capturedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlJournalHistory::getCapturedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlJournalHistory::getCapturedByUserId() const noexcept
 {
     return capturedByUserId_;
 }
-void GlJournalHistory::setCapturedByUserId(const int64_t &pCapturedByUserId) noexcept
+void GlJournalHistory::setCapturedByUserId(const std::string &pCapturedByUserId) noexcept
 {
-    capturedByUserId_ = std::make_shared<int64_t>(pCapturedByUserId);
+    capturedByUserId_ = std::make_shared<std::string>(pCapturedByUserId);
+    dirtyFlag_[10] = true;
+}
+void GlJournalHistory::setCapturedByUserId(std::string &&pCapturedByUserId) noexcept
+{
+    capturedByUserId_ = std::make_shared<std::string>(std::move(pCapturedByUserId));
     dirtyFlag_[10] = true;
 }
 void GlJournalHistory::setCapturedByUserIdToNull() noexcept
@@ -1779,20 +1789,25 @@ void GlJournalHistory::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[11] = true;
 }
 
-const int64_t &GlJournalHistory::getValueOfCreatedByUserId() const noexcept
+const std::string &GlJournalHistory::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlJournalHistory::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlJournalHistory::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlJournalHistory::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlJournalHistory::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[12] = true;
+}
+void GlJournalHistory::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[12] = true;
 }
 void GlJournalHistory::setCreatedByUserIdToNull() noexcept
@@ -1823,20 +1838,25 @@ void GlJournalHistory::setLastModifiedAtToNull() noexcept
     dirtyFlag_[13] = true;
 }
 
-const int64_t &GlJournalHistory::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlJournalHistory::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlJournalHistory::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlJournalHistory::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlJournalHistory::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlJournalHistory::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlJournalHistory::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[14] = true;
 }
 void GlJournalHistory::setLastModifiedByUserIdToNull() noexcept
@@ -1884,20 +1904,25 @@ void GlJournalHistory::setDeletedAtToNull() noexcept
     dirtyFlag_[16] = true;
 }
 
-const int64_t &GlJournalHistory::getValueOfDeletedByUserId() const noexcept
+const std::string &GlJournalHistory::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlJournalHistory::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlJournalHistory::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlJournalHistory::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlJournalHistory::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[17] = true;
+}
+void GlJournalHistory::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[17] = true;
 }
 void GlJournalHistory::setDeletedByUserIdToNull() noexcept
@@ -2592,7 +2617,7 @@ Json::Value GlJournalHistory::toJson() const
     if(getCapturedByUserId())
     {
 
-        ret["captured_by_user_id"]=(Json::Int64)getValueOfCapturedByUserId();
+        ret["captured_by_user_id"]=getValueOfCapturedByUserId();
 
     }
     else
@@ -2614,7 +2639,7 @@ Json::Value GlJournalHistory::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2636,7 +2661,7 @@ Json::Value GlJournalHistory::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2669,7 +2694,7 @@ Json::Value GlJournalHistory::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2837,7 +2862,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
             if(getCapturedByUserId())
             {
 
-                ret[pMasqueradingVector[10]]=(Json::Int64)getValueOfCapturedByUserId();
+                ret[pMasqueradingVector[10]]=getValueOfCapturedByUserId();
 
             }
             else
@@ -2865,7 +2890,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[12]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[12]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2893,7 +2918,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[14]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[14]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2935,7 +2960,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[17]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[17]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3061,7 +3086,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
     if(getCapturedByUserId())
     {
 
-        ret["captured_by_user_id"]=(Json::Int64)getValueOfCapturedByUserId();
+        ret["captured_by_user_id"]=getValueOfCapturedByUserId();
 
     }
     else
@@ -3083,7 +3108,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3105,7 +3130,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3138,7 +3163,7 @@ Json::Value GlJournalHistory::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3830,7 +3855,7 @@ bool GlJournalHistory::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3981,7 +4006,7 @@ bool GlJournalHistory::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4012,7 +4037,7 @@ bool GlJournalHistory::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4042,7 +4067,7 @@ bool GlJournalHistory::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4088,7 +4113,7 @@ bool GlJournalHistory::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

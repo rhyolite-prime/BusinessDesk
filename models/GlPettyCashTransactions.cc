@@ -85,7 +85,7 @@ const std::string GlPettyCashTransactions::tableName = "\"gl_petty_cash_transact
 
 const std::vector<typename GlPettyCashTransactions::MetaData> GlPettyCashTransactions::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"batch_date","::trantor::Date","date",0,0,0,1},
 {"batch_number","std::string","character varying",40,0,0,1},
@@ -102,12 +102,12 @@ const std::vector<typename GlPettyCashTransactions::MetaData> GlPettyCashTransac
 {"is_posted","bool","boolean",1,0,0,1},
 {"journal_batch_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlPettyCashTransactions::getColumnName(size_t index) noexcept(false)
@@ -130,7 +130,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -270,7 +270,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -301,7 +301,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -339,7 +339,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -366,7 +366,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -523,7 +523,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -556,7 +556,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -597,7 +597,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Row &r, const ssize_t ind
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -627,7 +627,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson, const
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -805,7 +805,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson, const
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[18]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -842,7 +842,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson, const
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[20]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[20]].asString());
         }
     }
 
@@ -888,7 +888,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson, const
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[23]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
         }
     }
 
@@ -911,7 +911,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson) noexc
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1089,7 +1089,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson) noexc
         dirtyFlag_[18]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1126,7 +1126,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson) noexc
         dirtyFlag_[20]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1172,7 +1172,7 @@ GlPettyCashTransactions::GlPettyCashTransactions(const Json::Value &pJson) noexc
         dirtyFlag_[23]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1200,7 +1200,7 @@ void GlPettyCashTransactions::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1378,7 +1378,7 @@ void GlPettyCashTransactions::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[18]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -1415,7 +1415,7 @@ void GlPettyCashTransactions::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[20]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[20]].asString());
         }
     }
 
@@ -1461,7 +1461,7 @@ void GlPettyCashTransactions::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[23]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
         }
     }
 
@@ -1483,7 +1483,7 @@ void GlPettyCashTransactions::updateByJson(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1661,7 +1661,7 @@ void GlPettyCashTransactions::updateByJson(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[18] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1698,7 +1698,7 @@ void GlPettyCashTransactions::updateByJson(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[20] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1744,7 +1744,7 @@ void GlPettyCashTransactions::updateByJson(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[23] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1777,20 +1777,25 @@ const typename GlPettyCashTransactions::PrimaryKeyType & GlPettyCashTransactions
     return *id_;
 }
 
-const int32_t &GlPettyCashTransactions::getValueOfTenantId() const noexcept
+const std::string &GlPettyCashTransactions::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlPettyCashTransactions::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlPettyCashTransactions::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlPettyCashTransactions::setTenantId(const int32_t &pTenantId) noexcept
+void GlPettyCashTransactions::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlPettyCashTransactions::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2161,20 +2166,25 @@ void GlPettyCashTransactions::setCreatedAt(const ::trantor::Date &pCreatedAt) no
     dirtyFlag_[17] = true;
 }
 
-const int64_t &GlPettyCashTransactions::getValueOfCreatedByUserId() const noexcept
+const std::string &GlPettyCashTransactions::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPettyCashTransactions::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPettyCashTransactions::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlPettyCashTransactions::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlPettyCashTransactions::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[18] = true;
+}
+void GlPettyCashTransactions::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[18] = true;
 }
 void GlPettyCashTransactions::setCreatedByUserIdToNull() noexcept
@@ -2205,20 +2215,25 @@ void GlPettyCashTransactions::setLastModifiedAtToNull() noexcept
     dirtyFlag_[19] = true;
 }
 
-const int64_t &GlPettyCashTransactions::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlPettyCashTransactions::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPettyCashTransactions::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPettyCashTransactions::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlPettyCashTransactions::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlPettyCashTransactions::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[20] = true;
+}
+void GlPettyCashTransactions::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[20] = true;
 }
 void GlPettyCashTransactions::setLastModifiedByUserIdToNull() noexcept
@@ -2266,20 +2281,25 @@ void GlPettyCashTransactions::setDeletedAtToNull() noexcept
     dirtyFlag_[22] = true;
 }
 
-const int64_t &GlPettyCashTransactions::getValueOfDeletedByUserId() const noexcept
+const std::string &GlPettyCashTransactions::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPettyCashTransactions::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPettyCashTransactions::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlPettyCashTransactions::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlPettyCashTransactions::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[23] = true;
+}
+void GlPettyCashTransactions::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[23] = true;
 }
 void GlPettyCashTransactions::setDeletedByUserIdToNull() noexcept
@@ -3242,7 +3262,7 @@ Json::Value GlPettyCashTransactions::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3264,7 +3284,7 @@ Json::Value GlPettyCashTransactions::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3297,7 +3317,7 @@ Json::Value GlPettyCashTransactions::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3577,7 +3597,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[18]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[18]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -3605,7 +3625,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[20]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[20]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -3647,7 +3667,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[23]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[23]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3861,7 +3881,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3883,7 +3903,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3916,7 +3936,7 @@ Json::Value GlPettyCashTransactions::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -4764,7 +4784,7 @@ bool GlPettyCashTransactions::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -5085,7 +5105,7 @@ bool GlPettyCashTransactions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -5115,7 +5135,7 @@ bool GlPettyCashTransactions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -5161,7 +5181,7 @@ bool GlPettyCashTransactions::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

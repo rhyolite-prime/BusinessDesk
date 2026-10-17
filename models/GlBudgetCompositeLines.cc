@@ -47,12 +47,12 @@ const std::string GlBudgetCompositeLines::tableName = "\"gl_budget_composite_lin
 
 const std::vector<typename GlBudgetCompositeLines::MetaData> GlBudgetCompositeLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"composite_id","std::string","uuid",0,0,0,1},
 {"budget_id","std::string","uuid",0,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlBudgetCompositeLines::getColumnName(size_t index) noexcept(false)
@@ -75,7 +75,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Row &r, const ssize_t index
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -127,7 +127,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Row &r, const ssize_t index
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -154,7 +154,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Row &r, const ssize_t index
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -211,7 +211,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Row &r, const ssize_t index
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -241,7 +241,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Json::Value &pJson, const s
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -305,7 +305,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Json::Value &pJson, const s
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
 
@@ -328,7 +328,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Json::Value &pJson) noexcep
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -392,7 +392,7 @@ GlBudgetCompositeLines::GlBudgetCompositeLines(const Json::Value &pJson) noexcep
         dirtyFlag_[6]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -420,7 +420,7 @@ void GlBudgetCompositeLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -484,7 +484,7 @@ void GlBudgetCompositeLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
 
@@ -506,7 +506,7 @@ void GlBudgetCompositeLines::updateByJson(const Json::Value &pJson) noexcept(fal
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -570,7 +570,7 @@ void GlBudgetCompositeLines::updateByJson(const Json::Value &pJson) noexcept(fal
         dirtyFlag_[6] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -603,20 +603,25 @@ const typename GlBudgetCompositeLines::PrimaryKeyType & GlBudgetCompositeLines::
     return *id_;
 }
 
-const int32_t &GlBudgetCompositeLines::getValueOfTenantId() const noexcept
+const std::string &GlBudgetCompositeLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlBudgetCompositeLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlBudgetCompositeLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlBudgetCompositeLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlBudgetCompositeLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlBudgetCompositeLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -703,20 +708,25 @@ void GlBudgetCompositeLines::setCreatedAt(const ::trantor::Date &pCreatedAt) noe
     dirtyFlag_[5] = true;
 }
 
-const int64_t &GlBudgetCompositeLines::getValueOfCreatedByUserId() const noexcept
+const std::string &GlBudgetCompositeLines::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBudgetCompositeLines::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBudgetCompositeLines::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlBudgetCompositeLines::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlBudgetCompositeLines::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[6] = true;
+}
+void GlBudgetCompositeLines::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[6] = true;
 }
 void GlBudgetCompositeLines::setCreatedByUserIdToNull() noexcept
@@ -1037,7 +1047,7 @@ Json::Value GlBudgetCompositeLines::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1149,7 +1159,7 @@ Json::Value GlBudgetCompositeLines::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[6]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[6]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1231,7 +1241,7 @@ Json::Value GlBudgetCompositeLines::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1579,7 +1589,7 @@ bool GlBudgetCompositeLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -1658,7 +1668,7 @@ bool GlBudgetCompositeLines::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

@@ -61,7 +61,7 @@ const std::string GlFxRevaluationLines::tableName = "\"gl_fx_revaluation_lines\"
 
 const std::vector<typename GlFxRevaluationLines::MetaData> GlFxRevaluationLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"revaluation_run_id","std::string","uuid",0,0,0,1},
 {"account_id","std::string","uuid",0,0,0,1},
@@ -95,7 +95,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Row &r, const ssize_t indexOffs
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -216,7 +216,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -351,7 +351,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Json::Value &pJson, const std::
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -492,7 +492,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -638,7 +638,7 @@ void GlFxRevaluationLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -778,7 +778,7 @@ void GlFxRevaluationLines::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -929,20 +929,25 @@ const typename GlFxRevaluationLines::PrimaryKeyType & GlFxRevaluationLines::getP
     return *id_;
 }
 
-const int32_t &GlFxRevaluationLines::getValueOfTenantId() const noexcept
+const std::string &GlFxRevaluationLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlFxRevaluationLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlFxRevaluationLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlFxRevaluationLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlFxRevaluationLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2685,7 +2690,7 @@ bool GlFxRevaluationLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

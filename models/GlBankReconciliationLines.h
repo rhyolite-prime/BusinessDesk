@@ -130,11 +130,12 @@ class GlBankReconciliationLines
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -284,7 +285,7 @@ class GlBankReconciliationLines
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> reconciliationId_;
     std::shared_ptr<std::string> externalTransactionId_;

@@ -55,7 +55,7 @@ const std::string GlApprovalPolicies::tableName = "\"gl_approval_policies\"";
 
 const std::vector<typename GlApprovalPolicies::MetaData> GlApprovalPolicies::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"transaction_type","std::string","character varying",40,0,0,1},
 {"minimum_amount","std::string","numeric",0,0,0,1},
@@ -63,9 +63,9 @@ const std::vector<typename GlApprovalPolicies::MetaData> GlApprovalPolicies::met
 {"preparer_may_approve","bool","boolean",1,0,0,1},
 {"is_active","bool","boolean",1,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0}
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlApprovalPolicies::getColumnName(size_t index) noexcept(false)
@@ -88,7 +88,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -161,7 +161,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -192,7 +192,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -219,7 +219,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -300,7 +300,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -333,7 +333,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Row &r, const ssize_t indexOffset) 
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -363,7 +363,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson, const std::vect
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -454,7 +454,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson, const std::vect
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -491,7 +491,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson, const std::vect
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -514,7 +514,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -605,7 +605,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -642,7 +642,7 @@ GlApprovalPolicies::GlApprovalPolicies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -670,7 +670,7 @@ void GlApprovalPolicies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -761,7 +761,7 @@ void GlApprovalPolicies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -798,7 +798,7 @@ void GlApprovalPolicies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -820,7 +820,7 @@ void GlApprovalPolicies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -911,7 +911,7 @@ void GlApprovalPolicies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -948,7 +948,7 @@ void GlApprovalPolicies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -981,20 +981,25 @@ const typename GlApprovalPolicies::PrimaryKeyType & GlApprovalPolicies::getPrima
     return *id_;
 }
 
-const int32_t &GlApprovalPolicies::getValueOfTenantId() const noexcept
+const std::string &GlApprovalPolicies::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlApprovalPolicies::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlApprovalPolicies::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlApprovalPolicies::setTenantId(const int32_t &pTenantId) noexcept
+void GlApprovalPolicies::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlApprovalPolicies::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1132,20 +1137,25 @@ void GlApprovalPolicies::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcep
     dirtyFlag_[8] = true;
 }
 
-const int64_t &GlApprovalPolicies::getValueOfCreatedByUserId() const noexcept
+const std::string &GlApprovalPolicies::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlApprovalPolicies::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlApprovalPolicies::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlApprovalPolicies::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlApprovalPolicies::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[9] = true;
+}
+void GlApprovalPolicies::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[9] = true;
 }
 void GlApprovalPolicies::setCreatedByUserIdToNull() noexcept
@@ -1176,20 +1186,25 @@ void GlApprovalPolicies::setLastModifiedAtToNull() noexcept
     dirtyFlag_[10] = true;
 }
 
-const int64_t &GlApprovalPolicies::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlApprovalPolicies::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlApprovalPolicies::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlApprovalPolicies::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlApprovalPolicies::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlApprovalPolicies::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlApprovalPolicies::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[11] = true;
 }
 void GlApprovalPolicies::setLastModifiedByUserIdToNull() noexcept
@@ -1693,7 +1708,7 @@ Json::Value GlApprovalPolicies::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1715,7 +1730,7 @@ Json::Value GlApprovalPolicies::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -1869,7 +1884,7 @@ Json::Value GlApprovalPolicies::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[9]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[9]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1897,7 +1912,7 @@ Json::Value GlApprovalPolicies::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2012,7 +2027,7 @@ Json::Value GlApprovalPolicies::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2034,7 +2049,7 @@ Json::Value GlApprovalPolicies::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2510,7 +2525,7 @@ bool GlApprovalPolicies::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2645,7 +2660,7 @@ bool GlApprovalPolicies::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2675,7 +2690,7 @@ bool GlApprovalPolicies::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

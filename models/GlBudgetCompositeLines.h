@@ -125,11 +125,12 @@ class GlBudgetCompositeLines
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -168,11 +169,12 @@ class GlBudgetCompositeLines
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
 
@@ -231,12 +233,12 @@ class GlBudgetCompositeLines
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> compositeId_;
     std::shared_ptr<std::string> budgetId_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
 
     struct MetaData
     {

@@ -57,7 +57,7 @@ const std::string GlBankReconciliationLines::tableName = "\"gl_bank_reconciliati
 
 const std::vector<typename GlBankReconciliationLines::MetaData> GlBankReconciliationLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"reconciliation_id","std::string","uuid",0,0,0,1},
 {"external_transaction_id","std::string","character varying",120,0,0,0},
@@ -90,7 +90,7 @@ GlBankReconciliationLines::GlBankReconciliationLines(const Row &r, const ssize_t
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -208,7 +208,7 @@ GlBankReconciliationLines::GlBankReconciliationLines(const Row &r, const ssize_t
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -339,7 +339,7 @@ GlBankReconciliationLines::GlBankReconciliationLines(const Json::Value &pJson, c
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -477,7 +477,7 @@ GlBankReconciliationLines::GlBankReconciliationLines(const Json::Value &pJson) n
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -620,7 +620,7 @@ void GlBankReconciliationLines::updateByMasqueradedJson(const Json::Value &pJson
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -757,7 +757,7 @@ void GlBankReconciliationLines::updateByJson(const Json::Value &pJson) noexcept(
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -905,20 +905,25 @@ const typename GlBankReconciliationLines::PrimaryKeyType & GlBankReconciliationL
     return *id_;
 }
 
-const int32_t &GlBankReconciliationLines::getValueOfTenantId() const noexcept
+const std::string &GlBankReconciliationLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlBankReconciliationLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlBankReconciliationLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlBankReconciliationLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlBankReconciliationLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlBankReconciliationLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2488,7 +2493,7 @@ bool GlBankReconciliationLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

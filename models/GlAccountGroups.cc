@@ -61,7 +61,7 @@ const std::string GlAccountGroups::tableName = "\"gl_account_groups\"";
 
 const std::vector<typename GlAccountGroups::MetaData> GlAccountGroups::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"parent_group_id","std::string","uuid",0,0,0,0},
 {"name","std::string","character varying",160,0,0,1},
@@ -69,12 +69,12 @@ const std::vector<typename GlAccountGroups::MetaData> GlAccountGroups::metaData_
 {"sort_order","int32_t","integer",4,0,0,1},
 {"is_active","bool","boolean",1,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlAccountGroups::getColumnName(size_t index) noexcept(false)
@@ -97,7 +97,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -170,7 +170,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -201,7 +201,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -239,7 +239,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -266,7 +266,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -347,7 +347,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -380,7 +380,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -421,7 +421,7 @@ GlAccountGroups::GlAccountGroups(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -451,7 +451,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -542,7 +542,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -579,7 +579,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -625,7 +625,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -648,7 +648,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -739,7 +739,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -776,7 +776,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -822,7 +822,7 @@ GlAccountGroups::GlAccountGroups(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -850,7 +850,7 @@ void GlAccountGroups::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -941,7 +941,7 @@ void GlAccountGroups::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -978,7 +978,7 @@ void GlAccountGroups::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -1024,7 +1024,7 @@ void GlAccountGroups::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1046,7 +1046,7 @@ void GlAccountGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1137,7 +1137,7 @@ void GlAccountGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1174,7 +1174,7 @@ void GlAccountGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1220,7 +1220,7 @@ void GlAccountGroups::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1253,20 +1253,25 @@ const typename GlAccountGroups::PrimaryKeyType & GlAccountGroups::getPrimaryKey(
     return *id_;
 }
 
-const int32_t &GlAccountGroups::getValueOfTenantId() const noexcept
+const std::string &GlAccountGroups::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlAccountGroups::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlAccountGroups::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlAccountGroups::setTenantId(const int32_t &pTenantId) noexcept
+void GlAccountGroups::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlAccountGroups::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1409,20 +1414,25 @@ void GlAccountGroups::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[8] = true;
 }
 
-const int64_t &GlAccountGroups::getValueOfCreatedByUserId() const noexcept
+const std::string &GlAccountGroups::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountGroups::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountGroups::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlAccountGroups::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlAccountGroups::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[9] = true;
+}
+void GlAccountGroups::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[9] = true;
 }
 void GlAccountGroups::setCreatedByUserIdToNull() noexcept
@@ -1453,20 +1463,25 @@ void GlAccountGroups::setLastModifiedAtToNull() noexcept
     dirtyFlag_[10] = true;
 }
 
-const int64_t &GlAccountGroups::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlAccountGroups::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountGroups::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountGroups::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlAccountGroups::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlAccountGroups::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlAccountGroups::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[11] = true;
 }
 void GlAccountGroups::setLastModifiedByUserIdToNull() noexcept
@@ -1514,20 +1529,25 @@ void GlAccountGroups::setDeletedAtToNull() noexcept
     dirtyFlag_[13] = true;
 }
 
-const int64_t &GlAccountGroups::getValueOfDeletedByUserId() const noexcept
+const std::string &GlAccountGroups::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountGroups::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountGroups::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlAccountGroups::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlAccountGroups::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlAccountGroups::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[14] = true;
 }
 void GlAccountGroups::setDeletedByUserIdToNull() noexcept
@@ -2121,7 +2141,7 @@ Json::Value GlAccountGroups::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2143,7 +2163,7 @@ Json::Value GlAccountGroups::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2176,7 +2196,7 @@ Json::Value GlAccountGroups::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2330,7 +2350,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[9]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[9]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2358,7 +2378,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2400,7 +2420,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[14]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[14]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -2515,7 +2535,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2537,7 +2557,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2570,7 +2590,7 @@ Json::Value GlAccountGroups::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3142,7 +3162,7 @@ bool GlAccountGroups::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3276,7 +3296,7 @@ bool GlAccountGroups::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3306,7 +3326,7 @@ bool GlAccountGroups::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3352,7 +3372,7 @@ bool GlAccountGroups::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

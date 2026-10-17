@@ -58,12 +58,12 @@ const std::vector<typename CoreCurrencies::MetaData> CoreCurrencies::metaData_={
 {"decimal_places","short","smallint",2,0,0,1},
 {"is_active","bool","boolean",1,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &CoreCurrencies::getColumnName(size_t index) noexcept(false)
@@ -138,7 +138,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -169,7 +169,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -207,7 +207,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -291,7 +291,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -324,7 +324,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -365,7 +365,7 @@ CoreCurrencies::CoreCurrencies(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -459,7 +459,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
 
@@ -496,7 +496,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -542,7 +542,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -629,7 +629,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[6]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -666,7 +666,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -712,7 +712,7 @@ CoreCurrencies::CoreCurrencies(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -804,7 +804,7 @@ void CoreCurrencies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[6] = true;
         if(!pJson[pMasqueradingVector[6]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[6]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[6]].asString());
         }
     }
 
@@ -841,7 +841,7 @@ void CoreCurrencies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -887,7 +887,7 @@ void CoreCurrencies::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -973,7 +973,7 @@ void CoreCurrencies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[6] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1010,7 +1010,7 @@ void CoreCurrencies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1056,7 +1056,7 @@ void CoreCurrencies::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1184,20 +1184,25 @@ void CoreCurrencies::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[5] = true;
 }
 
-const int64_t &CoreCurrencies::getValueOfCreatedByUserId() const noexcept
+const std::string &CoreCurrencies::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &CoreCurrencies::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &CoreCurrencies::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void CoreCurrencies::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void CoreCurrencies::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[6] = true;
+}
+void CoreCurrencies::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[6] = true;
 }
 void CoreCurrencies::setCreatedByUserIdToNull() noexcept
@@ -1228,20 +1233,25 @@ void CoreCurrencies::setLastModifiedAtToNull() noexcept
     dirtyFlag_[7] = true;
 }
 
-const int64_t &CoreCurrencies::getValueOfLastModifiedByUserId() const noexcept
+const std::string &CoreCurrencies::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &CoreCurrencies::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &CoreCurrencies::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void CoreCurrencies::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void CoreCurrencies::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[8] = true;
+}
+void CoreCurrencies::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[8] = true;
 }
 void CoreCurrencies::setLastModifiedByUserIdToNull() noexcept
@@ -1289,20 +1299,25 @@ void CoreCurrencies::setDeletedAtToNull() noexcept
     dirtyFlag_[10] = true;
 }
 
-const int64_t &CoreCurrencies::getValueOfDeletedByUserId() const noexcept
+const std::string &CoreCurrencies::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &CoreCurrencies::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &CoreCurrencies::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void CoreCurrencies::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void CoreCurrencies::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[11] = true;
+}
+void CoreCurrencies::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[11] = true;
 }
 void CoreCurrencies::setDeletedByUserIdToNull() noexcept
@@ -1773,7 +1788,7 @@ Json::Value CoreCurrencies::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1795,7 +1810,7 @@ Json::Value CoreCurrencies::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -1828,7 +1843,7 @@ Json::Value CoreCurrencies::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -1940,7 +1955,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[6]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[6]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1968,7 +1983,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[8]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[8]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2010,7 +2025,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -2092,7 +2107,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2114,7 +2129,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2147,7 +2162,7 @@ Json::Value CoreCurrencies::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2706,7 +2721,7 @@ bool CoreCurrencies::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2736,7 +2751,7 @@ bool CoreCurrencies::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2782,7 +2797,7 @@ bool CoreCurrencies::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

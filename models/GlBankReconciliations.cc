@@ -61,7 +61,7 @@ const std::string GlBankReconciliations::tableName = "\"gl_bank_reconciliations\
 
 const std::vector<typename GlBankReconciliations::MetaData> GlBankReconciliations::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"bank_account_id","std::string","uuid",0,0,0,1},
 {"statement_number","std::string","character varying",80,0,0,1},
@@ -71,9 +71,9 @@ const std::vector<typename GlBankReconciliations::MetaData> GlBankReconciliation
 {"statement_closing_balance","std::string","numeric",0,0,0,1},
 {"status","std::string","character varying",24,0,0,1},
 {"reconciled_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"reconciled_by_user_id","int64_t","bigint",8,0,0,0},
+{"reconciled_by_user_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,1}
+{"created_by_user_id","std::string","uuid",0,0,0,1}
 
 };
 const std::string &GlBankReconciliations::getColumnName(size_t index) noexcept(false)
@@ -96,7 +96,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -191,7 +191,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r["reconciled_by_user_id"].isNull())
         {
 
-            reconciledByUserId_=std::make_shared<int64_t>(r["reconciled_by_user_id"].as<int64_t>());
+            reconciledByUserId_=std::make_shared<std::string>(r["reconciled_by_user_id"].as<std::string>());
 
         }
 
@@ -222,7 +222,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -249,7 +249,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -354,7 +354,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r[index].isNull())
         {
 
-            reconciledByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            reconciledByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -387,7 +387,7 @@ GlBankReconciliations::GlBankReconciliations(const Row &r, const ssize_t indexOf
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -417,7 +417,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson, const std
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -538,7 +538,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson, const std
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            reconciledByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            reconciledByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -575,7 +575,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson, const std
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -598,7 +598,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson) noexcept(
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -719,7 +719,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson) noexcept(
         dirtyFlag_[11]=true;
         if(!pJson["reconciled_by_user_id"].isNull())
         {
-            reconciledByUserId_=std::make_shared<int64_t>((int64_t)pJson["reconciled_by_user_id"].asInt64());
+            reconciledByUserId_=std::make_shared<std::string>(pJson["reconciled_by_user_id"].asString());
         }
     }
 
@@ -756,7 +756,7 @@ GlBankReconciliations::GlBankReconciliations(const Json::Value &pJson) noexcept(
         dirtyFlag_[13]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -784,7 +784,7 @@ void GlBankReconciliations::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -905,7 +905,7 @@ void GlBankReconciliations::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            reconciledByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            reconciledByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -942,7 +942,7 @@ void GlBankReconciliations::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -964,7 +964,7 @@ void GlBankReconciliations::updateByJson(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1085,7 +1085,7 @@ void GlBankReconciliations::updateByJson(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[11] = true;
         if(!pJson["reconciled_by_user_id"].isNull())
         {
-            reconciledByUserId_=std::make_shared<int64_t>((int64_t)pJson["reconciled_by_user_id"].asInt64());
+            reconciledByUserId_=std::make_shared<std::string>(pJson["reconciled_by_user_id"].asString());
         }
     }
 
@@ -1122,7 +1122,7 @@ void GlBankReconciliations::updateByJson(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[13] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1155,20 +1155,25 @@ const typename GlBankReconciliations::PrimaryKeyType & GlBankReconciliations::ge
     return *id_;
 }
 
-const int32_t &GlBankReconciliations::getValueOfTenantId() const noexcept
+const std::string &GlBankReconciliations::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlBankReconciliations::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlBankReconciliations::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlBankReconciliations::setTenantId(const int32_t &pTenantId) noexcept
+void GlBankReconciliations::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlBankReconciliations::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1360,20 +1365,25 @@ void GlBankReconciliations::setReconciledAtToNull() noexcept
     dirtyFlag_[10] = true;
 }
 
-const int64_t &GlBankReconciliations::getValueOfReconciledByUserId() const noexcept
+const std::string &GlBankReconciliations::getValueOfReconciledByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(reconciledByUserId_)
         return *reconciledByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBankReconciliations::getReconciledByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBankReconciliations::getReconciledByUserId() const noexcept
 {
     return reconciledByUserId_;
 }
-void GlBankReconciliations::setReconciledByUserId(const int64_t &pReconciledByUserId) noexcept
+void GlBankReconciliations::setReconciledByUserId(const std::string &pReconciledByUserId) noexcept
 {
-    reconciledByUserId_ = std::make_shared<int64_t>(pReconciledByUserId);
+    reconciledByUserId_ = std::make_shared<std::string>(pReconciledByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlBankReconciliations::setReconciledByUserId(std::string &&pReconciledByUserId) noexcept
+{
+    reconciledByUserId_ = std::make_shared<std::string>(std::move(pReconciledByUserId));
     dirtyFlag_[11] = true;
 }
 void GlBankReconciliations::setReconciledByUserIdToNull() noexcept
@@ -1399,20 +1409,25 @@ void GlBankReconciliations::setCreatedAt(const ::trantor::Date &pCreatedAt) noex
     dirtyFlag_[12] = true;
 }
 
-const int64_t &GlBankReconciliations::getValueOfCreatedByUserId() const noexcept
+const std::string &GlBankReconciliations::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlBankReconciliations::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlBankReconciliations::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlBankReconciliations::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlBankReconciliations::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[13] = true;
+}
+void GlBankReconciliations::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[13] = true;
 }
 
@@ -1993,7 +2008,7 @@ Json::Value GlBankReconciliations::toJson() const
     if(getReconciledByUserId())
     {
 
-        ret["reconciled_by_user_id"]=(Json::Int64)getValueOfReconciledByUserId();
+        ret["reconciled_by_user_id"]=getValueOfReconciledByUserId();
 
     }
     else
@@ -2015,7 +2030,7 @@ Json::Value GlBankReconciliations::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2197,7 +2212,7 @@ Json::Value GlBankReconciliations::toMasqueradedJson(
             if(getReconciledByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfReconciledByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfReconciledByUserId();
 
             }
             else
@@ -2225,7 +2240,7 @@ Json::Value GlBankReconciliations::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[13]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[13]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2362,7 +2377,7 @@ Json::Value GlBankReconciliations::toMasqueradedJson(
     if(getReconciledByUserId())
     {
 
-        ret["reconciled_by_user_id"]=(Json::Int64)getValueOfReconciledByUserId();
+        ret["reconciled_by_user_id"]=getValueOfReconciledByUserId();
 
     }
     else
@@ -2384,7 +2399,7 @@ Json::Value GlBankReconciliations::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2988,7 +3003,7 @@ bool GlBankReconciliations::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3162,7 +3177,7 @@ bool GlBankReconciliations::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3194,7 +3209,7 @@ bool GlBankReconciliations::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

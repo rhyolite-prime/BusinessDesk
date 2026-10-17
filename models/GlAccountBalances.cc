@@ -61,7 +61,7 @@ const std::string GlAccountBalances::tableName = "\"gl_account_balances\"";
 
 const std::vector<typename GlAccountBalances::MetaData> GlAccountBalances::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"account_id","std::string","uuid",0,0,0,1},
 {"organization_unit_id","std::string","uuid",0,0,0,0},
@@ -96,7 +96,7 @@ GlAccountBalances::GlAccountBalances(const Row &r, const ssize_t indexOffset) no
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -224,7 +224,7 @@ GlAccountBalances::GlAccountBalances(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -367,7 +367,7 @@ GlAccountBalances::GlAccountBalances(const Json::Value &pJson, const std::vector
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -517,7 +517,7 @@ GlAccountBalances::GlAccountBalances(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -672,7 +672,7 @@ void GlAccountBalances::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -821,7 +821,7 @@ void GlAccountBalances::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -981,20 +981,25 @@ const typename GlAccountBalances::PrimaryKeyType & GlAccountBalances::getPrimary
     return *id_;
 }
 
-const int32_t &GlAccountBalances::getValueOfTenantId() const noexcept
+const std::string &GlAccountBalances::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlAccountBalances::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlAccountBalances::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlAccountBalances::setTenantId(const int32_t &pTenantId) noexcept
+void GlAccountBalances::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlAccountBalances::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2779,7 +2784,7 @@ bool GlAccountBalances::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

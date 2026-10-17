@@ -79,7 +79,7 @@ const std::string GlPaymentVoucherLines::tableName = "\"gl_payment_voucher_lines
 
 const std::vector<typename GlPaymentVoucherLines::MetaData> GlPaymentVoucherLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"payment_voucher_id","std::string","uuid",0,0,0,1},
 {"debit_account_id","std::string","uuid",0,0,0,1},
@@ -100,7 +100,7 @@ const std::vector<typename GlPaymentVoucherLines::MetaData> GlPaymentVoucherLine
 {"has_imprest","bool","boolean",1,0,0,1},
 {"line_type","std::string","character varying",40,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlPaymentVoucherLines::getColumnName(size_t index) noexcept(false)
@@ -123,7 +123,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -291,7 +291,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -318,7 +318,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -507,7 +507,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -537,7 +537,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson, const std
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -751,7 +751,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson, const std
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[22]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -774,7 +774,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson) noexcept(
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -988,7 +988,7 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson) noexcept(
         dirtyFlag_[22]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1016,7 +1016,7 @@ void GlPaymentVoucherLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1230,7 +1230,7 @@ void GlPaymentVoucherLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[22]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -1252,7 +1252,7 @@ void GlPaymentVoucherLines::updateByJson(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1466,7 +1466,7 @@ void GlPaymentVoucherLines::updateByJson(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[22] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1499,20 +1499,25 @@ const typename GlPaymentVoucherLines::PrimaryKeyType & GlPaymentVoucherLines::ge
     return *id_;
 }
 
-const int32_t &GlPaymentVoucherLines::getValueOfTenantId() const noexcept
+const std::string &GlPaymentVoucherLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlPaymentVoucherLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlPaymentVoucherLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlPaymentVoucherLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlPaymentVoucherLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1991,20 +1996,25 @@ void GlPaymentVoucherLines::setCreatedAt(const ::trantor::Date &pCreatedAt) noex
     dirtyFlag_[21] = true;
 }
 
-const int64_t &GlPaymentVoucherLines::getValueOfCreatedByUserId() const noexcept
+const std::string &GlPaymentVoucherLines::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlPaymentVoucherLines::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlPaymentVoucherLines::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlPaymentVoucherLines::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlPaymentVoucherLines::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[22] = true;
+}
+void GlPaymentVoucherLines::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[22] = true;
 }
 void GlPaymentVoucherLines::setCreatedByUserIdToNull() noexcept
@@ -2981,7 +2991,7 @@ Json::Value GlPaymentVoucherLines::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3317,7 +3327,7 @@ Json::Value GlPaymentVoucherLines::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[22]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[22]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -3575,7 +3585,7 @@ Json::Value GlPaymentVoucherLines::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -4383,7 +4393,7 @@ bool GlPaymentVoucherLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4779,7 +4789,7 @@ bool GlPaymentVoucherLines::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
