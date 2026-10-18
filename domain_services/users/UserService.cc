@@ -16,6 +16,7 @@
 #include <jwt-cpp/jwt.h>
 
 #include "constants/ErrorCodes.h"
+#include "constants/TenantConstants.h"
 #include "domain_services/permissions/PermissionService.h"
 #include "utils/AuditUtil.h"
 
@@ -34,9 +35,13 @@ dto::BaseApiResponse failure(int code, const std::string &message) {
     return r;
 }
 Criteria userScope(const std::string &tenantId) {
-    return tenantId.empty()
-        ? Criteria(Users::Cols::_tenant_id, CompareOperator::IsNull)
+    const auto scope = tenantId.empty()
+        ? (Criteria(Users::Cols::_tenant_id, CompareOperator::IsNull) ||
+           Criteria(Users::Cols::_tenant_id, CompareOperator::EQ, std::string(constants::kHostTenantId)))
         : Criteria(Users::Cols::_tenant_id, CompareOperator::EQ, tenantId);
+    // Keep deletion independent of activation: inactive, non-deleted users
+    // remain manageable, but deleted users never enter a service query.
+    return scope && Criteria(Users::Cols::_is_deleted, CompareOperator::EQ, false);
 }
 std::string normalize(std::string value) {
     std::transform(value.begin(), value.end(), value.begin(),
@@ -99,6 +104,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     dto::BaseApiResponse response;
     response.result["token"] = builder.sign(jwt::algorithm::hs256{key});
     user.setLastActive(trantor::Date::now());
+    utils::applyUpdateAudit(user, utils::AuditIdentity{user.getValueOfTenantId(), user.getValueOfId()});
     CoroMapper<Users> mapper(drogon::app().getDbClient());
     co_await mapper.update(user);
     response.success = true;
@@ -183,7 +189,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
           camelCaseRole["isLockedOut"] = roleJson["is_locked_out"];
           camelCaseRole["isActive"] = roleJson["is_active"];
           camelCaseRole["createdAt"] = roleJson["created_at"];
-          camelCaseRole["updatedAt"] = roleJson["updated_at"];
+          camelCaseRole["lastModifiedAt"] = roleJson["last_modified_at"];
+          camelCaseRole["updatedAt"] = roleJson["last_modified_at"]; // Legacy response alias.
           data.append(camelCaseRole);
         }
         response.result["data"] = data;
@@ -227,7 +234,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     newUser.setPasswordHash(bcrypt::generateHash(dto.getPassword()));
     newUser.setIsActive(true);
     newUser.setIsLockedOut(false);
-    newUser.setCreatedAt(trantor::Date::now());
+    newUser.setIsDeleted(false);
 
     dto::BaseApiResponse response;
     try {
@@ -299,7 +306,6 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
         user.setPasswordHash(bcrypt::generateHash(dto.getPassword()));
       }
 
-
       utils::applyUpdateAudit(user, identity);
       auto identifiers = Criteria(Users::Cols::_email, CompareOperator::EQ, user.getValueOfEmail());
       if (!user.getValueOfUsername().empty()) identifiers = identifiers ||
@@ -327,24 +333,26 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
 
     drogon::Task<dto::BaseApiResponse> UserService::deleteUser(const std::string &userId, const utils::AuditIdentity &identity) {
         if (!identity.hasUser()) co_return failure(constants::ERR_UNAUTHORIZED, "Authenticated identity required.");
-        if (userId == identity.userId) co_return failure(constants::ERR_VALIDATION, "Cannot deactivate your own account.");
+        if (userId == identity.userId) co_return failure(constants::ERR_VALIDATION, "Cannot delete your own account.");
         try {
             CoroMapper<Users> mapper(drogon::app().getDbClient());
             auto user = co_await mapper.findOne(userScope(identity.tenantId) && Criteria(Users::Cols::_id, CompareOperator::EQ, userId));
-            // Users has no soft-delete/audit columns: retain references and disable login.
+            // Retain the row and its references; stamp the actor and deletion time.
+            user.setIsDeleted(true);
             user.setIsActive(false);
             user.setIsLockedOut(true);
-
+            utils::applyDeleteAudit(user, identity);
+            utils::applyUpdateAudit(user, identity);
             co_await mapper.update(user);
             dto::BaseApiResponse response;
             response.success = true;
             response.result["id"] = userId;
-            response.result["deactivated"] = true;
+            response.result["deleted"] = true;
             co_return response;
         } catch (const UnexpectedRows &) {
             co_return failure(constants::ERR_RESOURCE_NOT_FOUND, "User not found.");
         } catch (const DrogonDbException &) {
-            co_return failure(constants::ERR_DB_QUERY, "Failed to deactivate user.");
+            co_return failure(constants::ERR_DB_QUERY, "Failed to delete user.");
         }
     }
 
@@ -442,7 +450,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     try {
       size_t count = co_await mp.count(Criteria(UserGroups::Cols::_title,
                                                 CompareOperator::EQ,
-                                                dto.getTitle()));
+                                                dto.getTitle()) &&
+                                    Criteria(UserGroups::Cols::_is_deleted, CompareOperator::EQ, false));
       if (count > 0) {
         response.success = false;
         response.message = "User group with this name already exists";
@@ -515,7 +524,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
           dto.getTitle() != group.getValueOfTitle()) {
         size_t nameCount = co_await mp.count(Criteria(UserGroups::Cols::_title,
                                                       CompareOperator::EQ,
-                                                      dto.getTitle()));
+                                                      dto.getTitle()) &&
+                                            Criteria(UserGroups::Cols::_is_deleted, CompareOperator::EQ, false));
         if (nameCount > 0) {
           response.success = false;
           response.message = "User group with this name already exists";
@@ -631,6 +641,16 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
             Criteria(Users::Cols::_is_locked_out, CompareOperator::EQ, false) &&
             Criteria(Users::Cols::_is_host_admin_user, CompareOperator::EQ, host);
         auto user = co_await mapper.findOne(criteria);
+        // The bootstrap host administrator belongs to the protected default tenant.
+        // Keep legacy NULL-tenant host users compatible, but never admit arbitrary
+        // tenant users to the host scope.
+        if (host && !user.getValueOfTenantId().empty()) {
+            using Tenant = drogon_model::BusinessDesk::Tenants;
+            CoroMapper<Tenant> tenants(db);
+            co_await tenants.findOne(Criteria(Tenant::Cols::_id, CompareOperator::EQ, user.getValueOfTenantId()) &&
+                Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true) &&
+                Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false));
+        }
         if (user.getValueOfPasswordHash().empty() ||
             !bcrypt::validatePassword(input.getPassword(), user.getValueOfPasswordHash()))
             co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");

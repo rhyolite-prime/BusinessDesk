@@ -18,7 +18,12 @@ namespace business_desk::domain_services {
 
     try {
         drogon::orm::CoroMapper<drogon_model::BusinessDesk::Users> userMapper(dbClient);
-        auto user = co_await userMapper.findByPrimaryKey(userId);
+        using Users = drogon_model::BusinessDesk::Users;
+        using UserGroups = drogon_model::BusinessDesk::UserGroups;
+        auto user = co_await userMapper.findOne(
+            drogon::orm::Criteria(Users::Cols::_id, drogon::orm::CompareOperator::EQ, userId) &&
+            drogon::orm::Criteria(Users::Cols::_is_active, drogon::orm::CompareOperator::EQ, true) &&
+            drogon::orm::Criteria(Users::Cols::_is_deleted, drogon::orm::CompareOperator::EQ, false));
 
         std::unordered_set<std::string> uniqueRoleIds;
         Json::Reader reader;
@@ -42,8 +47,9 @@ namespace business_desk::domain_services {
             for (const auto& groupId : userGroupsJson) {
                 if (groupId.isString()) {
                     try {
-                        auto group = co_await userGroupMapper.findByPrimaryKey(groupId.asString());
-                        if (group.getValueOfIsDeleted()) continue;
+                        auto group = co_await userGroupMapper.findOne(
+                            drogon::orm::Criteria(UserGroups::Cols::_id, drogon::orm::CompareOperator::EQ, groupId.asString()) &&
+                            drogon::orm::Criteria(UserGroups::Cols::_is_deleted, drogon::orm::CompareOperator::EQ, false));
                         Json::Value groupRolesJson;
                         std::string groupRolesStr = group.getValueOfRoles();
                         if (!groupRolesStr.empty() && reader.parse(groupRolesStr, groupRolesJson) && groupRolesJson.isArray()) {

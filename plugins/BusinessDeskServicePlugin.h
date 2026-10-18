@@ -10,6 +10,7 @@
 
 #include "domain_services/gl/GlService.h"
 #include "domain_services/users/UserService.h"
+#include "domain_services/tenants/TenantService.h"
 
 namespace business_desk::plugins {
     class BusinessDeskServicePlugin : public drogon::Plugin<BusinessDeskServicePlugin>
@@ -27,11 +28,13 @@ namespace business_desk::plugins {
 
         domain_services::GlService &getGlService() { return glService_; }
         domain_services::UserService &getUserService() { return userService_; }
+        domain_services::TenantService &getTenantService() { return tenantService_; }
 
 
     private:
         domain_services::GlService glService_;
         domain_services::UserService userService_;
+        domain_services::TenantService tenantService_;
     };
 
 }

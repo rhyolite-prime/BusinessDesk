@@ -205,15 +205,16 @@ drogon::Task<std::string> validateBaseCurrency(const drogon::orm::DbClientPtr &d
     co_return std::string();
 }
 
-// Checks whether an accounting unit code is already taken. The unique
-// constraint on (tenant, code) covers soft-deleted rows, so the check
-// ignores is_deleted. An empty selfId means the check runs for a create.
+// Checks live accounting units only. Database uniqueness constraints still
+// apply to inserts, including deleted rows when the index is not partial.
+// An empty selfId means the check runs for a create.
 drogon::Task<std::string> validateAccountingUnitCode(const drogon::orm::DbClientPtr &dbClient,
                                                           const std::string &code,
                                                           const std::string &selfId,
                                                           const std::string &tenantId) {
     auto mp = drogon::orm::CoroMapper<CoreAccountingUnits>(dbClient);
-    Criteria codeCriteria(CoreAccountingUnits::Cols::_code, CompareOperator::EQ, code);
+    Criteria codeCriteria = Criteria(CoreAccountingUnits::Cols::_code, CompareOperator::EQ, code) &&
+                            Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false);
     if (!tenantId.empty()) {
         codeCriteria = codeCriteria && Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::EQ, tenantId);
     }
@@ -1082,8 +1083,9 @@ namespace business_desk::domain_services {
           co_return makeErrorResponse("validation_error", "Account number must be within the account control range.");
         }
 
-        // Account numbers are unique for the accounting unit, including numbers on soft-deleted records.
-        const auto duplicateCount = co_await mp.count(Criteria(GlAccounts::Cols::_account_number, CompareOperator::EQ, std::to_string(dto.getAccountNo())));
+        // Check live accounts only; database unique indexes may still reserve deleted numbers.
+        const auto duplicateCount = co_await mp.count(Criteria(GlAccounts::Cols::_account_number, CompareOperator::EQ, std::to_string(dto.getAccountNo())) &&
+                                                    Criteria(GlAccounts::Cols::_is_deleted, CompareOperator::EQ, false));
         if (duplicateCount > 0) {
           co_return makeErrorResponse("conflict", "An account with this number already exists.");
         }
@@ -1177,9 +1179,10 @@ namespace business_desk::domain_services {
           standardAccountType = groups.front().getValueOfStandardAccountType();
         }
 
-        // Account numbers are unique for the accounting unit, including numbers on soft-deleted records.
+        // Check live accounts only; database unique indexes may still reserve deleted numbers.
         const auto duplicateCount = co_await mp.count(Criteria(GlAccounts::Cols::_account_number, CompareOperator::EQ, std::to_string(dto.getAccountNo())) &&
-                                                      Criteria(GlAccounts::Cols::_id, CompareOperator::NE, id));
+                                                      Criteria(GlAccounts::Cols::_id, CompareOperator::NE, id) &&
+                                                      Criteria(GlAccounts::Cols::_is_deleted, CompareOperator::EQ, false));
         if (duplicateCount > 0) {
           co_return makeErrorResponse("conflict", "An account with this number already exists.");
         }
@@ -1415,16 +1418,21 @@ namespace business_desk::domain_services {
           co_return makeErrorResponse("not_found", "Accounting unit not found.");
         }
 
-        // The composite foreign keys keep soft-deleted rows in place, so
-        // every physical dependent row blocks the delete. The setup tables
-        // below are the roots of the unit's ledger; journals, budgets, and
-        // reconciliations cannot exist without them.
-        const auto groupCount = co_await groupMapper.count(Criteria(GlAccountGroups::Cols::_accounting_unit_id, CompareOperator::EQ, id));
-        const auto controlCount = co_await controlMapper.count(Criteria(GlAccountControls::Cols::_accounting_unit_id, CompareOperator::EQ, id));
-        const auto accountCount = co_await accountMapper.count(Criteria(GlAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id));
-        const auto periodCount = co_await periodMapper.count(Criteria(GlAccountingPeriods::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        // Only live soft-deletable dependencies block a soft delete.
+        // Non-soft-deletable balances still protect the unit; no physical
+        // rows are removed and all foreign-key references remain intact.
+        const auto groupCount = co_await groupMapper.count(Criteria(GlAccountGroups::Cols::_accounting_unit_id, CompareOperator::EQ, id) &&
+            Criteria(GlAccountGroups::Cols::_is_deleted, CompareOperator::EQ, false));
+        const auto controlCount = co_await controlMapper.count(Criteria(GlAccountControls::Cols::_accounting_unit_id, CompareOperator::EQ, id) &&
+            Criteria(GlAccountControls::Cols::_is_deleted, CompareOperator::EQ, false));
+        const auto accountCount = co_await accountMapper.count(Criteria(GlAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id) &&
+            Criteria(GlAccounts::Cols::_is_deleted, CompareOperator::EQ, false));
+        const auto periodCount = co_await periodMapper.count(Criteria(GlAccountingPeriods::Cols::_accounting_unit_id, CompareOperator::EQ, id) &&
+            Criteria(GlAccountingPeriods::Cols::_is_deleted, CompareOperator::EQ, false));
+        // Balances have no is_deleted column and must continue to protect the unit.
         const auto balanceCount = co_await balanceMapper.count(Criteria(GlAccountBalances::Cols::_accounting_unit_id, CompareOperator::EQ, id));
-        const auto bankCount = co_await bankMapper.count(Criteria(GlBankAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id));
+        const auto bankCount = co_await bankMapper.count(Criteria(GlBankAccounts::Cols::_accounting_unit_id, CompareOperator::EQ, id) &&
+            Criteria(GlBankAccounts::Cols::_is_deleted, CompareOperator::EQ, false));
         if (groupCount > 0 || controlCount > 0 || accountCount > 0 ||
             periodCount > 0 || balanceCount > 0 || bankCount > 0) {
           co_return makeErrorResponse("conflict", "Accounting unit cannot be deleted while it still has chart of accounts, periods, balances, or bank accounts.");

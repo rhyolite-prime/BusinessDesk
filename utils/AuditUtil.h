@@ -102,6 +102,12 @@ void applyCreateAudit(Model &model, const AuditIdentity &identity)
     if constexpr (HasCreatedAt<Model>) {
         model.setCreatedAt(trantor::Date::now());
     }
+    if constexpr (requires { model.setCreationTime(trantor::Date::now()); }) {
+        model.setCreationTime(trantor::Date::now());
+    }
+    if constexpr (requires { model.setCreatorUserId(identity.userId); }) {
+        if (identity.hasUser()) model.setCreatorUserId(identity.userId);
+    }
     if constexpr (HasLastModifiedByUserId<Model>) {
         if (identity.hasUser()) {
             model.setLastModifiedByUserId(identity.userId);
@@ -109,6 +115,12 @@ void applyCreateAudit(Model &model, const AuditIdentity &identity)
     }
     if constexpr (HasLastModifiedAt<Model>) {
         model.setLastModifiedAt(trantor::Date::now());
+    }
+    if constexpr (requires { model.setLastModificationTime(trantor::Date::now()); }) {
+        model.setLastModificationTime(trantor::Date::now());
+    }
+    if constexpr (requires { model.setLastModifierUserId(identity.userId); }) {
+        if (identity.hasUser()) model.setLastModifierUserId(identity.userId);
     }
 }
 
@@ -124,6 +136,12 @@ void applyUpdateAudit(Model &model, const AuditIdentity &identity)
     if constexpr (HasLastModifiedAt<Model>) {
         model.setLastModifiedAt(trantor::Date::now());
     }
+    if constexpr (requires { model.setLastModificationTime(trantor::Date::now()); }) {
+        model.setLastModificationTime(trantor::Date::now());
+    }
+    if constexpr (requires { model.setLastModifierUserId(identity.userId); }) {
+        if (identity.hasUser()) model.setLastModifierUserId(identity.userId);
+    }
 }
 
 /** Stamps the fields recorded when a row is soft-deleted. */
@@ -137,6 +155,12 @@ void applyDeleteAudit(Model &model, const AuditIdentity &identity)
     }
     if constexpr (HasDeletedAt<Model>) {
         model.setDeletedAt(trantor::Date::now());
+    }
+    if constexpr (requires { model.setDeletionTime(trantor::Date::now()); }) {
+        model.setDeletionTime(trantor::Date::now());
+    }
+    if constexpr (requires { model.setDeleterUserId(identity.userId); }) {
+        if (identity.hasUser()) model.setDeleterUserId(identity.userId);
     }
 }
 

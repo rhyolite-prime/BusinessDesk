@@ -16,7 +16,9 @@ namespace business_desk::domain_services {
 
     public:
 
-        drogon::Task<dto::BaseApiResponse> getAllTenants(int pageNo, int pageSize,  const std::string &query); // if tenantId is empty , it means we query for host users by default
+        drogon::Task<dto::BaseApiResponse> getAllTenants(int pageNo, int pageSize,  const std::string &query, const utils::AuditIdentity &identity);
+
+        drogon::Task<dto::BaseApiResponse> getTenant(const std::string &tenantId, const utils::AuditIdentity &identity);
 
         drogon::Task<dto::BaseApiResponse> createTenant(const dto::TenantDto &dto, const utils::AuditIdentity &identity);
 
