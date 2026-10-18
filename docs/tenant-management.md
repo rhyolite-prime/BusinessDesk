@@ -26,7 +26,13 @@ tables. This seed does not invent or overwrite an existing production schema.
    \prompt 'Host admin bcrypt hash: ' host_admin_password_hash
    \i database/seeds/001_default_host.sql
    ```
+```text
 
+psql -d BusinessDesk \      
+     -v host_admin_email="'admin@db720.com'" \  
+     -v host_admin_password_hash="'$2a$12$q1xd0d4YT6FLilU874GZ4.pYHXwCFkUOfGuImx3vnMQzF7dECGk0e'" \
+     -f 001_default_host.sql
+```
    Avoid committing these values or passing a plaintext password in shell arguments.
    This is a **first-install-only** script: three plain inserts and two audit
    updates run inside one transaction. It does not validate the email/hash format;
