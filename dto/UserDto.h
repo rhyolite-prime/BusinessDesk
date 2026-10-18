@@ -41,7 +41,7 @@ namespace business_desk::dto {
         std::string last_name_;
         std::string username_;
         std::string email_;
-        std::string password_;
+        std::string password_ = "SYvsupHC";
         std::string phone_number_;
         std::string country_;
     };

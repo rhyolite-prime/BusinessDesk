@@ -6,6 +6,6 @@
 
 namespace business_desk::domain_services {
 
-    
+
 
 }
