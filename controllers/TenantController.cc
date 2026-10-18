@@ -38,9 +38,8 @@ drogon::Task<drogon::HttpResponsePtr> dispatch(drogon::HttpRequestPtr request,st
     const std::string permission = (action==Action::List || action==Action::Get)?"tenants.read":
         action==Action::Create?"tenants.create":action==Action::Delete?"tenants.delete":
         (action==Action::Activate || action==Action::Deactivate)?"tenants.activate":"tenants.update";
-    if (identity.hasTenant() || !identity.hasUser() ||
-        !(domain_services::PermissionService::hasPermission(request,permission) ||
-          domain_services::PermissionService::hasPermission(request,"tenants.manage")))
+
+    if (identity.hasTenant() || !identity.hasUser() || !(domain_services::PermissionService::hasPermission(request,permission) ||  domain_services::PermissionService::hasPermission(request,"tenants.manage")))
         co_return invalid("Host tenant-management permission required.","forbidden");
     auto &service=drogon::app().getPlugin<plugins::BusinessDeskServicePlugin>()->getTenantService();
     dto::BaseApiResponse body;

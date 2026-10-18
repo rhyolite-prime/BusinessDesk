@@ -72,7 +72,7 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
     if (!audience.empty()) verifier.with_audience(audience);
     auto decoded = jwt::decode(token);
     verifier.verify(decoded);
-    if (!decoded.has_payload_claim("exp") || !decoded.has_payload_claim("permissions"))
+    if (!decoded.has_payload_claim("exp"))
       throw std::runtime_error("Missing required claims");
     if (!decoded.has_payload_claim("tenantId") || decoded.get_payload_claim("tenantId").as_string().empty())
       throw std::runtime_error("Missing tenantId claim");
@@ -94,11 +94,6 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
       LOG_DEBUG << "Extracted tenantId: " << tenantId;
     }
 
-    if (decoded.has_payload_claim("tenantEmail")) {
-      auto tenantEmail = decoded.get_payload_claim("tenantEmail").as_string();
-      req->attributes()->insert("tenantEmail", tenantEmail);
-      LOG_DEBUG << "Extracted tenantEmail: " << tenantEmail;
-    }
 
     if (decoded.has_payload_claim("tenantName")) {
       auto tenantName = decoded.get_payload_claim("tenantName").as_string();
@@ -113,25 +108,6 @@ void TenantJwtAuthFilter::doFilter(const HttpRequestPtr &req,
     if (decoded.has_payload_claim("tenantUserEmail")) {
       auto tenantUserEmail = decoded.get_payload_claim("tenantUserEmail").as_string();
       req->attributes()->insert("tenantUserEmail", tenantUserEmail);
-    }
-
-    if (decoded.has_payload_claim("permissions")) {
-      auto permissionsStr = decoded.get_payload_claim("permissions").as_string();
-      std::unordered_set<std::string> permissionsSet;
-      Json::Value permissionsJson;
-      Json::Reader reader;
-      if (!reader.parse(permissionsStr, permissionsJson) || !permissionsJson.isArray())
-        throw std::runtime_error("Invalid permissions claim");
-      {
-        for (const auto& perm : permissionsJson) {
-          if (!perm.isString()) throw std::runtime_error("Invalid permission");
-          if (perm.isString()) {
-            permissionsSet.insert(perm.asString());
-          }
-        }
-      }
-      req->attributes()->insert("permissions", permissionsSet);
-      LOG_DEBUG << "Extracted " << permissionsSet.size() << " permissions";
     }
 
     // Token is valid, continue to the next filter or handler

@@ -99,6 +99,9 @@ namespace business_desk::domain_services {
             auto permissions = req->attributes()->get<std::unordered_set<std::string>>("permissions");
             return permissions.find(requiredPermission) != permissions.end();
         }
+
+        //use the user id to get the roles associated to that user and resolve the permissions
+        
         return false;
     }
 

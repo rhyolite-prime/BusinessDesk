@@ -73,7 +73,7 @@ void HostJwtAuthFilter::doFilter(const HttpRequestPtr &req,
     if (!audience.empty()) verifier.with_audience(audience);
     auto decoded = jwt::decode(token);
     verifier.verify(decoded);
-    if (!decoded.has_payload_claim("exp") || !decoded.has_payload_claim("permissions"))
+    if (!decoded.has_payload_claim("exp"))
       throw std::runtime_error("Missing required claims");
     if (!decoded.has_payload_claim("hostUserId") || decoded.get_payload_claim("hostUserId").as_string().empty())
       throw std::runtime_error("Missing hostUserId claim");
