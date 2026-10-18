@@ -450,7 +450,7 @@
                 ]
             }
         ],
-        "AdminPermissions": [
+        "TenantPermissions": [
             {
                 "systemName": "dashboard",
                 "friendlyName": "Dashboard",
