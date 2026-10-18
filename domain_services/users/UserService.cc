@@ -87,8 +87,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     const auto now = std::chrono::system_clock::now();
     auto builder = jwt::create().set_issuer(issuer).set_type("JWT")
         .set_subject(user.getValueOfId()).set_issued_at(now)
-        .set_expires_at(now + std::chrono::seconds(lifetime))
-        .set_payload_claim("permissions", jwt::claim(writer.write(array)));
+        .set_expires_at(now + std::chrono::seconds(lifetime));
     if (!config["JwtAudience"].asString().empty())
         builder.set_audience(config["JwtAudience"].asString());
     if (host) {
