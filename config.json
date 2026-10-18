@@ -404,6 +404,11 @@
                 "friendlyName": "Manage Users",
                 "subPermissions": [
                     {
+                        "id": 14,
+                        "systemName": "users.read",
+                        "friendlyName": "View Users"
+                    },
+                    {
                         "id": 9,
                         "systemName": "users.create",
                         "friendlyName": "Create/Invite User"

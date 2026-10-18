@@ -114,16 +114,17 @@ struct Criteria {
 };
 template<class M> struct CoroMapper {
  inline static std::vector<M> rows;
+ inline static bool failQueries=false, failUniqueWrites=false;
  size_t max=1000000, skip=0;
  template<class T> explicit CoroMapper(T) {}
  auto &orderBy(const std::string &) { return *this; }
  auto &limit(size_t n) { max=n; return *this; } auto &offset(size_t n) { skip=n; return *this; }
- Task<size_t> count(Criteria c) { size_t n=0; for(auto &r:rows) if(c.match(r.toJson())) ++n; co_return n; }
+ Task<size_t> count(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); size_t n=0; for(auto &r:rows) if(c.match(r.toJson())) ++n; co_return n; }
  Task<std::vector<M>> findBy(Criteria c) { std::vector<M> result; size_t n=0; for(auto &r:rows) if(c.match(r.toJson()) && n++>=skip && result.size()<max) result.push_back(r); co_return result; }
- Task<M> findOne(Criteria c) { std::vector<M> found; for(auto &r:rows) if(c.match(r.toJson())) found.push_back(r); if(found.size()!=1) throw UnexpectedRows(); co_return found[0]; }
+ Task<M> findOne(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); std::vector<M> found; for(auto &r:rows) if(c.match(r.toJson())) found.push_back(r); if(found.size()!=1) throw UnexpectedRows(); co_return found[0]; }
  Task<M> findByPrimaryKey(std::string id) { co_return co_await findOne(Criteria(M::Cols::_id,CompareOperator::EQ,id)); }
- Task<M> insert(M m) { if constexpr (requires { M::Cols::_is_deleted; }) { if (m.data["is_deleted"].isNull()) m.data["is_deleted"]=false; } if(m.getValueOfId().empty()) m.setId("id-"+std::to_string(rows.size()+1)); rows.push_back(m); co_return m; }
- Task<size_t> update(M m) { for(auto &r:rows) if(r.getValueOfId()==m.getValueOfId()) {r=m; co_return 1;} throw UnexpectedRows(); }
+ Task<M> insert(M m) { if(failUniqueWrites) throw UniqueViolation("private-db-detail"); if constexpr (requires { M::Cols::_is_deleted; }) { if (m.data["is_deleted"].isNull()) m.data["is_deleted"]=false; } if(m.getValueOfId().empty()) m.setId("00000000-0000-4000-8000-"+std::string(12-std::to_string(rows.size()+1).size(),'0')+std::to_string(rows.size()+1)); rows.push_back(m); co_return m; }
+ Task<size_t> update(M m) { if(failUniqueWrites) throw UniqueViolation("private-db-detail"); for(auto &r:rows) if(r.getValueOfId()==m.getValueOfId()) {r=m; co_return 1;} throw UnexpectedRows(); }
 };
 }
 ''')
@@ -204,9 +205,12 @@ namespace drogon { template<class T> struct HttpController {}; }
 """)
 write('plugins/BusinessDeskServicePlugin.h', """#pragma once
 #include "domain_services/tenants/TenantService.h"
+#include "domain_services/users/UserService.h"
 namespace business_desk::plugins {
 struct BusinessDeskServicePlugin {
  domain_services::TenantService tenants;
+ domain_services::UserService users;
+ domain_services::UserService &getUserService() {return users;}
  domain_services::TenantService &getTenantService() {return tenants;}
 };
 }

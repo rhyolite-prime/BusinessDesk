@@ -135,6 +135,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
         searchCriteria = searchCriteria && (
             Criteria(Users::Cols::_first_name, CompareOperator::Like, likeQuery) ||
             Criteria(Users::Cols::_email, CompareOperator::Like, likeQuery) ||
+            Criteria(Users::Cols::_username, CompareOperator::Like, likeQuery) ||
             Criteria(Users::Cols::_last_name, CompareOperator::Like, likeQuery));
       }
 
@@ -160,7 +161,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
         // 3. Find the paginated data
         const size_t offset = static_cast<size_t>(pageNo - 1) * pageSize;
         auto users =
-            co_await mp.limit(pageSize).offset(offset).findBy(searchCriteria);
+            co_await mp.orderBy(Users::Cols::_id).limit(pageSize).offset(offset).findBy(searchCriteria);
 
 
 
@@ -183,6 +184,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
           camelCaseRole["firstName"] = roleJson["first_name"];
           camelCaseRole["lastName"] = roleJson["last_name"];
           camelCaseRole["email"] = roleJson["email"];
+          camelCaseRole["username"] = roleJson["username"];
           camelCaseRole["phoneNumber"] = roleJson["phone_number"];
           camelCaseRole["country"] = roleJson["country"];
           camelCaseRole["profileImageUrl"] = roleJson["profile_image"];
@@ -197,6 +199,7 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
 
       } catch (const drogon::orm::DrogonDbException &e) {
         response.success = false;
+        response.error["code"] = constants::ERR_DB_QUERY;
         response.error["message"] = "Database error while fetching users.";
         response.error["detail"] = e.base().what();
       }
@@ -250,6 +253,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
       response.success = true;
       response.message = "User created successfully";
       response.result["id"] = publication.getValueOfId();
+    } catch (const UniqueViolation &) {
+      co_return failure(constants::ERR_DUPLICATE_RESOURCE, "Email or username already exists.");
     } catch (const drogon::orm::DrogonDbException &e) {
       response.success = false;
       response.message = "Database error while creating user";
@@ -320,6 +325,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
       response.message = "User updated successfully";
     } catch (const UnexpectedRows &) {
       co_return failure(constants::ERR_RESOURCE_NOT_FOUND, "User not found.");
+    } catch (const UniqueViolation &) {
+      co_return failure(constants::ERR_DUPLICATE_RESOURCE, "Email or username already exists.");
     } catch (const DrogonDbException &e) {
       response.success = false;
       response.message = "Database error while updating user";

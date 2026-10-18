@@ -37,6 +37,11 @@ currently part of the filters. Protected routes must register the appropriate JW
 filter, and callers must enforce their operation's permissions before invoking
 management services (an AuditIdentity is not proof of authorization by itself).
 
+## User-management HTTP API
+
+See `user-management-api.md` for tenant/host CRUD routes, required permissions,
+Postman payloads, and the migration needed for existing bootstrap host accounts.
+
 ## User and group operations
 
 User reads and mutations are scoped to the supplied tenant; empty tenant means

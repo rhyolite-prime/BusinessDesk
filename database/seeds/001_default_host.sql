@@ -85,7 +85,7 @@ INSERT INTO tenants (
 INSERT INTO roles (id, name, description, tenant_id, permissions, created_at)
 VALUES ('00000000-0000-4000-8000-000000000003', 'Host tenant administrator', 'First-install host tenant management',
         '00000000-0000-4000-8000-000000000001',
-        '["tenants.read","tenants.create","tenants.update","tenants.activate","tenants.delete"]'::jsonb, CURRENT_TIMESTAMP);
+        '["tenants.read","tenants.create","tenants.update","tenants.activate","tenants.delete","users.manage"]'::jsonb, CURRENT_TIMESTAMP);
 
 INSERT INTO users (id, tenant_id, first_name, last_name, username, email, password_hash,
                    is_host_admin_user, is_tenant_admin_user, is_active, is_locked_out, is_deleted,

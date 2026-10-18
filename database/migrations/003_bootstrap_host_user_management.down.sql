@@ -1,0 +1,5 @@
+BEGIN;
+UPDATE roles SET permissions = permissions - 'users.manage', updated_at = CURRENT_TIMESTAMP
+WHERE id = '00000000-0000-4000-8000-000000000003'
+  AND tenant_id = '00000000-0000-4000-8000-000000000001';
+COMMIT;

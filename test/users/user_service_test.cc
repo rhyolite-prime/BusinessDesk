@@ -25,8 +25,10 @@ template<class Filter> bool accepts(const std::string &token) {
  return allowed && !denied;
 }
 void checkGlSoftDeletes();
+void checkUserRoutes();
 int main() {
  checkGlSoftDeletes();
+ checkUserRoutes();
  domain_services::UserService service;
  auto &cfg=drogon::app().config["JwtBearer"];
  cfg["JwtSecurityKey"]="test-only-secret-never-use-in-production";
