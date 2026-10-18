@@ -334,68 +334,83 @@
         },
         "QuartzSchedulerApi": {
             "BaseUrl": "https://scheduler.richcreationsdevelopment.com",
-            "CampaignCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/campaigns/run-scheduled-campaign",
-            "DailyNewsUpdateCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/news-papers/dispatch-daily-news-update",
-            "SubscriptionRenewalReminderCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/subscription/dispatch-subscription-reminder",
-            "PartnerInvoiceGenerationCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/admin/generate-partner-invoices",
-            "NewspaperEntitlementCallBackUrl": "https://dev-api.graphicnewsplus.com/api/v1/admin/regenerate-newspaper-entitlements"
+            "CallBackUrl": "https://erp-api.rhyoliteprime.com/api/v1/run-scheduled-activity"
         },
         "HostPermissions": [
             {
-                "systemName": "api.manage",
+                "systemName": "tenants.manage",
+                "friendlyName": "Manage Tenants",
+                "subPermissions": [
+                    {
+                        "systemName": "tenants.view",
+                        "friendlyName": "Delete Tenants"
+                    },
+                    {
+                        "systemName": "tenants.create",
+                        "friendlyName": "Create Tenants"
+                    },
+                    {
+                        "systemName": "tenants.update",
+                        "friendlyName": "Update Tenants"
+                    },
+                    {
+                        "systemName": "tenants.delete",
+                        "friendlyName": "Delete Subscriber"
+                    },
+                    {
+                        "systemName": "tenants.activate_deactivate",
+                        "friendlyName": "Activate/Deactivate Tenant"
+                    }
+                ]
+            },
+            {
+                "systemName": "api_keys.manage",
                 "friendlyName": "Manage API Keys",
                 "subPermissions": [
                     {
                         "id": 1,
-                        "systemName": "api.keys.create",
+                        "systemName": "api_keys.create",
                         "friendlyName": "Create API Keys"
                     },
                     {
                         "id": 2,
-                        "systemName": "api.keys.revoke",
+                        "systemName": "api_keys.revoke",
                         "friendlyName": "Revoke API Key"
                     },
                     {
                         "id": 3,
-                        "systemName": "api.keys.delete",
+                        "systemName": "api_keys.delete",
                         "friendlyName": "Delete API Key"
                     }
                 ]
             },
             {
-                "systemName": "subscribers.manage",
-                "friendlyName": "Manage Subscribers",
+                "systemName": "subscriptions.manage",
+                "friendlyName": "Manage Subscriptions",
                 "subPermissions": [
                     {
-                        "id": 4,
-                        "systemName": "subscribers.create",
-                        "friendlyName": "Create Subscriber"
+                        "systemName": "subscription.assign",
+                        "friendlyName": "Assign Subscription"
                     },
                     {
-                        "id": 5,
-                        "systemName": "subscribers.bulk_upload",
-                        "friendlyName": "Upload Bulk Subscribers via Excel/CSV"
+                        "systemName": "subscription.update",
+                        "friendlyName": "Update Subscription"
                     },
                     {
-                        "id": 6,
-                        "systemName": "subscribers.update",
-                        "friendlyName": "Update Subscriber"
+                        "systemName": "subscription.cancel",
+                        "friendlyName": "Cancel Subscription"
                     },
                     {
-                        "id": 7,
-                        "systemName": "subscribers.delete",
-                        "friendlyName": "Delete Subscriber"
-                    }
-                ]
-            },
-            {
-                "systemName": "settings.manage",
-                "friendlyName": "Manage Settings",
-                "subPermissions": [
+                        "systemName": "subscription.renew",
+                        "friendlyName": "Renew Subscription"
+                    },
                     {
-                        "id": 8,
-                        "systemName": "settings.update",
-                        "friendlyName": "Update Settings"
+                        "systemName": "subscription.activate_deactivate",
+                        "friendlyName": "Activate/Deactivate Subscription"
+                    },
+                    {
+                        "systemName": "subscription.delete",
+                        "friendlyName": "Delete Subscription"
                     }
                 ]
             },
@@ -404,17 +419,18 @@
                 "friendlyName": "Manage Users",
                 "subPermissions": [
                     {
-                        "id": 9,
+                        "systemName": "users.view",
+                        "friendlyName": "View Users"
+                    },
+                    {
                         "systemName": "users.create",
                         "friendlyName": "Create/Invite User"
                     },
                     {
-                        "id": 10,
                         "systemName": "users.edit",
                         "friendlyName": "Edit User"
                     },
                     {
-                        "id": 11,
                         "systemName": "users.delete",
                         "friendlyName": "Delete User"
                     }
@@ -424,16 +440,13 @@
                 "systemName": "reports.manage",
                 "friendlyName": "Manage Reports",
                 "subPermissions": [
-                    {
-                        "id": 12,
-                        "systemName": "reports.view",
-                        "friendlyName": "View Reports"
-                    },
-                    {
-                        "id": 13,
-                        "systemName": "reports.export",
-                        "friendlyName": "Export Report Data"
-                    }
+                    { "systemName": "reports.billing.invoice", "friendlyName": "View Billing & Invoice Reports" },
+                    { "systemName": "reports.billing.receivables", "friendlyName": "View Receivables & Aging Reports" },
+                    { "systemName": "reports.billing.payment", "friendlyName": "View Payment & Reconciliation Reports" },
+                    { "systemName": "reports.billing.subscription", "friendlyName": "View Subscription & MRR Reports" },
+                    { "systemName": "reports.billing.payables", "friendlyName": "View Payables Reports" },
+                    { "systemName": "reports.billing.export", "friendlyName": "Export Billing Reports" },
+                    { "systemName": "reports.export", "friendlyName": "Export Report Data" }
                 ]
             }
         ],
