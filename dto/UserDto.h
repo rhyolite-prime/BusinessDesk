@@ -78,5 +78,55 @@ namespace business_desk::dto {
 
     }
 
+    class TenantDto {
+
+    public:
+
+        TenantDto() = default;
+
+        void fromJson(const Json::Value& json);
+
+        // Getters
+        [[nodiscard]] const std::string& getTenancyName() const { return first_name_; }
+        [[nodiscard]] const std::string& getName() const { return last_name_; }
+        [[nodiscard]] const std::string& getAdminEmailAddress() const { return username_; }
+        [[nodiscard]] const std::string& getConnectionString() const { return username_; }
+
+
+        // Setters
+        void setTenancyName(const std::string& value) { first_name_ = value; }
+        void setName(const std::string& value) { last_name_ = value; }
+        void setAdminEmailAddress(const std::string& value) { username_ = value; }
+        void setConnectionString(const std::string& value) { username_ = value; }
+
+
+
+    private:
+
+        std::string first_name_;
+        std::string last_name_;
+        std::string username_;
+
+    };
+
+    inline void TenantDto::fromJson(const Json::Value& json) {
+
+        if (json.isMember("tenancyName") && !json["tenancyName"].isNull()) {
+            first_name_ = json["tenancyName"].asString();
+        }
+
+        if (json.isMember("name") && !json["name"].isNull()) {
+            last_name_ = json["name"].asString();
+        }
+
+        if (json.isMember("adminEmailAddress") && !json["adminEmailAddress"].isNull()) {
+            username_ = json["adminEmailAddress"].asString();
+        }
+
+        if (json.isMember("connectionString") && !json["connectionString"].isNull()) {
+            username_ = json["connectionString"].asString();
+        }
+
+    }
 }
 #endif //BUSINESSDESKAPI_USERDTO_H

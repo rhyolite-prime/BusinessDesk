@@ -25,13 +25,13 @@ namespace business_desk::plugins {
         /// It must be implemented by the user.
         void shutdown() override;
 
-        business_desk::domain_services::GlService &getGlService() { return glService_; }
-        business_desk::domain_services::UserService &getUserService() { return userService_; }
+        domain_services::GlService &getGlService() { return glService_; }
+        domain_services::UserService &getUserService() { return userService_; }
 
 
     private:
-        business_desk::domain_services::GlService glService_;
-        business_desk::domain_services::UserService userService_;
+        domain_services::GlService glService_;
+        domain_services::UserService userService_;
     };
 
 }

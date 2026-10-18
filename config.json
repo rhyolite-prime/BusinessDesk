@@ -300,7 +300,7 @@
         },
         {
             //name: The class name of the plugin
-            "name": "gnp::plugins::BusinessDeskServicePlugin",
+            "name": "business_desk::plugins::BusinessDeskServicePlugin",
             //dependencies: Plugins that the plugin depends on. It can be commented out
             "dependencies": [],
             //config: The configuration of the plugin. This json object is the parameter to initialize the plugin.
