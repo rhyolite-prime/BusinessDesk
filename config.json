@@ -327,9 +327,9 @@
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method.
     "custom_config": {
         "JwtBearer": {  
-            "JwtSecurityKey": "",
-            "JwtIssuer": "GD720",
-            "JwtAudience": "GD720_Users",
+            "JwtSecurityKey": "BD720_5dee157b-853f-4636-9e27-e55ac6627428",
+            "JwtIssuer": "BD720",
+            "JwtAudience": "BD720_Users",
             "JwtExpirationTime": 3600
         },
         "QuartzSchedulerApi": {
