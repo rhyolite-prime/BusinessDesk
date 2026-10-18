@@ -24,6 +24,7 @@ template<class Filter> bool accepts(const std::string &token) {
  filter.doFilter(request, [&](const auto &response) { denied=response->status==401; }, [&] { allowed=true; });
  return allowed && !denied;
 }
+void checkRequestAuthorization();
 void checkGlSoftDeletes();
 void checkUserRoutes();
 int main() {
@@ -85,7 +86,8 @@ int main() {
  check(accepts<HostJwtAuthFilter>(auth.result["token"].asString()),"host filter accepts host token");
  check(!accepts<TenantJwtAuthFilter>(auth.result["token"].asString()),"tenant filter rejects host token");
 
- Json::Value perms; Json::Reader reader; check(reader.parse(token.get_payload_claim("permissions").as_string(),perms),"permissions encoded as JSON string");
+ check(!token.has_payload_claim("permissions"),"JWT omits permission snapshot");
+ Json::Value perms=auth.result["permissions"];
  check(perms.size()==1 && perms[0].asString()=="users.read","group object roles resolved");
  auto lifetime=std::chrono::duration_cast<std::chrono::seconds>(token.get_expires_at()-token.get_issued_at()).count(); check(lifetime==3600,"configured expiry");
  login.setPassword("bad"); check(!service.validateHostUserCredentials(login).get().success,"bad password"); login.setPassword("test-password");
@@ -113,7 +115,7 @@ int main() {
  check(!accepts<HostJwtAuthFilter>(invalid),"tampered signature rejected");
  auto mint=[&](int lifetime, bool expiration, const std::string &audience, const std::string &permissions) {
   auto b=jwt::create().set_issuer("test-issuer").set_audience(audience)
-   .set_payload_claim("hostUserId",jwt::claim(std::string("h")))
+   .set_payload_claim("hostUserId",jwt::claim(hostId))
    .set_payload_claim("hostUserEmail",jwt::claim(std::string("h@example.com")))
    .set_payload_claim("hostUserName",jwt::claim(std::string("h")))
    .set_payload_claim("permissions",jwt::claim(permissions));
@@ -123,7 +125,7 @@ int main() {
  check(!accepts<HostJwtAuthFilter>(mint(-60,true,"test-audience","[]")),"expired token rejected");
  check(!accepts<HostJwtAuthFilter>(mint(3600,false,"test-audience","[]")),"missing expiration rejected");
  check(!accepts<HostJwtAuthFilter>(mint(3600,true,"wrong","[]")),"wrong audience rejected");
- check(!accepts<HostJwtAuthFilter>(mint(3600,true,"test-audience","not-json")),"invalid permissions rejected");
+ check(accepts<HostJwtAuthFilter>(mint(3600,true,"test-audience","not-json")),"legacy malformed permission claim ignored");
 
  check(tt.get_payload_claim("tenantName").as_string()=="Acme","tenant name claim"); check(!tt.has_payload_claim("hostUserId"),"tenant has no host claims");
  check(!service.validateHostUserCredentials(login).get().success,"host rejects accountId");
@@ -207,5 +209,6 @@ int main() {
  hostTenant.setIsActive(false); tenants.update(hostTenant).get(); check(!service.validateHostUserCredentials(bootstrapLogin).get().success,"inactive host tenant blocks host login");
  hostTenant.setIsActive(true); hostTenant.setIsDeleted(true); tenants.update(hostTenant).get(); check(!service.validateHostUserCredentials(bootstrapLogin).get().success,"deleted host tenant blocks host login");
  cfg["JwtSecurityKey"]=""; login.setAccountId(""); check(!service.validateHostUserCredentials(login).get().success,"empty signing key rejected");
+ checkRequestAuthorization();
  std::cout<<checks<<" checks passed\n";
 }

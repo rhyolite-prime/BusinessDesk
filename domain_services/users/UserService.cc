@@ -83,7 +83,6 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     auto permissions = co_await PermissionService::getUserPermissions(user.getValueOfId());
     Json::Value array(Json::arrayValue);
     for (const auto &permission : permissions) array.append(permission);
-    Json::FastWriter writer;
     const auto now = std::chrono::system_clock::now();
     auto builder = jwt::create().set_issuer(issuer).set_type("JWT")
         .set_subject(user.getValueOfId()).set_issued_at(now)

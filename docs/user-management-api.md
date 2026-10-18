@@ -48,8 +48,9 @@ psql -X -v ON_ERROR_STOP=1 -d <database> \
   -f database/migrations/003_bootstrap_host_user_management.sql
 ```
 
-Then sign in again: JWT permissions are snapshots, and an old token will still
-return 403. This migration only updates the protected bootstrap role while its
+The JWT filters resolve current permissions on every request, so an existing
+valid token receives the grant on its next request. This migration only updates
+the protected bootstrap role while its
 host tenant is live and active, preserves existing permissions, and is safe to
 repeat. Do not rerun the first-install seed. Other host roles must be assigned
 appropriate permissions separately.
@@ -160,23 +161,34 @@ cannot be listed, edited, authenticated, or deleted again. Success returns 200:
 ## Status codes and security boundaries
 
 - **400:** invalid input/ID/pagination, forbidden client-editable fields, self-delete.
-- **401:** missing/wrong-scope JWT (filter) or missing authenticated identity.
+- **401:** invalid/wrong-scope JWT, inactive/deleted/locked user, inactive/deleted
+  tenant, changed tenant membership, or missing authenticated identity.
 - **403:** insufficient permission or contradictory scope attributes.
 - **404:** absent, deleted or out-of-scope user.
 - **409:** duplicate email/username, including concurrent database uniqueness errors.
-- **500:** database/internal failure, without SQL/bound-value details.
+- **500:** CRUD database/internal failure, without SQL/bound-value details.
+- **503:** authentication configuration or authorization resolution unavailable;
+  permission data/DB failures deny access without partial grants.
 
 All normal CRUD responses use `Cache-Control: no-store`. Existing database unique
 constraints still apply (including non-partial constraints that reserve deleted
-identifiers). Deletion and password/permission changes affect new logins, but
-already-issued JWTs remain valid until expiry: this change does not implement a
-session/denylist revocation mechanism.
+identifiers). User/tenant state and permissions are rechecked by the JWT filters
+on every protected request, so suspension/deletion and permission changes affect
+existing tokens on the next request. Password changes and sign-out alone still
+do not revoke tokens: no per-token session/denylist mechanism is implemented.
+See `user-authentication.md` for the full resolution flow.
 
 ## Verification
 
 `test/users/run.sh` now runs the production UserController handlers in the existing
 HTTP/ORM seam, alongside real bcrypt/JWT cryptography and the users/GL regression
-suite. It covers all eight operations, scope isolation, permissions, malicious
+suite. `request_authorization_test.cc` additionally exercises the production JWT
+filters with current-user/tenant status, same-token permission/membership changes,
+legacy-claim rejection as an authorization source, cross-tenant roles, and injected
+database/partial-resolution failures. The seam executes coroutines eagerly; this
+is not a live HTTP/database or event-loop integration test.
+
+The suite covers all eight operations, scope isolation, permissions, malicious
 payloads, validation, safe output, hashing/auditing, soft deletion and status-code
 mapping. This is not an end-to-end server/database test. Production source/route
 registration is separately syntax-checked against real Drogon headers. The

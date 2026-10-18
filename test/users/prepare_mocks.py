@@ -20,6 +20,7 @@ namespace drogon {
 struct Attributes {
  std::map<std::string,std::any> data;
  bool find(const std::string &k) { return data.count(k); }
+ void erase(const std::string &k) { data.erase(k); }
  template<class T> const T &get(const std::string &k) const { return std::any_cast<const T &>(data.at(k)); }
  template<class T> void insert(const std::string &k, T v) { data[k] = v; }
 };
@@ -58,6 +59,20 @@ template<class T> struct Task {
  T await_resume() { return get(); }
  T get() { if(h.promise().error) std::rethrow_exception(h.promise().error); return *h.promise().value; }
 };
+template<> struct Task<void> {
+ struct promise_type { std::exception_ptr error;
+ Task get_return_object(){return {std::coroutine_handle<promise_type>::from_promise(*this)};}
+ std::suspend_never initial_suspend()noexcept{return {};}
+ std::suspend_always final_suspend()noexcept{return {};}
+ void return_void(){} void unhandled_exception(){error=std::current_exception();}};
+ std::coroutine_handle<promise_type> handle;
+ ~Task(){if(handle)handle.destroy();}
+ bool await_ready()const noexcept{return true;}
+ void await_suspend(std::coroutine_handle<>)const noexcept{}
+ void await_resume(){if(handle.promise().error)std::rethrow_exception(handle.promise().error);}
+ void get(){await_resume();}
+};
+template<typename F>void async_run(F&& f){auto task=f();task.get();}
 struct TestField {
  Json::Value value;
  template<class T> T as() const {
@@ -115,13 +130,14 @@ struct Criteria {
 template<class M> struct CoroMapper {
  inline static std::vector<M> rows;
  inline static bool failQueries=false, failUniqueWrites=false;
+ inline static int queriesBeforeFailure=-1;
  size_t max=1000000, skip=0;
  template<class T> explicit CoroMapper(T) {}
  auto &orderBy(const std::string &) { return *this; }
  auto &limit(size_t n) { max=n; return *this; } auto &offset(size_t n) { skip=n; return *this; }
  Task<size_t> count(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); size_t n=0; for(auto &r:rows) if(c.match(r.toJson())) ++n; co_return n; }
  Task<std::vector<M>> findBy(Criteria c) { std::vector<M> result; size_t n=0; for(auto &r:rows) if(c.match(r.toJson()) && n++>=skip && result.size()<max) result.push_back(r); co_return result; }
- Task<M> findOne(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); std::vector<M> found; for(auto &r:rows) if(c.match(r.toJson())) found.push_back(r); if(found.size()!=1) throw UnexpectedRows(); co_return found[0]; }
+ Task<M> findOne(Criteria c) { if(queriesBeforeFailure==0) throw DrogonDbException("private-db-detail"); if(queriesBeforeFailure>0) --queriesBeforeFailure; if(failQueries) throw DrogonDbException("private-db-detail"); std::vector<M> found; for(auto &r:rows) if(c.match(r.toJson())) found.push_back(r); if(found.size()!=1) throw UnexpectedRows(); co_return found[0]; }
  Task<M> findByPrimaryKey(std::string id) { co_return co_await findOne(Criteria(M::Cols::_id,CompareOperator::EQ,id)); }
  Task<M> insert(M m) { if(failUniqueWrites) throw UniqueViolation("private-db-detail"); if constexpr (requires { M::Cols::_is_deleted; }) { if (m.data["is_deleted"].isNull()) m.data["is_deleted"]=false; } if(m.getValueOfId().empty()) m.setId("00000000-0000-4000-8000-"+std::string(12-std::to_string(rows.size()+1).size(),'0')+std::to_string(rows.size()+1)); rows.push_back(m); co_return m; }
  Task<size_t> update(M m) { if(failUniqueWrites) throw UniqueViolation("private-db-detail"); for(auto &r:rows) if(r.getValueOfId()==m.getValueOfId()) {r=m; co_return 1;} throw UnexpectedRows(); }
@@ -180,7 +196,7 @@ write('drogon/HttpFilter.h', '''#pragma once
 #define LOG_DEBUG if(false) std::cerr
 #define LOG_WARN if(false) std::cerr
 namespace drogon {
-enum HttpStatusCode { k200OK=200, k201Created=201, k204NoContent=204, k400BadRequest=400, k401Unauthorized=401, k403Forbidden=403, k404NotFound=404, k409Conflict=409, k500InternalServerError=500 };
+enum HttpStatusCode { k200OK=200, k201Created=201, k204NoContent=204, k400BadRequest=400, k401Unauthorized=401, k403Forbidden=403, k404NotFound=404, k409Conflict=409, k500InternalServerError=500,k503ServiceUnavailable=503 };
 struct HttpResponse {
  int status=200; Json::Value body; std::map<std::string,std::string> headers;
  static auto newHttpResponse() { return std::make_shared<HttpResponse>(); }

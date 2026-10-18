@@ -1,117 +1,142 @@
-//
-// Created by Emmanuel Addo-Odame on 17/10/2026.
-//
-
-
 #include "PermissionService.h"
 #include "Users.h"
 #include "Roles.h"
 #include "UserGroups.h"
+#include "Tenants.h"
+#include "constants/TenantConstants.h"
 #include <drogon/orm/CoroMapper.h>
+#include <stdexcept>
 
 namespace business_desk::domain_services {
+namespace {
+using namespace drogon::orm;
+using drogon_model::BusinessDesk::Users;
+using drogon_model::BusinessDesk::UserGroups;
+using drogon_model::BusinessDesk::Roles;
+using drogon_model::BusinessDesk::Tenants;
 
-
-    drogon::Task<std::unordered_set<std::string>> PermissionService::getUserPermissions(const std::string& userId) {
-    std::unordered_set<std::string> allPermissions;
-    auto dbClient = drogon::app().getDbClient();
-
-    try {
-        drogon::orm::CoroMapper<drogon_model::BusinessDesk::Users> userMapper(dbClient);
-        using Users = drogon_model::BusinessDesk::Users;
-        using UserGroups = drogon_model::BusinessDesk::UserGroups;
-        auto user = co_await userMapper.findOne(
-            drogon::orm::Criteria(Users::Cols::_id, drogon::orm::CompareOperator::EQ, userId) &&
-            drogon::orm::Criteria(Users::Cols::_is_active, drogon::orm::CompareOperator::EQ, true) &&
-            drogon::orm::Criteria(Users::Cols::_is_deleted, drogon::orm::CompareOperator::EQ, false));
-
-        std::unordered_set<std::string> uniqueRoleIds;
-        Json::Reader reader;
-
-        // Extract direct roles
-        Json::Value userRolesJson;
-        std::string userRolesStr = user.getValueOfRoles();
-        if (!userRolesStr.empty() && reader.parse(userRolesStr, userRolesJson) && userRolesJson.isArray()) {
-            for (const auto& roleId : userRolesJson) {
-                if (roleId.isString()) {
-                    uniqueRoleIds.insert(roleId.asString());
-                }
-            }
-        }
-
-        // Extract roles from user groups
-        Json::Value userGroupsJson;
-        std::string userGroupsStr = user.getValueOfUserGroups();
-        if (!userGroupsStr.empty() && reader.parse(userGroupsStr, userGroupsJson) && userGroupsJson.isArray()) {
-            drogon::orm::CoroMapper<drogon_model::BusinessDesk::UserGroups> userGroupMapper(dbClient);
-            for (const auto& groupId : userGroupsJson) {
-                if (groupId.isString()) {
-                    try {
-                        auto group = co_await userGroupMapper.findOne(
-                            drogon::orm::Criteria(UserGroups::Cols::_id, drogon::orm::CompareOperator::EQ, groupId.asString()) &&
-                            drogon::orm::Criteria(UserGroups::Cols::_is_deleted, drogon::orm::CompareOperator::EQ, false));
-                        Json::Value groupRolesJson;
-                        std::string groupRolesStr = group.getValueOfRoles();
-                        if (!groupRolesStr.empty() && reader.parse(groupRolesStr, groupRolesJson) && groupRolesJson.isArray()) {
-                            for (const auto& roleId : groupRolesJson) {
-                                if (roleId.isString()) uniqueRoleIds.insert(roleId.asString());
-                                else if (roleId.isObject() && roleId["id"].isString())
-                                    uniqueRoleIds.insert(roleId["id"].asString());
-                            }
-                        }
-                    } catch (const drogon::orm::DrogonDbException &) {
-                        // ignore missing user groups
-                    }
-                }
-            }
-        }
-
-        // Extract permissions from roles
-        if (!uniqueRoleIds.empty()) {
-            drogon::orm::CoroMapper<drogon_model::BusinessDesk::Roles> roleMapper(dbClient);
-            for (const auto& roleId : uniqueRoleIds) {
-                try {
-                    auto role = co_await roleMapper.findByPrimaryKey(roleId);
-                    if (role.getValueOfTenantId() != user.getValueOfTenantId()) continue;
-                    Json::Value rolePermissionsJson;
-                    std::string rolePermissionsStr = role.getValueOfPermissions();
-                    if (!rolePermissionsStr.empty() && reader.parse(rolePermissionsStr, rolePermissionsJson) && rolePermissionsJson.isArray()) {
-                        for (const auto& perm : rolePermissionsJson) {
-                            if (perm.isString()) {
-                                allPermissions.insert(perm.asString());
-                            }
-                        }
-                    }
-                } catch (const drogon::orm::DrogonDbException &) {
-                    // ignore missing roles
-                }
-            }
-        }
-    } catch (const drogon::orm::DrogonDbException &e) {
-        LOG_ERROR << "Failed to get user permissions: " << e.base().what();
-    }
-
-    co_return allPermissions;
+Criteria liveUser(const std::string &userId) {
+    return Criteria(Users::Cols::_id, CompareOperator::EQ, userId) &&
+        Criteria(Users::Cols::_is_deleted, CompareOperator::EQ, false) &&
+        Criteria(Users::Cols::_is_active, CompareOperator::EQ, true) &&
+        Criteria(Users::Cols::_is_locked_out, CompareOperator::EQ, false);
 }
 
-    bool PermissionService::hasPermission(const drogon::HttpRequestPtr &req, const std::string &requiredPermission) {
-        if (req->attributes()->find("permissions")) {
-            auto permissions = req->attributes()->get<std::unordered_set<std::string>>("permissions");
-            return permissions.find(requiredPermission) != permissions.end();
-        }
+Json::Value array(const std::string &value) {
+    if (value.empty()) return Json::Value(Json::arrayValue);
+    Json::Value parsed;
+    Json::Reader reader;
+    if (!reader.parse(value, parsed) || !parsed.isArray())
+        throw std::runtime_error("Invalid authorization data");
+    return parsed;
+}
 
-        //use the user id to get the roles associated to that user and resolve the permissions
-        
-        return false;
+std::string referenceId(const Json::Value &reference) {
+    std::string id;
+    if (reference.isString()) id = reference.asString();
+    else if (reference.isObject() && reference["id"].isString()) id = reference["id"].asString();
+    if (id.empty()) throw std::runtime_error("Invalid authorization reference");
+    return id;
+}
+
+drogon::Task<std::unordered_set<std::string>> permissionsFor(const Users &user) {
+    auto db = drogon::app().getDbClient();
+    std::unordered_set<std::string> roleIds;
+    for (const auto &reference : array(user.getValueOfRoles())) roleIds.insert(referenceId(reference));
+
+    // UserGroups currently has no tenant_id. Membership is read from the current
+    // user, and every referenced role is still constrained to that user's tenant.
+    CoroMapper<UserGroups> groups(db);
+    for (const auto &reference : array(user.getValueOfUserGroups())) {
+        try {
+            auto group = co_await groups.findOne(
+                Criteria(UserGroups::Cols::_id, CompareOperator::EQ, referenceId(reference)) &&
+                Criteria(UserGroups::Cols::_is_deleted, CompareOperator::EQ, false));
+            for (const auto &role : array(group.getValueOfRoles())) roleIds.insert(referenceId(role));
+        } catch (const UnexpectedRows &) {
+            // A removed/deleted membership grants nothing. Other DB failures must
+            // propagate, never produce a partially resolved authorization result.
+        }
     }
 
-    Json::Value PermissionService::getAllPermissionGroups() {
-        auto &app = drogon::app();
-        auto customConfig = app.getCustomConfig();
-        if (customConfig.isMember("PermissionGroups")) {
-            return customConfig["PermissionGroups"];
+    std::unordered_set<std::string> permissions;
+    CoroMapper<Roles> roles(db);
+    for (const auto &id : roleIds) {
+        try {
+            const auto scope = user.getValueOfTenantId().empty()
+                ? Criteria(Roles::Cols::_tenant_id, CompareOperator::IsNull)
+                : Criteria(Roles::Cols::_tenant_id, CompareOperator::EQ, user.getValueOfTenantId());
+            // Roles has no is_deleted column in the current schema.
+            auto role = co_await roles.findOne(Criteria(Roles::Cols::_id, CompareOperator::EQ, id) && scope);
+            for (const auto &permission : array(role.getValueOfPermissions())) {
+                if (!permission.isString() || permission.asString().empty())
+                    throw std::runtime_error("Invalid authorization permission");
+                permissions.insert(permission.asString());
+            }
+        } catch (const UnexpectedRows &) {
+            // Missing or cross-tenant roles grant nothing.
         }
-        return Json::arrayValue;
     }
+    co_return permissions;
+}
 
+drogon::Task<RequestAuthorization> authorizeUser(const Users &user) {
+    RequestAuthorization result;
+    const auto tenantId = user.getValueOfTenantId();
+    if (!tenantId.empty()) {
+        try {
+            CoroMapper<Tenants> tenants(drogon::app().getDbClient());
+            auto tenant = co_await tenants.findOne(
+                Criteria(Tenants::Cols::_id, CompareOperator::EQ, tenantId) &&
+                Criteria(Tenants::Cols::_is_active, CompareOperator::EQ, true) &&
+                Criteria(Tenants::Cols::_is_deleted, CompareOperator::EQ, false));
+            result.tenantName = tenant.getValueOfName().empty() ? tenant.getValueOfTenancyName() : tenant.getValueOfName();
+        } catch (const UnexpectedRows &) { co_return result; }
+    }
+    result.permissions = co_await permissionsFor(user);
+    result.userId = user.getValueOfId();
+    result.tenantId = tenantId;
+    result.userEmail = user.getValueOfEmail();
+    result.username = user.getValueOfUsername().empty() ? user.getValueOfEmail() : user.getValueOfUsername();
+    result.authenticated = true;
+    co_return result;
+}
+}
+
+drogon::Task<RequestAuthorization> PermissionService::resolveRequestAuthorization(
+    std::string userId, std::string tenantId, bool host) {
+    if (userId.empty() || (!host && (tenantId.empty() || tenantId == constants::kHostTenantId)) ||
+        (host && !tenantId.empty()))
+        co_return RequestAuthorization{};
+    auto criteria = liveUser(userId) && Criteria(Users::Cols::_is_host_admin_user, CompareOperator::EQ, host);
+    if (host) {
+        criteria = criteria && (Criteria(Users::Cols::_tenant_id, CompareOperator::IsNull) ||
+            Criteria(Users::Cols::_tenant_id, CompareOperator::EQ, std::string(constants::kHostTenantId)));
+    } else criteria = criteria && Criteria(Users::Cols::_tenant_id, CompareOperator::EQ, tenantId);
+    try {
+        CoroMapper<Users> users(drogon::app().getDbClient());
+        auto user = co_await users.findOne(criteria);
+        co_return co_await authorizeUser(user);
+    } catch (const UnexpectedRows &) { co_return RequestAuthorization{}; }
+}
+
+drogon::Task<std::unordered_set<std::string>> PermissionService::getUserPermissions(const std::string &userId) {
+    try {
+        CoroMapper<Users> users(drogon::app().getDbClient());
+        auto user = co_await users.findOne(liveUser(userId));
+        auto result = co_await authorizeUser(user);
+        co_return result.permissions;
+    } catch (const UnexpectedRows &) { co_return std::unordered_set<std::string>{}; }
+}
+
+bool PermissionService::hasPermission(const drogon::HttpRequestPtr &req, const std::string &requiredPermission) {
+    if (!req || !req->attributes()->find("permissions")) return false;
+    const auto &permissions = req->attributes()->get<std::unordered_set<std::string>>("permissions");
+    return permissions.find(requiredPermission) != permissions.end();
+}
+
+Json::Value PermissionService::getAllPermissionGroups() {
+    const auto config = drogon::app().getCustomConfig();
+    return config.isMember("PermissionGroups") ? config["PermissionGroups"] : Json::Value(Json::arrayValue);
+}
 }

@@ -24,18 +24,51 @@ issuer, or lifetime is invalid. Login responses include `token`, `expiresIn`,
 Host tokens carry `hostUserId`, `hostUserEmail`, `hostUserName`. Tenant tokens carry
 `tenantId`, `tenantName`, `tenantUserId`, `tenantUserEmail`. There is no tenant email
 column in `Tenants`, so the optional `tenantEmail` claim is not fabricated.
-Both carry `iss`, `sub`, `iat`, `exp`, optional `aud`, and `permissions` as a
-**JSON-encoded string array**, matching the filters' existing parsing contract.
-Filters enforce signature, issuer, configured audience, expiry, mandatory identity
-claims and permissions shape, and reject opposite-scope claims. Older generic
-`userId` tokens must be replaced by signing in again.
+Both carry `iss`, `sub`, `iat`, `exp` and optional `aud`. Tokens identify the
+user and realm; **permissions are not included in new JWTs**. The login response
+still contains a current permissions array for UI display, not authorization.
 
-Tokens are permission snapshots: account deactivation and permission changes affect
-new logins immediately, but already-issued tokens remain valid until expiry.
-Immediate revocation would require a session/version check or denylist, not
-currently part of the filters. Protected routes must register the appropriate JWT
-filter, and callers must enforce their operation's permissions before invoking
-management services (an AuditIdentity is not proof of authorization by itself).
+### Protected-request authorization
+
+Both JWT filters follow the same asynchronous flow on every protected request:
+
+1. Verify HS256 signature, configured issuer/audience and expiration; require the
+   realm-specific user ID (and tenant ID for tenant tokens). Reject opposite-realm
+   claims and, when present, a subject that does not match the user ID.
+2. Load the current user with `is_deleted = false`, active and unlocked status.
+   Check exact tenant membership and the host-admin flag. Host users must belong
+   to the protected host tenant or have a legacy NULL tenant. The protected host
+   tenant cannot be used through the tenant filter.
+3. For users with a tenant, require that tenant to be active and non-deleted.
+4. Resolve current direct roles and live group memberships. Every role, including
+   group roles, must match the user's current tenant (NULL matches only NULL).
+   Groups currently have no tenant column; membership is read only from the
+   authenticated user's database row. Missing/deleted groups or missing/foreign
+   roles grant nothing; database errors and malformed authorization data fail the
+   whole resolution, never return partial grants.
+5. Attach the validated identity, current database display fields and an
+   `unordered_set<string>` named `permissions` to the request. Controllers keep
+   their existing synchronous `hasPermission` guards; no DB work runs in a guard.
+
+There is **no permission cache initially**. Permission/membership changes and
+user or tenant deactivation/deletion/lockout apply on the next request using the
+same token. Older signed tokens may contain a permissions claim: it is ignored,
+regardless of its shape. Tokens with obsolete generic `userId` claims must be
+replaced by signing in again.
+
+Invalid tokens or no-longer-valid account/tenant state return **401**; current
+users lacking an operation permission receive **403** from controller guards.
+Database/configuration/data-resolution failures return a generic **503**, without
+SQL, bound values, bearer tokens, or partial permission sets. Authentication
+failure responses are `no-store`. `OPTIONS` bypasses authentication/DB resolution.
+
+These checks do not implement per-token/session revocation: password changes alone
+or signing out do not revoke existing JWTs, and reactivating an account can make an
+unexpired token usable again. A session/version check or denylist is still needed
+for those cases. Requests already authorized/in flight are not retroactively
+cancelled. Protected routes must register the appropriate JWT filter and enforce
+the operation permission before management service calls (an AuditIdentity alone
+is not proof of authorization).
 
 ## User-management HTTP API
 

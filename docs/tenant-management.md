@@ -156,10 +156,11 @@ these alongside the newer auditing names used by Users/GL models.
 Queries and update predicates always include `is_deleted = false`. Deactivation
 sets only activation state (and audit fields); activation never restores a deleted
 tenant. Deletion is soft and deactivates the tenant while retaining its users and
-ledger references. Tenant login checks tenant status, so new logins stop after
-deactivation/deletion. Already-issued JWTs remain valid until expiry: immediate
-revocation still requires the separate session/version-check design described in
-`user-authentication.md`.
+ledger references. Both login and the JWT filters check current tenant status,
+so deactivation/deletion also denies existing tokens on their next protected
+request. Filters resolve current user status and permissions without a cache.
+Password/sign-out and per-token revocation still require a separate session/version
+check; see `user-authentication.md`.
 
 List/get return a safe projection: tenant ID/name/tenancy name, activation, creation
 and modification times. Connection strings and billing/account secrets are never
