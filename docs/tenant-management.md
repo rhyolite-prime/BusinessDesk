@@ -28,9 +28,14 @@ tables. This seed does not invent or overwrite an existing production schema.
    ```
 
    Avoid committing these values or passing a plaintext password in shell arguments.
-   The script checks the email/hash format, runs in a transaction, and is safe to
-   rerun: it does not reset an existing operator password, reactivate deleted
-   accounts, or reassign reserved IDs. Conflicting reserved identities abort it.
+   This is a **first-install-only** script: three plain inserts and two audit
+   updates run inside one transaction. It does not validate the email/hash format;
+   supply a valid email and bcrypt hash generated as above. There are no procedural
+   checks, advisory locks, or `ON CONFLICT` clauses. A duplicate key (including a
+   rerun) fails and rolls back rather than overwriting existing accounts. If run
+   through an interactive psql session and an error leaves the transaction aborted,
+   issue `ROLLBACK;` before continuing. Required tenant fields are explicit so the
+   seed does not depend on subscription-column defaults.
 
 The reserved identities are shared with `constants/TenantConstants.h`:
 
@@ -159,7 +164,7 @@ serialized to the API.
 - `test/tenants/run.sh`: service/controller dispatch, authorization, validation,
   generated password hashing, audit stamps, lifecycle and soft-deletion guards.
 - `test/tenants/sql_test.mjs`: production provisioning/update SQL, seed and indexes
-  executed by PostgreSQL/PGlite (WASM), including rollback and seed reruns.
+  executed by PostgreSQL/PGlite (WASM), including rollback and rejection of duplicate seed runs.
 
 Run the C++ harnesses with `JSONCPP_SOURCE_DIR` and `OPENSSL_SOURCE_DIR` set as
 explained in `test/users/README.md`. For the SQL tests, install

@@ -37,12 +37,25 @@ function seed(email='operator@example.com',passwordHash=hash) {
   .replaceAll(":'host_admin_email'",`'${email.replaceAll("'","''")}'`)
   .replaceAll(":'host_admin_password_hash'",`'${passwordHash.replaceAll("'","''")}'`);
 }
+// Failure on the last insert must roll back the tenant and role inserts too.
+await db.exec(`ALTER TABLE users ADD CONSTRAINT reject_seed_test CHECK (email <> 'fail-seed@example.com')`);
+let failedSeed=false;
+try { await db.exec(seed('fail-seed@example.com')); }
+catch { failedSeed=true; await db.exec('ROLLBACK'); }
+check(failedSeed,'seed fails if the admin insert is rejected');
+for (const table of ['tenants','roles','users']) {
+ check((await db.query(`SELECT count(*)::int AS n FROM ${table}`)).rows[0].n===0,`failed seed rolls back ${table}`);
+}
+await db.exec('ALTER TABLE users DROP CONSTRAINT reject_seed_test');
 await db.exec(seed());
 let seeded=(await db.query('SELECT * FROM users WHERE id=$1',[admin])).rows[0];
 check(seeded.tenant_id===host && seeded.username==='admin' && seeded.is_host_admin_user && !seeded.is_tenant_admin_user,'seeded host identity');
 check(seeded.created_by_user_id===admin,'bootstrap audit creator');
 check((await db.query('SELECT creator_user_id FROM tenants WHERE id=$1',[host])).rows[0].creator_user_id===admin,'host tenant audit creator');
-await db.exec(seed('different@example.com','$2a$12$'+'B'.repeat(53)));
+let rerunFailed=false;
+try { await db.exec(seed('different@example.com','$2a$12$'+'B'.repeat(53))); }
+catch { rerunFailed=true; await db.exec('ROLLBACK'); }
+check(rerunFailed,'first-install seed rejects a duplicate run');
 check((await db.query('SELECT email,password_hash FROM users WHERE id=$1',[admin])).rows[0].email==='operator@example.com','rerun preserves operator email');
 check((await db.query('SELECT password_hash FROM users WHERE id=$1',[admin])).rows[0].password_hash===hash,'rerun preserves password');
 check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===1,'rerun does not create extra host');
@@ -82,10 +95,5 @@ check((await db.query(sql.update,[tenant,false,'',true,'NoAdmin',false,'',admin,
 check((await db.query('SELECT name FROM tenants WHERE id=$1',[tenant])).rows[0].name==='Renamed','missing admin does not partially update tenant');
 await db.query('UPDATE tenants SET is_deleted=true WHERE id=$1',[tenant]);
 check((await db.query(sql.update,[tenant,false,'',true,'Deleted',false,'',admin,false,''])).rows.length===0,'deleted tenant cannot be updated');
-// Invalid install input aborts with no alterations, even on reruns.
-let invalid=false; try { await db.exec(seed('bad-email')); } catch { invalid=true; await db.exec('ROLLBACK'); }
-check(invalid,'seed rejects invalid email');
-invalid=false; try { await db.exec(seed('operator@example.com','not-bcrypt')); } catch { invalid=true; await db.exec('ROLLBACK'); }
-check(invalid,'seed rejects invalid hash');
 await db.close();
 console.log(`${checks} PostgreSQL/PGlite checks passed`);
