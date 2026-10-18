@@ -63,7 +63,9 @@ Do **not** supply `accountId` for host login. The host user belongs to the defau
 tenant in the database but receives **host-scoped claims**, not tenant claims.
 Legacy NULL-tenant host accounts remain supported. The seeded host role grants
 `tenants.read`, `tenants.create`, `tenants.update`, `tenants.activate`, and
-`tenants.delete`. Tenant users cannot authenticate as hosts. The default host
+`tenants.delete`, plus `users.manage` for the host-user API. Existing installations
+should apply `003_bootstrap_host_user_management.sql` and sign in again (do not
+rerun the first-install seed). Tenant users cannot authenticate as hosts. The default host
 tenant cannot be changed, deactivated, or deleted through these endpoints.
 
 ## Endpoints

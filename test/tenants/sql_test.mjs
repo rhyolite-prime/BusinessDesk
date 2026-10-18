@@ -52,6 +52,18 @@ let seeded=(await db.query('SELECT * FROM users WHERE id=$1',[admin])).rows[0];
 check(seeded.tenant_id===host && seeded.username==='admin' && seeded.is_host_admin_user && !seeded.is_tenant_admin_user,'seeded host identity');
 check(seeded.created_by_user_id===admin,'bootstrap audit creator');
 check((await db.query('SELECT creator_user_id FROM tenants WHERE id=$1',[host])).rows[0].creator_user_id===admin,'host tenant audit creator');
+const bootstrapRole='00000000-0000-4000-8000-000000000003';
+check((await db.query('SELECT permissions FROM roles WHERE id=$1',[bootstrapRole])).rows[0].permissions.includes('users.manage'),'first-install host role can manage host users');
+// Existing installations get the grant through migration 003, without reseeding.
+await db.query("UPDATE roles SET permissions=permissions - 'users.manage' WHERE id=$1",[bootstrapRole]);
+const grantSql=fs.readFileSync(path.join(root,'database/migrations/003_bootstrap_host_user_management.sql'),'utf8');
+await db.exec(grantSql);
+let bootstrapPermissions=(await db.query('SELECT permissions FROM roles WHERE id=$1',[bootstrapRole])).rows[0].permissions;
+check(bootstrapPermissions.includes('users.manage') && bootstrapPermissions.includes('tenants.create'),'existing install gains host user management without losing permissions');
+await db.exec(grantSql);
+bootstrapPermissions=(await db.query('SELECT permissions FROM roles WHERE id=$1',[bootstrapRole])).rows[0].permissions;
+check(bootstrapPermissions.filter(p=>p==='users.manage').length===1,'host user-management migration is idempotent');
+
 let rerunFailed=false;
 try { await db.exec(seed('different@example.com','$2a$12$'+'B'.repeat(53))); }
 catch { rerunFailed=true; await db.exec('ROLLBACK'); }

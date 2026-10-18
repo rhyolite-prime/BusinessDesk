@@ -30,3 +30,9 @@ deleted group manipulation, parent references, and duplicate checks.
 The in-memory seam intentionally does not emulate database uniqueness constraints.
 A passing deleted-identifier reuse test verifies only the application's live-row
 query; a real non-partial unique index may still reject the insert or update.
+
+UserController regressions exercise the production handlers with the HTTP/ORM
+seam: all eight tenant/host CRUD routes, scope and permission guards, mass-
+assignment rejection, input/pagination validation, password handling, safe output,
+audit forwarding, 404/409/500 mappings, deleted rows, and concurrent uniqueness
+failures. Route declarations are separately checked against real Drogon headers.
