@@ -8,6 +8,7 @@
 #include <cctype>
 #include <regex>
 #include <unordered_set>
+#include <vector>
 namespace business_desk::domain_services {
 namespace {
 using namespace drogon::orm;
@@ -52,11 +53,18 @@ drogon::Task<dto::BaseApiResponse> scoped(DbClientPtr db,std::string op,std::str
         if(rows.empty())co_return fail("not_found","Account control not found.");control=rows.front();
     }
     if(op=="get"){result.result=publicControl(control);co_return result;}
-    auto children=co_await controls.findBy(scope && Criteria(GlAccountControls::Cols::_parent_account_header_id,CompareOperator::EQ,id));
     CoroMapper<GlAccounts> accounts(db);
-    auto linked=co_await accounts.findBy(Criteria(GlAccounts::Cols::_tenant_id,CompareOperator::EQ,identity.tenantId) &&
-        Criteria(GlAccounts::Cols::_accounting_unit_id,CompareOperator::EQ,unitId) && Criteria(GlAccounts::Cols::_is_deleted,CompareOperator::EQ,false) &&
-        Criteria(GlAccounts::Cols::_account_header_id,CompareOperator::EQ,id));
+    std::vector<GlAccountControls> children;
+    std::vector<GlAccounts> linked;
+    // A new control has no ID until INSERT assigns one. Only existing controls
+    // can have dependents; binding the create path's empty ID to a UUID column
+    // makes PostgreSQL reject the query before validation or INSERT can run.
+    if(op=="update" || op=="delete") {
+        children=co_await controls.findBy(scope && Criteria(GlAccountControls::Cols::_parent_account_header_id,CompareOperator::EQ,id));
+        linked=co_await accounts.findBy(Criteria(GlAccounts::Cols::_tenant_id,CompareOperator::EQ,identity.tenantId) &&
+            Criteria(GlAccounts::Cols::_accounting_unit_id,CompareOperator::EQ,unitId) && Criteria(GlAccounts::Cols::_is_deleted,CompareOperator::EQ,false) &&
+            Criteria(GlAccounts::Cols::_account_header_id,CompareOperator::EQ,id));
+    }
     if(op=="delete") {
         if(!children.empty()||!linked.empty())co_return fail("conflict","Remove child controls and accounts before deleting this control.");
         control.setIsDeleted(true);control.setIsActive(false);utils::applyUpdateAudit(control,identity);utils::applyDeleteAudit(control,identity);co_await controls.update(control);
