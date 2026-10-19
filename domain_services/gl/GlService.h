@@ -5,6 +5,7 @@
 #ifndef BUSINESSDESKAPI_GLSERVICE_H
 #define BUSINESSDESKAPI_GLSERVICE_H
 #include <drogon/drogon.h>
+#include <drogon/orm/CoroMapper.h>
 #include "dto/BaseApiResponse.h"
 #include "dto/BaseGlDto.h"
 #include "utils/AuditUtil.h"
@@ -38,10 +39,10 @@ namespace business_desk::domain_services {
         drogon::Task<dto::BaseApiResponse> deleteCoaDetail(const std::string &id, const utils::AuditIdentity &identity);
 
         //accounting unit
-        drogon::Task<dto::BaseApiResponse> getAllAccountingUnits(int pageNo, int pageSize, const std::string &query);
-        drogon::Task<dto::BaseApiResponse> createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity);
-        drogon::Task<dto::BaseApiResponse> updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity);
-        drogon::Task<dto::BaseApiResponse> deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> getAllAccountingUnits(int pageNo, int pageSize, const std::string &query, const utils::AuditIdentity &identity = {}, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
 
     };
 

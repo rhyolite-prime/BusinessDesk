@@ -1,4 +1,5 @@
 #include "AccountHeadService.h"
+#include "utils/TransactionUtil.h"
 #include "GlAccountGroups.h"
 #include "GlAccountControls.h"
 #include "GlAccounts.h"
@@ -124,19 +125,6 @@ static drogon::Task<dto::BaseApiResponse> executeScoped(drogon::orm::DbClientPtr
     } catch(const drogon::orm::UniqueViolation &) {co_return error("conflict","An account head with these details already exists.");}
     catch(const drogon::orm::DrogonDbException &) {co_return error("database_error","Unable to access account heads.");}
 }
-namespace {
-struct CommitUnitWrite {
-    std::shared_ptr<drogon::orm::Transaction> transaction;
-    bool committed = false;
-    bool await_ready() const noexcept { return false; }
-    void await_suspend(std::coroutine_handle<> continuation) {
-        transaction->setCommitCallback([this, continuation](bool ok) { committed = ok; continuation.resume(); });
-        // Release the last transaction owner to trigger Drogon's asynchronous commit.
-        transaction.reset();
-    }
-    bool await_resume() const noexcept { return committed; }
-};
-}
 drogon::Task<dto::BaseApiResponse> AccountHeadService::execute(std::string operation, std::string id,
     std::string unitId, Json::Value input, int pageNo, int pageSize, std::string query, utils::AuditIdentity identity) {
     if (!identity.hasUser() || !identity.hasTenant()) co_return error("unauthorized", "Tenant authentication required.");
@@ -146,7 +134,7 @@ drogon::Task<dto::BaseApiResponse> AccountHeadService::execute(std::string opera
         auto transaction = co_await drogon::app().getDbClient()->newTransactionCoro();
         auto result = co_await executeScoped(transaction,operation,id,unitId,input,pageNo,pageSize,query,identity);
         if (!result.success) { transaction->rollback(); co_return result; }
-        if (!(co_await CommitUnitWrite{std::move(transaction)}))
+        if (!(co_await utils::CommitTransaction{std::move(transaction)}))
             co_return error("database_error", "Unable to commit account-head changes.");
         co_return result;
     } catch (const std::exception &) { co_return error("database_error", "Unable to access account heads."); }

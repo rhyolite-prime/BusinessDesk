@@ -5,7 +5,7 @@ import { checkAuthOrigin } from '../../layers/shared/server/utils/tenant-auth'
 export const headUuid = (value: unknown): value is string => typeof value === 'string' && /^[a-f\d]{8}-(?:[a-f\d]{4}-){3}[a-f\d]{12}$/i.test(value)
 
 /** Dedicated real-data adapter: no demo fallback and no browser-visible JWT. */
-export async function accountHeadRequest(event: H3Event, resource: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', query?: Record<string, unknown>, body?: Record<string, unknown>) {
+export async function ledgerSetupRequest(event: H3Event, resource: string, method: 'GET' | 'POST' | 'PUT' | 'DELETE' = 'GET', query?: Record<string, unknown>, body?: Record<string, unknown>, label: 'account-heads' | 'accounting-units' = 'account-heads') {
   setHeader(event, 'Cache-Control', 'no-store')
   if (method !== 'GET') checkAuthOrigin(event)
   const session = await requireBusinessDeskSession(event)
@@ -25,12 +25,12 @@ export async function accountHeadRequest(event: H3Event, resource: string, metho
   } catch (error: any) {
     const status = error?.response?.status || error?.statusCode
     const messages: Record<number, string> = {
-      400: 'Check the head fields and parent. The parent must be active and have the same type.',
-      401: 'Your session has expired. Sign in again.', 403: 'You do not have permission to manage account heads.',
-      404: 'The account head or accounting unit is no longer available.',
-      409: 'This change conflicts with an existing head or its dependent heads, controls or accounts.',
+      400: label === 'accounting-units' ? 'Check the code, name, currency, time zone and fiscal month.' : 'Check the head fields and parent. The parent must be active and have the same type.',
+      401: 'Your session has expired. Sign in again.', 403: 'You do not have permission to perform this ledger operation.',
+      404: label === 'accounting-units' ? 'This accounting unit is no longer available.' : 'The account head or accounting unit is no longer available.',
+      409: label === 'accounting-units' ? 'This code already exists, or the unit has ledger dependencies that prevent this change.' : 'This change conflicts with an existing head or its dependent heads, controls or accounts.',
     }
-    throw createError({ statusCode: messages[status] ? status : 503, statusMessage: messages[status] || 'Account heads service unavailable. Please retry.' })
+    throw createError({ statusCode: messages[status] ? status : 503, statusMessage: messages[status] || (label === 'accounting-units' ? 'Accounting units service unavailable. Please retry.' : 'Account heads service unavailable. Please retry.') })
   }
 }
 
@@ -45,3 +45,5 @@ export function validateHeadBody(body: unknown): Record<string, unknown> {
   }
   return { accountingUnitId: row.accountingUnitId, name: row.name.trim(), parentId: row.parentId || null, accountType: row.accountType, isActive: row.isActive }
 }
+
+export const accountHeadRequest = ledgerSetupRequest

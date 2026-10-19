@@ -23,6 +23,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/gl/GlService.h
         domain_services/gl/GlService.cc
         domain_services/gl/AccountHeadService.cc
+        domain_services/gl/AccountingUnitService.cc
         domain_services/hr/HrService.h
         domain_services/hr/HrService.cc
         domain_services/payroll/PayrollService.h
