@@ -15,11 +15,6 @@ class GlController : public drogon::HttpController<GlController>
 
 
 
-    ADD_METHOD_TO(GlController::listAccountDetails, std::string(PREFIX) + "accounts", drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::createAccountDetail, std::string(PREFIX) + "accounts",drogon::HttpMethod::Post);
-    ADD_METHOD_TO(GlController::getAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::updateAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Put);
-    ADD_METHOD_TO(GlController::deleteAccountDetail, std::string(PREFIX) + "accounts/{1}",drogon::HttpMethod::Delete);
 
     ADD_METHOD_TO(GlController::listBankAccounts, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Get);
     ADD_METHOD_TO(GlController::createBankAccount, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Post);
