@@ -1,5 +1,10 @@
 # General Ledger account setup API
 
+> **Current routes:** Account Controls now use the tenant-JWT authenticated CRUD
+> contract in [account-controls.md](account-controls.md). Account Heads use
+> [account-heads-frontend.md](account-heads-frontend.md). The legacy scope headers,
+> payloads, and response shapes below do not apply to these migrated routes.
+
 This document describes the account-setup routes currently implemented by the single Drogon `LedgerController` and the coroutine-based use cases in `LedgerService`.
 
 > **Authentication warning:** these routes currently obtain scope from caller-supplied `X-Tenant-Id` and `X-Accounting-Unit-Id` headers. That is a temporary development contract, not authorization. Do not expose these endpoints in a production environment until middleware authenticates the caller, authorizes access to the accounting unit, and constructs scope from verified claims. Never treat these headers alone as proof of tenant identity.
