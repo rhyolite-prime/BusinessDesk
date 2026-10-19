@@ -13,11 +13,6 @@ class GlController : public drogon::HttpController<GlController>
     METHOD_LIST_BEGIN
     ADD_METHOD_TO(GlController::validateJournal, std::string(PREFIX) + "journals/validate", drogon::HttpMethod::Post);
 
-    ADD_METHOD_TO(GlController::listAccountHeads, std::string(PREFIX) + "account-heads",drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::createAccountHead, std::string(PREFIX) + "account-heads",drogon::HttpMethod::Post);
-    ADD_METHOD_TO(GlController::getAccountHead, std::string(PREFIX) + "account-heads/{1}", drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::updateAccountHead, std::string(PREFIX) + "account-heads/{1}",drogon::HttpMethod::Put);
-    ADD_METHOD_TO(GlController::deleteAccountHead, std::string(PREFIX) + "account-heads/{1}",drogon::HttpMethod::Delete);
 
     ADD_METHOD_TO(GlController::listAccountControls, std::string(PREFIX) + "account-controls",drogon::HttpMethod::Get);
     ADD_METHOD_TO(GlController::createAccountControl,std::string(PREFIX) + "account-controls",drogon::HttpMethod::Post);

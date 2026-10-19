@@ -51,3 +51,11 @@ Open **General Ledger → Journal entries → New**. In development, the **Local
 The test panel is only rendered by the development build; it does not create a journal until you save. Drafts and sequence changes are kept in server memory and reset when the dev server restarts.
 
 The active Nuxt Journal editor and its Add line implementation are in `app/pages/ledger/journals/new.vue`. `cs-template/GeneralLedger/js/journal.js` is a legacy MVC reference, not the runtime script for the Nuxt app.
+
+## Account Heads
+
+`/ledger/account-heads` now uses real authenticated backend CRUD and a live
+accounting-unit selector, without demo fallback. Configure
+`NUXT_LEDGER_API_BASE_URL` (or use the existing auth origin). Every upstream
+request carries the signed-in user's bearer token; JWTs stay in HttpOnly cookies.
+See [Account Heads setup, contract and tests](../docs/account-heads-frontend.md).
