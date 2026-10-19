@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { loadRememberedAccountId, saveRememberedAccountId } from '../utils/rememberedAccount'
 useHead({ title: 'Tenant sign in' })
 definePageMeta({ layout: 'auth' })
 const toast = useToast()
@@ -14,7 +15,12 @@ const remaining = computed(() => Math.max(0, Math.ceil((expiresAt.value - now.va
 const expired = computed(() => step.value === '2fa' && remaining.value === 0)
 watch(expired, value => { if (value) { enrol.value = null; code.value = '' } })
 let timer: ReturnType<typeof setInterval> | undefined
-onMounted(() => { timer = setInterval(() => { now.value = Date.now() }, 1000) })
+onMounted(() => {
+  // Read only after mount so SSR and the initial client render remain identical.
+  if (!form.accountId) form.accountId = loadRememberedAccountId()
+  timer = setInterval(() => { now.value = Date.now() }, 1000)
+})
+watch(() => form.accountId, accountId => saveRememberedAccountId(accountId))
 onUnmounted(() => { clearInterval(timer); form.password = ''; enrol.value = null })
 
 function complete() {
