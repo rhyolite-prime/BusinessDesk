@@ -38,7 +38,9 @@ export default defineNuxtConfig({
   // Server-only upstream URLs. Browser requests stay same-origin under /api.
   runtimeConfig: {
     ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
-    authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
+    // Local development uses the C++ auth server; production must configure its origin.
+    // NUXT_AUTH_API_BASE_URL remains the standard Nuxt runtime override.
+    authApiBaseUrl: process.env.AUTH_API_BASE_URL || (process.env.NODE_ENV === 'development' ? 'http://localhost:5004' : ''),
     public: {
       demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
     },

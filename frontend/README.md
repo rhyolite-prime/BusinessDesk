@@ -6,10 +6,17 @@ From this directory, install dependencies and run the development server:
 
 ```sh
 pnpm install --frozen-lockfile
-export NUXT_AUTH_API_BASE_URL=http://127.0.0.1:8080
+export NUXT_AUTH_API_BASE_URL=http://localhost:5004
 # Optional: set NUXT_LEDGER_API_BASE_URL to use a real ledger service.
 npm run dev
 ```
+
+Local development defaults to the backend origin `http://localhost:5004`.
+Tenant login is forwarded server-side to
+`http://localhost:5004/api/v1/auth/tenant-login`. Override
+`NUXT_AUTH_API_BASE_URL` when the backend runs elsewhere (for example, another
+container). Set only the origin, not the full login path. Production still
+requires an explicitly configured backend origin.
 
 Sign in with a real tenant's **accountId (tenancy name), usernameOrEmail and
 password**. A tenant with 2FA disabled goes directly to `/modules`; one requiring
