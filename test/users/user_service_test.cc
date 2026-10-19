@@ -32,12 +32,14 @@ void checkAccountDetails();
 void checkAccountingUnits();
 void checkGlSoftDeletes();
 void checkUserRoutes();
+void checkCurrencies();
 int main() {
  checkGlSoftDeletes();
  checkAccountHeads();
  checkAccountControls();
  checkAccountDetails();
  checkAccountingUnits();
+ checkCurrencies();
  checkUserRoutes();
  domain_services::UserService service;
  auto &cfg=drogon::app().config["JwtBearer"];
