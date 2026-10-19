@@ -13,7 +13,7 @@ const props = withDefaults(defineProps<{
   ariaLabel: 'Data chart',
 })
 
-const element = ref<HTMLDivElement | null>(null)
+const element = shallowRef<HTMLDivElement | null>(null)
 let chart: ECharts | null = null
 let resizeObserver: ResizeObserver | null = null
 let echartsCorePromise: Promise<typeof import('echarts/core')> | null = null

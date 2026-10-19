@@ -8,7 +8,7 @@
 namespace business_desk::domain_services {
 struct RequestAuthorization {
     bool authenticated = false;
-    std::string userId, tenantId, userEmail, username, tenantName;
+    std::string userId, tenantId, userEmail, username, tenantName, accountId;
     std::unordered_set<std::string> permissions;
 };
 
@@ -17,7 +17,7 @@ public:
     // Current database state is authoritative. No cache and no JWT permission claims.
     // Invalid identity/state returns authenticated=false; database/data errors propagate.
     static drogon::Task<RequestAuthorization> resolveRequestAuthorization(
-        std::string userId, std::string tenantId, bool host);
+        std::string userId, std::string tenantId, bool host, bool secondFactorVerified = false);
 
     // Used by sign-in to return a current permission snapshot to the client (not JWT).
     // Missing/disabled users return {}; infrastructure/data failures propagate.

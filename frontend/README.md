@@ -1,16 +1,29 @@
 # BusinessDesk frontend — local Journal testing
 
-## Start the mock-backed app
+## Start the app
 
 From this directory, install dependencies and run the development server:
 
 ```sh
 pnpm install --frozen-lockfile
-unset LEDGER_API_BASE_URL AUTH_API_BASE_URL
+export NUXT_AUTH_API_BASE_URL=http://127.0.0.1:8080
+# Optional: set NUXT_LEDGER_API_BASE_URL to use a real ledger service.
 npm run dev
 ```
 
-Leaving the upstream URLs unset makes the Nuxt server use its seeded, in-memory ledger mock data. Sign in with `a.mensah` / `demo1234`; the current demo authenticator code is shown on the 2FA screen. The Journal mock accounts and sample entries are in `server/utils/ledger-demo.ts`.
+Sign in with a real tenant's **accountId (tenancy name), usernameOrEmail and
+password**. A tenant with 2FA disabled goes directly to `/modules`; one requiring
+2FA must enroll/verify an authenticator before a JWT session is created. No demo
+password or current-code hint is accepted/shown. Missing auth upstream returns 503.
+
+Apply backend migration `004_tenant_totp.sql` and configure `BUSINESSDESK_TOTP_KEY`
+before enabling 2FA. See [deployment, API contract and tests](../docs/tenant-two-factor-authentication.md).
+JWT/challenge cookies remain HttpOnly, and browser calls use same-origin `/api`.
+
+With the ledger upstream unset, development Journal data still uses seeded,
+in-memory mocks **after real authentication**. The Journal mock accounts and
+sample entries are in `server/utils/ledger-demo.ts`. Legacy mock signup and settings
+authenticator setup do not provision real accounts; use the backend management APIs.
 
 ## Validate the Add line behavior
 

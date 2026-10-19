@@ -35,6 +35,8 @@ namespace business_desk::domain_services {
 
         drogon::Task<dto::BaseApiResponse> deleteUserGroup(const std::string &userGroupId, const utils::AuditIdentity &identity);
 
+        drogon::Task<dto::BaseApiResponse> verifyTenantSecondFactor(std::string challengeId, std::string code);
+
         // auth
 
         drogon::Task<dto::BaseApiResponse> validateUserPasskeys(const dto::PasskeyLoginDto &dto);

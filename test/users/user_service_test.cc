@@ -24,6 +24,7 @@ template<class Filter> bool accepts(const std::string &token) {
  filter.doFilter(request, [&](const auto &response) { denied=response->status==401; }, [&] { allowed=true; });
  return allowed && !denied;
 }
+void checkTotpLogin();
 void checkRequestAuthorization();
 void checkGlSoftDeletes();
 void checkUserRoutes();
@@ -210,5 +211,6 @@ int main() {
  hostTenant.setIsActive(true); hostTenant.setIsDeleted(true); tenants.update(hostTenant).get(); check(!service.validateHostUserCredentials(bootstrapLogin).get().success,"deleted host tenant blocks host login");
  cfg["JwtSecurityKey"]=""; login.setAccountId(""); check(!service.validateHostUserCredentials(login).get().success,"empty signing key rejected");
  checkRequestAuthorization();
+ checkTotpLogin();
  std::cout<<checks<<" checks passed\n";
 }

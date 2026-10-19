@@ -2,6 +2,7 @@
 // Created by Emmanuel Addo-Odame on 17/10/2026.
 //
 #include "UserService.h"
+#include "domain_services/auth/TotpService.h"
 #include "Users.h"
 #include "Tenants.h"
 #include "Roles.h"
@@ -73,7 +74,7 @@ drogon::Task<bool> validGroupReferences(const dto::UserGroupDto &input, const st
 }
 // One issuer for both credential flows; claim names match the JWT filters.
 drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
-                                              std::string tenantName = "") {
+                                              std::string tenantName = "", bool secondFactorVerified = false) {
     const auto config = drogon::app().getCustomConfig()["JwtBearer"];
     const auto key = config["JwtSecurityKey"].asString();
     const auto issuer = config["JwtIssuer"].asString();
@@ -94,7 +95,8 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
             .set_payload_claim("hostUserEmail", jwt::claim(user.getValueOfEmail()))
             .set_payload_claim("hostUserName", jwt::claim(user.getValueOfUsername().empty() ? user.getValueOfEmail() : user.getValueOfUsername()));
     } else {
-        builder.set_payload_claim("tenantId", jwt::claim(user.getValueOfTenantId()))
+        builder.set_payload_claim("mfa", jwt::claim(picojson::value(secondFactorVerified)))
+            .set_payload_claim("tenantId", jwt::claim(user.getValueOfTenantId()))
             .set_payload_claim("tenantName", jwt::claim(tenantName))
             .set_payload_claim("tenantUserId", jwt::claim(user.getValueOfId()))
             .set_payload_claim("tenantUserEmail", jwt::claim(user.getValueOfEmail()));
@@ -619,6 +621,33 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
             "Passkey authentication requires a server-verified WebAuthn challenge ceremony; use password sign-in.");
     }
 
+drogon::Task<dto::BaseApiResponse> UserService::verifyTenantSecondFactor(std::string challengeId, std::string code) {
+    try {
+        auto verified = co_await TotpService::verify(std::move(challengeId), std::move(code));
+        if (verified.userId.empty()) co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS,
+            "Invalid or expired authentication challenge/code. Sign in again if needed.");
+        CoroMapper<Users> users(drogon::app().getDbClient());
+        auto user = co_await users.findOne(Criteria(Users::Cols::_id, CompareOperator::EQ, verified.userId) &&
+            Criteria(Users::Cols::_tenant_id, CompareOperator::EQ, verified.tenantId) &&
+            Criteria(Users::Cols::_is_deleted, CompareOperator::EQ, false) &&
+            Criteria(Users::Cols::_is_active, CompareOperator::EQ, true) &&
+            Criteria(Users::Cols::_is_locked_out, CompareOperator::EQ, false) &&
+            Criteria(Users::Cols::_is_host_admin_user, CompareOperator::EQ, false));
+        using Tenant = drogon_model::BusinessDesk::Tenants;
+        CoroMapper<Tenant> tenants(drogon::app().getDbClient());
+        auto tenant = co_await tenants.findOne(Criteria(Tenant::Cols::_id, CompareOperator::EQ, verified.tenantId) &&
+            Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false) &&
+            Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true));
+        auto result = co_await issueToken(user, false, tenant.getValueOfName(), true);
+        result.result["requiresTwoFactorAuth"] = true;
+        co_return result;
+    } catch (const UnexpectedRows &) {
+        co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Account is no longer available.");
+    } catch (const std::exception &) {
+        co_return failure(constants::ERR_INTERNAL, "Authentication service unavailable.");
+    }
+}
+
 namespace {
 drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, bool host) {
     if (input.getUsernameOrEmail().empty() || input.getPassword().empty() ||
@@ -627,6 +656,7 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
     try {
         auto db = drogon::app().getDbClient();
         std::string tenantId, tenantName;
+        bool requiresTwoFactorAuth = false;
         if (!host) {
             CoroMapper<drogon_model::BusinessDesk::Tenants> tenants(db);
             using Tenant = drogon_model::BusinessDesk::Tenants;
@@ -634,6 +664,9 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
                 Criteria(Tenant::Cols::_tenancy_name, CompareOperator::EQ, input.getAccountId()) &&
                 Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true) &&
                 Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false));
+            if (tenant.getValueOfId() == constants::kHostTenantId)
+                co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
+            requiresTwoFactorAuth = tenant.getValueOfRequireTwoFactorAuth();
             tenantId = tenant.getValueOfId();
             tenantName = tenant.getValueOfName().empty() ? tenant.getValueOfTenancyName() : tenant.getValueOfName();
         }
@@ -659,7 +692,11 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
         if (user.getValueOfPasswordHash().empty() ||
             !bcrypt::validatePassword(input.getPassword(), user.getValueOfPasswordHash()))
             co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
-        co_return co_await issueToken(user, host, tenantName);
+        if (!host && requiresTwoFactorAuth)
+            co_return co_await TotpService::begin(user.getValueOfId(), tenantId, input.getAccountId()+"/"+user.getValueOfUsername(), user.getValueOfPasswordHash());
+        auto result = co_await issueToken(user, host, tenantName);
+        result.result["requiresTwoFactorAuth"] = false;
+        co_return result;
     } catch (const UnexpectedRows &) {
         co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
     } catch (const DrogonDbException &) {

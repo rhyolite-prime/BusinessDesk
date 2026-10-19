@@ -80,7 +80,7 @@ drogon::Task<std::unordered_set<std::string>> permissionsFor(const Users &user) 
     co_return permissions;
 }
 
-drogon::Task<RequestAuthorization> authorizeUser(const Users &user) {
+drogon::Task<RequestAuthorization> authorizeUser(const Users &user, bool enforceMfa = false, bool secondFactorVerified = false) {
     RequestAuthorization result;
     const auto tenantId = user.getValueOfTenantId();
     if (!tenantId.empty()) {
@@ -90,6 +90,8 @@ drogon::Task<RequestAuthorization> authorizeUser(const Users &user) {
                 Criteria(Tenants::Cols::_id, CompareOperator::EQ, tenantId) &&
                 Criteria(Tenants::Cols::_is_active, CompareOperator::EQ, true) &&
                 Criteria(Tenants::Cols::_is_deleted, CompareOperator::EQ, false));
+            if (enforceMfa && tenant.getValueOfRequireTwoFactorAuth() && !secondFactorVerified) co_return result;
+            result.accountId = tenant.getValueOfTenancyName();
             result.tenantName = tenant.getValueOfName().empty() ? tenant.getValueOfTenancyName() : tenant.getValueOfName();
         } catch (const UnexpectedRows &) { co_return result; }
     }
@@ -104,7 +106,7 @@ drogon::Task<RequestAuthorization> authorizeUser(const Users &user) {
 }
 
 drogon::Task<RequestAuthorization> PermissionService::resolveRequestAuthorization(
-    std::string userId, std::string tenantId, bool host) {
+    std::string userId, std::string tenantId, bool host, bool secondFactorVerified) {
     if (userId.empty() || (!host && (tenantId.empty() || tenantId == constants::kHostTenantId)) ||
         (host && !tenantId.empty()))
         co_return RequestAuthorization{};
@@ -116,7 +118,7 @@ drogon::Task<RequestAuthorization> PermissionService::resolveRequestAuthorizatio
     try {
         CoroMapper<Users> users(drogon::app().getDbClient());
         auto user = co_await users.findOne(criteria);
-        co_return co_await authorizeUser(user);
+        co_return co_await authorizeUser(user, !host, secondFactorVerified);
     } catch (const UnexpectedRows &) { co_return RequestAuthorization{}; }
 }
 

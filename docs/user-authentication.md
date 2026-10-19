@@ -24,7 +24,9 @@ issuer, or lifetime is invalid. Login responses include `token`, `expiresIn`,
 Host tokens carry `hostUserId`, `hostUserEmail`, `hostUserName`. Tenant tokens carry
 `tenantId`, `tenantName`, `tenantUserId`, `tenantUserEmail`. There is no tenant email
 column in `Tenants`, so the optional `tenantEmail` claim is not fabricated.
-Both carry `iss`, `sub`, `iat`, `exp` and optional `aud`. Tokens identify the
+Both carry `iss`, `sub`, `iat`, `exp` and optional `aud`. Tenant JWTs also carry
+a signed boolean `mfa`; required tenant 2FA must complete before a JWT is issued.
+See [tenant TOTP deployment and flow](tenant-two-factor-authentication.md). Tokens identify the
 user and realm; **permissions are not included in new JWTs**. The login response
 still contains a current permissions array for UI display, not authorization.
 
@@ -34,7 +36,8 @@ Both JWT filters follow the same asynchronous flow on every protected request:
 
 1. Verify HS256 signature, configured issuer/audience and expiration; require the
    realm-specific user ID (and tenant ID for tenant tokens). Reject opposite-realm
-   claims and, when present, a subject that does not match the user ID.
+   claims and, when present, a subject that does not match the user ID. When the
+   current tenant requires 2FA, require signed `mfa: true` evidence.
 2. Load the current user with `is_deleted = false`, active and unlocked status.
    Check exact tenant membership and the host-admin flag. Host users must belong
    to the protected host tenant or have a legacy NULL tenant. The protected host

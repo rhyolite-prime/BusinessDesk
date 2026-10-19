@@ -1,18 +1,7 @@
-import { createError, getCookie, type H3Event } from 'h3'
-import { authStore } from '../../layers/shared/server/utils/auth-store'
-
-/** Validate the demo session issued by the layered two-factor login flow. */
+import type { H3Event } from 'h3'
+import { currentTenantIdentity } from '../../layers/shared/server/utils/tenant-auth'
+/** Validate against the backend, including live account/tenant status and MFA. */
 export async function requireBusinessDeskSession(event: H3Event) {
-  const token = getCookie(event, 'tl_session')
-  const session = token ? authStore().sessions.get(token) : undefined
-  if (!session) {
-    throw createError({ statusCode: 401, statusMessage: 'Sign in is required to access the ledger.' })
-  }
-
-  return {
-    userId: session.userId,
-    username: session.username,
-    demo: true,
-    accessToken: null as string | null,
-  }
+  const { identity, accessToken } = await currentTenantIdentity(event)
+  return { userId: identity.userId!, username: identity.username!, demo: false, accessToken }
 }

@@ -36,6 +36,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/roles/RoleService.cc
         domain_services/users/UserService.h
         domain_services/users/UserService.cc
+        domain_services/auth/TotpService.cc
         domain_services/tenants/TenantService.h
         domain_services/tenants/TenantService.cc
         dto/RoleDto.h

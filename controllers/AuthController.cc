@@ -1,4 +1,5 @@
 #include "AuthController.h"
+#include <unordered_set>
 #include "dto/BaseApiResponse.h"
 #include "dto/PasskeyLoginDto.h"
 #include "plugins/BusinessDeskServicePlugin.h"
@@ -6,6 +7,11 @@
 
 namespace {
 Task<HttpResponsePtr> authenticateRequest(HttpRequestPtr req, bool host, bool passkey) {
+    if (req->getMethod() == Options) {
+        auto response = HttpResponse::newHttpResponse();
+        response->setStatusCode(k204NoContent);
+        co_return response;
+    }
     using namespace business_desk;
     dto::BaseApiResponse result;
     const auto body = req->getJsonObject();
@@ -14,6 +20,7 @@ Task<HttpResponsePtr> authenticateRequest(HttpRequestPtr req, bool host, bool pa
         result.error["message"] = "Expected a JSON object.";
         auto response = HttpResponse::newHttpJsonResponse(result.toJson());
         response->setStatusCode(k400BadRequest);
+        response->addHeader("Cache-Control", "no-store");
         co_return response;
     }
     // Reject malformed input rather than allowing JsonCpp conversions to throw.
@@ -23,6 +30,7 @@ Task<HttpResponsePtr> authenticateRequest(HttpRequestPtr req, bool host, bool pa
             result.error["message"] = "Login fields must be strings.";
             auto response = HttpResponse::newHttpJsonResponse(result.toJson());
             response->setStatusCode(k400BadRequest);
+            response->addHeader("Cache-Control", "no-store");
             co_return response;
         }
     }
@@ -43,7 +51,7 @@ Task<HttpResponsePtr> authenticateRequest(HttpRequestPtr req, bool host, bool pa
         const auto code = result.error["code"].asInt();
         if (code == constants::ERR_UNSUPPORTED_OPERATION) response->setStatusCode(k501NotImplemented);
         else if (code == constants::ERR_DB_QUERY || code == constants::ERR_INTERNAL)
-            response->setStatusCode(k500InternalServerError);
+            response->setStatusCode(k503ServiceUnavailable);
         else response->setStatusCode(k401Unauthorized);
     }
     co_return response;
@@ -60,4 +68,44 @@ Task<HttpResponsePtr> AuthController::hostSignIn(HttpRequestPtr req) {
 }
 Task<HttpResponsePtr> AuthController::tenantSignIn(HttpRequestPtr req) {
     co_return co_await authenticateRequest(req, false, false);
+}
+
+Task<HttpResponsePtr> AuthController::tenantVerifyTotp(HttpRequestPtr req) {
+    if (req->getMethod() == Options) {
+        auto response = HttpResponse::newHttpResponse();
+        response->setStatusCode(k204NoContent);
+        co_return response;
+    }
+    const auto body = req->getJsonObject();
+    if (!body || !body->isObject() || !(*body)["challengeId"].isString() || !(*body)["code"].isString()) {
+        auto response = HttpResponse::newHttpResponse();
+        response->setStatusCode(k400BadRequest);
+        response->addHeader("Cache-Control", "no-store");
+        co_return response;
+    }
+    auto &service = app().getPlugin<business_desk::plugins::BusinessDeskServicePlugin>()->getUserService();
+    auto result = co_await service.verifyTenantSecondFactor((*body)["challengeId"].asString(), (*body)["code"].asString());
+    auto response = HttpResponse::newHttpJsonResponse(result.toJson());
+    response->addHeader("Cache-Control", "no-store");
+    if (!result.success) response->setStatusCode(result.error["code"].asInt() == business_desk::constants::ERR_INTERNAL
+        ? k503ServiceUnavailable : k401Unauthorized);
+    co_return response;
+}
+
+Task<HttpResponsePtr> AuthController::tenantIdentity(HttpRequestPtr req) {
+    auto response = HttpResponse::newHttpResponse();
+    if (req->getMethod() == Options) { response->setStatusCode(k204NoContent); co_return response; }
+    business_desk::dto::BaseApiResponse result;
+    result.success = true;
+    for (const auto *field : {"tenantId", "tenantName", "accountId"})
+        result.result[field] = req->attributes()->get<std::string>(field);
+    result.result["userId"] = req->attributes()->get<std::string>("tenantUserId");
+    result.result["username"] = req->attributes()->get<std::string>("tenantUserName");
+    result.result["email"] = req->attributes()->get<std::string>("tenantUserEmail");
+    result.result["permissions"] = Json::arrayValue;
+    for (const auto &permission : req->attributes()->get<std::unordered_set<std::string>>("permissions"))
+        result.result["permissions"].append(permission);
+    response = HttpResponse::newHttpJsonResponse(result.toJson());
+    response->addHeader("Cache-Control", "no-store");
+    co_return response;
 }

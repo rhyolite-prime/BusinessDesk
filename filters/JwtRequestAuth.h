@@ -32,7 +32,7 @@ inline void filter(const drogon::HttpRequestPtr &request, drogon::FilterCallback
     if (request->getMethod() == drogon::Options) { next(); return; }
     // Only a freshly resolved identity may authorize this request. In particular,
     // legacy JWT permissions and attributes left by another filter are untrusted.
-    for (const char *key : {"permissions", "hostUserId", "hostUserEmail", "hostUserName",
+    for (const char *key : {"accountId", "tenantUserName", "permissions", "hostUserId", "hostUserEmail", "hostUserName",
                            "tenantId", "tenantName", "tenantEmail", "tenantUserId", "tenantUserEmail"})
         request->attributes()->erase(key);
 
@@ -52,6 +52,7 @@ inline void filter(const drogon::HttpRequestPtr &request, drogon::FilterCallback
         return;
     }
     std::string userId, tenantId;
+    bool secondFactorVerified = false;
     try {
         auto header = request->getHeader("Authorization");
         if (header.empty()) header = request->getHeader("authorization");
@@ -70,6 +71,7 @@ inline void filter(const drogon::HttpRequestPtr &request, drogon::FilterCallback
             if (decoded.has_payload_claim("hostUserId")) throw std::runtime_error("Wrong token scope");
             tenantId = claim(decoded, "tenantId");
             userId = claim(decoded, "tenantUserId");
+            if (decoded.has_payload_claim("mfa")) secondFactorVerified = decoded.get_payload_claim("mfa").as_boolean();
         }
         if (decoded.has_payload_claim("sub") && decoded.get_subject() != userId)
             throw std::runtime_error("Subject mismatch");
@@ -81,11 +83,11 @@ inline void filter(const drogon::HttpRequestPtr &request, drogon::FilterCallback
 
     // The callback-based Drogon filter API must not block its event loop on ORM
     // work. async_run owns the captures until the coroutine has finished.
-    drogon::async_run([request, userId = std::move(userId), tenantId = std::move(tenantId), host,
+    drogon::async_run([request, userId = std::move(userId), tenantId = std::move(tenantId), host, secondFactorVerified,
                        callback = std::move(callback), next = std::move(next)]() -> drogon::Task<void> {
         domain_services::RequestAuthorization authorization;
         try {
-            authorization = co_await domain_services::PermissionService::resolveRequestAuthorization(userId, tenantId, host);
+            authorization = co_await domain_services::PermissionService::resolveRequestAuthorization(userId, tenantId, host, secondFactorVerified);
         } catch (const std::exception &) {
             // No cached/partial permissions or bypass when the DB is unavailable.
             deny(callback, drogon::k503ServiceUnavailable, "Authorization service unavailable");
@@ -100,6 +102,8 @@ inline void filter(const drogon::HttpRequestPtr &request, drogon::FilterCallback
             request->attributes()->insert("hostUserEmail", authorization.userEmail);
             request->attributes()->insert("hostUserName", authorization.username);
         } else {
+            request->attributes()->insert("accountId", authorization.accountId);
+            request->attributes()->insert("tenantUserName", authorization.username);
             request->attributes()->insert("tenantId", authorization.tenantId);
             request->attributes()->insert("tenantName", authorization.tenantName);
             request->attributes()->insert("tenantUserId", authorization.userId);

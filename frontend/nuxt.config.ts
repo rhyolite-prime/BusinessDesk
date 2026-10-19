@@ -39,8 +39,6 @@ export default defineNuxtConfig({
   runtimeConfig: {
     ledgerApiBaseUrl: process.env.LEDGER_API_BASE_URL || '',
     authApiBaseUrl: process.env.AUTH_API_BASE_URL || '',
-    // Mock sign-in defaults on for development navigation; the server rejects it outside NODE_ENV=development.
-    authDemoMode: process.env.AUTH_DEMO_MODE !== 'false',
     public: {
       demoMode: process.env.NUXT_PUBLIC_DEMO_MODE === 'true',
     },

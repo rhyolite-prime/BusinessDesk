@@ -19,7 +19,8 @@ export function useApi() {
     try {
       return await $fetch<T>(`/api${path}`, opts) as T
     } catch (e: any) {
-      if (e?.statusCode === 401 || e?.response?.status === 401) { handle401(); throw new Error('Your session has expired. Please sign in again.') }
+      const loginStep = path === '/auth/login' || path === '/auth/verify-2fa'
+      if (!loginStep && (e?.statusCode === 401 || e?.response?.status === 401)) { handle401(); throw new Error('Your session has expired. Please sign in again.') }
       const msg = e?.data?.statusMessage || e?.data?.message || e?.statusMessage || 'Request failed. Please try again.'
       throw new Error(msg)
     }
