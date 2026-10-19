@@ -10,10 +10,10 @@ The General Ledger sidebar now has an expandable **Shared config** parent with:
 6. Default GL Numbers — the existing `/ledger/default-gl-numbers` page, moved
    from its previous standalone menu position (URL and behavior preserved).
 
-Company profile, Cost Centers, Banks and branches, and System numbers currently
-have explicit placeholder screens, not mock edit forms. Banks and branches is
-intended as a bank header with child branch tables; it is not the existing ledger
-Bank Accounts screen. Only Currencies CRUD is implemented in this change.
+Company profile, Cost Centers, and System numbers currently have explicit
+placeholder screens, not mock edit forms. Banks and branches now has tenant-owned
+header/child CRUD; see [Banks and branches](banks-and-branches.md). It is separate
+from the existing ledger Bank Accounts screen.
 
 ## Scope decision
 

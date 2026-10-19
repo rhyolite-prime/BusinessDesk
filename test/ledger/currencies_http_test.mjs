@@ -86,7 +86,7 @@ try{
  r=await call('/ledger/shared-config/currencies','GET',undefined,hostCookie);check(r.response.status===302,'host-only cookie does not grant tenant workspace access')
  r=await call('/ledger/shared-config/currencies','GET',undefined,tenantCookie);check(r.response.status===200&&String(r.body).includes('read-only for tenants'),'tenant currency page renders read-only')
  check(['Shared config','Company profile','Cost Centers','Currencies','Banks and branches','System numbers','Default GL Numbers'].every(label=>String(r.body).includes(label)),'Shared config menu contains all six child menus')
- for(const section of ['company-profile','cost-centers','banks-and-branches','system-numbers']){
+ for(const section of ['company-profile','cost-centers','system-numbers']){
   r=await call(`/ledger/shared-config/${section}`,'GET',undefined,tenantCookie);check(r.response.status===200&&String(r.body).includes('not implemented yet'),`configuration placeholder ${section} ${r.response.status}: ${JSON.stringify(r.body)}`)
  }
  hostAllowed=false;r=await call('/api/host/currencies','GET',undefined,hostCookie);check(r.response.status===403,'live host-admin revocation prevents later requests');hostAllowed=true

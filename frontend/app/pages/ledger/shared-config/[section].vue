@@ -3,7 +3,6 @@ definePageMeta({ layout: 'admin-ledger' })
 const sections: Record<string, { title: string; description: string }> = {
   'company-profile': { title: 'Company profile', description: 'Company profile management is not implemented yet.' },
   'cost-centers': { title: 'Cost Centers', description: 'Cost center management is not implemented yet.' },
-  'banks-and-branches': { title: 'Banks and branches', description: 'Bank headers with child branch tables will be managed here. This setup screen is not implemented yet; it is separate from ledger bank accounts.' },
   'system-numbers': { title: 'System numbers', description: 'System numbering configuration is not implemented yet.' },
 }
 const route = useRoute()

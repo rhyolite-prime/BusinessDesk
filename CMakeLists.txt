@@ -22,6 +22,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/gl/GlService.h
         domain_services/gl/GlService.cc
+        domain_services/shared/BankService.cc
         domain_services/shared/CurrencyService.cc
         domain_services/gl/AccountDetailService.cc
         domain_services/gl/AccountControlService.cc
