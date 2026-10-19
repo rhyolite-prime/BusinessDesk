@@ -83,7 +83,9 @@ struct TestField {
 };
 struct TestRow { Json::Value value; TestField operator[](const std::string &key) const {return {value[key]};} };
 using TestResult = std::vector<TestRow>;
+struct TestTransaction;
 struct TestDb {
+ Task<std::shared_ptr<TestTransaction>> newTransactionCoro();
  std::function<TestResult(const std::string &,const std::vector<Json::Value> &)> execute;
  template<class... Args> Task<TestResult> execSqlCoro(const std::string &sql,const Args &...args) {
   const std::vector<Json::Value> params{Json::Value(args)...};
@@ -91,6 +93,15 @@ struct TestDb {
   co_return TestResult{};
  }
 };
+struct TestTransaction : TestDb {
+ inline static bool failCommit=false;
+ std::function<void(bool)> commitCallback;
+ bool rolledBack=false;
+ void rollback(){rolledBack=true;}
+ void setCommitCallback(std::function<void(bool)> callback){commitCallback=std::move(callback);}
+ ~TestTransaction(){if(commitCallback)commitCallback(!rolledBack&&!failCommit);}
+};
+inline Task<std::shared_ptr<TestTransaction>> TestDb::newTransactionCoro(){co_return std::make_shared<TestTransaction>();}
 struct Application {
  Json::Value config;
  std::shared_ptr<TestDb> db=std::make_shared<TestDb>();
@@ -108,6 +119,7 @@ write('drogon/orm/CoroMapper.h', '''#pragma once
 #include <vector>
 namespace drogon::orm {
 using DbClientPtr = std::shared_ptr<drogon::TestDb>;
+using Transaction = drogon::TestTransaction;
 struct DrogonDbException : std::runtime_error { using std::runtime_error::runtime_error; const auto &base() const { return *this; } };
 struct UniqueViolation : DrogonDbException { using DrogonDbException::DrogonDbException; };
 struct UnexpectedRows : DrogonDbException { UnexpectedRows():DrogonDbException("Not found") {} };
@@ -134,9 +146,10 @@ template<class M> struct CoroMapper {
  size_t max=1000000, skip=0;
  template<class T> explicit CoroMapper(T) {}
  auto &orderBy(const std::string &) { return *this; }
+ auto &forUpdate() { return *this; }
  auto &limit(size_t n) { max=n; return *this; } auto &offset(size_t n) { skip=n; return *this; }
  Task<size_t> count(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); size_t n=0; for(auto &r:rows) if(c.match(r.toJson())) ++n; co_return n; }
- Task<std::vector<M>> findBy(Criteria c) { std::vector<M> result; size_t n=0; for(auto &r:rows) if(c.match(r.toJson()) && n++>=skip && result.size()<max) result.push_back(r); co_return result; }
+ Task<std::vector<M>> findBy(Criteria c) { if(failQueries) throw DrogonDbException("private-db-detail"); std::vector<M> result; size_t n=0; for(auto &r:rows) if(c.match(r.toJson()) && n++>=skip && result.size()<max) result.push_back(r); co_return result; }
  Task<M> findOne(Criteria c) { if(queriesBeforeFailure==0) throw DrogonDbException("private-db-detail"); if(queriesBeforeFailure>0) --queriesBeforeFailure; if(failQueries) throw DrogonDbException("private-db-detail"); std::vector<M> found; for(auto &r:rows) if(c.match(r.toJson())) found.push_back(r); if(found.size()!=1) throw UnexpectedRows(); co_return found[0]; }
  Task<M> findByPrimaryKey(std::string id) { co_return co_await findOne(Criteria(M::Cols::_id,CompareOperator::EQ,id)); }
  Task<M> insert(M m) { if(failUniqueWrites) throw UniqueViolation("private-db-detail"); if constexpr (requires { M::Cols::_is_deleted; }) { if (m.data["is_deleted"].isNull()) m.data["is_deleted"]=false; } if(m.getValueOfId().empty()) m.setId("00000000-0000-4000-8000-"+std::string(12-std::to_string(rows.size()+1).size(),'0')+std::to_string(rows.size()+1)); rows.push_back(m); co_return m; }

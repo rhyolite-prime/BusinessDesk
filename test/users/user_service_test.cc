@@ -26,10 +26,12 @@ template<class Filter> bool accepts(const std::string &token) {
 }
 void checkTotpLogin();
 void checkRequestAuthorization();
+void checkAccountHeads();
 void checkGlSoftDeletes();
 void checkUserRoutes();
 int main() {
  checkGlSoftDeletes();
+ checkAccountHeads();
  checkUserRoutes();
  domain_services::UserService service;
  auto &cfg=drogon::app().config["JwtBearer"];
