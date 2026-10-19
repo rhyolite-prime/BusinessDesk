@@ -65,7 +65,7 @@ async function verify() {
 
       <form class="space-y-4 mt-7" @submit.prevent="signIn">
         <FormField label="Account ID" required>
-          <TextInput v-model="form.accountId" placeholder="Your tenant account ID" autocomplete="organization" required :disabled="busy" />
+          <TextInput v-model="form.accountId" placeholder="Account ID" autocomplete="organization" required :disabled="busy" />
         </FormField>
         <FormField label="Username or email" required>
           <TextInput v-model="form.usernameOrEmail" placeholder="Username or email address" autocomplete="username" required :disabled="busy" />

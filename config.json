@@ -332,7 +332,7 @@
             "JwtAudience": "BD720_Users",
             "JwtExpirationTime": 3600
         },
-        "TOTP_KEY": "",
+        "TOTP_KEY": "c3b1109e921d1bde28e8ab8f84207e1cee7eabb967a0946b4726c2f005dcc627",
         "QuartzSchedulerApi": {
             "BaseUrl": "https://scheduler.richcreationsdevelopment.com",
             "CallBackUrl": "https://erp-api.rhyoliteprime.com/api/v1/run-scheduled-activity"

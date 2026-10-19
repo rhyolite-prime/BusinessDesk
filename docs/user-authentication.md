@@ -135,3 +135,10 @@ Application duplicate checks now consider only live rows. Non-partial database
 unique constraints (for example `(tenant_id, code)` on accounting units) may still
 reserve a deleted row's identifier and reject reuse. No constraints are relaxed
 by this change, and deleted rows are never restored implicitly.
+
+
+# Generate TOTP KEY
+
+```bash
+openssl rand -hex 32
+```

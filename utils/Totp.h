@@ -71,10 +71,10 @@ inline int64_t verify(const std::string &secret, const std::string &input, int64
 inline std::vector<unsigned char> encryptionKey() {
     const auto &config = drogon::app().getCustomConfig();
     if (!config.isObject() || !config["TOTP_KEY"].isString())
-        throw std::runtime_error("custom_config.TOTP_KEY is not configured");
+        throw std::runtime_error("TOTP_KEY is not configured");
     const auto setting = config["TOTP_KEY"].asString();
     if (setting.size() != 64)
-        throw std::runtime_error("custom_config.TOTP_KEY must contain 64 hexadecimal characters");
+        throw std::runtime_error("TOTP_KEY must contain 64 hexadecimal characters");
     auto key = unhex(setting);
     if (key.size() != 32) throw std::runtime_error("Invalid TOTP encryption key");
     return key;
