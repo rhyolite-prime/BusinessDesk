@@ -2,6 +2,7 @@
 import { Check, ChevronDown, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
 import type { StandardAccountType, LedgerAccountHead } from '../../../features/ledger/setup-data'
 import { standardAccountTypes } from '../../../features/ledger/setup-data'
+import { buildAccountHeadTree, filterAccountHeadTree } from '../../../features/ledger/account-head-tree'
 
 definePageMeta({ layout: 'admin-ledger' })
 const request = useRequestFetch()
@@ -16,10 +17,7 @@ let loadVersion = 0
 const setup = {
   accountHeads: heads,
   accountHeadPath(id: string) {
-    const names: string[] = [], seen = new Set<string>()
-    let head = heads.value.find(item => item.id === id)
-    while (head && !seen.has(head.id)) { seen.add(head.id); names.unshift(head.name); head = heads.value.find(item => item.id === head?.parentId) }
-    return names.join(' / ')
+    return treeRows.value.find(row => row.head.id === id)?.path || ''
   },
 }
 function mapHead(row: any, index: number): LedgerAccountHead {
@@ -78,27 +76,10 @@ const parentChoices = computed(() => {
     excluded.add(editingId.value)
     collectDescendants(editingId.value)
   }
-  return setup.accountHeads.value.filter((head) => !excluded.has(head.id) && head.isActive && head.standardAccountType === form.standardAccountType).sort((a, b) => a.sortOrder - b.sortOrder)
+  return treeRows.value.map(row => row.head).filter((head) => !excluded.has(head.id) && head.isActive && head.standardAccountType === form.standardAccountType)
 })
-const visibleHeads = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  return [...setup.accountHeads.value]
-    .sort((a, b) => a.sortOrder - b.sortOrder)
-    .filter((head) => !typeFilter.value || head.standardAccountType === typeFilter.value)
-    .filter((head) => !term || `${head.name} ${setup.accountHeadPath(head.id)}`.toLowerCase().includes(term))
-})
-
-function headDepth(id: string) {
-  let depth = 0
-  let head = setup.accountHeads.value.find((item) => item.id === id)
-  const seen = new Set<string>()
-  while (head?.parentId && !seen.has(head.id)) {
-    seen.add(head.id)
-    depth += 1
-    head = setup.accountHeads.value.find((item) => item.id === head?.parentId)
-  }
-  return depth
-}
+const treeRows = computed(() => buildAccountHeadTree(heads.value))
+const visibleHeads = computed(() => filterAccountHeadTree(treeRows.value, search.value, typeFilter.value))
 
 function directChildrenCount(id: string) {
   return setup.accountHeads.value.filter((head) => head.parentId === id).length
@@ -216,10 +197,11 @@ async function deleteHead() {
             <tr><th class="px-5 py-3">Account head</th><th class="px-4 py-3">Standard type</th><th class="px-4 py-3">Parent head</th><th class="px-4 py-3">Sub-heads</th><th class="px-4 py-3">Status</th><th class="w-24 px-4 py-3 text-right">Actions</th></tr>
           </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="head in visibleHeads" :key="head.id" class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
+            <tr v-for="{ head, depth } in visibleHeads" :key="head.id" class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
               <td class="px-5 py-3.5">
-                <div class="flex items-center gap-2" :style="{ paddingLeft: `${headDepth(head.id) * 22}px` }">
+                <div class="flex items-center gap-2" :style="{ paddingLeft: `${depth * 22}px` }">
                   <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"><span class="text-[10px] font-bold">{{ head.name.slice(0, 1) }}</span></span>
+                  <span v-if="depth" aria-hidden="true" class="text-slate-400">↳</span>
                   <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ head.name }}</span>
                 </div>
               </td>
