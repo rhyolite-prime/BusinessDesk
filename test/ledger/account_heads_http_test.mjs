@@ -22,6 +22,11 @@ const upstream=http.createServer(async(req,res)=>{
  if(url.pathname===`/api/v1/ledger/accounting-units/${id}`&&req.method==='DELETE')return send(200,{id,deleted:true})
  if(url.pathname==='/api/v1/ledger/account-head-units')return send(200,[{id:unit,name:'Head office',code:'HQ'}])
  if(url.searchParams.get('query')==='conflict')return send(409,null,{detail:'PRIVATE SQL VALUES',message:'PRIVATE DATABASE MESSAGE'})
+ if(url.pathname==='/api/v1/ledger/account-controls'&&req.method==='GET')return send(200,{data:[row],totalCount:1,totalPages:1,pageNo:1,pageSize:200})
+ if(url.pathname==='/api/v1/ledger/account-controls'&&req.method==='POST'){row={...body,id};return send(201,row)}
+ if(url.pathname===`/api/v1/ledger/account-controls/${id}`&&req.method==='GET')return send(200,row)
+ if(url.pathname===`/api/v1/ledger/account-controls/${id}`&&req.method==='PUT'){row={...body,id};return send(200,row)}
+ if(url.pathname===`/api/v1/ledger/account-controls/${id}`&&req.method==='DELETE')return send(200,{id,deleted:true})
  if(url.pathname==='/api/v1/ledger/account-heads'&&req.method==='GET')return send(200,{data:[row],totalCount:1,totalPages:1,pageNo:1,pageSize:200})
  if(url.pathname==='/api/v1/ledger/account-heads'&&req.method==='POST'){row={...body,id};return send(201,row)}
  if(url.pathname===`/api/v1/ledger/account-heads/${id}`&&req.method==='GET')return send(200,row)
@@ -84,5 +89,27 @@ try {
  r=await call('/api/ledger/accounting-units/not-a-uuid','DELETE',undefined,cookie);check(r.response.status===400,'unit invalid UUID rejected')
  const crossOrigin=await fetch(base+'/api/ledger/accounting-units',{method:'POST',headers:{'content-type':'application/json',origin:'https://attacker.example',cookie},body:JSON.stringify(unitBody)})
  check(crossOrigin.status===403,'unit cross-origin mutation denied')
+ // Account Controls: real CRUD adapter, scope, validation and bearer forwarding.
+ const controlBody={accountingUnitId:unit,accountGroupId:id,parentAccountHeaderId:null,accountHeaderName:' Cash and bank ',minAccount:1000,maxAccount:1999,isActive:true}
+ r=await call(`/api/ledger/account-controls?accountingUnitId=${unit}`);check(r.response.status===401,'anonymous control list denied')
+ r=await call(`/api/ledger/account-controls?accountingUnitId=${unit}&pageNo=1&pageSize=200&query=cash`,'GET',undefined,cookie);check(r.response.status===200&&r.body.totalCount===1,'control list envelope unwrapped')
+ check(r.response.headers.get('cache-control')==='no-store','control responses not cached')
+ r=await call('/api/ledger/account-controls','POST',controlBody,cookie);check(r.response.status===200&&r.body.accountHeaderName==='Cash and bank','control create trims name')
+ r=await call(`/api/ledger/account-controls/${id}?accountingUnitId=${unit}`,'GET',undefined,cookie);check(r.response.status===200&&r.body.minAccount===1000,'control single detail forwarded')
+ r=await call(`/api/ledger/account-controls/${id}`,'PUT',{...controlBody,isActive:false},cookie);check(r.response.status===200&&!r.body.isActive,'control update status forwarded')
+ r=await call(`/api/ledger/account-controls/${id}?accountingUnitId=${unit}`,'DELETE',undefined,cookie);check(r.response.status===200&&r.body.deleted,'control delete forwarded')
+ const controlCalls=seen.filter(req=>req.path.includes('/ledger/account-controls'))
+ check(controlCalls.length===5&&controlCalls.every(req=>req.token==='Bearer test-auth-token'),'JWT forwarded on all five control operations')
+ check(controlCalls.filter(req=>['GET','DELETE'].includes(req.method)).every(req=>req.query.accountingUnitId===unit),'control read/delete scoped to selected unit')
+ check(controlCalls.find(req=>req.method==='POST').body.accountingUnitId===unit,'control write unit scope in body')
+ const beforeControls=seen.length
+ for(const invalid of [{...controlBody,tenantId:'forged'},{...controlBody,createdByUserId:id},{...controlBody,minAccount:-1},{...controlBody,minAccount:1.5},{...controlBody,maxAccount:2147483648},{...controlBody,maxAccount:999},{...controlBody,isActive:'false'},{...controlBody,parentAccountHeaderId:'bad'},{...controlBody,accountGroupId:'bad'},{...controlBody,accountHeaderName:'   '}]) {
+   r=await call('/api/ledger/account-controls','POST',invalid,cookie);check(r.response.status===400&&seen.length===beforeControls,'control invalid fields blocked locally')
+ }
+ r=await call('/api/ledger/account-controls','GET',undefined,cookie);check(r.response.status===400,'control list requires accounting unit')
+ r=await call(`/api/ledger/account-controls/invalid?accountingUnitId=${unit}`,'DELETE',undefined,cookie);check(r.response.status===400,'control invalid ID rejected')
+ r=await call(`/api/ledger/account-controls?accountingUnitId=${unit}&query=conflict`,'GET',undefined,cookie);check(r.response.status===409&&!JSON.stringify(r.body).includes('PRIVATE'),'control conflict is sanitized')
+ const deniedControl=await fetch(base+'/api/ledger/account-controls',{method:'POST',headers:{'content-type':'application/json',origin:'https://attacker.example',cookie},body:JSON.stringify(controlBody)})
+ check(deniedControl.status===403,'cross-origin control mutation blocked')
  console.log(`${checks} ledger setup HTTP checks passed`)
 } finally {app.kill('SIGTERM');await new Promise(resolve=>upstream.close(resolve))}
