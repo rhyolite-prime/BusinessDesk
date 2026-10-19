@@ -101,7 +101,7 @@ struct TestTransaction : TestDb {
  void setCommitCallback(std::function<void(bool)> callback){commitCallback=std::move(callback);}
  ~TestTransaction(){if(commitCallback)commitCallback(!rolledBack&&!failCommit);}
 };
-inline Task<std::shared_ptr<TestTransaction>> TestDb::newTransactionCoro(){co_return std::make_shared<TestTransaction>();}
+inline Task<std::shared_ptr<TestTransaction>> TestDb::newTransactionCoro(){auto tx=std::make_shared<TestTransaction>();tx->execute=execute;co_return tx;}
 struct Application {
  Json::Value config;
  std::shared_ptr<TestDb> db=std::make_shared<TestDb>();

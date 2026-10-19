@@ -14,6 +14,12 @@ const upstream=http.createServer(async(req,res)=>{
  seen.push({path:url.pathname,method:req.method,token:req.headers.authorization,body,query:Object.fromEntries(url.searchParams)})
  if(req.headers.authorization!=='Bearer test-auth-token')return send(401,null)
  if(url.pathname==='/api/v1/auth/me')return send(200,{userId:id,username:'admin',accountId:'acme'})
+ if(url.pathname==='/api/v1/ledger/accounting-unit-currencies')return send(200,[{id:unit,code:'GHS',name:'Ghana cedi'}])
+ if(url.pathname==='/api/v1/ledger/accounting-units'&&req.method==='GET')return send(200,{data:[row],totalCount:1,totalPages:1,pageNo:1,pageSize:20})
+ if(url.pathname==='/api/v1/ledger/accounting-units'&&req.method==='POST'){row={...body,id};return send(201,row)}
+ if(url.pathname===`/api/v1/ledger/accounting-units/${id}`&&req.method==='GET')return send(200,row)
+ if(url.pathname===`/api/v1/ledger/accounting-units/${id}`&&req.method==='PUT'){row={...body,id};return send(200,row)}
+ if(url.pathname===`/api/v1/ledger/accounting-units/${id}`&&req.method==='DELETE')return send(200,{id,deleted:true})
  if(url.pathname==='/api/v1/ledger/account-head-units')return send(200,[{id:unit,name:'Head office',code:'HQ'}])
  if(url.searchParams.get('query')==='conflict')return send(409,null,{detail:'PRIVATE SQL VALUES',message:'PRIVATE DATABASE MESSAGE'})
  if(url.pathname==='/api/v1/ledger/account-heads'&&req.method==='GET')return send(200,{data:[row],totalCount:1,totalPages:1,pageNo:1,pageSize:200})
@@ -60,5 +66,23 @@ try {
  const denied=await fetch(base+'/api/ledger/account-heads',{method:'POST',headers:{'content-type':'application/json',origin:'https://attacker.example',cookie},body:JSON.stringify(body)})
  check(denied.status===403,'cross-origin mutation rejected')
  check(seen.every(req=>!JSON.stringify(req.body).includes('test-auth-token')),'JWT is a header, never a CRUD body field')
- console.log(`${checks} account-head HTTP checks passed`)
+ // Accounting Units: every route must forward the same authenticated bearer.
+ const unitBody={code:' HQ ',name:' Head office ',baseCurrencyId:unit,timeZone:'Africa/Accra',fiscalYearStartMonth:1,isActive:true}
+ r=await call('/api/ledger/accounting-units');check(r.response.status===401,'anonymous units denied')
+ r=await call('/api/ledger/accounting-unit-currencies','GET',undefined,cookie);check(r.response.status===200&&r.body[0].code==='GHS','real currency choices forwarded')
+ r=await call('/api/ledger/accounting-units?pageNo=1&pageSize=20&query=HQ','GET',undefined,cookie);check(r.response.status===200&&r.body.totalCount===1,'unit list pagination envelope')
+ r=await call('/api/ledger/accounting-units','POST',unitBody,cookie);check(r.response.status===200&&r.body.code==='HQ'&&r.body.name==='Head office','unit create trimmed')
+ r=await call(`/api/ledger/accounting-units/${id}`,'GET',undefined,cookie);check(r.response.status===200&&r.body.timeZone==='Africa/Accra','unit detail loaded')
+ r=await call(`/api/ledger/accounting-units/${id}`,'PUT',{...unitBody,isActive:false},cookie);check(r.response.status===200&&!r.body.isActive,'unit edit deactivation forwarded')
+ r=await call(`/api/ledger/accounting-units/${id}`,'DELETE',undefined,cookie);check(r.response.status===200&&r.body.deleted,'unit delete forwarded')
+ const unitCalls=seen.filter(req=>req.path.includes('/ledger/accounting-unit'))
+ check(unitCalls.length===6&&unitCalls.every(req=>req.token==='Bearer test-auth-token'),'JWT on all six unit routes')
+ const count=seen.length
+ for(const invalid of [{...unitBody,tenantId:'forged'},{...unitBody,fiscalYearStartMonth:13},{...unitBody,isActive:'true'},{...unitBody,timeZone:'Mars/Invalid'}]) {
+   r=await call('/api/ledger/accounting-units','POST',invalid,cookie);check(r.response.status===400&&seen.length===count,'unit invalid payload rejected locally')
+ }
+ r=await call('/api/ledger/accounting-units/not-a-uuid','DELETE',undefined,cookie);check(r.response.status===400,'unit invalid UUID rejected')
+ const crossOrigin=await fetch(base+'/api/ledger/accounting-units',{method:'POST',headers:{'content-type':'application/json',origin:'https://attacker.example',cookie},body:JSON.stringify(unitBody)})
+ check(crossOrigin.status===403,'unit cross-origin mutation denied')
+ console.log(`${checks} ledger setup HTTP checks passed`)
 } finally {app.kill('SIGTERM');await new Promise(resolve=>upstream.close(resolve))}

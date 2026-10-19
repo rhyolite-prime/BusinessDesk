@@ -31,10 +31,6 @@ class GlController : public drogon::HttpController<GlController>
     ADD_METHOD_TO(GlController::updateBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Put);
     ADD_METHOD_TO(GlController::deleteBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Delete);
 
-    ADD_METHOD_TO(GlController::listAccountingUnits, std::string(PREFIX) + "accounting-units", drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::createAccountingUnit, std::string(PREFIX) + "accounting-units", drogon::HttpMethod::Post);
-    ADD_METHOD_TO(GlController::updateAccountingUnit, std::string(PREFIX) + "accounting-units/{1}", drogon::HttpMethod::Put);
-    ADD_METHOD_TO(GlController::deleteAccountingUnit, std::string(PREFIX) + "accounting-units/{1}", drogon::HttpMethod::Delete);
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> validateJournal(drogon::HttpRequestPtr request);

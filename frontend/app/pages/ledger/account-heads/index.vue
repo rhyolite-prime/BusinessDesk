@@ -171,7 +171,7 @@ async function deleteHead() {
     </div>
     <p v-if="loadError" role="alert" class="rounded-lg bg-rose-50 p-3 text-sm text-rose-700">{{ loadError }}</p>
     <p v-else-if="loading" role="status" class="text-sm text-slate-500">Loading account heads…</p>
-    <p v-else-if="!units.length" class="text-sm text-slate-500">No active accounting units are available. Create an accounting unit before adding heads.</p>
+    <p v-else-if="!units.length" class="text-sm text-slate-500">No active accounting units are available. <NuxtLink to="/ledger/accounting-units" class="font-semibold underline">Create or activate an accounting unit</NuxtLink> before adding heads.</p>
     <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <div class="mb-2 text-xs font-medium text-slate-400">General Ledger <span class="mx-1 text-slate-300">/</span> Account Setup</div>

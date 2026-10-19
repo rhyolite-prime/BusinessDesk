@@ -41,6 +41,7 @@ const ledgerGroups: NavigationGroup[] = [
     title: 'General Ledger',
     icon: 'book-open',
     links: [
+      { label: 'Accounting Units', to: '/ledger/accounting-units', icon: 'building-office' },
       {
         label: 'Account Setup',
         icon: 'cog-6-tooth',

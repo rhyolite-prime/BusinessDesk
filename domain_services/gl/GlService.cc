@@ -1242,13 +1242,15 @@ namespace business_desk::domain_services {
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::getAllAccountingUnits(int pageNo, int pageSize, const std::string &query) {
+    drogon::Task<dto::BaseApiResponse> GlService::getAllAccountingUnits(int pageNo, int pageSize, const std::string &query, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient) {
+    pageNo=std::clamp(pageNo,1,1000000);pageSize=std::clamp(pageSize,1,200);
 
-    auto dbClient = drogon::app().getDbClient();
+    if (!dbClient) dbClient = drogon::app().getDbClient();
     auto mp = drogon::orm::CoroMapper<CoreAccountingUnits>(dbClient);
 
     // 1. Build the search criteria; soft-deleted rows never surface.
-    Criteria searchCriteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false);
+    Criteria searchCriteria = Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false) &&
+        (identity.hasTenant() ? Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::EQ, identity.tenantId) : Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::IsNull));
     if (!query.empty()) {
       std::string likeQuery = "%" + query + "%";
       searchCriteria = searchCriteria &&
@@ -1264,7 +1266,7 @@ namespace business_desk::domain_services {
       Json::Value data = Json::arrayValue;
       if (totalCount > 0) {
         int offset = (pageNo - 1) * pageSize;
-        auto accountingUnits = co_await mp.limit(pageSize).offset(offset).findBy(searchCriteria);
+        auto accountingUnits = co_await mp.orderBy(CoreAccountingUnits::Cols::_id).limit(pageSize).offset(offset).findBy(searchCriteria);
 
         // 4. Map the persisted rows onto the camelCase API contract
         for (const auto &accountingUnit : accountingUnits) {
@@ -1288,12 +1290,13 @@ namespace business_desk::domain_services {
       co_return makePaginatedResponse(totalCount, pageNo, pageSize, data);
 
     } catch (const drogon::orm::DrogonDbException &e) {
-      co_return makeErrorResponse("database_error", "Database error while fetching accounting units.", e.base().what());
+      co_return makeErrorResponse("database_error", "Database error while fetching accounting units.");
     }
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity) {
+    drogon::Task<dto::BaseApiResponse> GlService::createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient) {
+      if (!identity.hasTenant() || !identity.hasUser()) co_return makeErrorResponse("unauthorized", "Tenant authentication required.");
 
       if (dto.getCode().empty()) {
         co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
@@ -1308,7 +1311,7 @@ namespace business_desk::domain_services {
         co_return makeErrorResponse("validation_error", "Fiscal year start month must be between 1 and 12.");
       }
 
-      auto dbClient = drogon::app().getDbClient();
+      if (!dbClient) dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
 
       try {
@@ -1329,6 +1332,7 @@ namespace business_desk::domain_services {
         newAccountingUnit.setTimeZone(dto.getTimeZone().empty() ? std::string("UTC") : dto.getTimeZone());
         newAccountingUnit.setFiscalYearStartMonth(static_cast<short>(dto.getFiscalYearStartMonth()));
         newAccountingUnit.setIsActive(dto.getIsActive());
+        newAccountingUnit.setIsDeleted(false);
 
         utils::applyCreateAudit(newAccountingUnit, identity);
         auto result = co_await mp.insert(newAccountingUnit);
@@ -1337,13 +1341,16 @@ namespace business_desk::domain_services {
         response.result = result.toJson();
         co_return response;
 
+      } catch (const UniqueViolation &) {
+        co_return makeErrorResponse("conflict", "An accounting unit with this code already exists.");
       } catch (const DrogonDbException &e) {
-        co_return makeErrorResponse("database_error", "Database error while creating accounting unit.", e.base().what());
+        co_return makeErrorResponse("database_error", "Database error while creating accounting unit.");
       }
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity) {
+    drogon::Task<dto::BaseApiResponse> GlService::updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient) {
+      if (!identity.hasTenant() || !identity.hasUser()) co_return makeErrorResponse("unauthorized", "Tenant authentication required.");
 
       if (dto.getCode().empty()) {
         co_return makeErrorResponse("validation_error", "Accounting unit code is required.");
@@ -1358,12 +1365,13 @@ namespace business_desk::domain_services {
         co_return makeErrorResponse("validation_error", "Fiscal year start month must be between 1 and 12.");
       }
 
-      auto dbClient = drogon::app().getDbClient();
+      if (!dbClient) dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
 
       try {
         auto existing = co_await mp.findBy(Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::EQ, id) &&
-                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false));
+                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false) &&
+                                               Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::EQ, identity.tenantId));
         if (existing.empty()) {
           co_return makeErrorResponse("not_found", "Accounting unit not found.");
         }
@@ -1394,15 +1402,18 @@ namespace business_desk::domain_services {
         response.result = accountingUnit.toJson();
         co_return response;
 
+      } catch (const UniqueViolation &) {
+        co_return makeErrorResponse("conflict", "An accounting unit with this code already exists.");
       } catch (const DrogonDbException &e) {
-        co_return makeErrorResponse("database_error", "Database error while updating accounting unit.", e.base().what());
+        co_return makeErrorResponse("database_error", "Database error while updating accounting unit.");
       }
 
     }
 
-    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity) {
+    drogon::Task<dto::BaseApiResponse> GlService::deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient) {
+      if (!identity.hasTenant() || !identity.hasUser()) co_return makeErrorResponse("unauthorized", "Tenant authentication required.");
 
-      auto dbClient = drogon::app().getDbClient();
+      if (!dbClient) dbClient = drogon::app().getDbClient();
       auto mp = CoroMapper<CoreAccountingUnits>(dbClient);
       auto groupMapper = CoroMapper<GlAccountGroups>(dbClient);
       auto controlMapper = CoroMapper<GlAccountControls>(dbClient);
@@ -1413,7 +1424,8 @@ namespace business_desk::domain_services {
 
       try {
         auto existing = co_await mp.findBy(Criteria(CoreAccountingUnits::Cols::_id, CompareOperator::EQ, id) &&
-                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false));
+                                               Criteria(CoreAccountingUnits::Cols::_is_deleted, CompareOperator::EQ, false) &&
+                                               Criteria(CoreAccountingUnits::Cols::_tenant_id, CompareOperator::EQ, identity.tenantId));
         if (existing.empty()) {
           co_return makeErrorResponse("not_found", "Accounting unit not found.");
         }
@@ -1440,13 +1452,17 @@ namespace business_desk::domain_services {
 
         auto accountingUnit = existing.front();
         accountingUnit.setIsDeleted(true);
+        accountingUnit.setIsActive(false);
+        utils::applyUpdateAudit(accountingUnit, identity);
         utils::applyDeleteAudit(accountingUnit, identity);
         co_await mp.update(accountingUnit);
 
         co_return makeDeletedResponse(id);
 
+      } catch (const UniqueViolation &) {
+        co_return makeErrorResponse("conflict", "An accounting unit with this code already exists.");
       } catch (const DrogonDbException &e) {
-        co_return makeErrorResponse("database_error", "Database error while deleting accounting unit.", e.base().what());
+        co_return makeErrorResponse("database_error", "Database error while deleting accounting unit.");
       }
 
     }
