@@ -124,11 +124,14 @@ struct DrogonDbException : std::runtime_error { using std::runtime_error::runtim
 struct UniqueViolation : DrogonDbException { using DrogonDbException::DrogonDbException; };
 struct UnexpectedRows : DrogonDbException { UnexpectedRows():DrogonDbException("Not found") {} };
 enum class CompareOperator { EQ, NE, IsNull, Like };
+inline bool rejectEmptyUuidParameters=false;
 struct Criteria {
  std::function<bool(const Json::Value &)> match = [](auto &) { return true; };
  Criteria() = default;
  Criteria(std::string k, CompareOperator op) { match = [k,op](auto &r) { return op==CompareOperator::IsNull && r[k].isNull(); }; }
  template<class T> Criteria(std::string k, CompareOperator op, T v) {
+  const Json::Value parameter(v);
+  if(rejectEmptyUuidParameters && (k=="id" || k.ends_with("_id")) && parameter.isString() && parameter.asString().empty()) throw DrogonDbException("invalid input syntax for type uuid: empty string");
   match = [k,op,w=Json::Value(v)](auto &r) {
    if (op==CompareOperator::EQ) return r[k]==w;
    if (op==CompareOperator::NE) return r[k]!=w;

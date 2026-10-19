@@ -8,6 +8,8 @@ using namespace drogon_model::BusinessDesk;
 using namespace drogon::orm;
 extern void check(bool,const char*);
 void checkAccountControls() {
+    // Match PostgreSQL: an empty string cannot be bound to a UUID column.
+    rejectEmptyUuidParameters=true;
     CoroMapper<CoreAccountingUnits>::rows.clear();CoroMapper<GlAccountGroups>::rows.clear();CoroMapper<GlAccountControls>::rows.clear();CoroMapper<GlAccounts>::rows.clear();
     const std::string unitId="a0000000-0000-4000-8000-000000000001",unit2="a0000000-0000-4000-8000-000000000002",foreign="a0000000-0000-4000-8000-000000000003";
     const std::string groupId="b0000000-0000-4000-8000-000000000001",group2="b0000000-0000-4000-8000-000000000002";
@@ -68,5 +70,10 @@ void checkAccountControls() {
     CoroMapper<GlAccountControls>::failUniqueWrites=true;check(run("update",id).error["code"].asString()=="conflict","unique constraint mapped to conflict");CoroMapper<GlAccountControls>::failUniqueWrites=false;
     CoroMapper<GlAccountControls>::failQueries=true;auto failed=run("list");check(!failed.success&&failed.toJson().toStyledString().find("private-db-detail")==std::string::npos,"control database failure sanitized");CoroMapper<GlAccountControls>::failQueries=false;
     check(run("delete",id).success,"delete root after soft deleting child");check(run("list").result["totalCount"].asInt()==0,"deleted controls absent from list");
+    input["parentAccountHeaderId"]="";input["accountHeaderName"]="New root";
+    auto rootWithoutParent=run("create");
+    check(rootWithoutParent.success,"empty optional parent creates root without empty UUID query");
+    check(rootWithoutParent.result["parentAccountHeaderId"].isNull(),"empty optional parent stored and returned as NULL");
     unit=CoroMapper<CoreAccountingUnits>(0).findByPrimaryKey(unitId).get();unit.setIsDeleted(true);CoroMapper<CoreAccountingUnits>(0).update(unit).get();check(!run("list").success,"deleted accounting unit rejected");
+    rejectEmptyUuidParameters=false;
 }
