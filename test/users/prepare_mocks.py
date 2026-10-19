@@ -160,7 +160,7 @@ template<class M> struct CoroMapper {
 };
 }
 ''')
-for model in ['GlBudgets','GlCashReceiptLines','GlDefaultAccounts','GlDeletedJournals','GlFxRevaluationLines','GlImprestRefunds','GlImprestRetirementLines','GlImprestWriteOffs','GlImprests','GlJournalLines','GlPaymentVoucherLines','GlPaymentVoucherRetentions','GlPaymentVouchers','GlPettyCashTransactionLines','GlPettyCashTransactions','Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccountControls','GlAccounts','GlAccountingPeriods','GlAccountBalances','GlBankAccounts','CoreAccountingUnits','CoreCurrencies']:
+for model in ['CoreCurrencyRates','GlCashReceipts','GlFxRevaluationRuns','GlImprestRetirements','GlBudgets','GlCashReceiptLines','GlDefaultAccounts','GlDeletedJournals','GlFxRevaluationLines','GlImprestRefunds','GlImprestRetirementLines','GlImprestWriteOffs','GlImprests','GlJournalLines','GlPaymentVoucherLines','GlPaymentVoucherRetentions','GlPaymentVouchers','GlPettyCashTransactionLines','GlPettyCashTransactions','Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccountControls','GlAccounts','GlAccountingPeriods','GlAccountBalances','GlBankAccounts','CoreAccountingUnits','CoreCurrencies']:
     header = (root / 'models' / (model+'.h')).read_text()
     cols = re.findall(r'static const std::string (_\w+);', header)
     setters = re.findall(r'void set(\w+)\(const (.+?) &p\w+\) noexcept;', header)

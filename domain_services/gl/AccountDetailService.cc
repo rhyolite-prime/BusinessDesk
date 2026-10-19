@@ -179,7 +179,7 @@ drogon::Task<dto::BaseApiResponse> scoped(DbClientPtr db,std::string op,std::str
     const auto currency=input["currencyId"].isNull()?owned.front().getValueOfBaseCurrencyId():input["currencyId"].asString();
     if(!uuid(currency))co_return fail("validation_error","Configure a valid base currency or select a currency.");
     CoroMapper<CoreCurrencies> currencies(db);
-    auto currencyRows=co_await currencies.findBy(Criteria(CoreCurrencies::Cols::_id,CompareOperator::EQ,currency) && Criteria(CoreCurrencies::Cols::_is_deleted,CompareOperator::EQ,false) && Criteria(CoreCurrencies::Cols::_is_active,CompareOperator::EQ,true));
+    auto currencyRows=co_await currencies.forUpdate().findBy(Criteria(CoreCurrencies::Cols::_id,CompareOperator::EQ,currency) && Criteria(CoreCurrencies::Cols::_is_deleted,CompareOperator::EQ,false) && Criteria(CoreCurrencies::Cols::_is_active,CompareOperator::EQ,true));
     if(currencyRows.empty())co_return fail("validation_error","Select an active currency.");
     // Read live rows only. Compare normalized numeric values as legacy rows
     // may retain leading zeros; the DB also reserves exact deleted numbers.

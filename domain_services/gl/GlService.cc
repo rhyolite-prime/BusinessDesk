@@ -194,7 +194,7 @@ drogon::Task<std::string> validateAccountControlSiblings(const drogon::orm::DbCl
 drogon::Task<std::string> validateBaseCurrency(const drogon::orm::DbClientPtr &dbClient,
                                                   const std::string &baseCurrencyId) {
     auto mp = drogon::orm::CoroMapper<CoreCurrencies>(dbClient);
-    auto currencies = co_await mp.findBy(Criteria(CoreCurrencies::Cols::_id, CompareOperator::EQ, baseCurrencyId) &&
+    auto currencies = co_await mp.forUpdate().findBy(Criteria(CoreCurrencies::Cols::_id, CompareOperator::EQ, baseCurrencyId) &&
                                              Criteria(CoreCurrencies::Cols::_is_deleted, CompareOperator::EQ, false));
     if (currencies.empty()) {
         co_return std::string("Base currency not found.");

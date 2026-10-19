@@ -43,6 +43,18 @@ const ledgerGroups: NavigationGroup[] = [
     links: [
       { label: 'Accounting Units', to: '/ledger/accounting-units', icon: 'building-office' },
       {
+        label: 'Shared config',
+        icon: 'cog-6-tooth',
+        children: [
+          { label: 'Company profile', to: '/ledger/shared-config/company-profile', icon: 'building-office' },
+          { label: 'Cost Centers', to: '/ledger/shared-config/cost-centers', icon: 'building-library' },
+          { label: 'Currencies', to: '/ledger/shared-config/currencies', icon: 'banknotes' },
+          { label: 'Banks and branches', to: '/ledger/shared-config/banks-and-branches', icon: 'building-library' },
+          { label: 'System numbers', to: '/ledger/shared-config/system-numbers', icon: 'document-text' },
+          { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
+        ],
+      },
+      {
         label: 'Account Setup',
         icon: 'cog-6-tooth',
         children: [
@@ -53,7 +65,6 @@ const ledgerGroups: NavigationGroup[] = [
         ],
       },
       { label: 'Budget', to: '/ledger/budgets', icon: 'scale' },
-      { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
       {
         label: 'Journal',
         icon: 'document-text',
