@@ -160,7 +160,7 @@ template<class M> struct CoroMapper {
 };
 }
 ''')
-for model in ['Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccountControls','GlAccounts','GlAccountingPeriods','GlAccountBalances','GlBankAccounts','CoreAccountingUnits','CoreCurrencies']:
+for model in ['GlBudgets','GlCashReceiptLines','GlDefaultAccounts','GlDeletedJournals','GlFxRevaluationLines','GlImprestRefunds','GlImprestRetirementLines','GlImprestWriteOffs','GlImprests','GlJournalLines','GlPaymentVoucherLines','GlPaymentVoucherRetentions','GlPaymentVouchers','GlPettyCashTransactionLines','GlPettyCashTransactions','Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccountControls','GlAccounts','GlAccountingPeriods','GlAccountBalances','GlBankAccounts','CoreAccountingUnits','CoreCurrencies']:
     header = (root / 'models' / (model+'.h')).read_text()
     cols = re.findall(r'static const std::string (_\w+);', header)
     setters = re.findall(r'void set(\w+)\(const (.+?) &p\w+\) noexcept;', header)
@@ -174,7 +174,7 @@ for model in ['Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccoun
     for name, typ in setters:
         key = column(name)
         if typ=='std::string': body='data["'+key+'"] = v;'
-        elif typ in ['bool','int16_t','int32_t','double','float']: body='data["'+key+'"] = v;'
+        elif typ in ['bool','short','int','int16_t','int32_t','double','float']: body='data["'+key+'"] = v;'
         elif typ=='int64_t': body='data["'+key+'"] = Json::Int64(v);'
         else: body='(void)v; data["'+key+'"]="timestamp";'
         text += f'void set{name}(const {typ} &v) {{ {body} }}\n'
@@ -183,7 +183,7 @@ for model in ['Users','Tenants','UserGroups','Roles','GlAccountGroups','GlAccoun
         key=column(name)
         if typ=='std::string': expr=f'data["{key}"].isNull() ? "" : data["{key}"].asString()'
         elif typ=='bool': expr=f'data["{key}"].asBool()'
-        elif typ in ['int16_t','int32_t','int64_t']: expr=f'data["{key}"].asInt64()'
+        elif typ in ['short','int','int16_t','int32_t','int64_t']: expr=f'data["{key}"].asInt64()'
         elif typ in ['double','float']: expr=f'data["{key}"].asDouble()'
         else: expr='{}'
         text+=f'{typ} getValueOf{name}() const {{ return {expr}; }}\n'

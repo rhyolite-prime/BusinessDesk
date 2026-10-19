@@ -28,6 +28,7 @@ void checkTotpLogin();
 void checkRequestAuthorization();
 void checkAccountHeads();
 void checkAccountControls();
+void checkAccountDetails();
 void checkAccountingUnits();
 void checkGlSoftDeletes();
 void checkUserRoutes();
@@ -35,6 +36,7 @@ int main() {
  checkGlSoftDeletes();
  checkAccountHeads();
  checkAccountControls();
+ checkAccountDetails();
  checkAccountingUnits();
  checkUserRoutes();
  domain_services::UserService service;

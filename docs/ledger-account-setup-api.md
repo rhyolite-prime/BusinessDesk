@@ -4,6 +4,8 @@
 > contract in [account-controls.md](account-controls.md). Account Heads use
 > [account-heads-frontend.md](account-heads-frontend.md). The legacy scope headers,
 > payloads, and response shapes below do not apply to these migrated routes.
+> Account Details now use [account-details.md](account-details.md), with tenant-JWT
+> scope, pagination, derived head/type, currency UUIDs, and audited soft deletion.
 
 This document describes the account-setup routes currently implemented by the single Drogon `LedgerController` and the coroutine-based use cases in `LedgerService`.
 
