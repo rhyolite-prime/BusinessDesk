@@ -108,3 +108,17 @@ Database unique constraints still apply and may reserve soft-deleted identifiers
 These verify the backend service and frontend HTTP boundary separately. A fully
 linked live Drogon/PostgreSQL deployment, real browser interaction and concurrent
 multi-connection writes still need deployment-level verification.
+
+### Hierarchy presentation
+
+The Account Heads page builds a parent/child tree **after all API pages load**.
+API order is not hierarchy order: parents render before their children, and each
+subtree stays together. Sibling order follows the existing `sortOrder` values.
+Indentation comes from the resulting tree depth, and parent choices use the same
+tree order and full paths. Searching retains ancestor rows for matching children;
+a parent/path match also includes its descendants. Missing parents and malformed
+cycles are handled defensively without hiding records or looping indefinitely.
+
+Regression test: `node test/ledger/account_head_tree_test.mjs` (requires installed
+frontend dependencies). Covers interleaved API order, depth, paths, filters,
+ancestor context, missing parents, cycles, duplicates, and deep trees.
