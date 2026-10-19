@@ -6,16 +6,24 @@
    migrations. It adds dedicated credentials, expiring challenges and per-user rate
    limits; generated Users/Tenants models need no regeneration.
 2. Generate a **separate** 32-byte encryption key using `openssl rand -hex 32`.
-   Configure its 64 hex characters as `BUSINESSDESK_TOTP_KEY` in the **C++ server's
-   secret environment**. Never commit the key or reuse the JWT signing key. Store
+   Configure its 64 hex characters as `custom_config.TOTP_KEY` in the **C++ server's
+   loaded Drogon configuration** (a sibling of `JwtBearer` inside `custom_config`).
+   `encryptionKey()` reads `drogon::app().getCustomConfig()["TOTP_KEY"]`; there is no
+   environment-variable fallback. Never commit the key or reuse the JWT signing key. Store
    it in a secret manager, back it up securely, and use the same key on every
    backend replica. Missing/incorrect keys fail closed for MFA tenants. Replacing
    it without re-encrypting credentials makes existing authenticators unusable;
-   automatic key rotation is not implemented.
+   automatic key rotation is not implemented. Keep the existing key unchanged if
+   moving it from the previous environment-based setup. Restart the backend after
+   changing configuration. `main.cc` currently prefers `config.json` over
+   `config.local.json`, so update the file actually loaded by the running server;
+   a local file does not override an existing `config.json`. The committed
+   `TOTP_KEY` placeholder stays empty; inject the real key through secure deployment
+   configuration, not frontend/public runtime configuration.
 3. Configure the Nuxt server's `NUXT_AUTH_API_BASE_URL` with the backend **origin**
    (not an `/api` path). `AUTH_API_BASE_URL` is also supported when starting Nuxt
-   dev/build. For example, on a developer machine with the backend on port 8080,
-   set `NUXT_AUTH_API_BASE_URL=http://127.0.0.1:8080`. That address is used only by
+   dev/build. For example, on a developer machine with the backend on port 5004,
+   set `NUXT_AUTH_API_BASE_URL=http://127.0.0.1:5004`. That address is used only by
    the Nuxt server, never by browser code. Set `NUXT_LEDGER_API_BASE_URL` separately
    for real ledger calls. Never expose these URLs or JWTs in public runtime config.
 4. Use HTTPS in production. JWT/challenge cookies are Secure, HttpOnly,

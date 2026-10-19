@@ -24,15 +24,22 @@ void checkTotpLogin() {
     check(crypto::verify(secret,"287082",89)==1,"one-step clock drift accepted");
     check(crypto::verify(secret,"287082",120)==-1,"outside clock tolerance rejected");
     check(crypto::verify(secret,"28x082",59)==-1 && crypto::verify(secret,"12345",59)==-1,"TOTP format validated");
-    setenv("BUSINESSDESK_TOTP_KEY",std::string(64,'a').c_str(),1);
+    drogon::app().config["TOTP_KEY"] = std::string(64,'a');
     auto ciphertext=crypto::seal(secret,"a:u");
     check(crypto::open(ciphertext,"a:u")==secret,"encrypted secret roundtrip");
     check(crypto::seal(secret,"a:u")!=ciphertext,"encryption uses random nonce");
     check(mustThrow([&]{crypto::open(ciphertext,"b:u");}),"GCM binds secret to tenant and user");
     ciphertext.back()=ciphertext.back()=='a'?'b':'a';
     check(mustThrow([&]{crypto::open(ciphertext,"a:u");}),"GCM detects ciphertext tampering");
-    unsetenv("BUSINESSDESK_TOTP_KEY");
+    drogon::app().config.removeMember("TOTP_KEY");
     check(mustThrow([&]{crypto::seal(secret,"a:u");}),"missing key fails closed");
+    for (const auto &invalid : std::vector<Json::Value>{Json::nullValue, "", "short", std::string(64, 'z'), 123, true, Json::Value(Json::arrayValue), Json::Value(Json::objectValue)}) {
+        drogon::app().config["TOTP_KEY"] = invalid;
+        check(mustThrow([&]{crypto::encryptionKey();}), "invalid custom-config TOTP key fails closed");
+    }
+    drogon::app().config["TOTP_KEY"] = std::string(64, 'A');
+    check(crypto::encryptionKey() == std::vector<unsigned char>(32, 0xaa), "custom-config hex key decoded correctly");
+    drogon::app().config.removeMember("TOTP_KEY");
 
     CoroMapper<Users>::rows.clear(); CoroMapper<Tenants>::rows.clear(); CoroMapper<Roles>::rows.clear(); CoroMapper<UserGroups>::rows.clear();
     CoroMapper<Users> users(0); CoroMapper<Tenants> tenants(0);
@@ -50,7 +57,7 @@ void checkTotpLogin() {
     tenant.setRequireTwoFactorAuth(true); tenants.update(tenant).get();
     check(!filterAccepts(direct.result["token"].asString()),"existing password-only JWT denied when tenant enables MFA");
     check(!service.validateTenantUserCredentials(login).get().success,"MFA tenant cannot login without encryption key");
-    setenv("BUSINESSDESK_TOTP_KEY",std::string(64,'a').c_str(),1);
+    drogon::app().config["TOTP_KEY"] = std::string(64,'a');
 
     struct Challenge {std::string encrypted,password;bool enrolling,consumed=false,expired=false;int attempts=0;};
     std::map<std::string,Challenge> challenges;
@@ -100,5 +107,5 @@ void checkTotpLogin() {
     check(!service.verifyTenantSecondFactor(changed["challengeId"].asString(),current).get().success,"password change invalidates pending challenge");
     failDb=true;auto failure=service.verifyTenantSecondFactor(changed["challengeId"].asString(),current).get();
     check(!failure.success&&!failure.result.isMember("token")&&failure.toJson().toStyledString().find("private-sensitive")==std::string::npos,"DB failure is closed and sanitized");
-    drogon::app().db->execute={};unsetenv("BUSINESSDESK_TOTP_KEY");
+    drogon::app().db->execute={};drogon::app().config.removeMember("TOTP_KEY");
 }

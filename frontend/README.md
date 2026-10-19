@@ -16,7 +16,7 @@ password**. A tenant with 2FA disabled goes directly to `/modules`; one requirin
 2FA must enroll/verify an authenticator before a JWT session is created. No demo
 password or current-code hint is accepted/shown. Missing auth upstream returns 503.
 
-Apply backend migration `004_tenant_totp.sql` and configure `BUSINESSDESK_TOTP_KEY`
+Apply backend migration `004_tenant_totp.sql` and configure backend `custom_config.TOTP_KEY`
 before enabling 2FA. See [deployment, API contract and tests](../docs/tenant-two-factor-authentication.md).
 JWT/challenge cookies remain HttpOnly, and browser calls use same-origin `/api`.
 
