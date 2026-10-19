@@ -19,7 +19,12 @@ container). Set only the origin, not the full login path. Production still
 requires an explicitly configured backend origin.
 
 Sign in with a real tenant's **accountId (tenancy name), usernameOrEmail and
-password**. A tenant with 2FA disabled goes directly to `/modules`; one requiring
+password**. The login page remembers only the account ID in this browser's local
+storage (`businessdesk.accountId`) and restores it on each visit. Editing it updates
+the saved value; clearing the field removes it. Passwords, usernames and tokens
+are not stored there. Storage restrictions do not prevent login.
+
+A tenant with 2FA disabled goes directly to `/modules`; one requiring
 2FA must enroll/verify an authenticator before a JWT session is created. No demo
 password or current-code hint is accepted/shown. Missing auth upstream returns 503.
 
