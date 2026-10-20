@@ -10,10 +10,15 @@ The General Ledger sidebar now has an expandable **Shared config** parent with:
 6. Default GL Numbers — the existing `/ledger/default-gl-numbers` page, moved
    from its previous standalone menu position (URL and behavior preserved).
 
-Company profile, Cost Centers, and System numbers currently have explicit
-placeholder screens, not mock edit forms. Banks and branches now has tenant-owned
+Default GL Numbers now has connected tenant/accounting-unit CRUD; see
+[Default GL Numbers](default-gl-numbers.md).
+
+Company profile now has tenant-owned singleton CRU (no deletion); see
+[Company profile](company-profile.md). Cost Centers now has tenant-owned hierarchical CRUD; see
+[Cost centers](cost-centers.md). Banks and branches now has tenant-owned
 header/child CRUD; see [Banks and branches](banks-and-branches.md). It is separate
-from the existing ledger Bank Accounts screen.
+from the existing ledger Bank Accounts screen. System numbers now has host templates
+and tenant-editable copies; see [System numbers](system-numbers.md).
 
 ## Scope decision
 
@@ -130,7 +135,7 @@ full cross-writer concurrency still requires live database verification.
 - `node test/ledger/currencies_http_test.mjs`: built Nuxt plus strict mock upstream,
   host login/cookie separation, tenant read-only access, all host CRUD operations,
   bearer forwarding, validation, origin protection, privilege revocation, sidebar,
-  host route protection and placeholder-page rendering.
+  host route protection and implemented Shared config navigation.
 - `node test/ledger/account_heads_http_test.mjs`: existing ledger CRUD regressions.
 - `node test/ledger/account_head_tree_test.mjs`: hierarchy regression.
 - `JSONCPP_SOURCE_DIR=... OPENSSL_SOURCE_DIR=... bash test/users/run.sh`: includes

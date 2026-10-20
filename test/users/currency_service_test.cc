@@ -77,6 +77,22 @@ void checkCurrencies(){
     dependency.template operator()<GlJournalLines>(GlJournalLines::Cols::_currency_id);
     dependency.template operator()<GlPaymentVouchers>(GlPaymentVouchers::Cols::_currency_id);
     dependency.template operator()<GlPettyCashTransactions>(GlPettyCashTransactions::Cols::_currency_id);
+    {
+        const auto previous=drogon::app().getDbClient()->execute;
+        drogon::app().getDbClient()->execute=[&](const std::string& sql,const std::vector<Json::Value>& params){
+            drogon::TestResult rows;
+            if(sql.find("core_company_profiles")!=std::string::npos){
+                check(sql.find("is_deleted=false")!=std::string::npos&&params[0].asString()==id,"company profile dependency excludes deleted records and binds currency ID");
+                Json::Value row;row["id"]="profile";rows.push_back({row});
+            }return rows;
+        };
+        check(!run("delete",id).success,"profile default currency blocks deletion");
+        input["isActive"]=false;check(!run("update",id).success,"profile default currency blocks deactivation");input["isActive"]=true;
+        input["code"]="USD";check(!run("update",id).success,"profile default currency blocks code changes");input["code"]="GHS";
+        input["decimalPlaces"]=3;check(!run("update",id).success,"profile default currency blocks precision changes");input["decimalPlaces"]=2;
+        check(run("update",id).success,"profile default currency permits name edits");
+        drogon::app().getDbClient()->execute=previous;
+    }
     admin.setIsDeleted(true);CoroMapper<Users>(0).update(admin).get();check(!run("update",id).success,"deleted host admin cannot write currencies");admin.setIsDeleted(false);admin.setIsActive(false);CoroMapper<Users>(0).update(admin).get();check(!run("session").success,"inactive host admin cannot obtain session");admin.setIsActive(true);CoroMapper<Users>(0).update(admin).get();
     CoroMapper<CoreCurrencies>::failUniqueWrites=true;check(run("update",id).error["code"].asString()=="conflict","reserved deleted code conflicts sanitized");CoroMapper<CoreCurrencies>::failUniqueWrites=false;
     drogon::TestTransaction::failCommit=true;check(!run("update",id).success,"failed currency commit never reports successful save");drogon::TestTransaction::failCommit=false;

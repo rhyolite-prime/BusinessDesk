@@ -28,6 +28,7 @@ await db.exec(`ALTER TABLE users ADD CONSTRAINT users_tenant FOREIGN KEY (tenant
  ALTER TABLE tenants ADD CONSTRAINT tenant_creator FOREIGN KEY (creator_user_id) REFERENCES users(id);
  ALTER TABLE users ADD CONSTRAINT user_creator FOREIGN KEY (created_by_user_id) REFERENCES users(id);`);
 await db.exec(fs.readFileSync(path.join(root,'database/migrations/002_tenant_live_uniqueness.sql'),'utf8'));
+await db.exec(fs.readFileSync(path.join(root,'database/migrations/006_system_numbers.sql'),'utf8'));
 const host='00000000-0000-4000-8000-000000000001', admin='00000000-0000-4000-8000-000000000002';
 // Fixed test-only syntactically valid bcrypt hash. Real bcrypt roundtrip is in C++ tests.
 const hash='$2a$12$'+'A'.repeat(53);
@@ -71,6 +72,8 @@ check(rerunFailed,'first-install seed rejects a duplicate run');
 check((await db.query('SELECT email,password_hash FROM users WHERE id=$1',[admin])).rows[0].email==='operator@example.com','rerun preserves operator email');
 check((await db.query('SELECT password_hash FROM users WHERE id=$1',[admin])).rows[0].password_hash===hash,'rerun preserves password');
 check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===1,'rerun does not create extra host');
+const template=(await db.query("INSERT INTO core_system_numbers(module_id,item_name,key,prefix,format_pattern,padding,last_no,created_by_user_id) VALUES(1,'Journal','journal','JV-','{PREFIX}{NO}',5,20,$1) RETURNING id",[admin])).rows[0].id;
+await db.query("INSERT INTO core_system_numbers(module_id,item_name,key,is_deleted,created_by_user_id) VALUES(1,'Deleted','deleted',true,$1)",[admin]);
 const params=['RhyolitePrimeLtd','RhyolitePrimeLtd','',admin,'kwabenaimhotep@gmail.com','["ledger.read"]',hash];
 const result=await db.query(sql.create,params), tenant=result.rows[0].tenant_id, user=result.rows[0].admin_user_id;
 check(result.rows.length===1,'create returns provisioned ids');
@@ -82,6 +85,19 @@ check(u.tenant_id===tenant && u.first_name==='admin' && u.last_name==='admin' &&
 check(u.email===params[4] && u.password_hash===hash && u.is_tenant_admin_user && !u.is_host_admin_user,'tenant admin credentials and isolation');
 check(u.created_by_user_id===admin && u.last_modified_by_user_id===admin,'admin create audit');
 check((await db.query('SELECT permissions FROM roles WHERE tenant_id=$1',[tenant])).rows[0].permissions[0]==='ledger.read','initial tenant role permissions');
+const copied=(await db.query('SELECT * FROM core_system_numbers WHERE tenant_id=$1',[tenant])).rows;
+check(copied.length===1 && copied[0].source_template_id===template && copied[0].id!==template,'new tenant receives distinct live-template copies only');
+check(copied[0].prefix==='JV-' && copied[0].last_no===20 && copied[0].padding===5 && copied[0].created_by_user_id===admin,'copy retains values and authenticated provisioning audit');
+await db.query("UPDATE core_system_numbers SET prefix='OWN-' WHERE tenant_id=$1",[tenant]);
+await db.query("UPDATE core_system_numbers SET prefix='NEW-' WHERE id=$1",[template]);
+check((await db.query('SELECT prefix FROM core_system_numbers WHERE tenant_id=$1',[tenant])).rows[0].prefix==='OWN-','template changes do not overwrite existing copies');
+await db.exec(`CREATE FUNCTION reject_number_copy() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.tenant_id IS NOT NULL THEN RAISE EXCEPTION 'forced copy failure'; END IF; RETURN NEW; END $$;
+CREATE TRIGGER reject_copy BEFORE INSERT ON core_system_numbers FOR EACH ROW EXECUTE FUNCTION reject_number_copy();`);
+await fails(sql.create,['CopyFail','Copy failure','',admin,'copyfail@example.test','[]',hash]);
+check((await db.query("SELECT count(*)::int AS n FROM tenants WHERE tenancy_name='CopyFail'")).rows[0].n===0,'copy failure rolls back tenant');
+check((await db.query("SELECT count(*)::int AS n FROM users WHERE email='copyfail@example.test'")).rows[0].n===0,'copy failure rolls back initial admin');
+check((await db.query('SELECT count(*)::int AS n FROM roles')).rows[0].n===2,'copy failure rolls back role');
+await db.exec('DROP TRIGGER reject_copy ON core_system_numbers; DROP FUNCTION reject_number_copy();');
 const before=(await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n;
 await fails(sql.create,['rhyoliteprimeltd',...params.slice(1)]);
 check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===before,'case insensitive duplicate rolled back');
@@ -107,5 +123,9 @@ check((await db.query(sql.update,[tenant,false,'',true,'NoAdmin',false,'',admin,
 check((await db.query('SELECT name FROM tenants WHERE id=$1',[tenant])).rows[0].name==='Renamed','missing admin does not partially update tenant');
 await db.query('UPDATE tenants SET is_deleted=true WHERE id=$1',[tenant]);
 check((await db.query(sql.update,[tenant,false,'',true,'Deleted',false,'',admin,false,''])).rows.length===0,'deleted tenant cannot be updated');
+await db.query('UPDATE core_system_numbers SET is_deleted=true WHERE id=$1',[template]);
+const fresh=await db.query(sql.create,['FreshTenant','Fresh tenant','',admin,'fresh@example.test','[]',hash]);
+check((await db.query('SELECT count(*)::int AS n FROM core_system_numbers WHERE tenant_id=$1',[fresh.rows[0].tenant_id])).rows[0].n===0,'deleted host templates excluded from future provisioning');
+check((await db.query('SELECT prefix FROM core_system_numbers WHERE tenant_id=$1',[tenant])).rows[0].prefix==='OWN-','host soft deletion preserves existing copies');
 await db.close();
 console.log(`${checks} PostgreSQL/PGlite checks passed`);

@@ -35,6 +35,8 @@ template<class Model> drogon::Task<bool> referenced(DbClientPtr db,std::vector<s
 }
 // Named vectors avoid GCC 12 coroutine temporary-argument lifetime issues.
 drogon::Task<bool> inUse(DbClientPtr db,std::string id){
+    const auto profiles=co_await db->execSqlCoro("SELECT id FROM core_company_profiles WHERE default_currency_id=$1 AND is_deleted=false LIMIT 1",id);
+    if(!profiles.empty())co_return true;
     const std::vector<std::string> CoreAccountingUnitsColumns{CoreAccountingUnits::Cols::_base_currency_id};
     if(co_await referenced<CoreAccountingUnits>(db,CoreAccountingUnitsColumns,id))co_return true;
     const std::vector<std::string> CoreCurrencyRatesColumns{CoreCurrencyRates::Cols::_currency_id};

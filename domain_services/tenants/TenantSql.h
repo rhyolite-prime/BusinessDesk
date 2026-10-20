@@ -25,6 +25,14 @@ WITH new_tenant AS (
            CURRENT_TIMESTAMP, $4::uuid, CURRENT_TIMESTAMP, $4::uuid
     FROM new_tenant t JOIN admin_role r ON r.tenant_id = t.id
     RETURNING id, tenant_id
+), copied_system_numbers AS (
+    INSERT INTO core_system_numbers (tenant_id, source_template_id, module_id, item_name, key,
+        prefix, suffix, format_pattern, padding, last_no, created_by_user_id)
+    SELECT t.id, n.id, n.module_id, n.item_name, n.key, n.prefix, n.suffix,
+        n.format_pattern, n.padding, n.last_no, $4::uuid
+    FROM new_tenant t CROSS JOIN core_system_numbers n
+    WHERE n.tenant_id IS NULL AND n.is_deleted = false
+    RETURNING id
 )
 SELECT t.id::text AS tenant_id, t.tenancy_name, t.name, u.id::text AS admin_user_id
 FROM new_tenant t JOIN admin_user u ON u.tenant_id = t.id
