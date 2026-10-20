@@ -42,6 +42,7 @@ int main(){
  sql("DROP SCHEMA IF EXISTS bank_service_test CASCADE");sql("CREATE SCHEMA bank_service_test");sql("SET search_path TO bank_service_test");
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY)");sql("CREATE TABLE users(id uuid PRIMARY KEY)");
  std::ifstream migration("database/migrations/005_banks_and_branches.sql");std::stringstream source;source<<migration.rdbuf();std::stringstream statements(source.str());std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);
+ sql("CREATE TABLE gl_bank_accounts(id uuid DEFAULT gen_random_uuid(),tenant_id uuid,bank_id uuid,bank_branch_id uuid,is_deleted boolean DEFAULT false)");
  sql("INSERT INTO tenants VALUES($1),($2)",{tenant,other});sql("INSERT INTO users VALUES($1),($2)",{actor,actor2});
  // Prove this test uses the real binary protocol, not a text-only approximation.
  drogon::testParameterWidths={4};bool reproduced=false;

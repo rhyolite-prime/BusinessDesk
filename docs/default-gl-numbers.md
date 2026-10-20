@@ -114,9 +114,9 @@ Active, live `gl_accounts` UUIDs in the same tenant/unit:
 
 A bank also needs a live, active backing GL account in the same scope. Lookup
 results use exactly these eligibility rules and return `{value,label}` entries.
-No fake bank/category or account options are injected. GL-bank-account and
-imprest-category **editors elsewhere remain separate legacy/demo features**;
-creating a demo entry there does not persist a selectable reference here.
+No fake bank/category or account options are injected. Bank Accounts now has connected CRUD; see [Bank Accounts](bank-accounts.md).
+The imprest-category editor remains a separate legacy/demo feature; creating a
+demo category there does not persist a selectable reference here.
 
 ## Transactions, audit and reference safety
 
@@ -133,8 +133,8 @@ Create stamps `created_by_user_id`; update stamps modification actor/time; delet
 stamps both deletion and modification actor/time. Soft-deleted rows are never
 read, modified or undeleted by the API. Recreation creates a new UUID. Existing
 Account Detail deletion/identity-change guards already inspect all default-GL
-account reference columns and ignore deleted configurations. This feature does
-not add CRUD for bank accounts/categories, implement posting calculations or
+account reference columns and ignore deleted configurations. The Default GL feature itself does
+not add category CRUD, implement posting calculations or
 retroactively change posted transactions. Other writers may subsequently change
 reference availability; this change does not claim universal cross-writer
 concurrency or automatically repair those configurations.

@@ -90,6 +90,9 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op, bool bran
             auto updated=co_await db->execSqlCoro("UPDATE "+table+" SET name=$4,contact_person=$5,contact_no=$6,email=$7,last_modified_at=now(),last_modified_by_user_id=$8"+extra+" WHERE "+scope+" AND id=$3"+tail+" RETURNING *",who.tenantId,parent,id,body["name"].asString(),body["contactPerson"].asString(),body["contactNo"].asString(),body["email"].asString(),who.userId,code);
             r.result=record(updated[0],branch);
         } else {
+            const std::string referenceSql="SELECT id FROM gl_bank_accounts WHERE tenant_id=$1 AND is_deleted=false AND "+std::string(branch?"bank_branch_id=$2":"(bank_id=$2 OR bank_branch_id IN (SELECT id FROM core_bank_branches WHERE tenant_id=$1 AND bank_id=$2 AND is_deleted=false))")+" LIMIT 1";
+            auto used=co_await db->execSqlCoro(referenceSql,who.tenantId,id);
+            if(!used.empty())co_return fail("conflict","Bank accounts reference this bank or branch.");
             if(!branch) co_await db->execSqlCoro("UPDATE core_bank_branches SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3,last_modified_at=now(),last_modified_by_user_id=$3 WHERE tenant_id=$1 AND bank_id=$2 AND is_deleted=false",who.tenantId,id,who.userId);
             co_await db->execSqlCoro("UPDATE "+table+" SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$4,last_modified_at=now(),last_modified_by_user_id=$4 WHERE "+scope+" AND id=$3",who.tenantId,parent,id,who.userId);
             r.result["id"]=id; r.result["isDeleted"]=true;

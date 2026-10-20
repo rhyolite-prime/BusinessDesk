@@ -161,3 +161,11 @@ The PostgreSQL test transport now preserves C++ integer widths and sends them in
 network-order binary, matching Drogon's behavior instead of converting every bind
 to text. It reproduces the original wire-format error and covers default list
 refreshes and pagination offsets for both resources.
+
+## Linked bank accounts
+
+[Bank Accounts](bank-accounts.md) now stores real tenant/accounting-unit accounts.
+Deleting a bank or branch returns 409 while any live bank account references it;
+bank deletion also checks references through live branches before cascading.
+Remove unused bank accounts first. Financial/default-GL usage can prevent their
+removal; soft-deleted bank accounts do not block catalog deletion.

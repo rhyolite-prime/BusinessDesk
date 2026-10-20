@@ -1,3 +1,4 @@
+import { useBankAccounts } from './useBankAccounts'
 import { useDefaultGlNumbers } from './useDefaultGlNumbers'
 export type StandardAccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense'
 
@@ -147,21 +148,6 @@ const accountControlSeed: LedgerAccountControl[] = [
   { id: ledgerSetupIds.fxControl, accountGroupId: ledgerSetupIds.expenses, parentAccountHeaderId: null, accountHeaderName: 'Foreign exchange loss', minAccount: 5100, maxAccount: 5199, isActive: true },
 ]
 
-const bankAccountSeed: LedgerBankAccount[] = [
-  {
-    id: 'bank-account-demo-1', bankName: 'GCB Bank PLC', bankBranchName: 'Accra Main', accountId: 'acc-1010',
-    accountNumber: 'BD-DEMO-001', accountType: 'Current Account', currency: 'GHS', dateOpened: '2023-06-12',
-    location: 'Accra', address: 'Independence Avenue, Accra', contactPerson: 'Ama Owusu', contactNumber: '+233 20 000 0101',
-    chequeBookStart: '00012001', chequeBookEnd: '00012100', isActive: true,
-  },
-  {
-    id: 'bank-account-demo-2', bankName: 'Ecobank Ghana PLC', bankBranchName: 'Airport City', accountId: 'acc-1020',
-    accountNumber: 'BD-DEMO-002', accountType: 'Current Account', currency: 'USD', dateOpened: '2024-01-08',
-    location: 'Accra', address: 'Airport City, Accra', contactPerson: 'Kwame Osei', contactNumber: '+233 24 000 0202',
-    chequeBookStart: '00034001', chequeBookEnd: '00034100', isActive: true,
-  },
-]
-
 const imprestCategorySeed: LedgerImprestCategory[] = [
   { id: 'imprest-category-travel', name: 'Travel advance' },
   { id: 'imprest-category-field', name: 'Field operations' },
@@ -183,7 +169,7 @@ export function useLedgerSetup() {
   const { defaultGlNumbers } = useDefaultGlNumbers()
   const accountHeads = useState<LedgerAccountHead[]>('ledger-setup-account-heads', () => accountHeadSeed.map((head) => ({ ...head })))
   const accountControls = useState<LedgerAccountControl[]>('ledger-setup-account-controls', () => accountControlSeed.map((control) => ({ ...control })))
-  const bankAccounts = useState<LedgerBankAccount[]>('ledger-setup-bank-accounts', () => bankAccountSeed.map((account) => ({ ...account })))
+  const { bankAccounts } = useBankAccounts()
   const imprestCategories = useState<LedgerImprestCategory[]>('ledger-setup-imprest-categories', () => imprestCategorySeed.map((category) => ({ ...category })))
   const pettyCashRecipients = useState<LedgerPettyCashRecipient[]>('ledger-setup-petty-cash-recipients', () => pettyCashRecipientSeed.map((recipient) => ({ ...recipient })))
 
@@ -247,21 +233,6 @@ export function useLedgerSetup() {
     return true
   }
 
-  function saveBankAccount(input: LedgerBankAccount) {
-    const index = bankAccounts.value.findIndex((account) => account.id === input.id)
-    if (index >= 0) {
-      bankAccounts.value[index] = { ...input }
-      return bankAccounts.value[index]
-    }
-    const account = { ...input, id: input.id || makeId('bank-account') }
-    bankAccounts.value.unshift(account)
-    return account
-  }
-
-  function removeBankAccount(id: string) {
-    bankAccounts.value = bankAccounts.value.filter((account) => account.id !== id)
-  }
-
   function saveImprestCategory(input: Omit<LedgerImprestCategory, 'id'> & { id?: string }) {
     const id = input.id || makeId('imprest-category')
     const category = { id, name: input.name.trim() }
@@ -307,8 +278,6 @@ export function useLedgerSetup() {
     removeAccountHead,
     saveAccountControl,
     removeAccountControl,
-    saveBankAccount,
-    removeBankAccount,
     saveImprestCategory,
     removeImprestCategory,
     savePettyCashRecipient,
