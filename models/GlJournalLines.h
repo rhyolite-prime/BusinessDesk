@@ -94,6 +94,7 @@ class GlJournalLines
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _line_number;
 
     };
 
@@ -524,9 +525,18 @@ class GlJournalLines
     void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column line_number  */
+    ///Get the value of the column line_number, returns the default value if the column is null
+    const int32_t &getValueOfLineNumber() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getLineNumber() const noexcept;
+    ///Set the value of the column line_number
+    void setLineNumber(const int32_t &pLineNumber) noexcept;
+    void setLineNumberToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 41;  }
+
+    static size_t getColumnNumber() noexcept {  return 42;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -605,6 +615,7 @@ class GlJournalLines
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
     std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> lineNumber_;
 
     struct MetaData
     {
@@ -617,7 +628,7 @@ class GlJournalLines
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[41]={ false };
+    bool dirtyFlag_[42]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -899,6 +910,12 @@ class GlJournalLines
         if(dirtyFlag_[40])
         {
             sql += "deleted_by_user_id,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[41])
+        {
+            sql += "line_number,";
             ++parametersCount;
         }
 
@@ -1306,6 +1323,14 @@ class GlJournalLines
         }
 
         if(dirtyFlag_[40])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[41])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

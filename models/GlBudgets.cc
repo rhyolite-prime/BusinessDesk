@@ -10,6 +10,8 @@
 
 #include "CoreAccountingUnits.h"
 
+#include "CoreCostCenters.h"
+
 #include "GlAccounts.h"
 
 #include <drogon/utils/Utilities.h>
@@ -4139,6 +4141,94 @@ void GlBudgets::getCoreAccountingUnits(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(CoreAccountingUnits(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCostCenters GlBudgets::getTenant(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_cost_centers where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *tenantId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCostCenters(r[0]);
+}
+
+void GlBudgets::getTenant(const DbClientPtr &clientPtr,
+                          const std::function<void(CoreCostCenters)> &rcb,
+                          const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_cost_centers where id = $1";
+    *clientPtr << sql
+               << *tenantId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCostCenters(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCostCenters GlBudgets::getCostCenter(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_cost_centers where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *costCenterId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCostCenters(r[0]);
+}
+
+void GlBudgets::getCostCenter(const DbClientPtr &clientPtr,
+                              const std::function<void(CoreCostCenters)> &rcb,
+                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_cost_centers where id = $1";
+    *clientPtr << sql
+               << *costCenterId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCostCenters(r[0]));
                     }
                }
                >> ecb;

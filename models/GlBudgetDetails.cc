@@ -10,6 +10,8 @@
 
 #include "GlBudgets.h"
 
+#include "Users.h"
+
 #include <drogon/utils/Utilities.h>
 
 #include <string>
@@ -41,6 +43,16 @@ const std::string GlBudgetDetails::Cols::_created_at = "\"created_at\"";
 
 const std::string GlBudgetDetails::Cols::_created_by_user_id = "\"created_by_user_id\"";
 
+const std::string GlBudgetDetails::Cols::_last_modified_at = "\"last_modified_at\"";
+
+const std::string GlBudgetDetails::Cols::_last_modified_by_user_id = "\"last_modified_by_user_id\"";
+
+const std::string GlBudgetDetails::Cols::_is_deleted = "\"is_deleted\"";
+
+const std::string GlBudgetDetails::Cols::_deleted_at = "\"deleted_at\"";
+
+const std::string GlBudgetDetails::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
+
 
 const std::string GlBudgetDetails::primaryKeyName = "id";
 
@@ -59,7 +71,12 @@ const std::vector<typename GlBudgetDetails::MetaData> GlBudgetDetails::metaData_
 {"budget_amount","std::string","numeric",0,0,0,1},
 {"revised_amount","std::string","numeric",0,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","std::string","uuid",0,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0},
+{"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
+{"is_deleted","bool","boolean",1,0,0,1},
+{"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlBudgetDetails::getColumnName(size_t index) noexcept(false)
@@ -159,11 +176,80 @@ GlBudgetDetails::GlBudgetDetails(const Row &r, const ssize_t indexOffset) noexce
 
         }
 
+        if(!r["last_modified_at"].isNull())
+        {
+            auto timeStr = r["last_modified_at"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["last_modified_by_user_id"].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
+
+        }
+
+        if(!r["is_deleted"].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r["is_deleted"].as<bool>());
+
+        }
+
+        if(!r["deleted_at"].isNull())
+        {
+            auto timeStr = r["deleted_at"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["deleted_by_user_id"].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 10 > r.size())
+        if(offset + 15 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -267,13 +353,87 @@ GlBudgetDetails::GlBudgetDetails(const Row &r, const ssize_t indexOffset) noexce
 
         }
 
+        index = offset + 10;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 11;
+        if(!r[index].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 12;
+        if(!r[index].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r[index].as<bool>());
+
+        }
+
+        index = offset + 13;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 14;
+        if(!r[index].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
     }
 
 }
 
 GlBudgetDetails::GlBudgetDetails(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 10)
+    if(pMasqueradingVector.size() != 15)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -385,6 +545,89 @@ GlBudgetDetails::GlBudgetDetails(const Json::Value &pJson, const std::vector<std
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[10]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[12]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[13]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[14].empty() && pJson.isMember(pMasqueradingVector[14]))
+    {
+        dirtyFlag_[14] = true;
+        if(!pJson[pMasqueradingVector[14]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -502,12 +745,95 @@ GlBudgetDetails::GlBudgetDetails(const Json::Value &pJson) noexcept(false)
         }
     }
 
+    if(pJson.isMember("last_modified_at"))
+    {
+        dirtyFlag_[10]=true;
+        if(!pJson["last_modified_at"].isNull())
+        {
+            auto timeStr = pJson["last_modified_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[11]=true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[12]=true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[13]=true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[14]=true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
 }
 
 void GlBudgetDetails::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 10)
+    if(pMasqueradingVector.size() != 15)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -621,6 +947,89 @@ void GlBudgetDetails::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson[pMasqueradingVector[10]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[10]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson[pMasqueradingVector[12]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[12]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson[pMasqueradingVector[13]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[13]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[14].empty() && pJson.isMember(pMasqueradingVector[14]))
+    {
+        dirtyFlag_[14] = true;
+        if(!pJson[pMasqueradingVector[14]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
+        }
+    }
+
 }
 
 void GlBudgetDetails::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -731,6 +1140,89 @@ void GlBudgetDetails::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("last_modified_at"))
+    {
+        dirtyFlag_[10] = true;
+        if(!pJson["last_modified_at"].isNull())
+        {
+            auto timeStr = pJson["last_modified_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[12] = true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[13] = true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[14] = true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -951,6 +1443,121 @@ void GlBudgetDetails::setCreatedByUserIdToNull() noexcept
     dirtyFlag_[9] = true;
 }
 
+const ::trantor::Date &GlBudgetDetails::getValueOfLastModifiedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(lastModifiedAt_)
+        return *lastModifiedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &GlBudgetDetails::getLastModifiedAt() const noexcept
+{
+    return lastModifiedAt_;
+}
+void GlBudgetDetails::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
+{
+    lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
+    dirtyFlag_[10] = true;
+}
+void GlBudgetDetails::setLastModifiedAtToNull() noexcept
+{
+    lastModifiedAt_.reset();
+    dirtyFlag_[10] = true;
+}
+
+const std::string &GlBudgetDetails::getValueOfLastModifiedByUserId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(lastModifiedByUserId_)
+        return *lastModifiedByUserId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlBudgetDetails::getLastModifiedByUserId() const noexcept
+{
+    return lastModifiedByUserId_;
+}
+void GlBudgetDetails::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlBudgetDetails::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
+    dirtyFlag_[11] = true;
+}
+void GlBudgetDetails::setLastModifiedByUserIdToNull() noexcept
+{
+    lastModifiedByUserId_.reset();
+    dirtyFlag_[11] = true;
+}
+
+const bool &GlBudgetDetails::getValueOfIsDeleted() const noexcept
+{
+    static const bool defaultValue = bool();
+    if(isDeleted_)
+        return *isDeleted_;
+    return defaultValue;
+}
+const std::shared_ptr<bool> &GlBudgetDetails::getIsDeleted() const noexcept
+{
+    return isDeleted_;
+}
+void GlBudgetDetails::setIsDeleted(const bool &pIsDeleted) noexcept
+{
+    isDeleted_ = std::make_shared<bool>(pIsDeleted);
+    dirtyFlag_[12] = true;
+}
+
+const ::trantor::Date &GlBudgetDetails::getValueOfDeletedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(deletedAt_)
+        return *deletedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &GlBudgetDetails::getDeletedAt() const noexcept
+{
+    return deletedAt_;
+}
+void GlBudgetDetails::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
+{
+    deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
+    dirtyFlag_[13] = true;
+}
+void GlBudgetDetails::setDeletedAtToNull() noexcept
+{
+    deletedAt_.reset();
+    dirtyFlag_[13] = true;
+}
+
+const std::string &GlBudgetDetails::getValueOfDeletedByUserId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(deletedByUserId_)
+        return *deletedByUserId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlBudgetDetails::getDeletedByUserId() const noexcept
+{
+    return deletedByUserId_;
+}
+void GlBudgetDetails::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlBudgetDetails::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
+    dirtyFlag_[14] = true;
+}
+void GlBudgetDetails::setDeletedByUserIdToNull() noexcept
+{
+    deletedByUserId_.reset();
+    dirtyFlag_[14] = true;
+}
+
 void GlBudgetDetails::updateId(const uint64_t id)
 {
 }
@@ -968,7 +1575,12 @@ const std::vector<std::string> &GlBudgetDetails::insertColumns() noexcept
         "budget_amount",
         "revised_amount",
         "created_at",
-        "created_by_user_id"
+        "created_by_user_id",
+        "last_modified_at",
+        "last_modified_by_user_id",
+        "is_deleted",
+        "deleted_at",
+        "deleted_by_user_id"
 
     };
     return inCols;
@@ -1097,6 +1709,66 @@ void GlBudgetDetails::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[10])
+    {
+        if(getLastModifiedAt())
+        {
+            binder << getValueOfLastModifiedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[11])
+    {
+        if(getLastModifiedByUserId())
+        {
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[12])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[13])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[14])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlBudgetDetails::updateColumns() const
@@ -1151,6 +1823,31 @@ const std::vector<std::string> GlBudgetDetails::updateColumns() const
     if(dirtyFlag_[9])
     {
         ret.push_back(getColumnName(9));
+    }
+
+    if(dirtyFlag_[10])
+    {
+        ret.push_back(getColumnName(10));
+    }
+
+    if(dirtyFlag_[11])
+    {
+        ret.push_back(getColumnName(11));
+    }
+
+    if(dirtyFlag_[12])
+    {
+        ret.push_back(getColumnName(12));
+    }
+
+    if(dirtyFlag_[13])
+    {
+        ret.push_back(getColumnName(13));
+    }
+
+    if(dirtyFlag_[14])
+    {
+        ret.push_back(getColumnName(14));
     }
 
     return ret;
@@ -1279,6 +1976,66 @@ void GlBudgetDetails::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[10])
+    {
+        if(getLastModifiedAt())
+        {
+            binder << getValueOfLastModifiedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[11])
+    {
+        if(getLastModifiedByUserId())
+        {
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[12])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[13])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[14])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlBudgetDetails::toJson() const
 {
@@ -1394,6 +2151,61 @@ Json::Value GlBudgetDetails::toJson() const
         ret["created_by_user_id"]=Json::Value();
     }
 
+    if(getLastModifiedAt())
+    {
+
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -1406,7 +2218,7 @@ Json::Value GlBudgetDetails::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 10)
+    if(pMasqueradingVector.size() == 15)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -1549,6 +2361,76 @@ Json::Value GlBudgetDetails::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[10].empty())
+        {
+            if(getLastModifiedAt())
+            {
+
+                ret[pMasqueradingVector[10]]=getLastModifiedAt()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[10]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[11].empty())
+        {
+            if(getLastModifiedByUserId())
+            {
+
+                ret[pMasqueradingVector[11]]=getValueOfLastModifiedByUserId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[11]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[12].empty())
+        {
+            if(getIsDeleted())
+            {
+
+                ret[pMasqueradingVector[12]]=getValueOfIsDeleted();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[12]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[13].empty())
+        {
+            if(getDeletedAt())
+            {
+
+                ret[pMasqueradingVector[13]]=getDeletedAt()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[13]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[14].empty())
+        {
+            if(getDeletedByUserId())
+            {
+
+                ret[pMasqueradingVector[14]]=getValueOfDeletedByUserId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[14]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -1663,6 +2545,61 @@ Json::Value GlBudgetDetails::toMasqueradedJson(
         ret["created_by_user_id"]=Json::Value();
     }
 
+    if(getLastModifiedAt())
+    {
+
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -1759,13 +2696,43 @@ bool GlBudgetDetails::validateJsonForCreation(const Json::Value &pJson, std::str
             return false;
     }
 
+    if(pJson.isMember("last_modified_at"))
+    {
+        if(!validJsonOfField(10, "last_modified_at", pJson["last_modified_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(11, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(12, "is_deleted", pJson["is_deleted"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(13, "deleted_at", pJson["deleted_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(14, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlBudgetDetails::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                          const std::vector<std::string> &pMasqueradingVector,
                                                          std::string &err)
 {
-    if(pMasqueradingVector.size() != 10)
+    if(pMasqueradingVector.size() != 15)
     {
         err = "Bad masquerading vector";
         return false;
@@ -1902,6 +2869,56 @@ bool GlBudgetDetails::validateMasqueradedJsonForCreation(const Json::Value &pJso
 
       }
 
+      if(!pMasqueradingVector[10].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[10]))
+          {
+              if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[11].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[11]))
+          {
+              if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[12].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[12]))
+          {
+              if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[13].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[13]))
+          {
+              if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[14].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[14]))
+          {
+              if(!validJsonOfField(14, pMasqueradingVector[14], pJson[pMasqueradingVector[14]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -1979,13 +2996,43 @@ bool GlBudgetDetails::validateJsonForUpdate(const Json::Value &pJson, std::strin
             return false;
     }
 
+    if(pJson.isMember("last_modified_at"))
+    {
+        if(!validJsonOfField(10, "last_modified_at", pJson["last_modified_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(11, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(12, "is_deleted", pJson["is_deleted"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(13, "deleted_at", pJson["deleted_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(14, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlBudgetDetails::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                        const std::vector<std::string> &pMasqueradingVector,
                                                        std::string &err)
 {
-    if(pMasqueradingVector.size() != 10)
+    if(pMasqueradingVector.size() != 15)
     {
         err = "Bad masquerading vector";
         return false;
@@ -2055,6 +3102,36 @@ bool GlBudgetDetails::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[9].empty() && pJson.isMember(pMasqueradingVector[9]))
       {
           if(!validJsonOfField(9, pMasqueradingVector[9], pJson[pMasqueradingVector[9]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
+      {
+          if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+      {
+          if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[12].empty() && pJson.isMember(pMasqueradingVector[12]))
+      {
+          if(!validJsonOfField(12, pMasqueradingVector[12], pJson[pMasqueradingVector[12]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[13].empty() && pJson.isMember(pMasqueradingVector[13]))
+      {
+          if(!validJsonOfField(13, pMasqueradingVector[13], pJson[pMasqueradingVector[13]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[14].empty() && pJson.isMember(pMasqueradingVector[14]))
+      {
+          if(!validJsonOfField(14, pMasqueradingVector[14], pJson[pMasqueradingVector[14]], err, false))
               return false;
       }
 
@@ -2234,6 +3311,82 @@ bool GlBudgetDetails::validJsonOfField(size_t index,
 
             break;
 
+        case 10:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 11:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 12:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 13:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 14:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
         default:
             err="Internal error in the server";
             return false;
@@ -2280,6 +3433,94 @@ void GlBudgetDetails::getGlBudgets(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlBudgets(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+Users GlBudgetDetails::getLastModifiedByUser(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from users where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *lastModifiedByUserId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return Users(r[0]);
+}
+
+void GlBudgetDetails::getLastModifiedByUser(const DbClientPtr &clientPtr,
+                                            const std::function<void(Users)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from users where id = $1";
+    *clientPtr << sql
+               << *lastModifiedByUserId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(Users(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+Users GlBudgetDetails::getDeletedByUser(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from users where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *deletedByUserId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return Users(r[0]);
+}
+
+void GlBudgetDetails::getDeletedByUser(const DbClientPtr &clientPtr,
+                                       const std::function<void(Users)> &rcb,
+                                       const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from users where id = $1";
+    *clientPtr << sql
+               << *deletedByUserId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(Users(r[0]));
                     }
                }
                >> ecb;

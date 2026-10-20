@@ -43,6 +43,8 @@ namespace BusinessDesk
 
 class GlBudgets;
 
+class Users;
+
 
 class GlBudgetDetails
 {
@@ -59,6 +61,11 @@ class GlBudgetDetails
         static const std::string _revised_amount;
         static const std::string _created_at;
         static const std::string _created_by_user_id;
+        static const std::string _last_modified_at;
+        static const std::string _last_modified_by_user_id;
+        static const std::string _is_deleted;
+        static const std::string _deleted_at;
+        static const std::string _deleted_by_user_id;
 
     };
 
@@ -203,9 +210,55 @@ class GlBudgetDetails
     void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
+    /**  For column last_modified_at  */
+    ///Get the value of the column last_modified_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfLastModifiedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getLastModifiedAt() const noexcept;
+    ///Set the value of the column last_modified_at
+    void setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept;
+    void setLastModifiedAtToNull() noexcept;
+
+    /**  For column last_modified_by_user_id  */
+    ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
+    ///Set the value of the column last_modified_by_user_id
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserIdToNull() noexcept;
+
+    /**  For column is_deleted  */
+    ///Get the value of the column is_deleted, returns the default value if the column is null
+    const bool &getValueOfIsDeleted() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<bool> &getIsDeleted() const noexcept;
+    ///Set the value of the column is_deleted
+    void setIsDeleted(const bool &pIsDeleted) noexcept;
+
+    /**  For column deleted_at  */
+    ///Get the value of the column deleted_at, returns the default value if the column is null
+    const ::trantor::Date &getValueOfDeletedAt() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getDeletedAt() const noexcept;
+    ///Set the value of the column deleted_at
+    void setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept;
+    void setDeletedAtToNull() noexcept;
+
+    /**  For column deleted_by_user_id  */
+    ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
+    const std::string &getValueOfDeletedByUserId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
+    ///Set the value of the column deleted_by_user_id
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
+    void setDeletedByUserIdToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 10;  }
+
+    static size_t getColumnNumber() noexcept {  return 15;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -217,6 +270,16 @@ class GlBudgetDetails
     void getGlBudgets(const drogon::orm::DbClientPtr &clientPtr,
                       const std::function<void(GlBudgets)> &rcb,
                       const drogon::orm::ExceptionCallback &ecb) const;
+
+    Users getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr,
+                               const std::function<void(Users)> &rcb,
+                               const drogon::orm::ExceptionCallback &ecb) const;
+
+    Users getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr,
+                          const std::function<void(Users)> &rcb,
+                          const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBudgetDetails>;
@@ -243,6 +306,11 @@ class GlBudgetDetails
     std::shared_ptr<std::string> revisedAmount_;
     std::shared_ptr<::trantor::Date> createdAt_;
     std::shared_ptr<std::string> createdByUserId_;
+    std::shared_ptr<::trantor::Date> lastModifiedAt_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
+    std::shared_ptr<bool> isDeleted_;
+    std::shared_ptr<::trantor::Date> deletedAt_;
+    std::shared_ptr<std::string> deletedByUserId_;
 
     struct MetaData
     {
@@ -255,7 +323,7 @@ class GlBudgetDetails
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[10]={ false };
+    bool dirtyFlag_[15]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -341,6 +409,37 @@ class GlBudgetDetails
         if(dirtyFlag_[9])
         {
             sql += "created_by_user_id,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[10])
+        {
+            sql += "last_modified_at,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[11])
+        {
+            sql += "last_modified_by_user_id,";
+            ++parametersCount;
+        }
+        sql += "is_deleted,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[12])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[13])
+        {
+            sql += "deleted_at,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[14])
+        {
+            sql += "deleted_by_user_id,";
             ++parametersCount;
         }
 
@@ -450,6 +549,51 @@ class GlBudgetDetails
         }
 
         if(dirtyFlag_[9])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[10])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[11])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[12])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
+        }
+
+        if(dirtyFlag_[13])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[14])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

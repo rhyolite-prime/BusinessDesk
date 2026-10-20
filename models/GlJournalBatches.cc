@@ -85,6 +85,8 @@ const std::string GlJournalBatches::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string GlJournalBatches::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string GlJournalBatches::Cols::_version = "\"version\"";
+
 
 const std::string GlJournalBatches::primaryKeyName = "id";
 
@@ -124,7 +126,8 @@ const std::vector<typename GlJournalBatches::MetaData> GlJournalBatches::metaDat
 {"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","std::string","uuid",0,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"version","int32_t","integer",4,0,0,1}
 
 };
 const std::string &GlJournalBatches::getColumnName(size_t index) noexcept(false)
@@ -477,11 +480,18 @@ GlJournalBatches::GlJournalBatches(const Row &r, const ssize_t indexOffset) noex
 
         }
 
+        if(!r["version"].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r["version"].as<int32_t>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 31 > r.size())
+        if(offset + 32 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -859,13 +869,21 @@ GlJournalBatches::GlJournalBatches(const Row &r, const ssize_t indexOffset) noex
 
         }
 
+        index = offset + 31;
+        if(!r[index].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
     }
 
 }
 
 GlJournalBatches::GlJournalBatches(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 31)
+    if(pMasqueradingVector.size() != 32)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1286,6 +1304,15 @@ GlJournalBatches::GlJournalBatches(const Json::Value &pJson, const std::vector<s
         if(!pJson[pMasqueradingVector[30]].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[30]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
+    {
+        dirtyFlag_[31] = true;
+        if(!pJson[pMasqueradingVector[31]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[31]].asInt64());
         }
     }
 
@@ -1712,12 +1739,21 @@ GlJournalBatches::GlJournalBatches(const Json::Value &pJson) noexcept(false)
         }
     }
 
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[31]=true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
+        }
+    }
+
 }
 
 void GlJournalBatches::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 31)
+    if(pMasqueradingVector.size() != 32)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -2140,6 +2176,15 @@ void GlJournalBatches::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
+    {
+        dirtyFlag_[31] = true;
+        if(!pJson[pMasqueradingVector[31]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[31]].asInt64());
+        }
+    }
+
 }
 
 void GlJournalBatches::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -2559,6 +2604,15 @@ void GlJournalBatches::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[31] = true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
         }
     }
 
@@ -3281,6 +3335,23 @@ void GlJournalBatches::setDeletedByUserIdToNull() noexcept
     dirtyFlag_[30] = true;
 }
 
+const int32_t &GlJournalBatches::getValueOfVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(version_)
+        return *version_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &GlJournalBatches::getVersion() const noexcept
+{
+    return version_;
+}
+void GlJournalBatches::setVersion(const int32_t &pVersion) noexcept
+{
+    version_ = std::make_shared<int32_t>(pVersion);
+    dirtyFlag_[31] = true;
+}
+
 void GlJournalBatches::updateId(const uint64_t id)
 {
 }
@@ -3319,7 +3390,8 @@ const std::vector<std::string> &GlJournalBatches::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "version"
 
     };
     return inCols;
@@ -3700,6 +3772,18 @@ void GlJournalBatches::outputArgs(drogon::orm::internal::SqlBinder &binder) cons
         }
     }
 
+    if(dirtyFlag_[31])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlJournalBatches::updateColumns() const
@@ -3859,6 +3943,11 @@ const std::vector<std::string> GlJournalBatches::updateColumns() const
     if(dirtyFlag_[30])
     {
         ret.push_back(getColumnName(30));
+    }
+
+    if(dirtyFlag_[31])
+    {
+        ret.push_back(getColumnName(31));
     }
 
     return ret;
@@ -4239,6 +4328,18 @@ void GlJournalBatches::updateArgs(drogon::orm::internal::SqlBinder &binder) cons
         }
     }
 
+    if(dirtyFlag_[31])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlJournalBatches::toJson() const
 {
@@ -4585,6 +4686,17 @@ Json::Value GlJournalBatches::toJson() const
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -4597,7 +4709,7 @@ Json::Value GlJournalBatches::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 31)
+    if(pMasqueradingVector.size() == 32)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -5034,6 +5146,20 @@ Json::Value GlJournalBatches::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[31].empty())
+        {
+            if(getVersion())
+            {
+
+                ret[pMasqueradingVector[31]]=getValueOfVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[31]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -5379,6 +5505,17 @@ Json::Value GlJournalBatches::toMasqueradedJson(
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -5601,13 +5738,19 @@ bool GlJournalBatches::validateJsonForCreation(const Json::Value &pJson, std::st
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(31, "version", pJson["version"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlJournalBatches::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                           const std::vector<std::string> &pMasqueradingVector,
                                                           std::string &err)
 {
-    if(pMasqueradingVector.size() != 31)
+    if(pMasqueradingVector.size() != 32)
     {
         err = "Bad masquerading vector";
         return false;
@@ -5954,6 +6097,16 @@ bool GlJournalBatches::validateMasqueradedJsonForCreation(const Json::Value &pJs
 
       }
 
+      if(!pMasqueradingVector[31].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[31]))
+          {
+              if(!validJsonOfField(31, pMasqueradingVector[31], pJson[pMasqueradingVector[31]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -6157,13 +6310,19 @@ bool GlJournalBatches::validateJsonForUpdate(const Json::Value &pJson, std::stri
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(31, "version", pJson["version"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlJournalBatches::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                         const std::vector<std::string> &pMasqueradingVector,
                                                         std::string &err)
 {
-    if(pMasqueradingVector.size() != 31)
+    if(pMasqueradingVector.size() != 32)
     {
         err = "Bad masquerading vector";
         return false;
@@ -6359,6 +6518,12 @@ bool GlJournalBatches::validateMasqueradedJsonForUpdate(const Json::Value &pJson
       if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
       {
           if(!validJsonOfField(30, pMasqueradingVector[30], pJson[pMasqueradingVector[30]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
+      {
+          if(!validJsonOfField(31, pMasqueradingVector[31], pJson[pMasqueradingVector[31]], err, false))
               return false;
       }
 
@@ -6891,6 +7056,22 @@ bool GlJournalBatches::validJsonOfField(size_t index,
             }
 
             if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 31:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

@@ -43,6 +43,8 @@ namespace BusinessDesk
 
 class CoreAccountingUnits;
 
+class CoreCostCenters;
+
 class GlAccounts;
 
 
@@ -309,6 +311,16 @@ class GlBudgets
     void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
                                 const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCostCenters getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(CoreCostCenters)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCostCenters getCostCenter(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCostCenter(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(CoreCostCenters)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBudgets>;
