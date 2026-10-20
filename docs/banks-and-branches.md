@@ -87,11 +87,17 @@ are parameterized; interpolated SQL fragments are internal constants only.
 
 **Shared config → Banks and branches** opens
 `/ledger/shared-config/banks-and-branches`, replacing its former placeholder.
-The upper table contains bank headers. Clicking a bank name selects/highlights
-it and loads its branches into the lower child table. Both tables have search,
-server pagination, refresh, add/edit dialogs, confirmation-based deletion,
-loading/empty/error states and contact columns. Branch creation is disabled
-until a bank is selected. Bank deletion warns that its branches are deleted too.
+The page follows `templates/banks-branches.png`: compact, bordered, striped bank
+rows with grey icon toolbars and compact pagination. A bank's disclosure arrow
+expands a nested, indented branch grid directly beneath its header row; clicking
+its name also selects/expands it. Bank and branch column order matches the image.
+Select a bank/branch row to enable its toolbar's edit/delete controls. Each grid
+has add, edit, delete, search, refresh and independent server pagination. Forms and
+confirmation dialogs remain connected to the APIs, with loading/empty/error
+states. The page also has expand-view and close controls. Branch creation appears
+only inside an expanded bank. Bank deletion warns that its branches are deleted
+too. Unlike the reference's inactive inline save/cancel icons, saving/cancelling
+is handled by the working form dialogs.
 
 The Nuxt BFF exposes corresponding `/api/shared/banks/...` routes, forwards the
 tenant bearer JWT on every upstream request, and keeps browser URLs relative.
@@ -129,5 +135,22 @@ bash test/banks/run_pg.sh
 For sanitizer coverage also set
 `BANK_TEST_SANITIZERS='-fsanitize=address,undefined -fno-omit-frame-pointer -g'`.
 Drogon header syntax checks use actual Drogon 1.9.5 headers. The test transport is
-not a running Drogon server; live C++ HTTP/JWT/DB integration, browser click
-automation and multi-connection concurrency load testing remain deployment checks.
+not a running Drogon server; live C++ HTTP/JWT/DB integration, multi-connection concurrency load testing remain deployment checks. Browser
+CRUD/expand/collapse/toolbar checks can run as part of the HTTP harness by setting
+`BANK_BROWSER_DEPS` to an external npm dependency directory containing
+`playwright-core` and `@sparticuz/chromium` (with the browser runtime libraries
+available). No browser binaries or generated screenshots are checked into Git.
+
+### Pagination binary-parameter fix
+
+PostgreSQL infers `LIMIT` and `OFFSET` placeholders as `bigint`. Drogon sends
+C++ integers in binary at their native width; binding a 32-bit `int` to these
+placeholders caused `insufficient data left in message` (SQLSTATE 22P03), including
+the list refresh after a successful save. Both bank and branch lists now bind
+explicit `int64_t` limit/offset values and explicitly cast the placeholders to
+`bigint`. Rebuild/restart the C++ backend; no new schema migration is needed.
+
+The PostgreSQL test transport now preserves C++ integer widths and sends them in
+network-order binary, matching Drogon's behavior instead of converting every bind
+to text. It reproduces the original wire-format error and covers default list
+refreshes and pagination offsets for both resources.

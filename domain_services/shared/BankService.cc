@@ -2,6 +2,7 @@
 #include "utils/TransactionUtil.h"
 #include <regex>
 #include <algorithm>
+#include <cstdint>
 namespace business_desk::domain_services {
 namespace {
 using drogon::orm::DbClientPtr;
@@ -61,7 +62,11 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op, bool bran
     if(op=="list") {
         const std::string search=" AND (strpos(lower(name),lower($3))>0"+std::string(branch?"":" OR strpos(lower(bank_code),lower($3))>0")+")";
         const auto counts=co_await db->execSqlCoro("SELECT count(*) AS total FROM "+table+" WHERE "+scope+search,who.tenantId,parent,query);
-        const auto rows=co_await db->execSqlCoro("SELECT * FROM "+table+" WHERE "+scope+search+" ORDER BY lower(name),id LIMIT $4 OFFSET $5",who.tenantId,parent,query,size,(page-1)*size);
+        // PostgreSQL infers LIMIT/OFFSET parameters as int8. Drogon sends integers
+        // in binary at their C++ width; int32 binds here cause SQLSTATE 22P03.
+        const int64_t limit=size;
+        const int64_t offset=(static_cast<int64_t>(page)-1)*limit;
+        const auto rows=co_await db->execSqlCoro("SELECT * FROM "+table+" WHERE "+scope+search+" ORDER BY lower(name),id LIMIT $4::bigint OFFSET $5::bigint",who.tenantId,parent,query,limit,offset);
         r.result["data"]=Json::Value(Json::arrayValue);
         for(const auto& row:rows) r.result["data"].append(record(row,branch));
         auto total=counts[0]["total"].as<int64_t>();

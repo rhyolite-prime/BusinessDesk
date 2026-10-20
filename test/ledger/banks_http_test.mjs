@@ -2,9 +2,11 @@
 import http from 'node:http'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
+import { createRequire } from 'node:module'
 const id='a0000000-0000-4000-8000-000000000001',branchId='b0000000-0000-4000-8000-000000000001'
 let bank={id,name:'Test Bank',bankCode:'TST',contactPerson:'Jane',contactNo:'+233200000000',email:'bank@example.test'}
 let child={id:branchId,bankId:id,name:'Accra',contactPerson:'Ama',contactNo:'',email:''},checks=0
+let bankDeleted=false,childDeleted=false
 const seen=[],check=(ok,label)=>{assert.ok(ok,label);checks++}
 const upstream=http.createServer(async(req,res)=>{
  let raw='';for await(const chunk of req)raw+=chunk
@@ -17,14 +19,14 @@ const upstream=http.createServer(async(req,res)=>{
  if(url.searchParams.get('query')==='conflict')return send(409,null,{code:'conflict',message:'PRIVATE SQL'})
  const parts=url.pathname.split('/').filter(Boolean),branch=parts.includes('branches'),detail=parts.length===(branch?7:5)
  if(!url.pathname.startsWith('/api/v1/shared/banks'))return send(404,null)
- if(req.method==='GET')return send(200,detail?(branch?child:bank):{data:[branch?child:bank],totalCount:1,totalPages:1,pageNo:1,pageSize:20})
+ if(req.method==='GET'){const deleted=branch?childDeleted:bankDeleted;if(detail&&deleted)return send(404,null);return send(200,detail?(branch?child:bank):{data:deleted?[]:[branch?child:bank],totalCount:deleted?0:1,totalPages:deleted?0:1,pageNo:1,pageSize:20})}
  if(req.method==='POST'||req.method==='PUT'){
   const allowed=['name','contactPerson','contactNo','email',...(branch?[]:['bankCode'])]
   if(!body||Object.keys(body).some(k=>!allowed.includes(k))||!body.name||(!branch&&!body.bankCode))return send(400,null,{code:'validation_error',message:'PRIVATE SQL validation'})
-  if(branch)child={...body,id:branchId,bankId:id};else bank={...body,id}
+  if(branch){child={...body,id:branchId,bankId:id};childDeleted=false}else{bank={...body,id};bankDeleted=false}
   return send(req.method==='POST'?201:200,branch?child:bank)
  }
- if(req.method==='DELETE')return send(200,{id:branch?branchId:id,isDeleted:true})
+ if(req.method==='DELETE'){if(branch)childDeleted=true;else bankDeleted=true;return send(200,{id:branch?branchId:id,isDeleted:true})}
  return send(404,null)
 })
 await new Promise(resolve=>upstream.listen(0,'0.0.0.0',resolve))
@@ -67,7 +69,49 @@ try{
  r=await call('/ledger/shared-config/banks-and-branches');check(r.response.status===302,'bank workspace requires tenant login')
  r=await call('/ledger/shared-config/banks-and-branches','GET',undefined,cookie)
  check(r.response.status===200,'bank workspace renders on SSR')
- check(['Banks and branches','Header table','Child table','Bank code','Contact person','Contact number','Email','Add bank','Add branch'].every(label=>String(r.body).includes(label)),'header and child tables, model fields and create controls render')
+ check(['Banks &amp; Branches','Banks header table','Bank Name','Contact Person','Contact No','Email','Bank Code','Add bank','Expand branches'].every(label=>String(r.body).includes(label)),'reference-style header grid and toolbar render')
  check(!String(r.body).includes('This setup screen is not implemented yet'),'bank placeholder replaced by real screen')
- console.log(`${checks} bank/branch HTTP checks passed`)
+ if(process.env.BANK_BROWSER_DEPS){
+  const require=createRequire(`${process.env.BANK_BROWSER_DEPS}/package.json`),{chromium}=require('playwright-core'),binary=require('@sparticuz/chromium').default || require('@sparticuz/chromium')
+  bankDeleted=false;childDeleted=false;bank={...bankBody,id};child={...branchBody,id:branchId,bankId:id}
+  const browser=await chromium.launch({args:binary.args,executablePath:await binary.executablePath(),headless:true})
+  try{
+   const context=await browser.newContext({viewport:{width:1440,height:1000}})
+   await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}])
+   const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
+   await page.goto(base+'/ledger/shared-config/banks-and-branches')
+   await page.getByRole('button',{name:'Select bank Test Bank',exact:true}).waitFor()
+   check(await page.getByRole('button',{name:'Edit bank',exact:true}).isDisabled(),'bank toolbar edit requires selection')
+   await page.getByRole('button',{name:'Expand branches for Test Bank',exact:true}).click()
+   await page.getByRole('button',{name:'Select branch Accra',exact:true}).waitFor()
+   check(await page.getByRole('region',{name:'Bank branches child table'}).count()===1,'child grid expands inside bank row')
+   await page.getByRole('button',{name:'Select branch Accra',exact:true}).click()
+   await page.getByRole('button',{name:'Edit branch',exact:true}).click()
+   let dialog=page.getByRole('dialog');await dialog.getByLabel('Name', {exact:false}).first().fill('Tema')
+   await dialog.getByRole('button',{name:'Save changes'}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByRole('button',{name:'Select branch Tema',exact:true}).waitFor()
+   check(child.name==='Tema','branch edit toolbar saves to API and refreshes child grid')
+   await page.getByRole('button',{name:'Add branch',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByLabel('Name', {exact:false}).first().fill('New branch')
+   await dialog.getByRole('button',{name:'Save changes'}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByRole('button',{name:'Select branch New branch',exact:true}).click()
+   check(child.name==='New branch','nested add branch connects to selected bank')
+   await page.getByRole('button',{name:'Delete branch',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Delete',exact:true}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByText('No branches found.',{exact:false}).waitFor();check(childDeleted,'branch delete refreshes empty child grid')
+   await page.getByRole('button',{name:'Edit bank',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByLabel('Name', {exact:false}).first().fill('Edited Bank')
+   await dialog.getByRole('button',{name:'Save changes'}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByRole('button',{name:'Select bank Edited Bank',exact:true}).waitFor();check(bank.name==='Edited Bank','bank edit toolbar saves and refreshes header')
+   await page.getByRole('button',{name:'Collapse branches for Edited Bank',exact:true}).click()
+   check(await page.getByRole('region',{name:'Bank branches child table'}).count()===0,'bank row collapses child grid')
+   await page.getByRole('button',{name:'Add bank',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByLabel('Name', {exact:false}).first().fill('New Bank');await dialog.getByLabel('Bank code').fill('NEW')
+   await dialog.getByRole('button',{name:'Save changes'}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByRole('button',{name:'Select bank New Bank',exact:true}).waitFor();check(bank.name==='New Bank','bank creation saves and refreshes without 503')
+   await page.getByRole('button',{name:'Expand view',exact:true}).click();check(await page.getByRole('button',{name:'Exit expanded view',exact:true}).count()===1,'expand view control works')
+   await page.getByRole('button',{name:'Exit expanded view',exact:true}).click()
+   await page.screenshot({path:'/tmp/banks-branches-redesign.png',fullPage:true})
+   await page.getByRole('button',{name:'Delete bank',exact:true}).click();dialog=page.getByRole('dialog');await dialog.getByRole('button',{name:'Delete',exact:true}).click();await dialog.waitFor({state:'hidden'})
+   await page.getByText('No banks found.',{exact:false}).waitFor();check(bankDeleted,'bank deletion refreshes empty header')
+   check(errors.length===0,`no browser runtime errors: ${errors.join(', ')}`)
+  }finally{await browser.close()}
+ }
+ console.log(`${checks} bank/branch HTTP${process.env.BANK_BROWSER_DEPS?' and browser':''} checks passed`)
 }finally{app.kill('SIGTERM');await new Promise(resolve=>upstream.close(resolve))}

@@ -24,8 +24,15 @@ int main(){
  auto* db=PQconnectdb(std::getenv("BANK_TEST_DATABASE_URL"));assert(PQstatus(db)==0);
  auto sql=[&](const std::string& query,const std::vector<Json::Value>& params=std::vector<Json::Value>{}) {
   std::vector<std::string> strings;for(const auto& p:params)strings.push_back(p.isString()?p.asString():p.toStyledString());
+  const auto widths=std::exchange(drogon::testParameterWidths,{});
+  std::vector<int> lengths(params.size(),0),formats(params.size(),0);
+  for(size_t i=0;i<params.size()&&i<widths.size();++i) if(widths[i]) {
+   lengths[i]=widths[i];formats[i]=1;strings[i].resize(widths[i]);
+   const auto number=params[i].asInt64();
+   for(int byte=0;byte<widths[i];++byte) strings[i][byte]=static_cast<char>((static_cast<uint64_t>(number)>>(8*(widths[i]-1-byte)))&255);
+  }
   std::vector<const char*> values;for(const auto& s:strings)values.push_back(s.c_str());
-  auto* result=PQexecParams(db,query.c_str(),values.size(),nullptr,values.data(),nullptr,nullptr,0);
+  auto* result=PQexecParams(db,query.c_str(),values.size(),nullptr,values.data(),lengths.data(),formats.data(),0);
   auto status=PQresultStatus(result);
   if(status!=1&&status!=2){std::string error=PQresultErrorMessage(result);const char* code=PQresultErrorField(result,'C');bool unique=code&&std::string(code)=="23505";PQclear(result);if(unique)throw drogon::orm::UniqueViolation(error);throw std::runtime_error(error);}
   drogon::TestResult rows;
@@ -36,10 +43,16 @@ int main(){
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY)");sql("CREATE TABLE users(id uuid PRIMARY KEY)");
  std::ifstream migration("database/migrations/005_banks_and_branches.sql");std::stringstream source;source<<migration.rdbuf();std::stringstream statements(source.str());std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);
  sql("INSERT INTO tenants VALUES($1),($2)",{tenant,other});sql("INSERT INTO users VALUES($1),($2)",{actor,actor2});
+ // Prove this test uses the real binary protocol, not a text-only approximation.
+ drogon::testParameterWidths={4};bool reproduced=false;
+ try {sql("SELECT 1 LIMIT $1",{20});} catch(const std::exception& e) {reproduced=std::string(e.what()).find("insufficient data left in message")!=std::string::npos;}
+ check(reproduced,"reproduce original int32/bigint wire-format failure");
  drogon::app().getDbClient()->execute=sql;
  Json::Value body;body["name"]=" Test Bank ";body["bankCode"]=" TST ";body["contactPerson"]="Contact";body["contactNo"]="+233 20 000 0000";body["email"]="bank@example.test";
  auto call=[&](std::string op,bool branch=false,std::string bankId="",std::string id="",Json::Value input=Json::Value{},AuditIdentity who=AuditIdentity{tenant,actor},int page=1,int size=20,std::string query=""){return BankService::execute(op,branch,bankId,id,input,page,size,query,who).get();};
  auto r=call("create",false,"","",body);check(r.success,"bank create");auto id=r.result["id"].asString();check(r.result["name"]=="Test Bank"&&r.result["bankCode"]=="TST","trim bank fields");
+ r=call("list");check(r.success&&r.result["data"].size()==1&&r.result["totalCount"]==1,"default bank refresh after saving uses bigint binary binds");
+ r=call("list",false,"","",{},{tenant,actor},2,1);check(r.success&&r.result["data"].empty()&&r.result["totalCount"]==1,"bank pagination offset preserves count");
  check(sql("SELECT * FROM core_banks WHERE id=$1",{id})[0].value["created_by_user_id"]==actor,"create audit identity");
  check(!call("list",false,"","",{},{}).success,"missing identity denied");
  for(auto op:{"get","update","delete"}){r=call(op,false,"",id,body,{other,actor2});check(!r.success&&r.error["code"]=="not_found","foreign tenant bank hidden");}
@@ -58,6 +71,8 @@ int main(){
  r=call("list",false,"","",{},{tenant,actor},1,20,"' OR true --");check(r.success&&r.result["totalCount"]==0,"bound search resists SQL injection");
  Json::Value child;child["name"]=" Accra ";child["email"]="branch@example.test";
  r=call("create",true,id,"",child);check(r.success,"branch create");auto branchId=r.result["id"].asString();check(r.result["bankId"]==id&&r.result["name"]=="Accra"&&r.result["contactNo"]=="","branch model and optional contacts");
+ r=call("list",true,id);check(r.success&&r.result["data"].size()==1,"default branch list uses bigint binary binds");
+ r=call("list",true,id,"",{},{tenant,actor},2,1);check(r.success&&r.result["data"].empty()&&r.result["totalCount"]==1,"branch pagination offset preserves count");
  for(auto op:{"list","get","create","update","delete"}){r=call(op,true,id,branchId,child,{other,actor2});check(!r.success&&r.error["code"]=="not_found","foreign parent isolates every branch operation");}
  body["bankCode"]="OTHER";auto second=call("create",false,"","",body).result["id"].asString();
  for(auto op:{"get","update","delete"}){r=call(op,true,second,branchId,child);check(!r.success&&r.error["code"]=="not_found","branch cannot be accessed under wrong bank");}
