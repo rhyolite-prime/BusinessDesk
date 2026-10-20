@@ -206,6 +206,29 @@ journals remain editable without a mandatory single header currency. No new
 migration is needed for these controls. Base debit/credit labels and amounts
 are bold in both line previews and batch totals.
 
+### Description suggestions and new-row navigation
+
+Batch number, header currency, batch date and description occupy one desktop
+row, reflowing on smaller screens. Cost center and journal mode remain below.
+
+New draft header descriptions use keywords from the local/multi-currency mode,
+batch date, selected currencies and up to two account names. Detail descriptions
+use the debit/credit side, account, currency, transaction date, reference and cost
+center. These are deterministic suggestions from the entered data, not invented
+transaction purposes or an external AI call. UTF-8 byte limits match the API
+(200 for header; 300 per detail), without splitting Unicode characters.
+
+Suggestions follow context changes until the user types in that description;
+manual text, including deliberate clearing, is never overwritten. Existing
+nonempty saved descriptions are preserved. Empty descriptions on editable drafts
+may receive suggestions; posted/read-only journals are not changed.
+
+After Add line renders the new row, it scrolls smoothly into view and focuses its
+GL selector without a second focus jump. Scroll margin keeps it clear of sticky
+headers. Reduced-motion preferences use instant navigation. Rapid additions only
+navigate to the latest row; switching units or leaving the page invalidates
+pending navigation.
+
 ### Compact entry and balancing suggestions
 
 On desktop, GL selection and the five compact transaction-date/currency/rate/
@@ -235,6 +258,7 @@ auto-balancing amount while other rows are edited.
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
 node --experimental-strip-types test/ledger/journal_deficit_test.mjs
+node --experimental-strip-types test/ledger/journal_descriptions_test.mjs
 JOURNAL_TEST_DATABASE_URL='...' JSONCPP_SOURCE_DIR='...' LIBPQ_LIB_DIR='...' \
   bash test/journals/run_pg.sh
 JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \

@@ -2,6 +2,10 @@
 import { ArrowLeft, Plus, Trash2, Save } from '@lucide/vue'
 import { toRaw } from 'vue'
 import {
+  suggestBatchDescription,
+  suggestLineDescription,
+} from '../../../features/ledger/journal-descriptions'
+import {
   journalDeficit,
   journalBalancingAmounts,
 } from '../../../features/ledger/journal-deficit'
@@ -80,6 +84,14 @@ const message = (e: any) =>
   e?.data?.statusMessage || 'Request failed. Please retry.'
 let version = 0,
   initialized = false
+const manualHeaderDescription = ref(false)
+const manualLineDescriptions = new WeakSet<JournalLine>()
+const lineElements = new WeakMap<JournalLine, HTMLElement>()
+let scrollRequest = 0
+function registerLine(line: JournalLine, element: unknown) {
+  if (element instanceof HTMLElement) lineElements.set(toRaw(line), element)
+  else lineElements.delete(toRaw(line))
+}
 function blank(): JournalLine {
   return {
     accountId: '',
@@ -136,7 +148,7 @@ function selectAccount(line: JournalLine) {
   else if (line.currencyId !== previousCurrency) line.exchangeRate = ''
   refreshSuggestion(line)
 }
-function addLine() {
+async function addLine() {
   if (saving.value || readonly.value || lines.value.length >= 500) return
   saveError.value = ''
   const deficit = journalDeficit(lines.value),
@@ -148,7 +160,22 @@ function addLine() {
     suggestedDeficits.set(line, deficit)
     refreshSuggestion(line)
   }
+  const scope = version,
+    request = ++scrollRequest
   lines.value.push(line)
+  await nextTick()
+  const element = lineElements.get(line)
+  if (scope !== version || request !== scrollRequest || !element?.isConnected)
+    return
+  element.scrollIntoView({
+    behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches
+      ? 'instant'
+      : 'smooth',
+    block: 'start',
+  })
+  element
+    .querySelector<HTMLSelectElement>('select')
+    ?.focus({ preventScroll: true })
 }
 function base(l: JournalLine, side: 'debit' | 'credit') {
   const value = parseLedgerAmount(l[side], true),
@@ -240,6 +267,7 @@ async function load() {
   error.value = ''
   saveError.value = ''
   batchNumber.value = ''
+  manualHeaderDescription.value = false
   header.currencyId = ''
   header.costCenterId = null
   if (!unit) {
@@ -275,6 +303,10 @@ async function load() {
           : mixedCostCenters
     } else header.currencyId = o.baseCurrencyId
     lines.value = row ? row.lines.map((l) => ({ ...l })) : [blank(), blank()]
+    manualHeaderDescription.value = Boolean(row?.description.trim())
+    if (row)
+      for (const line of lines.value)
+        if (line.description.trim()) manualLineDescriptions.add(toRaw(line))
     loaded.value = true
   } catch (e) {
     if (current === version) error.value = message(e)
@@ -304,6 +336,21 @@ watch(unitId, () => {
   if (initialized) void load()
 })
 onUnmounted(() => version++)
+watchEffect(() => {
+  if (!loaded.value || readonly.value) return
+  if (!manualHeaderDescription.value)
+    form.description = suggestBatchDescription({
+      batchDate: form.batchDate,
+      isMultiCurrency: form.isMultiCurrency,
+      currencyId: header.currencyId,
+      lines: lines.value,
+      options: options.value,
+    })
+  for (const line of lines.value) {
+    if (!manualLineDescriptions.has(toRaw(line)))
+      line.description = suggestLineDescription(line, options.value)
+  }
+})
 async function save() {
   if (saving.value || readonly.value || !loaded.value) return
   saveError.value = ''
@@ -410,7 +457,8 @@ async function save() {
     <form v-if="loaded" @submit.prevent="save">
       <fieldset :disabled="saving || readonly" class="min-w-0 space-y-5">
         <section
-          class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2"
+          class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-4"
+          data-testid="journal-header"
         >
           <label class="text-xs font-semibold"
             >Batch number
@@ -420,11 +468,6 @@ async function save() {
               readonly
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
             />
-            <span
-              v-if="!original"
-              class="mt-1 block text-[10px] font-normal text-slate-400"
-              >Preview only — the server assigns the final number on save.</span
-            >
           </label>
           <label class="text-xs font-semibold"
             >Header currency
@@ -458,12 +501,37 @@ async function save() {
                 {{ currency.code }} · {{ currency.name }}
               </option>
             </select>
-            <span class="mt-1 block text-[10px] font-normal text-slate-400">{{
-              form.isMultiCurrency
-                ? 'New-line default only; existing line currencies/rates are preserved.'
-                : 'Applies to every line. Local mode uses the accounting unit’s base currency.'
-            }}</span>
           </label>
+          <label class="text-xs font-semibold"
+            >Batch date<input
+              v-model="form.batchDate"
+              required
+              type="date"
+              min="1900-01-01"
+              max="2999-12-31"
+              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700" /></label
+          ><label class="text-xs font-semibold"
+            >Description<input
+              v-model="form.description"
+              @input="manualHeaderDescription = true"
+              required
+              maxlength="200"
+              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+          /></label>
+          <p class="text-[10px] text-slate-400 xl:col-span-4">
+            {{
+              original
+                ? 'Batch number is server-assigned.'
+                : 'Batch number is a preview; the server assigns the final number on save.'
+            }}
+            {{
+              form.isMultiCurrency
+                ? 'Header currency defaults new lines only.'
+                : 'Local header currency applies to every line.'
+            }}
+            Descriptions use journal/account, currency, date and reference
+            keywords until you edit them.
+          </p>
           <label class="text-xs font-semibold"
             >Header cost center
             <select
@@ -502,21 +570,7 @@ async function save() {
               it.</span
             >
           </label>
-          <label class="text-xs font-semibold"
-            >Batch date<input
-              v-model="form.batchDate"
-              required
-              type="date"
-              min="1900-01-01"
-              max="2999-12-31"
-              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700" /></label
-          ><label class="text-xs font-semibold"
-            >Description<input
-              v-model="form.description"
-              required
-              maxlength="200"
-              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700" /></label
-          ><label class="flex items-center gap-2 text-xs"
+          <label class="flex items-center gap-2 text-xs"
             ><input
               v-model="form.isMultiCurrency"
               type="checkbox"
@@ -550,7 +604,9 @@ async function save() {
           <article
             v-for="(l, i) in lines"
             :key="l.id || i"
-            class="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#15201e]"
+            :ref="(element) => registerLine(l, element)"
+            tabindex="-1"
+            class="scroll-mt-24 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#15201e]"
             :aria-label="`Journal line ${i + 1}`"
           >
             <header class="mb-3 flex items-center justify-between">
@@ -716,6 +772,7 @@ async function save() {
                 >Line description
                 <input
                   v-model="l.description"
+                  @input="manualLineDescriptions.add(toRaw(l))"
                   maxlength="300"
                   class="journal-input"
                 />

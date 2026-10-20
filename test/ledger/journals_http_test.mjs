@@ -70,12 +70,26 @@ try{
   const browser=await chromium.launch({args:binary.args,executablePath:await binary.executablePath(),headless:true});rows=[]
   try{
    const context=await browser.newContext({viewport:{width:1280,height:800}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
+   await page.addInitScript(()=>{
+    window.journalScrollCalls=[]
+    const original=Element.prototype.scrollIntoView
+    Element.prototype.scrollIntoView=function(options){window.journalScrollCalls.push({label:this.getAttribute('aria-label'),behavior:options?.behavior});return original.call(this,options)}
+   })
    await page.goto(base+'/ledger/journals');await page.getByLabel('Accounting unit',{exact:false}).selectOption(unit);await page.getByRole('link',{name:'New journal',exact:true}).click()
+   check((await page.getByLabel('Description',{exact:true}).inputValue()).includes('Local journal'),'new header description is automatically populated')
+   await page.getByLabel('Batch date',{exact:true}).fill('2026-10-21')
+   check((await page.getByLabel('Description',{exact:true}).inputValue()).includes('2026-10-21'),'suggested header description follows the batch date')
+   const headerBoxes=await Promise.all(['Batch number','Header currency','Batch date','Description'].map(name=>page.getByLabel(name,{exact:name!=='Header currency'}).boundingBox()))
+   check(Math.max(...headerBoxes.map(r=>r.y))-Math.min(...headerBoxes.map(r=>r.y))<2,'batch number, currency, date and description occupy one desktop row')
    await page.getByLabel('Description',{exact:true}).fill('Browser local');await page.getByLabel('Batch date',{exact:true}).fill('2026-10-20')
    check(await page.getByLabel('Batch number',{exact:true}).inputValue()==='GJ-preview'&&await page.getByLabel('Batch number',{exact:true}).evaluate(el=>el.readOnly),'header displays unreserved read-only batch preview')
    check((await page.getByLabel('Header currency',{exact:false}).locator(`option[value="${usd}"]`).textContent()).includes('from Shared Config')&&await page.getByLabel('Header currency',{exact:false}).locator(`option[value="${inactive}"]`).count()===0,'currency dropdown uses all Shared Config pages and excludes inactive rows')
    let first=page.getByRole('article',{name:'Journal line 1',exact:true}),second=page.getByRole('article',{name:'Journal line 2',exact:true})
    await first.getByLabel('GL account',{exact:false}).selectOption(account);await second.getByLabel('GL account',{exact:false}).selectOption(account2)
+   check((await first.getByLabel('Line description',{exact:true}).inputValue()).includes('Cash'),'line description follows the selected GL account')
+   await first.getByLabel('Reference',{exact:true}).fill('REF-KEEP')
+   check((await first.getByLabel('Line description',{exact:true}).inputValue()).includes('REF-KEEP'),'suggested line description includes transaction reference')
+   await first.getByLabel('Line description',{exact:true}).fill('Manual narration')
    await page.getByLabel('Header cost center',{exact:false}).selectOption(center)
    check(await first.getByLabel('Cost center',{exact:false}).inputValue()===center&&await second.getByLabel('Cost center',{exact:false}).inputValue()===center,'header cost center updates every existing line')
    await page.getByLabel('Header cost center',{exact:false}).selectOption({label:'Not configured'})
@@ -91,6 +105,12 @@ try{
    check(Math.max(...detailBoxes.map(r=>r.y))-Math.min(...detailBoxes.map(r=>r.y))<2&&detailBoxes[0].y>amountBoxes[0].y,'detail controls share the next desktop row')
    await first.getByLabel('Debit',{exact:true}).fill('100');await second.getByLabel('Credit',{exact:true}).fill('25');await page.getByRole('button',{name:'Add line',exact:true}).click()
    let third=page.getByRole('article',{name:'Journal line 3',exact:true})
+   check((await second.getByLabel('Line description',{exact:true}).inputValue()).includes('Credit'),'line description follows credit-side transaction keywords')
+   check(await first.getByLabel('Line description',{exact:true}).inputValue()==='Manual narration'&&await page.getByLabel('Description',{exact:true}).inputValue()==='Browser local','manual header/detail descriptions survive other field changes')
+   check(await page.evaluate(()=>window.journalScrollCalls.some(c=>c.label==='Journal line 3'&&c.behavior==='smooth')),'Add line requests smooth scrolling to the new row')
+   await page.waitForFunction(()=>{const row=document.querySelector('article[aria-label="Journal line 3"]');const r=row?.getBoundingClientRect();return r&&r.top>=0&&r.top<window.innerHeight-40})
+   check(await third.evaluate(el=>el.contains(document.activeElement)),'new row receives keyboard focus without an additional jump')
+
    check(await third.getByLabel('Cost center',{exact:false}).inputValue()===center,'new journal line inherits header cost center')
    check(await third.getByLabel('Credit',{exact:true}).inputValue()==='75.000000'&&await third.getByLabel('Debit',{exact:true}).inputValue()==='0.000000','add line fills missing credit exactly')
    await page.getByLabel('Multi-currency journal',{exact:true}).check();await third.getByLabel('Currency',{exact:false}).selectOption(usd)
@@ -103,8 +123,9 @@ try{
    check(await third.getByLabel('Exchange rate',{exact:true}).inputValue()==='12.5','matching GL selection preserves an explicitly entered rate')
    await third.getByLabel('Credit',{exact:true}).fill('7');await third.getByLabel('Exchange rate',{exact:true}).fill('15');check(await third.getByLabel('Credit',{exact:true}).inputValue()==='7','manual amount edit disables further automatic replacement')
    await page.getByRole('button',{name:'Remove line 3',exact:true}).click();await page.getByLabel('Multi-currency journal',{exact:true}).uncheck()
+   await page.emulateMedia({reducedMotion:'reduce'})
    await first.getByLabel('Debit',{exact:true}).fill('25');await second.getByLabel('Credit',{exact:true}).fill('100');await page.getByRole('button',{name:'Add line',exact:true}).click();third=page.getByRole('article',{name:'Journal line 3',exact:true})
-   check(await third.getByLabel('Debit',{exact:true}).inputValue()==='75.000000'&&await third.getByLabel('Credit',{exact:true}).inputValue()==='0.000000','add line fills missing debit exactly');await page.getByRole('button',{name:'Remove line 3',exact:true}).click()
+   check(await third.getByLabel('Debit',{exact:true}).inputValue()==='75.000000'&&await third.getByLabel('Credit',{exact:true}).inputValue()==='0.000000','add line fills missing debit exactly');check(await page.evaluate(()=>window.journalScrollCalls.filter(c=>c.label==='Journal line 3').at(-1)?.behavior==='instant'),'reduced-motion preference disables smooth animation');await page.emulateMedia({reducedMotion:'no-preference'});await page.getByRole('button',{name:'Remove line 3',exact:true}).click()
    await first.getByLabel('Debit',{exact:true}).fill('100');await page.getByRole('button',{name:'Add line',exact:true}).click();third=page.getByRole('article',{name:'Journal line 3',exact:true})
    check(await third.getByLabel('Debit',{exact:true}).inputValue()==='0'&&await third.getByLabel('Credit',{exact:true}).inputValue()==='0','balanced journal adds an empty amount row');await page.getByRole('button',{name:'Remove line 3',exact:true}).click()
    for(const line of [first,second])await line.getByLabel('Transaction date',{exact:true}).fill('2026-10-20')
