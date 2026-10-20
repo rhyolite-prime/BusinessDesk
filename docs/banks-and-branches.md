@@ -87,8 +87,10 @@ are parameterized; interpolated SQL fragments are internal constants only.
 
 **Shared config → Banks and branches** opens
 `/ledger/shared-config/banks-and-branches`, replacing its former placeholder.
-The page follows `templates/banks-branches.png`: compact, bordered, striped bank
-rows with grey icon toolbars and compact pagination. A bank's disclosure arrow
+The page uses the application’s ledger design system: inherited typography,
+rounded cards, slate table headers/dividers, brand-green primary actions,
+consistent spacing, accessible focus states and dark-mode variants. The
+expandable header/child relationship from `templates/banks-branches.png` remains. A bank's disclosure arrow
 expands a nested, indented branch grid directly beneath its header row; clicking
 its name also selects/expands it. Bank and branch column order matches the image.
 Select a bank/branch row to enable its toolbar's edit/delete controls. Each grid

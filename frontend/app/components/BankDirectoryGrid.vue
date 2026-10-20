@@ -7,70 +7,31 @@ const emit = defineEmits<{ create: []; edit: [row: Row]; remove: [row: Row]; sel
 const label = computed(() => props.branch ? 'branch' : 'bank')
 </script>
 <template>
-  <section class="directory-grid" :aria-label="branch ? 'Bank branches child table' : 'Banks header table'" :aria-busy="table.loading">
-    <div class="grid-toolbar" role="toolbar" :aria-label="`${branch ? 'Branch' : 'Bank'} actions`">
-      <button type="button" :disabled="busy || table.loading" :aria-label="`Add ${label}`" :title="`Add ${label}`" @click="emit('create')"><Plus :size="17" :stroke-width="3" /></button>
-      <button type="button" :disabled="busy || table.loading || !selected" :aria-label="`Edit ${label}`" :title="selected ? `Edit ${selected.name}` : `Select a ${label} to edit`" @click="selected && emit('edit', selected)"><Pencil :size="14" /></button>
-      <button type="button" :disabled="busy || table.loading || !selected" :aria-label="`Delete ${label}`" :title="selected ? `Delete ${selected.name}` : `Select a ${label} to delete`" @click="selected && emit('remove', selected)"><Trash2 :size="14" /></button>
-      <span class="toolbar-divider" />
-      <form class="grid-search" @submit.prevent="emit('search')"><input :value="table.query" :disabled="busy" :aria-label="branch ? 'Search branches' : 'Search banks'" type="search" maxlength="160" @input="emit('query', ($event.target as HTMLInputElement).value)" /><button :disabled="busy || table.loading" type="submit" :aria-label="`Search ${branch ? 'branches' : 'banks'}`" title="Search"><Search :size="15" /></button></form>
+  <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)] dark:border-slate-800 dark:bg-[#15201e]" :aria-label="branch ? 'Bank branches child table' : 'Banks header table'" :aria-busy="table.loading">
+    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 px-5 py-4 dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ branch ? 'Branches' : 'Banks' }}</h2><p class="mt-1 text-xs text-slate-400">{{ branch ? 'Select a branch to edit its contact details.' : 'Expand a bank to manage its branches.' }}</p></div><span class="rounded-md bg-slate-50 px-2.5 py-1.5 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-400">{{ table.total }} {{ branch ? (table.total === 1 ? 'branch' : 'branches') : (table.total === 1 ? 'bank' : 'banks') }}</span></div>
+    <div class="flex flex-wrap items-center gap-2 border-b border-slate-100 px-5 py-3 dark:border-slate-800" role="toolbar" :aria-label="`${branch ? 'Branch' : 'Bank'} actions`">
+      <button class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-semibold bg-brand-700 text-white shadow-sm shadow-brand-900/15 transition hover:bg-brand-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 " type="button" :disabled="busy || table.loading" :aria-label="`Add ${label}`" :title="`Add ${label}`" @click="emit('create')"><Plus :size="17" :stroke-width="2" /><span class="ml-1.5">Add {{ label }}</span></button>
+      <button class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white" type="button" :disabled="busy || table.loading || !selected" :aria-label="`Edit ${label}`" :title="selected ? `Edit ${selected.name}` : `Select a ${label} to edit`" @click="selected && emit('edit', selected)"><Pencil :size="14" /></button>
+      <button class="inline-flex h-9 min-w-9 items-center justify-center rounded-lg px-2 text-xs font-semibold text-slate-500 transition hover:bg-slate-100 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:text-slate-400 dark:hover:bg-slate-800 dark:hover:text-white" type="button" :disabled="busy || table.loading || !selected" :aria-label="`Delete ${label}`" :title="selected ? `Delete ${selected.name}` : `Select a ${label} to delete`" @click="selected && emit('remove', selected)"><Trash2 :size="14" /></button>
+      <span class="mx-1 hidden h-6 w-px bg-slate-200 sm:block dark:bg-slate-700" />
+      <form class="flex w-full items-center gap-1 sm:ml-auto sm:w-auto" @submit.prevent="emit('search')"><input :value="table.query" :disabled="busy" :aria-label="branch ? 'Search branches' : 'Search banks'" type="search" maxlength="160" :placeholder="branch ? 'Search branches…' : 'Search bank name or code…'" class="h-10 min-w-0 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-xs text-slate-700 outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 sm:w-64 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200 dark:focus:ring-brand-900/30" @input="emit('query', ($event.target as HTMLInputElement).value)" /><button class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white" :disabled="busy || table.loading" type="submit" :aria-label="`Search ${branch ? 'branches' : 'banks'}`" title="Search"><Search :size="15" /></button></form>
       <button type="button" :disabled="busy || table.loading" :aria-label="`Refresh ${branch ? 'branches' : 'banks'}`" title="Refresh" @click="emit('refresh')"><RotateCw :size="14" :class="{ 'animate-spin': table.loading }" /></button>
-      <span v-if="branch" class="ml-auto pr-2 text-[11px] text-neutral-500 dark:text-neutral-400">Branches</span>
+
     </div>
-    <p v-if="table.error" role="alert" class="border-b border-red-200 bg-red-50 px-4 py-3 text-xs text-red-700">{{ table.error }}</p>
-    <div class="grid-scroll"><table :class="{ 'branch-table': branch }"><caption class="sr-only">{{ branch ? 'Bank branches' : 'Banks and branches' }}</caption><thead><tr><th v-if="!branch" class="expand-column"><span class="sr-only">Expand branches</span></th><th>{{ branch ? 'Bank Branch' : 'Bank Name' }}</th><th>Contact Person</th><th>Contact No</th><th>Email</th><th v-if="!branch">Bank Code</th></tr></thead>
-      <tbody>
-        <tr v-if="table.loading"><td :colspan="branch ? 4 : 6" class="grid-status" role="status">Loading {{ branch ? 'branches' : 'banks' }}…</td></tr>
+    <p v-if="table.error" role="alert" class="m-4 rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-900/50 dark:bg-rose-950/30 dark:text-rose-300">{{ table.error }}</p>
+    <div class="overflow-x-auto"><table class="w-full min-w-[760px] text-left text-xs"><caption class="sr-only">{{ branch ? 'Bank branches' : 'Banks and branches' }}</caption><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th v-if="!branch" class="w-12 px-3 py-3"><span class="sr-only">Expand branches</span></th><th class="px-4 py-3">{{ branch ? 'Bank Branch' : 'Bank Name' }}</th><th class="px-4 py-3">Contact Person</th><th class="px-4 py-3">Contact No</th><th class="px-4 py-3">Email</th><th v-if="!branch">Bank Code</th></tr></thead>
+      <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+        <tr v-if="table.loading"><td :colspan="branch ? 4 : 6" class="px-5 py-10 text-center text-xs text-slate-400" role="status">Loading {{ branch ? 'branches' : 'banks' }}…</td></tr>
         <template v-for="row in table.loading ? [] : table.rows" :key="row.id">
-          <tr class="data-row" :class="{ 'selected-row': selected?.id === row.id }" :aria-selected="selected?.id === row.id">
-            <td v-if="!branch" class="expand-column"><button type="button" :disabled="busy" :aria-label="`${selected?.id === row.id ? 'Collapse' : 'Expand'} branches for ${row.name}`" :aria-expanded="selected?.id === row.id" @click="emit('toggle', row)"><ChevronDown v-if="selected?.id === row.id" :size="13" /><ChevronRight v-else :size="13" /></button></td>
-            <td><button type="button" :disabled="busy" class="row-name" :aria-label="`Select ${label} ${row.name}`" @click="emit('select', row)">{{ row.name }}</button></td><td>{{ row.contactPerson }}</td><td>{{ row.contactNo }}</td><td>{{ row.email }}</td><td v-if="!branch">{{ row.bankCode }}</td>
+          <tr class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40" :class="selected?.id === row.id ? 'bg-brand-50/60 dark:bg-brand-900/20' : ''" :aria-selected="selected?.id === row.id">
+            <td v-if="!branch" class="w-12 px-3 py-3"><button type="button" class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-400 hover:bg-brand-50 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-40 dark:hover:bg-brand-900/30 dark:hover:text-brand-300" :disabled="busy" :aria-label="`${selected?.id === row.id ? 'Collapse' : 'Expand'} branches for ${row.name}`" :aria-expanded="selected?.id === row.id" @click="emit('toggle', row)"><ChevronDown v-if="selected?.id === row.id" :size="13" /><ChevronRight v-else :size="13" /></button></td>
+            <td class="px-4 py-3.5 text-slate-500 dark:text-slate-400"><button type="button" :disabled="busy" class="w-full rounded text-left text-xs font-semibold text-slate-800 outline-none focus-visible:ring-2 focus-visible:ring-brand-500 dark:text-slate-200" :aria-label="`Select ${label} ${row.name}`" @click="emit('select', row)">{{ row.name }}</button></td><td class="px-4 py-3.5 text-slate-500 dark:text-slate-400">{{ row.contactPerson || '—' }}</td><td class="px-4 py-3.5 text-slate-500 dark:text-slate-400">{{ row.contactNo || '—' }}</td><td class="px-4 py-3.5 text-slate-500 dark:text-slate-400">{{ row.email || '—' }}</td><td v-if="!branch">{{ row.bankCode }}</td>
           </tr>
-          <tr v-if="!branch && selected?.id === row.id" class="detail-row"><td colspan="6"><div class="detail-container"><slot name="branches" :bank="row" /></div></td></tr>
+          <tr v-if="!branch && selected?.id === row.id"><td colspan="6" class="bg-slate-50/70 p-3 sm:p-5 sm:pl-12 dark:bg-slate-950/20"><div class="border-l-2 border-brand-200 pl-3 sm:pl-4 dark:border-brand-800"><slot name="branches" :bank="row" /></div></td></tr>
         </template>
-        <tr v-if="!table.loading && !table.rows.length"><td :colspan="branch ? 4 : 6" class="grid-status">{{ table.error ? 'Unable to load records. Try Refresh.' : `No ${branch ? 'branches' : 'banks'} found. Add one or try a different search.` }}</td></tr>
+        <tr v-if="!table.loading && !table.rows.length"><td :colspan="branch ? 4 : 6" class="px-5 py-10 text-center text-xs text-slate-400">{{ table.error ? 'Unable to load records. Try Refresh.' : `No ${branch ? 'branches' : 'banks'} found. Add one or try a different search.` }}</td></tr>
       </tbody>
     </table></div>
-    <footer class="grid-footer"><nav :aria-label="`${branch ? 'Branch' : 'Bank'} pagination`" class="grid-pagination"><button :disabled="busy || table.loading || table.page <= 1" aria-label="First page" @click="emit('paginate', 1 - table.page)"><ChevronsLeft :size="14" /></button><button :disabled="busy || table.loading || table.page <= 1" aria-label="Previous page" @click="emit('paginate', -1)"><ChevronLeft :size="14" /></button><span aria-current="page">{{ table.page }}</span><button :disabled="busy || table.loading || table.page >= table.pages" aria-label="Next page" @click="emit('paginate', 1)"><ChevronRight :size="14" /></button><button :disabled="busy || table.loading || table.page >= table.pages" aria-label="Last page" @click="emit('paginate', table.pages - table.page)"><ChevronsRight :size="14" /></button></nav><span>{{ table.page }} of {{ Math.max(1, table.pages) }} pages ({{ table.total }} items)</span></footer>
+    <footer class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 dark:border-slate-800"><nav :aria-label="`${branch ? 'Branch' : 'Bank'} pagination`" class="flex items-center gap-1"><button class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white" :disabled="busy || table.loading || table.page <= 1" aria-label="First page" @click="emit('paginate', 1 - table.page)"><ChevronsLeft :size="14" /></button><button class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white" :disabled="busy || table.loading || table.page <= 1" aria-label="Previous page" @click="emit('paginate', -1)"><ChevronLeft :size="14" /></button><span class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg bg-brand-700 px-2 text-xs font-semibold text-white" aria-current="page">{{ table.page }}</span><button class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white" :disabled="busy || table.loading || table.page >= table.pages" aria-label="Next page" @click="emit('paginate', 1)"><ChevronRight :size="14" /></button><button class="inline-flex h-8 min-w-8 items-center justify-center rounded-lg text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-slate-800 dark:hover:text-white" :disabled="busy || table.loading || table.page >= table.pages" aria-label="Last page" @click="emit('paginate', table.pages - table.page)"><ChevronsRight :size="14" /></button></nav><span>Page {{ table.page }} of {{ Math.max(1, table.pages) }} · {{ table.total }} records</span></footer>
   </section>
 </template>
-<style scoped>
-.directory-grid { border: 1px solid #ccc; background: #fff; color: #303030; font-family: Arial, sans-serif; font-size: 13px; }
-.grid-toolbar { min-height: 43px; display: flex; align-items: center; flex-wrap: wrap; gap: 3px; padding: 5px 8px; border-bottom: 1px solid #ccc; background: #ececec; }
-.grid-toolbar button { display: inline-flex; width: 32px; height: 29px; align-items: center; justify-content: center; color: #666; border: 1px solid transparent; }
-.grid-toolbar button:hover:not(:disabled) { border-color: #c3c3c3; background: #ddd; }
-button:disabled { opacity: .35; cursor: not-allowed; }
-button:focus-visible, input:focus-visible { outline: 2px solid #159bd0; outline-offset: -2px; }
-.toolbar-divider { height: 21px; width: 1px; background: #ccc; margin: 0 9px; }
-.grid-search { display: flex; align-items: center; gap: 1px; }
-.grid-search input { width: 166px; height: 29px; border: 1px solid #c8c8c8; border-radius: 0; background: #fff; padding: 0 7px; }
-.grid-scroll { overflow-x: auto; }
-table { width: 100%; min-width: 870px; border-collapse: collapse; table-layout: fixed; }
-th { background: #fbfbfb; font-size: 14px; font-weight: 600; text-align: left; height: 45px; }
-th, td { border-right: 1px solid #ccc; border-bottom: 1px solid #ccc; padding: 9px 10px; overflow-wrap: anywhere; }
-th:last-child, td:last-child { border-right: 0; }
-.expand-column { width: 7.5%; padding-left: 12px; }
-.expand-column button { display: flex; align-items: center; min-height: 20px; width: 25px; color: #666; }
-.data-row { background: white; }
-.data-row:nth-of-type(even) { background: #f6f6f6; }
-.data-row:hover, .selected-row { background: #f1f7fa; }
-.row-name { display: block; text-align: left; width: 100%; font: inherit; color: inherit; }
-.detail-row > td { padding: 4px 7px 6px 0; background: white; }
-.detail-container { margin-left: 7.5%; }
-.branch-table { min-width: 700px; }
-.grid-status { text-align: center; padding: 32px; color: #777; }
-.grid-footer { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px; padding: 10px 8px; background: #ececec; min-height: 55px; }
-.grid-pagination { display: flex; align-items: center; border: 1px solid #c8c8c8; border-radius: 4px; overflow: hidden; }
-.grid-pagination button, .grid-pagination span { width: 28px; height: 29px; display: flex; align-items: center; justify-content: center; color: #777; }
-.grid-pagination span { background: #119ed0; color: white; }
-.grid-pagination button:hover:not(:disabled) { background: #ddd; }
-:global(.dark) .directory-grid { background: #172321; color: #ddd; border-color: #43504d; }
-:global(.dark) .grid-toolbar, :global(.dark) .grid-footer { background: #25322f; border-color: #43504d; }
-:global(.dark) th, :global(.dark) td { border-color: #43504d; }
-:global(.dark) th { background: #1b2926; }
-:global(.dark) .data-row, :global(.dark) .detail-row > td { background: #172321; }
-:global(.dark) .data-row:nth-of-type(even) { background: #1e2c29; }
-:global(.dark) .selected-row, :global(.dark) .data-row:hover { background: #29413b; }
-:global(.dark) .grid-search input { background: #172321; border-color: #52605b; }
-:global(.dark) .grid-toolbar button { color: #b8c3bf; }
-</style>
