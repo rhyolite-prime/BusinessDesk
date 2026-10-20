@@ -175,11 +175,35 @@ rates and fake organizational assignments have been removed. Unrelated demo
 metrics/account fixtures in other modules are outside this journal change;
 the legacy demo dashboard no longer emits fabricated recent journals.
 
+### Compact entry and balancing suggestions
+
+On desktop, GL selection and the five compact transaction-date/currency/rate/
+debit/credit controls share a row. Cost center, reference, cheque number and line
+description share the next row; smaller screens reflow responsively. Currency
+is a live catalog dropdown: local mode offers the base currency, multi-currency
+mode offers active currencies. A changed currency clears an incompatible GL;
+select a matching GL before saving. Selecting a GL of the same currency preserves
+an already entered rate. Fixed GL currency rules remain enforced by the API.
+
+**Add line** takes the current valid base-currency debit minus credit total and
+fills the missing side on the new row (credit if debits lead, debit if credits
+lead). It defaults to base currency/rate 1 for an exact suggestion. A balanced
+journal adds zero amounts; invalid amounts/rates are not treated as zero when
+calculating a suggestion. Existing lines are never rewritten by Add line.
+
+If that suggested row switches to FX, its amounts wait for an explicit rate and
+are converted to transaction currency using BigInt arithmetic. Rounding remnants
+are flagged for review rather than silently plugged. Once either amount is
+manually edited, subsequent account/currency/rate changes do not overwrite it.
+Suggestions capture the deficit when the row is added, not a continuously moving
+auto-balancing amount while other rows are edited.
+
 ## Verification
 
 ```sh
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
+node --experimental-strip-types test/ledger/journal_deficit_test.mjs
 JOURNAL_TEST_DATABASE_URL='...' JSONCPP_SOURCE_DIR='...' LIBPQ_LIB_DIR='...' \
   bash test/journals/run_pg.sh
 JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \

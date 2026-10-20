@@ -1,5 +1,10 @@
 <script setup lang="ts">
 import { ArrowLeft, Plus, Trash2, Save } from '@lucide/vue'
+import { toRaw } from 'vue'
+import {
+  journalDeficit,
+  journalBalancingAmounts,
+} from '../../../features/ledger/journal-deficit'
 import {
   emptyJournalOptions,
   journalLineInput,
@@ -65,10 +70,57 @@ function blank(): JournalLine {
     transactionDate: form.batchDate,
   }
 }
-function selectAccount(l: JournalLine) {
-  const a = options.value.accounts.find((a) => a.id === l.accountId)
-  l.currencyId = a?.currencyId || ''
-  l.exchangeRate = l.currencyId === options.value.baseCurrencyId ? '1' : ''
+// Only suggested amounts are recalculated on currency/rate changes. Once a user
+// types an amount, their input is authoritative and is never overwritten.
+const suggestedDeficits = new WeakMap<JournalLine, bigint>()
+function stopSuggestion(line: JournalLine) {
+  suggestedDeficits.delete(toRaw(line))
+}
+function refreshSuggestion(line: JournalLine) {
+  const deficit = suggestedDeficits.get(toRaw(line))
+  if (deficit === undefined) return
+  const amounts = journalBalancingAmounts(deficit, line.exchangeRate)
+  line.debit = amounts?.debit || '0'
+  line.credit = amounts?.credit || '0'
+  const remainder =
+    'The FX rate leaves a rounding remainder. Review the base totals before posting, or use a base-currency account.'
+  const unavailable =
+    'The deficit cannot be represented at this exchange rate. Use a base-currency account or enter the amount manually.'
+  if (amounts && !amounts.exact) saveError.value = remainder
+  else if (!amounts && (parseLedgerRate(line.exchangeRate) || 0n) > 0n)
+    saveError.value = unavailable
+  else if (saveError.value === remainder || saveError.value === unavailable)
+    saveError.value = ''
+}
+function selectCurrency(line: JournalLine) {
+  const account = options.value.accounts.find((a) => a.id === line.accountId)
+  // A currency is selectable before the GL, but cannot override a fixed GL currency.
+  if (account && account.currencyId !== line.currencyId) line.accountId = ''
+  line.exchangeRate =
+    line.currencyId === options.value.baseCurrencyId ? '1' : ''
+  refreshSuggestion(line)
+}
+function selectAccount(line: JournalLine) {
+  const account = options.value.accounts.find((a) => a.id === line.accountId)
+  const previousCurrency = line.currencyId
+  line.currencyId = account?.currencyId || previousCurrency
+  if (line.currencyId === options.value.baseCurrencyId) line.exchangeRate = '1'
+  else if (line.currencyId !== previousCurrency) line.exchangeRate = ''
+  refreshSuggestion(line)
+}
+function addLine() {
+  if (saving.value || readonly.value || lines.value.length >= 500) return
+  saveError.value = ''
+  const deficit = journalDeficit(lines.value),
+    line = blank()
+  if (deficit === null) {
+    saveError.value =
+      'The new line is blank because an existing amount or exchange rate is invalid. Correct those fields before calculating a balancing amount.'
+  } else if (deficit !== 0n) {
+    suggestedDeficits.set(line, deficit)
+    refreshSuggestion(line)
+  }
+  lines.value.push(line)
 }
 function base(l: JournalLine, side: 'debit' | 'credit') {
   const value = parseLedgerAmount(l[side], true),
@@ -354,7 +406,7 @@ async function save() {
               type="button"
               :disabled="lines.length >= 500"
               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700"
-              @click="lines.push(blank())"
+              @click="addLine"
             >
               <Plus :size="14" />Add line
             </button>
@@ -378,9 +430,12 @@ async function save() {
                 <Trash2 :size="14" />
               </button>
             </header>
-            <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-              <label class="text-[11px]"
-                >GL account<select
+            <div
+              class="journal-amount-fields grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
+            >
+              <label class="min-w-0 text-[11px] xl:col-span-3"
+                >GL account
+                <select
                   v-model="l.accountId"
                   required
                   class="journal-input"
@@ -407,62 +462,85 @@ async function save() {
                   >
                     {{ a.accountNumber }} · {{ a.name }}
                   </option>
-                </select></label
-              ><label class="text-[11px]"
-                >Transaction date<input
+                </select>
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Transaction date
+                <input
                   v-model="l.transactionDate"
                   required
                   type="date"
                   min="1900-01-01"
                   max="2999-12-31"
-                  class="journal-input" /></label
-              ><label class="text-[11px]"
-                >Currency<input
-                  :value="
-                    options.currencies.find((c) => c.id === l.currencyId)
-                      ?.code ||
-                    l.currencyCode ||
-                    'Select an account'
-                  "
-                  readonly
-                  class="journal-input" /></label
-              ><label class="text-[11px]"
-                >Exchange rate<input
+                  class="journal-input"
+                />
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Currency
+                <select
+                  v-model="l.currencyId"
+                  required
+                  class="journal-input"
+                  @change="selectCurrency(l)"
+                >
+                  <option value="" disabled>Select currency</option>
+                  <option
+                    v-if="
+                      l.currencyId &&
+                      !options.currencies.some((c) => c.id === l.currencyId)
+                    "
+                    :value="l.currencyId"
+                  >
+                    {{ l.currencyCode || 'Unavailable (replace)' }}
+                  </option>
+                  <option
+                    v-for="c in options.currencies.filter(
+                      (c) =>
+                        form.isMultiCurrency || c.id === options.baseCurrencyId,
+                    )"
+                    :key="c.id"
+                    :value="c.id"
+                  >
+                    {{ c.code }}
+                  </option>
+                </select>
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Exchange rate
+                <input
                   v-model="l.exchangeRate"
                   required
                   :readonly="l.currencyId === options.baseCurrencyId"
                   inputmode="decimal"
-                  class="journal-input" /></label
-              ><label class="text-[11px]"
-                >Debit<input
+                  class="journal-input"
+                  @input="refreshSuggestion(l)"
+                />
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Debit
+                <input
                   v-model="l.debit"
                   inputmode="decimal"
-                  class="journal-input font-mono" /></label
-              ><label class="text-[11px]"
-                >Credit<input
+                  class="journal-input font-mono"
+                  @input="stopSuggestion(l)"
+                />
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Credit
+                <input
                   v-model="l.credit"
                   inputmode="decimal"
                   class="journal-input font-mono"
-              /></label>
-              <div class="self-end pb-2 text-[11px] text-slate-400">
-                Base debit:
-                <span class="font-mono">{{
-                  base(l, 'debit') === null
-                    ? 'Invalid'
-                    : formatLedgerAmount(base(l, 'debit')!)
-                }}</span
-                ><br />Base credit:
-                <span class="font-mono">{{
-                  base(l, 'credit') === null
-                    ? 'Invalid'
-                    : formatLedgerAmount(base(l, 'credit')!)
-                }}</span>
-              </div>
-              <label class="text-[11px]"
-                >Cost center<select
-                  v-model="l.costCenterId"
-                  class="journal-input"
-                >
+                  @input="stopSuggestion(l)"
+                />
+              </label>
+            </div>
+            <div
+              class="journal-detail-fields mt-3 grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
+            >
+              <label class="min-w-0 text-[11px] xl:col-span-2"
+                >Cost center
+                <select v-model="l.costCenterId" class="journal-input">
                   <option :value="null">Not configured</option>
                   <option
                     v-if="
@@ -480,23 +558,52 @@ async function save() {
                   >
                     {{ c.name }}
                   </option>
-                </select></label
-              ><label class="text-[11px]"
-                >Reference<input
+                </select>
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Reference
+                <input
                   v-model="l.referenceNumber"
                   maxlength="40"
-                  class="journal-input" /></label
-              ><label class="text-[11px]"
-                >Cheque number<input
+                  class="journal-input"
+                />
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Cheque number
+                <input
                   v-model="l.chequeNumber"
                   maxlength="40"
-                  class="journal-input" /></label
-              ><label class="text-[11px] sm:col-span-2"
-                >Line description<input
+                  class="journal-input"
+                />
+              </label>
+              <label class="min-w-0 text-[11px] xl:col-span-4"
+                >Line description
+                <input
                   v-model="l.description"
                   maxlength="300"
                   class="journal-input"
-              /></label>
+                />
+              </label>
+            </div>
+            <div
+              class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400"
+            >
+              <span
+                >Base debit:
+                <span class="font-mono">{{
+                  base(l, 'debit') === null
+                    ? 'Invalid'
+                    : formatLedgerAmount(base(l, 'debit')!)
+                }}</span></span
+              >
+              <span
+                >Base credit:
+                <span class="font-mono">{{
+                  base(l, 'credit') === null
+                    ? 'Invalid'
+                    : formatLedgerAmount(base(l, 'credit')!)
+                }}</span></span
+              >
             </div>
             <p
               v-if="l.organizationUnitId"
@@ -583,9 +690,10 @@ async function save() {
   margin-top: 0.375rem;
   height: 2.5rem;
   width: 100%;
+  min-width: 0;
   border: 1px solid #e2e8f0;
   border-radius: 0.5rem;
-  padding: 0 0.625rem;
+  padding: 0 0.5rem;
   background: transparent;
   font-size: 0.75rem;
 }
