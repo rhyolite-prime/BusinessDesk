@@ -175,6 +175,37 @@ rates and fake organizational assignments have been removed. Unrelated demo
 metrics/account fixtures in other modules are outside this journal change;
 the legacy demo dashboard no longer emits fabricated recent journals.
 
+### Journal header controls
+
+The header shows a **read-only batch number**: a non-reserved server preview for
+new drafts, and the actual persisted number when editing/viewing. The final
+number is still allocated atomically on save; users cannot override numbering.
+
+The header **cost-center dropdown** is a bulk/default control. Selecting a center
+sets it on every current line, including in multi-currency mode. Clearing the
+selection clears every line. New lines inherit this default. On reopening,
+a common saved center is shown; mixed centers are shown as mixed and are not
+silently rewritten until the user explicitly selects a header value.
+
+Header **currency** uses the active entries from the exact paginated
+`/api/shared/currencies` catalog displayed in Shared Config, with bearer
+forwarding and no demo fallback. Both header and line currency dropdowns use
+this catalog. In local mode the existing API invariant still applies: the
+accounting unit's base currency at rate 1; foreign choices require multi-currency
+mode. Local header changes propagate through existing lines. In multi-currency
+mode, header changes only set a default for new lines; existing currencies,
+accounts, amounts and exchange rates are preserved. A new foreign-currency line
+waits for an explicit rate before suggesting a converted balancing amount.
+Switching explicitly back to local mode reapplies the base currency, clearing
+incompatible GL selections for the user to replace.
+
+Header selectors are convenience controls over persisted line dimensions, not
+new database columns. Individual line overrides remain possible. Draft payloads
+still send only supported header properties plus the actual line values; mixed
+journals remain editable without a mandatory single header currency. No new
+migration is needed for these controls. Base debit/credit labels and amounts
+are bold in both line previews and batch totals.
+
 ### Compact entry and balancing suggestions
 
 On desktop, GL selection and the five compact transaction-date/currency/rate/

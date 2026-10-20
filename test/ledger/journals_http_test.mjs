@@ -5,7 +5,8 @@ import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import {parseLedgerAmount as amount,parseLedgerRate as rate,convertLedgerAmount as convert,formatLedgerAmount as fmt} from '../../frontend/app/features/ledger/money.ts'
 const unit='30000000-0000-4000-8000-000000000001',unit2='30000000-0000-4000-8000-000000000002',account='50000000-0000-4000-8000-000000000001',account2='50000000-0000-4000-8000-000000000002',foreign='50000000-0000-4000-8000-000000000003',currency='40000000-0000-4000-8000-000000000001',usd='40000000-0000-4000-8000-000000000002',period='60000000-0000-4000-8000-000000000001'
-const choices={baseCurrencyId:currency,accounts:[{id:account,accountNumber:'100',name:'Cash',currencyId:currency},{id:account2,accountNumber:'200',name:'Capital',currencyId:currency},{id:foreign,accountNumber:'101',name:'USD cash',currencyId:usd}],currencies:[{id:currency,code:'GHS',name:'Cedi'},{id:usd,code:'USD',name:'US dollar'}],costCenters:[],periods:[{id:period,period:202610,beginDate:'2026-10-01',endDate:'2026-10-31'}]}
+const center='70000000-0000-4000-8000-000000000001',center2='70000000-0000-4000-8000-000000000002',inactive='40000000-0000-4000-8000-000000000003'
+const choices={baseCurrencyId:currency,accounts:[{id:account,accountNumber:'100',name:'Cash',currencyId:currency},{id:account2,accountNumber:'200',name:'Capital',currencyId:currency},{id:foreign,accountNumber:'101',name:'USD cash',currencyId:usd}],currencies:[{id:currency,code:'GHS',name:'Cedi'},{id:usd,code:'USD',name:'US dollar'}],costCenters:[{id:center,name:'Head office'},{id:center2,name:'Branch'}],periods:[{id:period,period:202610,beginDate:'2026-10-01',endDate:'2026-10-31'}]}
 let rows=[],next=0,checks=0,failure=false,schemaMissing=false,posts=0
 const seen=[],check=(ok,label)=>{assert.ok(ok,label);checks++}
 const upstream=http.createServer(async(req,res)=>{
@@ -17,6 +18,7 @@ const upstream=http.createServer(async(req,res)=>{
  if(url.pathname==='/api/v1/auth/me')return token==='Bearer tenant-token'?send(200,{userId:account,username:'tenant',accountId:'acme'}):send(401,null)
  if(token!=='Bearer tenant-token')return send(404,null)
  if(url.pathname==='/api/v1/ledger/accounting-units')return send(200,{data:[{id:unit,code:'HQ',name:'Head Office',isActive:true},{id:unit2,code:'BR',name:'Branch',isActive:true}],totalPages:1,totalCount:2})
+ if(url.pathname==='/api/v1/shared/currencies')return send(200,{data:url.searchParams.get('pageNo')==='2'?[{id:usd,code:'USD',name:'US dollar from Shared Config',isActive:true}]:[{id:currency,code:'GHS',name:'Cedi from Shared Config',isActive:true},{id:inactive,code:'ZZZ',name:'Inactive currency',isActive:false}],totalPages:2,totalCount:3})
  if(!url.pathname.startsWith('/api/v1/ledger/journals'))return send(404,null)
  if(schemaMissing)return send(503,null,{code:'schema_not_ready',message:'PRIVATE schema'})
  if(failure)return send(503,null,{message:'PRIVATE SQL'})
@@ -70,8 +72,16 @@ try{
    const context=await browser.newContext({viewport:{width:1280,height:800}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
    await page.goto(base+'/ledger/journals');await page.getByLabel('Accounting unit',{exact:false}).selectOption(unit);await page.getByRole('link',{name:'New journal',exact:true}).click()
    await page.getByLabel('Description',{exact:true}).fill('Browser local');await page.getByLabel('Batch date',{exact:true}).fill('2026-10-20')
+   check(await page.getByLabel('Batch number',{exact:true}).inputValue()==='GJ-preview'&&await page.getByLabel('Batch number',{exact:true}).evaluate(el=>el.readOnly),'header displays unreserved read-only batch preview')
+   check((await page.getByLabel('Header currency',{exact:false}).locator(`option[value="${usd}"]`).textContent()).includes('from Shared Config')&&await page.getByLabel('Header currency',{exact:false}).locator(`option[value="${inactive}"]`).count()===0,'currency dropdown uses all Shared Config pages and excludes inactive rows')
    let first=page.getByRole('article',{name:'Journal line 1',exact:true}),second=page.getByRole('article',{name:'Journal line 2',exact:true})
    await first.getByLabel('GL account',{exact:false}).selectOption(account);await second.getByLabel('GL account',{exact:false}).selectOption(account2)
+   await page.getByLabel('Header cost center',{exact:false}).selectOption(center)
+   check(await first.getByLabel('Cost center',{exact:false}).inputValue()===center&&await second.getByLabel('Cost center',{exact:false}).inputValue()===center,'header cost center updates every existing line')
+   await page.getByLabel('Header cost center',{exact:false}).selectOption({label:'Not configured'})
+   check((await first.getByLabel('Cost center',{exact:false}).locator('option:checked').textContent()).trim()==='Not configured'&&(await second.getByLabel('Cost center',{exact:false}).locator('option:checked').textContent()).trim()==='Not configured','clearing header clears all line cost centers')
+   await page.getByLabel('Header cost center',{exact:false}).selectOption(center)
+   check(await first.getByText('Base debit:',{exact:false}).evaluate(el=>Number(getComputedStyle(el).fontWeight)>=700),'base debit labels and values are bold')
    check(await first.getByLabel('Currency',{exact:false}).evaluate(el=>el.tagName)==='SELECT','currency is a live catalog dropdown')
    check(await first.getByLabel('Currency',{exact:false}).locator(`option[value="${usd}"]`).count()===0,'local currency choices stay base-only')
    const amountFields=['Transaction date','Currency','Exchange rate','Debit','Credit']
@@ -81,6 +91,7 @@ try{
    check(Math.max(...detailBoxes.map(r=>r.y))-Math.min(...detailBoxes.map(r=>r.y))<2&&detailBoxes[0].y>amountBoxes[0].y,'detail controls share the next desktop row')
    await first.getByLabel('Debit',{exact:true}).fill('100');await second.getByLabel('Credit',{exact:true}).fill('25');await page.getByRole('button',{name:'Add line',exact:true}).click()
    let third=page.getByRole('article',{name:'Journal line 3',exact:true})
+   check(await third.getByLabel('Cost center',{exact:false}).inputValue()===center,'new journal line inherits header cost center')
    check(await third.getByLabel('Credit',{exact:true}).inputValue()==='75.000000'&&await third.getByLabel('Debit',{exact:true}).inputValue()==='0.000000','add line fills missing credit exactly')
    await page.getByLabel('Multi-currency journal',{exact:true}).check();await third.getByLabel('Currency',{exact:false}).selectOption(usd)
    check(await third.getByLabel('GL account',{exact:false}).inputValue()===''&&await third.getByLabel('Credit',{exact:true}).inputValue()==='0','currency change waits for an explicit FX rate')
@@ -99,14 +110,21 @@ try{
    for(const line of [first,second])await line.getByLabel('Transaction date',{exact:true}).fill('2026-10-20')
    await first.getByLabel('Debit',{exact:true}).fill('12.345678');await second.getByLabel('Credit',{exact:true}).fill('12.345678');await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.waitForURL(base+'/ledger/journals')
    check(rows.length===1&&rows[0].totalDebit==='12.345678','browser persisted local draft')
-   await page.getByRole('link',{name:'Edit draft',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('Edited in browser');await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForURL(base+'/ledger/journals');check(rows[0].description==='Edited in browser'&&rows[0].version===2,'browser edit draft')
-   await page.getByRole('link',{name:'Edit draft',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('Discarded');await page.getByRole('link',{name:'Cancel',exact:true}).click();check(rows[0].description==='Edited in browser','cancel does not write')
+   await page.getByRole('link',{name:'Edit draft',exact:true}).click();check(await page.getByLabel('Batch number',{exact:true}).inputValue()===rows[0].batchNumber&&await page.getByLabel('Header cost center',{exact:false}).inputValue()===center,'edit header derives saved batch and common dimensions');await page.getByRole('article',{name:'Journal line 2',exact:true}).getByLabel('Cost center',{exact:false}).selectOption(center2);await page.getByLabel('Description',{exact:true}).fill('Edited in browser');await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.waitForURL(base+'/ledger/journals');check(rows[0].description==='Edited in browser'&&rows[0].version===2,'browser edit draft')
+   await page.getByRole('link',{name:'Edit draft',exact:true}).click();check(await page.getByLabel('Header cost center',{exact:false}).inputValue()==='__mixed__'&&await page.getByRole('article',{name:'Journal line 1',exact:true}).getByLabel('Cost center',{exact:false}).inputValue()===center,'mixed saved cost centers reopen without overwriting lines');await page.getByLabel('Header cost center',{exact:false}).selectOption(center2);await page.getByLabel('Description',{exact:true}).fill('Discarded');await page.getByRole('link',{name:'Cancel',exact:true}).click();check(rows[0].description==='Edited in browser','cancel does not write')
    await page.getByRole('button',{name:'Post journal',exact:true}).click();await page.getByRole('dialog').getByLabel('Posting period',{exact:false}).selectOption(period);await page.getByRole('button',{name:'Confirm final posting',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});check(rows[0].status==='posted','browser final posting');check(await page.getByRole('button',{name:'Delete journal',exact:true}).isDisabled(),'posted delete disabled')
    await page.getByRole('link',{name:'View',exact:true}).click();check(await page.getByRole('button',{name:'Save changes',exact:true}).count()===0,'posted editor read-only');await page.getByRole('link',{name:'Back to journals',exact:true}).click()
    await page.getByRole('link',{name:'New journal',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('FX draft');await page.getByLabel('Batch date',{exact:true}).fill('2026-10-20');await page.getByLabel('Multi-currency journal',{exact:true}).check()
    first=page.getByRole('article',{name:'Journal line 1',exact:true});second=page.getByRole('article',{name:'Journal line 2',exact:true});await first.getByLabel('GL account',{exact:false}).selectOption(foreign);await second.getByLabel('GL account',{exact:false}).selectOption(account2)
    check(await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='','no fabricated FX rate')
    await first.getByLabel('Exchange rate',{exact:true}).fill('12.5');await first.getByLabel('Debit',{exact:true}).fill('2.000001');await second.getByLabel('Credit',{exact:true}).fill('25.000013')
+   await page.getByLabel('Header currency',{exact:false}).selectOption(usd)
+   check(await first.getByLabel('Currency',{exact:false}).inputValue()===usd&&await second.getByLabel('Currency',{exact:false}).inputValue()===currency&&await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='12.5','multi-currency header change preserves existing line currencies and rates')
+   await page.getByLabel('Header cost center',{exact:false}).selectOption(center2)
+   check(await first.getByLabel('Cost center',{exact:false}).inputValue()===center2&&await second.getByLabel('Cost center',{exact:false}).inputValue()===center2,'cost center propagates even in multi-currency mode')
+   await page.getByRole('button',{name:'Add line',exact:true}).click();third=page.getByRole('article',{name:'Journal line 3',exact:true})
+   check(await third.getByLabel('Currency',{exact:false}).inputValue()===usd&&await third.getByLabel('Cost center',{exact:false}).inputValue()===center2&&await third.getByLabel('Exchange rate',{exact:true}).inputValue()==='','new FX line inherits header defaults without a fabricated rate')
+   await page.getByRole('button',{name:'Remove line 3',exact:true}).click()
    for(const line of [first,second])await line.getByLabel('Transaction date',{exact:true}).fill('2026-10-20')
    await page.setViewportSize({width:390,height:640});await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.waitForURL(base+'/ledger/journals');check(rows[0].isMultiCurrency&&rows[0].totalDebit==='25.000013'&&rows[0].lines[0].currencyId===usd,'mobile FX draft exact')
    await page.getByRole('button',{name:'Delete journal',exact:true}).first().click();await page.getByRole('dialog').getByRole('button',{name:'Delete draft',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});check(rows.length===1&&rows[0].status==='posted','browser draft deletion')
@@ -114,6 +132,7 @@ try{
    check(errors.length===0,'no browser runtime errors')
   }finally{await browser.close()}
  }
+ check(seen.some(x=>x.path==='/api/v1/shared/currencies')&&seen.filter(x=>x.path==='/api/v1/shared/currencies').every(x=>x.token==='Bearer tenant-token'),'Shared Config catalog requests forward bearer authentication')
  check(seen.filter(x=>x.path.startsWith('/api/v1/ledger/journals')).every(x=>x.token==='Bearer tenant-token'),'bearer on every CRUD/lookup/post request')
  console.log(`${checks} journal HTTP/browser checks passed`)
 }finally{app.kill('SIGTERM');await new Promise(resolve=>upstream.close(resolve))}

@@ -43,6 +43,30 @@ const form = reactive({
     isMultiCurrency: false,
   }),
   lines = ref<JournalLine[]>([])
+// Header selectors are bulk/default controls. The authoritative dimensions
+// remain on each persisted line; mixed imported/edited journals stay mixed.
+const header = reactive({ currencyId: '', costCenterId: null as string | null })
+const batchNumber = ref('')
+const mixedCostCenters = '__mixed__'
+function applyHeaderCostCenter() {
+  if (header.costCenterId === mixedCostCenters) return
+  for (const line of lines.value) line.costCenterId = header.costCenterId
+}
+function applyHeaderCurrency() {
+  if (form.isMultiCurrency || !header.currencyId) return
+  for (const line of lines.value) {
+    if (line.currencyId !== header.currencyId) {
+      line.currencyId = header.currencyId
+      selectCurrency(line)
+    }
+  }
+}
+function changeMode() {
+  if (!form.isMultiCurrency) {
+    header.currencyId = options.value.baseCurrencyId
+    applyHeaderCurrency()
+  }
+}
 const readonly = computed(() =>
   Boolean(original.value && original.value.status !== 'draft'),
 )
@@ -59,9 +83,13 @@ let version = 0,
 function blank(): JournalLine {
   return {
     accountId: '',
-    currencyId: options.value.baseCurrencyId,
-    costCenterId: null,
-    exchangeRate: '1',
+    currencyId: header.currencyId || options.value.baseCurrencyId,
+    costCenterId:
+      header.costCenterId === mixedCostCenters ? null : header.costCenterId,
+    exchangeRate:
+      !header.currencyId || header.currencyId === options.value.baseCurrencyId
+        ? '1'
+        : '',
     debit: '0',
     credit: '0',
     description: '',
@@ -211,15 +239,19 @@ async function load() {
   lines.value = []
   error.value = ''
   saveError.value = ''
+  batchNumber.value = ''
+  header.currencyId = ''
+  header.costCenterId = null
   if (!unit) {
     loading.value = false
     return
   }
   loading.value = true
   try {
-    const [o, row] = await Promise.all([
+    const [o, row, preview] = await Promise.all([
       api.options(unit),
       editingId ? api.get(editingId, unit) : Promise.resolve(null),
+      editingId ? Promise.resolve(null) : api.nextNumber(unit),
     ])
     if (current !== version) return
     options.value = o
@@ -229,6 +261,19 @@ async function load() {
       description: row?.description || '',
       isMultiCurrency: row?.isMultiCurrency || false,
     })
+    batchNumber.value = row?.batchNumber || preview?.batchNumber || ''
+    if (row) {
+      const currencies = new Set(row.lines.map((line) => line.currencyId))
+      const centers = new Set(
+        row.lines.map((line) => line.costCenterId || null),
+      )
+      header.currencyId =
+        currencies.size === 1 ? row.lines[0]?.currencyId || '' : ''
+      header.costCenterId =
+        centers.size === 1
+          ? row.lines[0]?.costCenterId || null
+          : mixedCostCenters
+    } else header.currencyId = o.baseCurrencyId
     lines.value = row ? row.lines.map((l) => ({ ...l })) : [blank(), blank()]
     loaded.value = true
   } catch (e) {
@@ -368,6 +413,96 @@ async function save() {
           class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2"
         >
           <label class="text-xs font-semibold"
+            >Batch number
+            <input
+              :value="batchNumber"
+              aria-label="Batch number"
+              readonly
+              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
+            />
+            <span
+              v-if="!original"
+              class="mt-1 block text-[10px] font-normal text-slate-400"
+              >Preview only — the server assigns the final number on save.</span
+            >
+          </label>
+          <label class="text-xs font-semibold"
+            >Header currency
+            <select
+              v-model="header.currencyId"
+              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+              @change="applyHeaderCurrency"
+            >
+              <option value="" disabled>
+                Mixed currencies — choose a new-line default
+              </option>
+              <option
+                v-if="
+                  header.currencyId &&
+                  !options.currencies.some((c) => c.id === header.currencyId)
+                "
+                :value="header.currencyId"
+                disabled
+              >
+                Unavailable currency (replace)
+              </option>
+              <option
+                v-for="currency in options.currencies"
+                :key="currency.id"
+                :value="currency.id"
+                :disabled="
+                  !form.isMultiCurrency &&
+                  currency.id !== options.baseCurrencyId
+                "
+              >
+                {{ currency.code }} · {{ currency.name }}
+              </option>
+            </select>
+            <span class="mt-1 block text-[10px] font-normal text-slate-400">{{
+              form.isMultiCurrency
+                ? 'New-line default only; existing line currencies/rates are preserved.'
+                : 'Applies to every line. Local mode uses the accounting unit’s base currency.'
+            }}</span>
+          </label>
+          <label class="text-xs font-semibold"
+            >Header cost center
+            <select
+              v-model="header.costCenterId"
+              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+              @change="applyHeaderCostCenter"
+            >
+              <option
+                v-if="header.costCenterId === mixedCostCenters"
+                :value="mixedCostCenters"
+                disabled
+              >
+                Mixed cost centers — choose to apply to all
+              </option>
+              <option :value="null">Not configured</option>
+              <option
+                v-if="
+                  header.costCenterId &&
+                  header.costCenterId !== mixedCostCenters &&
+                  !options.costCenters.some((c) => c.id === header.costCenterId)
+                "
+                :value="header.costCenterId"
+              >
+                Unavailable cost center (replace)
+              </option>
+              <option
+                v-for="center in options.costCenters"
+                :key="center.id"
+                :value="center.id"
+              >
+                {{ center.name }}
+              </option>
+            </select>
+            <span class="mt-1 block text-[10px] font-normal text-slate-400"
+              >Applies to every line, including when cleared; new lines inherit
+              it.</span
+            >
+          </label>
+          <label class="text-xs font-semibold"
             >Batch date<input
               v-model="form.batchDate"
               required
@@ -385,6 +520,7 @@ async function save() {
             ><input
               v-model="form.isMultiCurrency"
               type="checkbox"
+              @change="changeMode"
             />Multi-currency journal</label
           >
           <p class="text-xs text-slate-400">
@@ -586,7 +722,7 @@ async function save() {
               </label>
             </div>
             <div
-              class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-slate-400"
+              class="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] font-bold text-slate-500 dark:text-slate-300"
             >
               <span
                 >Base debit:
@@ -618,7 +754,7 @@ async function save() {
       <section
         class="mt-5 space-y-3 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]"
       >
-        <div class="flex flex-wrap justify-between gap-3 text-xs">
+        <div class="flex flex-wrap justify-between gap-3 text-xs font-bold">
           <p>
             Base debit
             <strong class="ml-2 font-mono">{{
