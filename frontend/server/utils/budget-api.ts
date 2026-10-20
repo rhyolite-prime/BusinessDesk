@@ -64,11 +64,16 @@ export async function budgetRequest(
         not_found: 404,
         conflict: 409,
       };
-      throw createError({ statusCode: codes[r.error?.code || ""] || 503 });
+      throw createError({ statusCode: codes[r.error?.code || ""] || 503, data: { code: r.error?.code } });
     }
     return r.result;
   } catch (e: any) {
     const status = e?.response?.status || e?.statusCode;
+    const code = e?.data?.error?.code || e?.response?._data?.error?.code || e?.data?.code;
+    if (code === "schema_not_ready") throw createError({
+      statusCode: 503,
+      statusMessage: "Budget database upgrade required. Apply migration 011_budgets.sql to the backend database.",
+    });
     const messages: Record<number, string> = {
       400: "Select a live GL/cost center, valid month range (up to 60), and complete monthly amounts (up to 6 decimals).",
       401: "Sign in again to continue.",

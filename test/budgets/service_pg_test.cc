@@ -46,7 +46,16 @@ int main(){
  sql("DROP SCHEMA IF EXISTS budget_test CASCADE");sql("CREATE SCHEMA budget_test");sql("SET search_path TO budget_test");
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY,is_deleted boolean NOT NULL DEFAULT false)");sql("CREATE TABLE users(id uuid PRIMARY KEY)");
  auto migrate=[&](const char* path){std::ifstream file(path);std::string line,clean;while(std::getline(file,line))if(line.find_first_not_of(" \t")!=std::string::npos&&!line.substr(line.find_first_not_of(" \t")).starts_with("--"))clean+=line+"\n";std::stringstream statements(clean);std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);};
- migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");migrate("database/migrations/011_budgets.sql");
+ migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");
+ // Reproduce the reported deployment: original detail table, no migration 011.
+ drogon::app().getDbClient()->execute=sql;
+ const std::string pendingUnit="30000000-0000-4000-8000-000000000001";
+ Json::Value pendingBody;pendingBody["accountingUnitId"]=pendingUnit;
+ for(auto op:{"list","get","options","create","update","delete"}){
+  auto pending=BudgetService::execute(op,tenant,pendingUnit,pendingBody,{tenant,actor}).get();
+  check(!pending.success&&pending.error["code"]=="schema_not_ready"&&pending.error["message"].asString().find("011_budgets.sql")!=std::string::npos,"unmigrated API reports required upgrade without executing missing-column SQL");
+ }
+ migrate("database/migrations/011_budgets.sql");
  migrate("database/migrations/011_budgets.down.sql");migrate("database/migrations/011_budgets.sql");check(true,"clean migration up/down/up");
  sql("INSERT INTO tenants(id) VALUES($1),($2)",{tenant,other});sql("INSERT INTO users VALUES($1),($2)",{actor,actor2});
  const std::string unit="30000000-0000-4000-8000-000000000001",unit2="30000000-0000-4000-8000-000000000002",foreign="30000000-0000-4000-8000-000000000003",currency="40000000-0000-4000-8000-000000000001";
@@ -112,5 +121,15 @@ int main(){
  check(lockVerified,"real competing connection exercised");
  // A rollback must not silently discard retained historical duplicates.
  bool downFailed=false;try{migrate("database/migrations/011_budgets.down.sql");}catch(...){sql("ROLLBACK");downFailed=true;}check(downFailed,"downgrade with recreated periods fails safely");
+ // Partially upgraded schemas must also fail safely, including columns not
+ // used in list queries but required on later writes. Restoring works immediately.
+ for(const auto& col:{"is_deleted","last_modified_at","last_modified_by_user_id","deleted_at","deleted_by_user_id"}){
+  sql(std::string("ALTER TABLE gl_budget_details RENAME COLUMN ")+col+" TO missing_column");
+  auto pending=call("list");check(!pending.success&&pending.error["code"]=="schema_not_ready","partial migration detected");
+  sql(std::string("ALTER TABLE gl_budget_details RENAME COLUMN missing_column TO ")+col);
+ }
+ sql("DROP INDEX uq_gl_budget_details_live_period");check(call("options").error["code"]=="schema_not_ready","missing live-period index detected");
+ sql("CREATE UNIQUE INDEX uq_gl_budget_details_live_period ON gl_budget_details(tenant_id,accounting_unit_id,budget_id,year,month) WHERE is_deleted=false");
+ check(call("list","",{},unit2).success,"schema repair takes effect without process restart");
  sql("DROP SCHEMA budget_test CASCADE");PQfinish(db);std::cout<<checks<<" budget PostgreSQL checks passed\n";
 }

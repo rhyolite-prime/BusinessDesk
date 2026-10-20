@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 const unit='30000000-0000-4000-8000-000000000001',unit2='30000000-0000-4000-8000-000000000002',account='50000000-0000-4000-8000-000000000001',center='a0000000-0000-4000-8000-000000000001'
 const choices={accounts:[{id:account,accountNumber:'100',name:'Cash'}],costCenters:[{id:center,name:'Live center'}]}
-let rows=[],next=0,checks=0,failure=false,used=false
+let rows=[],next=0,checks=0,failure=false,used=false,schemaMissing=false,envelopeSchemaMissing=false
 const seen=[],check=(ok,label)=>{assert.ok(ok,label);checks++}
 const decimal=value=>{const [w,f='']=value.split('.');return w+'.'+f.padEnd(6,'0')}
 const upstream=http.createServer(async(req,res)=>{
@@ -19,6 +19,8 @@ const upstream=http.createServer(async(req,res)=>{
  if(url.pathname==='/api/v1/ledger/accounting-units')return send(200,{data:[{id:unit,code:'HQ',name:'Head Office',isActive:true},{id:unit2,code:'BR',name:'Branch',isActive:true}],totalPages:1,totalCount:2})
  if(!url.pathname.startsWith('/api/v1/ledger/budgets'))return send(404,null)
  if(failure)return send(503,null,{message:'PRIVATE SQL error'})
+ if(schemaMissing)return send(503,null,{code:'schema_not_ready',message:'PRIVATE database details'})
+ if(envelopeSchemaMissing){res.writeHead(200,{'content-type':'application/json'});return res.end(JSON.stringify({success:false,error:{code:'schema_not_ready',message:'PRIVATE database details'}}))}
  if(![unit,unit2].includes(u))return send(404,null)
  if(url.pathname.endsWith('/options'))return send(200,choices)
  const id=url.pathname.split('/')[5],row=rows.find(r=>r.accountingUnitId===u&&r.id===id)
@@ -49,6 +51,8 @@ async function call(path,method='GET',body,cookie='',origin=base){
  const login=await call('/api/auth/login','POST',{accountId:'acme',usernameOrEmail:'tenant',password:'test-only'}),cookie=login.response.headers.getSetCookie().find(c=>c.startsWith('bd_access=')).split(';')[0],query=`?accountingUnitId=${unit}`
  r=await call('/api/ledger/budgets','GET',undefined,cookie);check(r.response.status===400,'unit required')
  r=await call('/api/ledger/budgets/options'+query,'GET',undefined,cookie);check(r.body.accounts[0].id===account&&r.body.costCenters[0].id===center,'real scoped lookups forwarded')
+ schemaMissing=true;r=await call('/api/ledger/budgets'+query,'GET',undefined,cookie);check(r.response.status===503&&r.body.statusMessage.includes('011_budgets.sql')&&!JSON.stringify(r.body).includes('PRIVATE'),'missing migration yields actionable sanitized error');schemaMissing=false
+ envelopeSchemaMissing=true;r=await call('/api/ledger/budgets/options'+query,'GET',undefined,cookie);check(r.response.status===503&&r.body.statusMessage.includes('011_budgets.sql'),'success-false schema envelope handled');envelopeSchemaMissing=false
  const input={accountingUnitId:unit,accountId:account,beginDate:'2026-01-01',endDate:'2026-01-01',details:[{year:2026,month:1,budgetAmount:'99999999999999.999999',revisedAmount:'0.000001'}]}
  r=await call('/api/ledger/budgets','POST',input,cookie);check(r.response.status===200&&r.body.accountName==='Cash'&&r.body.details[0].budgetAmount==='99999999999999.999999','persist header/details with exact string transport');const id=r.body.id
  check(r.response.headers.get('cache-control')==='no-store','no caching')
@@ -91,6 +95,7 @@ async function call(path,method='GET',body,cookie='',origin=base){
    rows[0].status='draft';await page.getByRole('button',{name:'Refresh',exact:true}).click();await page.locator('table').first().getByText('draft',{exact:true}).waitFor()
    await page.getByRole('button',{name:'Delete budget',exact:true}).click();used=true;await page.getByRole('button',{name:'Delete schedule',exact:true}).click();await page.getByRole('alertdialog').getByRole('alert').waitFor();check(rows.length===1,'deletion conflict retains row');used=false
    await page.getByRole('button',{name:'Delete schedule',exact:true}).click();await page.getByText('No budgets found',{exact:true}).waitFor();check(rows.length===0,'browser deletes persisted schedule')
+   schemaMissing=true;await page.getByRole('button',{name:'Refresh',exact:true}).click();await page.getByRole('alert').waitFor();check((await page.getByRole('alert').textContent()).includes('011_budgets.sql')&&await add.isDisabled(),'page explains migration and blocks writes');schemaMissing=false
    failure=true;await page.getByRole('button',{name:'Refresh',exact:true}).click();await page.getByRole('alert').waitFor();check(await add.isDisabled(),'load failure disables creation without demo fallback');failure=false;await page.getByRole('button',{name:'Refresh',exact:true}).click();await add.waitFor()
    check(errors.length===0,'no browser runtime errors')
   }finally{await browser.close()}

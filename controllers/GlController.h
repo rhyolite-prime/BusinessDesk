@@ -11,7 +11,7 @@ class GlController : public drogon::HttpController<GlController>
   public:
     static constexpr const char *PREFIX = "/api/v1/ledger/";
     METHOD_LIST_BEGIN
-    ADD_METHOD_TO(GlController::validateJournal, std::string(PREFIX) + "journals/validate", drogon::HttpMethod::Post);
+    // JournalController owns authenticated journal CRUD/validation/posting.
 
 
 

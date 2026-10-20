@@ -1,13 +1,11 @@
 import type { AccountDetail, AccountDetailInput } from './account-detail-types'
 import { standardAccountTypes } from './setup-data'
-import type { AccountsResponse, CreateJournalDraftInput, DashboardResponse, JournalValidationResponse, JournalBatchNumberResponse, JournalsResponse, JournalSummary, LedgerAccount } from './types'
+import type { AccountsResponse, DashboardResponse, LedgerAccount } from './types'
 
 export function useLedgerApi() {
   const requestFetch = useRequestFetch()
   const getRequest = <T>(path: string, query?: Record<string, string>) =>
     requestFetch<T>(`/api/ledger/${path}`, query ? { query } : undefined)
-  const postRequest = <T>(path: string, body: CreateJournalDraftInput) =>
-    $fetch<T>(`/api/ledger/${path}`, { method: 'POST', body })
   const selectedUnit = useState<string>('ledger-accounting-unit', () => '')
   // Older ledger pickers retain their display shape, but read only live,
   // explicitly scoped accounts. Never silently choose a unit or use demo rows.
@@ -42,13 +40,5 @@ export function useLedgerApi() {
       requestFetch<AccountDetail>(`/api/ledger/accounts/${encodeURIComponent(id)}`, { method: 'PUT', body: input }),
     deleteAccount: (id: string, accountingUnitId: string) =>
       requestFetch<{ id: string; deleted: boolean }>(`/api/ledger/accounts/${encodeURIComponent(id)}`, { method: 'DELETE', query: { accountingUnitId } }),
-    journals: (query: Record<string, string> = {}) =>
-      getRequest<JournalsResponse>('journals', query),
-    nextJournalBatchNumber: (batchDate: string) =>
-      getRequest<JournalBatchNumberResponse>('journals/next-number', { batchDate }),
-    createJournalDraft: (input: CreateJournalDraftInput) =>
-      postRequest<JournalSummary>('journals', input),
-    validateJournalDraft: (input: CreateJournalDraftInput) =>
-      postRequest<JournalValidationResponse>('journals/validate', input),
   }
 }

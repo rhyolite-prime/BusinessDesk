@@ -21,6 +21,24 @@ bool valid(Json::Value& body){
   if(p<begin||p>end||!seen.insert(p).second||!amount(line["budgetAmount"])||!amount(line["revisedAmount"]))return false;
  }return true;
 }
+// Do not issue Budget queries against the original 001 detail schema. Besides
+// is_deleted, writes require the audit columns and partial unique indexes from
+// migration 011. Check the resolved relations (respecting the app search_path),
+// not a hard-coded public schema. No cache: applying the migration repairs the
+// next request without restarting. Never run DDL with the request's DB role.
+drogon::Task<bool> schemaReady(DbClientPtr db){
+ auto rows=co_await db->execSqlCoro(R"(SELECT
+  (SELECT count(*)=5 FROM pg_attribute WHERE attrelid=to_regclass('gl_budget_details')
+   AND attnum>0 AND NOT attisdropped AND attname IN
+   ('is_deleted','last_modified_at','last_modified_by_user_id','deleted_at','deleted_by_user_id'))
+  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_budget_details_live_period')
+   AND indrelid=to_regclass('gl_budget_details') AND indisunique AND indisvalid AND indisready AND indpred IS NOT NULL)
+  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_budgets_live_schedule')
+   AND indrelid=to_regclass('gl_budgets') AND indisunique AND indisvalid AND indisready AND indpred IS NOT NULL)
+  AND EXISTS(SELECT 1 FROM pg_constraint WHERE conrelid=to_regclass('gl_budgets')
+   AND conname='fk_gl_budgets_cost_center' AND contype='f') AS ready)");
+ co_return !rows.empty()&&rows[0]["ready"].as<bool>();
+}
 std::string projection(){return R"(jsonb_build_object('id',b.id,'accountingUnitId',b.accounting_unit_id,'accountId',b.account_id,'accountName',COALESCE(b.account_name,''),
 'accountNumber',COALESCE((SELECT account_number FROM gl_accounts WHERE id=b.account_id AND tenant_id=b.tenant_id AND accounting_unit_id=b.accounting_unit_id AND is_deleted=false),''),
 'organizationUnitId',b.organization_unit_id,'organizationUnitName',COALESCE(b.organization_unit_name,''),'costCenterId',b.cost_center_id,
@@ -93,7 +111,9 @@ drogon::Task<dto::BaseApiResponse> BudgetService::execute(std::string op,std::st
   if(body.isMember("status")&&body["status"]!="draft")co_return fail("validation_error","This CRUD API does not perform budget approval/status transitions.");
  }
  try{
-  auto db=drogon::app().getDbClient();if(op=="list"||op=="get"||op=="options")co_return co_await run(db,op,id,unit,body,who);
+  auto db=drogon::app().getDbClient();
+  if(!(co_await schemaReady(db)))co_return fail("schema_not_ready","Budget database upgrade required. Apply database/migrations/011_budgets.sql to the backend database.");
+  if(op=="list"||op=="get"||op=="options")co_return co_await run(db,op,id,unit,body,who);
   auto tx=co_await db->newTransactionCoro();dto::BaseApiResponse r;
   // Drogon commits when the last transaction owner is released. Explicitly
   // roll back even non-SQL exceptions (e.g. serialization) after any writes.

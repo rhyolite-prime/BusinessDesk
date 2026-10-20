@@ -20,6 +20,43 @@ references. Inspect/repair legacy references and validate separately. The down
 migration fails safely if deleted/recreated historical detail periods violate the
 old unconditional uniqueness; it never discards history to force rollback.
 
+## Troubleshooting: `column d.is_deleted does not exist`
+
+This is a database/code version mismatch, not a Nuxt URL or token problem.
+Migration 001 creates details without soft-delete/audit fields; migration 011
+adds those fields **and** the indexes needed for Budget writes. The backend does
+not automatically apply SQL migrations when it starts. Pulling code, rebuilding
+or refreshing the page does not upgrade the database.
+
+Using a migration-capable database role, apply the complete migration against the
+**same database and schema/search path as the running backend**. For example,
+with your database connection configured locally (do not commit credentials):
+
+```sh
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 \
+  -f database/migrations/011_budgets.sql
+```
+
+Prior migrations, including the cost-center catalog, must already exist. Do not
+rerun migration 001 on an existing database. If 011 fails, its transaction rolls
+back all changes; resolve the reported duplicate/dependency issue and rerun it.
+Do not add only `is_deleted`, remove the soft-delete predicate, or reset tables:
+those workarounds omit required auditing/uniqueness or lose data.
+
+Budget routes check migration readiness before querying domain tables and return
+503 with code `schema_not_ready` and the required migration when schema elements
+are absent. The frontend displays a safe, actionable upgrade message and blocks
+creation. This avoids the missing-column query and its secondary PostgreSQL
+pipeline-abort errors; it does **not** silently migrate production or bypass
+soft-deletion. Readiness is not cached, so the next request after a successful
+migration works without restarting. A backend/frontend rebuild is needed only
+to deploy this diagnostic patch itself.
+
+Verification covers all six operations before migration 011, successful CRUD
+after upgrade in the same process, missing audit columns/indexes and BFF/browser
+rendering of the upgrade instruction. No deployment against your remote/local
+backend database is performed by the repository tests.
+
 ## Authenticated API
 
 Every backend route uses `TenantJwtAuthFilter`, including its live tenant/user
