@@ -347,13 +347,14 @@ async function removeDefaults() {
     </section>
 
     <div v-if="showForm" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/50 p-3 backdrop-blur-[2px] sm:p-5" role="presentation" @click.self="!saving && (showForm = false)">
-      <section role="dialog" aria-modal="true" aria-labelledby="default-gl-form-title" class="flex max-h-[94vh] w-full max-w-[1020px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#172321]">
-        <header class="flex items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:px-6">
+      <section role="dialog" aria-modal="true" aria-labelledby="default-gl-form-title" class="flex h-[calc(100dvh-3rem)] max-h-[900px] w-full max-w-[1020px] flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-700 dark:bg-[#172321]">
+        <header class="flex shrink-0 items-start justify-between gap-4 border-b border-slate-100 px-5 py-4 dark:border-slate-800 sm:px-6">
           <div><h2 id="default-gl-form-title" class="text-lg font-semibold text-slate-900 dark:text-white">{{ editingId ? 'Edit Default GL Numbers' : 'Set up Default GL Numbers' }}</h2><p class="mt-1 text-xs text-slate-500">Choose a General Ledger account, bank account, or imprest category for each available default.</p></div>
           <button type="button" :disabled="saving" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" @click="showForm = false"><X :size="17" /></button>
         </header>
-        <form class="flex min-h-0 flex-1 flex-col" @submit.prevent="saveDefaults">
-          <fieldset :disabled="saving" class="min-h-0 flex-1 space-y-4 overflow-y-auto p-4 sm:p-6">
+        <form class="flex min-h-0 flex-1 flex-col overflow-hidden" @submit.prevent="saveDefaults">
+          <div data-testid="default-gl-form-scroll" class="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <fieldset :disabled="saving" class="min-w-0 space-y-4 p-4 sm:p-6">
             <section v-for="section in mappingSections" :key="section.title" class="rounded-xl border border-slate-200/80 p-4 dark:border-slate-800">
               <div class="mb-3"><h3 class="text-xs font-semibold text-slate-800 dark:text-slate-100">{{ section.title }}</h3><p class="mt-1 text-[10px] text-slate-400">{{ section.description }}</p></div>
               <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -374,6 +375,7 @@ async function removeDefaults() {
             </section>
             <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }}</p>
           </fieldset>
+          </div>
           <footer class="flex shrink-0 justify-between gap-3 border-t border-slate-100 bg-white px-5 py-3 dark:border-slate-800 dark:bg-[#172321] sm:px-6">
             <p class="hidden self-center text-[10px] text-slate-400 sm:block">Only select defaults used by your organization's workflows.</p>
             <div class="ml-auto flex gap-2">

@@ -1,7 +1,6 @@
 #include "CostCenterController.h"
 #include "domain_services/shared/CostCenterService.h"
 namespace {
-int number(const std::string &s,int fallback){if(s.empty())return fallback;try{size_t end;auto n=std::stoi(s,&end);return end==s.size()&&n>0?n:0;}catch(...){return 0;}}
 drogon::Task<drogon::HttpResponsePtr> handle(drogon::HttpRequestPtr req,std::string op,std::string id){
     if(req->getMethod()==drogon::Options){auto r=drogon::HttpResponse::newHttpResponse();r->setStatusCode(drogon::k204NoContent);co_return r;}
     Json::Value body;if(req->getJsonObject())body=*req->getJsonObject();

@@ -76,6 +76,17 @@ try{
    await page.getByRole('heading',{name:'No default GL numbers saved'}).waitFor()
    check(!(await page.locator('body').innerText()).includes('Preview mode:'),'demo preview removed')
    await page.getByRole('button',{name:'Set up defaults',exact:true}).first().click();const modal=page.getByRole('dialog');await modal.waitFor()
+   for (const viewport of [{width:1440,height:800},{width:390,height:640}]) {
+    await page.setViewportSize(viewport)
+    const scroller=modal.getByTestId('default-gl-form-scroll')
+    check(await scroller.evaluate(el=>el.scrollHeight>el.clientHeight),'modal content has a constrained scrolling area')
+    await scroller.evaluate(el=>{el.scrollTop=el.scrollHeight})
+    check(await scroller.evaluate(el=>el.scrollTop>0),'modal can scroll to lower fields')
+    const footer=await modal.locator('footer').boundingBox(),title=await modal.locator('header').boundingBox()
+    check(footer&&footer.y>=0&&footer.y+footer.height<=viewport.height&&title&&title.y>=0,'modal header and actions stay in viewport')
+    await scroller.evaluate(el=>{el.scrollTop=0})
+   }
+   await page.setViewportSize({width:1440,height:1100})
    await modal.getByLabel('Accounts Payable bank account',{exact:false}).selectOption(bank);await modal.getByLabel('Default imprest category',{exact:false}).selectOption(category);await modal.getByLabel('Sales revenue',{exact:false}).selectOption(account);await modal.getByLabel('VAT rate (%)',{exact:true}).fill('12.3456')
    await modal.getByRole('button',{name:'Save defaults',exact:true}).click();await modal.waitFor({state:'hidden'})
    check(rows.get(unit).vatRate===0.123456&&rows.get(unit).salesRevenueAccountId===account&&rows.get(unit).accountPayablesBankAccountId===bank&&rows.get(unit).imprestCategoryId===category,'browser saves all reference types and VAT conversion')
