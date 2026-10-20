@@ -93,7 +93,12 @@ consistent spacing, accessible focus states and dark-mode variants. The
 expandable header/child relationship from `templates/banks-branches.png` remains. A bank's disclosure arrow
 expands a nested, indented branch grid directly beneath its header row; clicking
 its name also selects/expands it. Bank and branch column order matches the image.
-Select a bank/branch row to enable its toolbar's edit/delete controls. Each grid
+Select a bank/branch by clicking any ordinary row cell, using its single-select
+radio control, or focusing the row and pressing Enter/Space. The selected row
+has a green highlight/edge, and a live status line names the exact action target.
+Edit/Delete have visible text and remain disabled without a selection. Clear
+selection disables those actions; clearing a bank also clears its branch context.
+Reselecting the same bank preserves the selected branch without refetching it. Each grid
 has add, edit, delete, search, refresh and independent server pagination. Forms and
 confirmation dialogs remain connected to the APIs, with loading/empty/error
 states. The page also has expand-view and close controls. Branch creation appears
