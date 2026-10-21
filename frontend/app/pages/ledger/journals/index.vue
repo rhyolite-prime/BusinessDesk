@@ -30,7 +30,8 @@ const loading = ref(false),
   expanded = ref('')
 const target = ref<Journal | null>(null),
   action = ref<'post' | 'delete'>('post'),
-  periodId = ref('')
+  periodId = ref(''),
+  periodLoading = ref(false)
 let version = 0
 const message = (e: any) =>
   e?.data?.statusMessage || 'Request failed. Please retry.'
@@ -80,26 +81,73 @@ onMounted(async () => {
 })
 watch(unitId, load)
 onUnmounted(() => version++)
+const eligiblePeriods = computed(() =>
+  !target.value
+    ? []
+    : options.value.periods.filter(
+        (p) =>
+          target.value!.batchDate >= p.beginDate &&
+          target.value!.batchDate <= p.endDate &&
+          target.value!.lines.every(
+            (line) =>
+              line.transactionDate >= p.beginDate &&
+              line.transactionDate <= p.endDate,
+          ),
+      ),
+)
+let periodRequest = 0
+async function refreshPostingPeriods() {
+  if (!target.value || action.value !== 'post') return
+  const current = version,
+    row = target.value,
+    request = ++periodRequest
+  periodLoading.value = true
+  actionError.value = ''
+  periodId.value = ''
+  options.value.periods = []
+  try {
+    const fresh = await api.options(unitId.value)
+    if (
+      current !== version ||
+      request !== periodRequest ||
+      target.value !== row ||
+      action.value !== 'post'
+    )
+      return
+    options.value.periods = fresh.periods
+    if (eligiblePeriods.value.some((p) => p.id === row.periodId))
+      periodId.value = row.periodId!
+    else if (eligiblePeriods.value.length === 1)
+      periodId.value = eligiblePeriods.value[0]!.id
+  } catch (e) {
+    if (
+      current === version &&
+      request === periodRequest &&
+      target.value === row
+    )
+      actionError.value = message(e)
+  } finally {
+    if (request === periodRequest) periodLoading.value = false
+  }
+}
 function confirm(row: Journal, kind: 'post' | 'delete') {
   target.value = row
   action.value = kind
   actionError.value = ''
-  periodId.value = row.periodId || ''
-  if (!periodId.value) {
-    const matching = options.value.periods.filter(
-      (p) =>
-        row.batchDate >= p.beginDate &&
-        row.batchDate <= p.endDate &&
-        row.lines.every(
-          (l) =>
-            l.transactionDate >= p.beginDate && l.transactionDate <= p.endDate,
-        ),
-    )
-    if (matching.length === 1) periodId.value = matching[0].id
-  }
+  periodId.value = ''
+  periodRequest++
+  periodLoading.value = false
+  if (kind === 'post') void refreshPostingPeriods()
 }
 async function execute() {
-  if (!target.value || saving.value) return
+  if (
+    !target.value ||
+    saving.value ||
+    periodLoading.value ||
+    (action.value === 'post' &&
+      !eligiblePeriods.value.some((p) => p.id === periodId.value))
+  )
+    return
   const row = target.value,
     current = version
   saving.value = true
@@ -366,19 +414,47 @@ async function execute() {
         <label v-if="action === 'post'" class="mt-4 block text-xs"
           >Posting period<select
             v-model="periodId"
+            :disabled="periodLoading || saving"
             class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
           >
             <option value="">Select an open period</option>
-            <option v-for="p in options.periods" :key="p.id" :value="p.id">
+            <option v-for="p in eligiblePeriods" :key="p.id" :value="p.id">
               {{ p.period }} · {{ p.beginDate }} — {{ p.endDate }}
             </option></select
           ><span
-            v-if="!options.periods.length"
+            v-if="!periodLoading && !eligiblePeriods.length"
             class="mt-2 block text-amber-600"
-            >No open periods are configured for this unit. Configure a period
-            before posting.</span
+            >No open period covers the batch date and every line date. Create or
+            open an eligible period before posting.</span
           ></label
         >
+        <div v-if="action === 'post'" class="mt-3 space-y-2 text-xs">
+          <p v-if="periodLoading" role="status" class="text-slate-400">
+            Refreshing open periods…
+          </p>
+          <p class="font-mono">
+            Local debit {{ target.totalDebit }} · Local credit
+            {{ target.totalCredit }}
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <NuxtLink
+              :to="{
+                path: '/ledger/accounting-periods',
+                query: { year: target.batchDate.slice(0, 4) },
+              }"
+              class="text-brand-700 underline"
+              >Manage accounting periods</NuxtLink
+            >
+            <button
+              type="button"
+              :disabled="periodLoading || saving"
+              class="text-brand-700 underline"
+              @click="refreshPostingPeriods"
+            >
+              Refresh open periods
+            </button>
+          </div>
+        </div>
         <p v-if="actionError" role="alert" class="mt-3 text-xs text-rose-600">
           {{ actionError }}
         </p>
@@ -390,7 +466,12 @@ async function execute() {
           >
             Cancel</button
           ><button
-            :disabled="saving || (action === 'post' && !periodId)"
+            :disabled="
+              saving ||
+              periodLoading ||
+              (action === 'post' &&
+                !eligiblePeriods.some((p) => p.id === periodId))
+            "
             class="rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
             @click="execute"
           >

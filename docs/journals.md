@@ -5,10 +5,13 @@
 Apply **`database/migrations/012_journals.sql`**, not its `.down.sql`, against the
 same database/schema/search path used by the backend. Apply prior feature
 migrations first, including the real cost-center catalog (`007_cost_centers.sql`).
+Apply **`013_accounting_period_management.sql`** as well to enable creating,
+opening and closing periods in Ledger → Journal → Accounting Periods.
 Then rebuild/restart the backend and frontend.
 
 ```sh
 psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/012_journals.sql
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/013_accounting_period_management.sql
 ```
 
 The backend does not run schema DDL on startup or per request. Missing migration
@@ -140,6 +143,22 @@ Example local draft (replace all UUIDs with real catalog IDs):
   integer `version`; update/post/delete reject stale drafts rather than
   overwriting another user's changes. Retained line IDs and creation audit
   survive edits/reordering. Soft-deleted history keeps its old position.
+
+## Accounting periods
+
+Manage periods at `/ledger/accounting-periods` (Ledger → Journal → Accounting
+Periods). Select the accounting unit and code year, create a period **closed**,
+then open it with a reason. Closing and reopening are versioned and audited;
+locked periods cannot be changed here. See [Accounting period management](accounting-periods.md)
+for the API, deployment and detailed lifecycle rules.
+
+Every final-post confirmation reloads the unit's current open periods. Only
+periods containing the batch date **and every transaction date** are offered;
+a saved but closed/out-of-range period is never preselected. The dialog links
+to period management and supports an explicit refresh. No eligible period means
+confirmation is disabled. The backend repeats validation under the same unit
+lock used by period closing, so a close after the dialog opens cannot be
+bypassed by stale client state.
 
 ## Numbering, final posting and safeguards
 
@@ -367,13 +386,20 @@ JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \
 The PG suite requires a **disposable PostgreSQL database** and creates/drops
 `journal_test`. Optional sanitizer flags:
 `JOURNAL_TEST_SANITIZERS='-fsanitize=address,undefined -fno-omit-frame-pointer -g'`.
-It runs production service code/real SQL, with a synchronous libpq/coroutine
+It runs production JournalService, AccountingPeriodService and period-controller code/real SQL, with a synchronous libpq/coroutine
 transport seam: migrations, scoped CRUD, sequence allocation, stale versions,
 exact FX conversion, balance/history posting, rollback injection, repeated-post
 protection, processed lines, approval policy enforcement and a competing NOWAIT
-connection. Browser tests use built Nuxt and real Chromium with a strict mock
+connection. It also checks migration 013 up/down/up, closed-first period creation,
+overlap/code conflicts, date validation, opening/closing/reopening, versions,
+actor/history audits, unit/tenant/deleted isolation and period commit rollback.
+Browser tests cover period creation through journal posting, stale availability,
+history, scope switching, proxy authentication, origin protection and sanitized
+migration failures. Browser tests use built Nuxt and real Chromium with a strict mock
 upstream, not a live Drogon/JWT backend. Node 22+ is required for TS imports in
 that test. Platform Chromium libraries may require `LD_LIBRARY_PATH`.
 
-The service/controller also pass syntax checks against actual Drogon 1.9.5,
-Trantor and JsonCpp headers; no full backend link/live deployment is claimed.
+The earlier JournalService/JournalController implementation was also syntax-checked
+against actual Drogon 1.9.5, Trantor and JsonCpp headers. The new period service
+and controller compile in the PostgreSQL transport seam; no full backend link
+or live Drogon/JWT deployment is claimed.

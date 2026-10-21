@@ -71,6 +71,7 @@ const ledgerGroups: NavigationGroup[] = [
         children: [
           { label: 'Journal', to: '/ledger/journals/new', icon: 'pencil-square' },
           { label: 'Journal History', to: '/ledger/journals', icon: 'clock' },
+          { label: 'Accounting Periods', to: '/ledger/accounting-periods', icon: 'calendar' },
         ],
       },
       {
