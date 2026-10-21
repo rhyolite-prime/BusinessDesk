@@ -15,4 +15,5 @@ for(const max of [1,3,4,199,200,300]){const value=limitJournalDescription('💰'
 const huge={...options,accounts:[{...options.accounts[0],name:'💰'.repeat(300)}]}
 check(new TextEncoder().encode(suggestBatchDescription({batchDate:'2026-10-20',isMultiCurrency:false,currencyId:'ghs',lines:[line],options:huge})).length<=200,'header respects API limit')
 check(new TextEncoder().encode(suggestLineDescription(line,huge)).length<=300,'line respects API limit')
+check(suggestBatchDescription({batchDate:'2026-10-20',isMultiCurrency:false,currencyId:'usd',lines:[{...line,currencyId:'usd'}],options}).includes('Single-currency journal'),'single foreign-currency description does not claim local currency')
 console.log(`${checks} journal description checks passed`)

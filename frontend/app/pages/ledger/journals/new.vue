@@ -59,15 +59,14 @@ function applyHeaderCostCenter() {
 function applyHeaderCurrency() {
   if (form.isMultiCurrency || !header.currencyId) return
   for (const line of lines.value) {
-    if (line.currencyId !== header.currencyId) {
-      line.currencyId = header.currencyId
-      selectCurrency(line)
-    }
+    line.currencyId = header.currencyId
+    selectCurrency(line)
   }
 }
 function changeMode() {
   if (!form.isMultiCurrency) {
-    header.currencyId = options.value.baseCurrencyId
+    header.currencyId ||=
+      lines.value[0]?.currencyId || options.value.baseCurrencyId
     applyHeaderCurrency()
   }
 }
@@ -132,21 +131,96 @@ function refreshSuggestion(line: JournalLine) {
   else if (saveError.value === remainder || saveError.value === unavailable)
     saveError.value = ''
 }
+type RateState = { request: number; loading: boolean; message: string }
+const rateStates = reactive(new WeakMap<JournalLine, RateState>())
+let rateRequest = 0
+function editRate(line: JournalLine) {
+  rateStates.set(toRaw(line), {
+    request: ++rateRequest,
+    loading: false,
+    message: 'Manual rate override.',
+  })
+  refreshSuggestion(line)
+}
+async function lookupRate(line: JournalLine) {
+  const raw = toRaw(line),
+    currencyId = line.currencyId,
+    scope = version,
+    request = ++rateRequest
+  if (currencyId === options.value.baseCurrencyId) {
+    line.exchangeRate = '1'
+    rateStates.set(raw, {
+      request,
+      loading: false,
+      message: 'Base currency: rate 1.',
+    })
+    refreshSuggestion(line)
+    return
+  }
+  line.exchangeRate = ''
+  refreshSuggestion(line)
+  rateStates.set(raw, {
+    request,
+    loading: true,
+    message: 'Fetching daily rate… You may enter a manual rate.',
+  })
+  const current = () =>
+    scope === version &&
+    rateStates.get(raw)?.request === request &&
+    line.currencyId === currencyId &&
+    !readonly.value &&
+    lines.value.some((l) => toRaw(l) === raw)
+  try {
+    const from = options.value.currencies.find((c) => c.id === currencyId)?.code
+    const to = options.value.currencies.find(
+      (c) => c.id === options.value.baseCurrencyId,
+    )?.code
+    const quote = await api.request<{
+      from: string
+      to: string
+      rate: string
+      date: string
+      source: string
+    }>('/api/ledger/journals/exchange-rate', {
+      query: { from, to },
+      retry: 0,
+      timeout: 12000,
+    })
+    if (!current()) return
+    if (
+      quote.from !== from ||
+      quote.to !== to ||
+      !parseLedgerRate(quote.rate) ||
+      parseLedgerRate(quote.rate)! > max
+    )
+      throw new Error('Invalid quote')
+    line.exchangeRate = quote.rate
+    rateStates.set(raw, {
+      request,
+      loading: false,
+      message: `${quote.source} · ${quote.date} · 1 ${from} = ${quote.rate} ${to}. Editable indicative rate.`,
+    })
+    refreshSuggestion(line)
+  } catch {
+    if (current())
+      rateStates.set(raw, {
+        request,
+        loading: false,
+        message: 'Daily rate unavailable. Enter an exchange rate manually.',
+      })
+  }
+}
 function selectCurrency(line: JournalLine) {
   const account = options.value.accounts.find((a) => a.id === line.accountId)
-  // A currency is selectable before the GL, but cannot override a fixed GL currency.
   if (account && account.currencyId !== line.currencyId) line.accountId = ''
-  line.exchangeRate =
-    line.currencyId === options.value.baseCurrencyId ? '1' : ''
-  refreshSuggestion(line)
+  void lookupRate(line)
 }
 function selectAccount(line: JournalLine) {
   const account = options.value.accounts.find((a) => a.id === line.accountId)
   const previousCurrency = line.currencyId
   line.currencyId = account?.currencyId || previousCurrency
-  if (line.currencyId === options.value.baseCurrencyId) line.exchangeRate = '1'
-  else if (line.currencyId !== previousCurrency) line.exchangeRate = ''
-  refreshSuggestion(line)
+  if (line.currencyId !== previousCurrency) void lookupRate(line)
+  else refreshSuggestion(line)
 }
 async function addLine() {
   if (saving.value || readonly.value || lines.value.length >= 500) return
@@ -163,6 +237,7 @@ async function addLine() {
   const scope = version,
     request = ++scrollRequest
   lines.value.push(line)
+  if (line.currencyId !== options.value.baseCurrencyId) void lookupRate(line)
   await nextTick()
   const element = lineElements.get(line)
   if (scope !== version || request !== scrollRequest || !element?.isConnected)
@@ -216,8 +291,8 @@ const issues = computed(() => {
       !options.value.currencies.some((c) => c.id === l.currencyId)
     )
       e.push(prefix + 'select an active manual-postable GL and its currency.')
-    if (!form.isMultiCurrency && l.currencyId !== options.value.baseCurrencyId)
-      e.push(prefix + 'a foreign account requires multi-currency mode.')
+    if (!form.isMultiCurrency && l.currencyId !== header.currencyId)
+      e.push(prefix + 'use the header currency or enable multi-currency mode.')
     if (!realDate(l.transactionDate))
       e.push(prefix + 'enter a valid transaction date.')
     if (d === null || c === null || (d === 0n) === (c === 0n))
@@ -493,10 +568,6 @@ async function save() {
                 v-for="currency in options.currencies"
                 :key="currency.id"
                 :value="currency.id"
-                :disabled="
-                  !form.isMultiCurrency &&
-                  currency.id !== options.baseCurrencyId
-                "
               >
                 {{ currency.code }} · {{ currency.name }}
               </option>
@@ -527,7 +598,7 @@ async function save() {
             {{
               form.isMultiCurrency
                 ? 'Header currency defaults new lines only.'
-                : 'Local header currency applies to every line.'
+                : 'Header currency and its suggested rate apply to every line in single-currency mode.'
             }}
             Descriptions use journal/account, currency, date and reference
             keywords until you edit them.
@@ -581,7 +652,7 @@ async function save() {
             {{
               form.isMultiCurrency
                 ? 'Rates are explicit: 1 unit of transaction currency × rate = base currency. No demo rates are supplied.'
-                : 'Local journals use only base-currency accounts at rate 1.'
+                : 'Single-currency journals use the header currency on every line. Base-currency rates are always 1.'
             }}
           </p>
         </section>
@@ -647,7 +718,7 @@ async function save() {
                     v-for="a in options.accounts.filter(
                       (a) =>
                         form.isMultiCurrency ||
-                        a.currencyId === options.baseCurrencyId,
+                        a.currencyId === header.currencyId,
                     )"
                     :key="a.id"
                     :value="a.id"
@@ -671,6 +742,7 @@ async function save() {
                 >Currency
                 <select
                   v-model="l.currencyId"
+                  :disabled="!form.isMultiCurrency"
                   required
                   class="journal-input"
                   @change="selectCurrency(l)"
@@ -686,10 +758,7 @@ async function save() {
                     {{ l.currencyCode || 'Unavailable (replace)' }}
                   </option>
                   <option
-                    v-for="c in options.currencies.filter(
-                      (c) =>
-                        form.isMultiCurrency || c.id === options.baseCurrencyId,
-                    )"
+                    v-for="c in options.currencies"
                     :key="c.id"
                     :value="c.id"
                   >
@@ -705,7 +774,7 @@ async function save() {
                   :readonly="l.currencyId === options.baseCurrencyId"
                   inputmode="decimal"
                   class="journal-input"
-                  @input="refreshSuggestion(l)"
+                  @input="editRate(l)"
                 />
               </label>
               <label class="min-w-0 text-[11px]"
@@ -727,6 +796,13 @@ async function save() {
                 />
               </label>
             </div>
+            <p
+              v-if="rateStates.get(toRaw(l))"
+              role="status"
+              class="mt-2 text-[10px] text-slate-500"
+            >
+              {{ rateStates.get(toRaw(l))?.message }}
+            </p>
             <div
               class="journal-detail-fields mt-3 grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >

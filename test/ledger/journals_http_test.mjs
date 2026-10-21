@@ -50,6 +50,9 @@ async function call(path,method='GET',body,cookie='',origin=base){
 try{
  let r=await call('/api/ledger/journals');check(r.response.status===401,'anonymous denied')
  const login=await call('/api/auth/login','POST',{accountId:'acme',usernameOrEmail:'tenant',password:'test-only'}),cookie=login.response.headers.getSetCookie().find(c=>c.startsWith('bd_access=')).split(';')[0],query=`?accountingUnitId=${unit}`
+ r=await call('/api/ledger/journals/exchange-rate?from=GHS&to=GHS');check(r.response.status===401,'rate lookup requires authentication')
+ r=await call('/api/ledger/journals/exchange-rate?from=GHS&to=GHS','GET',undefined,cookie);check(r.response.status===200&&r.body.rate==='1'&&r.body.from==='GHS','authenticated same-currency lookup returns exactly 1')
+ r=await call('/api/ledger/journals/exchange-rate?from=USD%2Fevil&to=GHS','GET',undefined,cookie);check(r.response.status===400,'rate lookup rejects non-symbol input')
  r=await call('/api/ledger/journals','GET',undefined,cookie);check(r.response.status===400,'unit required')
  r=await call('/api/ledger/journals/options'+query,'GET',undefined,cookie);check(r.body.baseCurrencyId===currency&&r.body.accounts.length===3,'real options')
  schemaMissing=true;r=await call('/api/ledger/journals'+query,'GET',undefined,cookie);check(r.response.status===503&&r.body.statusMessage.includes('012_journals.sql')&&!JSON.stringify(r.body).includes('PRIVATE'),'actionable migration error');schemaMissing=false
@@ -70,6 +73,12 @@ try{
   const browser=await chromium.launch({args:binary.args,executablePath:await binary.executablePath(),headless:true});rows=[]
   try{
    const context=await browser.newContext({viewport:{width:1280,height:800}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
+   let quoteMode='failure';const quoteCalls=[],pendingQuotes=[]
+   await page.route('**/api/ledger/journals/exchange-rate?**',async route=>{
+    const mode=quoteMode,url=new URL(route.request().url());quoteCalls.push(url)
+    if(mode==='delayed')await new Promise(resolve=>pendingQuotes.push(resolve))
+    await route.fulfill({status:mode==='failure'?503:200,contentType:'application/json',body:JSON.stringify(mode==='failure'?{statusMessage:'Unavailable'}:{from:url.searchParams.get('from'),to:url.searchParams.get('to'),rate:'12.5000000000',date:'2026-10-21',source:'Fawaz Ahmed Currency API'})})
+   })
    await page.addInitScript(()=>{
     window.journalScrollCalls=[]
     const original=Element.prototype.scrollIntoView
@@ -97,7 +106,7 @@ try{
    await page.getByLabel('Header cost center',{exact:false}).selectOption(center)
    check(await first.getByText('Base debit:',{exact:false}).evaluate(el=>Number(getComputedStyle(el).fontWeight)>=700),'base debit labels and values are bold')
    check(await first.getByLabel('Currency',{exact:false}).evaluate(el=>el.tagName)==='SELECT','currency is a live catalog dropdown')
-   check(await first.getByLabel('Currency',{exact:false}).locator(`option[value="${usd}"]`).count()===0,'local currency choices stay base-only')
+   check(await first.getByLabel('Currency',{exact:false}).locator(`option[value="${usd}"]`).count()===1&&await first.getByLabel('Currency',{exact:false}).isDisabled(),'local line currency uses Shared Config and follows the header')
    const amountFields=['Transaction date','Currency','Exchange rate','Debit','Credit']
    const amountBoxes=await Promise.all(amountFields.map(name=>first.getByLabel(name,{exact:name!=='Currency'}).boundingBox()))
    check(Math.max(...amountBoxes.map(r=>r.y))-Math.min(...amountBoxes.map(r=>r.y))<2,'date/currency/rate/debit/credit fit one desktop row')
@@ -138,6 +147,7 @@ try{
    await page.getByRole('link',{name:'New journal',exact:true}).click();await page.getByLabel('Description',{exact:true}).fill('FX draft');await page.getByLabel('Batch date',{exact:true}).fill('2026-10-20');await page.getByLabel('Multi-currency journal',{exact:true}).check()
    first=page.getByRole('article',{name:'Journal line 1',exact:true});second=page.getByRole('article',{name:'Journal line 2',exact:true});await first.getByLabel('GL account',{exact:false}).selectOption(foreign);await second.getByLabel('GL account',{exact:false}).selectOption(account2)
    check(await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='','no fabricated FX rate')
+   await first.getByText('Daily rate unavailable. Enter an exchange rate manually.',{exact:true}).waitFor();check(true,'failed rate lookup displays a manual-entry warning')
    await first.getByLabel('Exchange rate',{exact:true}).fill('12.5');await first.getByLabel('Debit',{exact:true}).fill('2.000001');await second.getByLabel('Credit',{exact:true}).fill('25.000013')
    await page.getByLabel('Header currency',{exact:false}).selectOption(usd)
    check(await first.getByLabel('Currency',{exact:false}).inputValue()===usd&&await second.getByLabel('Currency',{exact:false}).inputValue()===currency&&await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='12.5','multi-currency header change preserves existing line currencies and rates')
@@ -149,6 +159,24 @@ try{
    for(const line of [first,second])await line.getByLabel('Transaction date',{exact:true}).fill('2026-10-20')
    await page.setViewportSize({width:390,height:640});await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.waitForURL(base+'/ledger/journals');check(rows[0].isMultiCurrency&&rows[0].totalDebit==='25.000013'&&rows[0].lines[0].currencyId===usd,'mobile FX draft exact')
    await page.getByRole('button',{name:'Delete journal',exact:true}).first().click();await page.getByRole('dialog').getByRole('button',{name:'Delete draft',exact:true}).click();await page.getByRole('dialog').waitFor({state:'hidden'});check(rows.length===1&&rows[0].status==='posted','browser draft deletion')
+   quoteMode='success';await page.setViewportSize({width:1280,height:800});await page.getByRole('link',{name:'New journal',exact:true}).click()
+   first=page.getByRole('article',{name:'Journal line 1',exact:true});second=page.getByRole('article',{name:'Journal line 2',exact:true})
+   await page.getByLabel('Header currency',{exact:false}).selectOption(usd)
+   await page.waitForFunction(()=>Array.from(document.querySelectorAll('article input[inputmode="decimal"]')).filter(el=>el.value==='12.5000000000').length===2)
+   check(await first.getByLabel('Currency',{exact:false}).inputValue()===usd&&await second.getByLabel('Currency',{exact:false}).inputValue()===usd,'single-currency header selection sets all line currencies and fetched rates')
+   check(await first.getByLabel('Currency',{exact:false}).isDisabled()&&await first.getByLabel('Currency',{exact:false}).locator(`option[value="${usd}"]`).count()===1&&await first.getByLabel('Currency',{exact:false}).locator(`option[value="${inactive}"]`).count()===0,'local line currency follows header and displays active Shared Config catalog')
+   check((await first.getByRole('status').textContent()).includes('2026-10-21')&&(await first.getByRole('status').textContent()).includes('USD'),'quote source date and direction are visible')
+   for(const line of [first,second]){await line.getByLabel('GL account',{exact:false}).selectOption(foreign);await line.getByLabel('Exchange rate',{exact:true}).fill('14');await line.getByLabel('Transaction date',{exact:true}).fill('2026-10-20')}
+   await first.getByLabel('Debit',{exact:true}).fill('2');await second.getByLabel('Credit',{exact:true}).fill('2')
+   await page.getByRole('button',{name:'Add line',exact:true}).click();third=page.getByRole('article',{name:'Journal line 3',exact:true});await page.waitForFunction(()=>document.querySelector('article[aria-label="Journal line 3"] input[inputmode="decimal"]').value==='12.5000000000');check(await third.getByLabel('Currency',{exact:false}).inputValue()===usd,'new row inherits header currency and fetches its suggested rate');await page.getByRole('button',{name:'Remove line 3',exact:true}).click()
+   await page.getByLabel('Batch date',{exact:true}).fill('2026-10-20');await page.getByRole('button',{name:'Save draft',exact:true}).click();await page.waitForURL(base+'/ledger/journals');check(rows[0].isMultiCurrency===false&&rows[0].totalDebit==='28.000000'&&rows[0].lines.every(l=>l.currencyId===usd&&l.exchangeRate==='14.0000000000'),'single foreign currency draft persists manual rate overrides')
+   const beforeReopen=quoteCalls.length;await page.getByRole('link',{name:'Edit draft',exact:true}).click();first=page.getByRole('article',{name:'Journal line 1',exact:true});check(await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='14.0000000000'&&quoteCalls.length===beforeReopen,'reopening draft does not overwrite saved rates with daily quotes');await page.getByRole('link',{name:'Cancel',exact:true}).click()
+   await page.getByRole('link',{name:'New journal',exact:true}).click();await page.getByLabel('Multi-currency journal',{exact:true}).check();first=page.getByRole('article',{name:'Journal line 1',exact:true})
+   quoteMode='delayed';const pendingRequest=page.waitForRequest(request=>request.url().includes('/exchange-rate?'));await first.getByLabel('Currency',{exact:false}).selectOption(usd);await pendingRequest
+   await first.getByLabel('Exchange rate',{exact:true}).fill('13.75');let response=page.waitForResponse(response=>response.url().includes('/exchange-rate?'));pendingQuotes.splice(0).forEach(resolve=>resolve());await (await response).finished();check(await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='13.75','manual edit wins over an in-flight quote')
+   const nextRequest=page.waitForRequest(request=>request.url().includes('/exchange-rate?'));await first.getByLabel('Currency',{exact:false}).selectOption(usd);await nextRequest;await first.getByLabel('Currency',{exact:false}).selectOption(currency);response=page.waitForResponse(response=>response.url().includes('/exchange-rate?'));pendingQuotes.splice(0).forEach(resolve=>resolve());await (await response).finished();check(await first.getByLabel('Exchange rate',{exact:true}).inputValue()==='1'&&await first.getByLabel('Currency',{exact:false}).inputValue()===currency,'late foreign quote cannot overwrite a newer base currency selection')
+   check(quoteCalls.every(url=>url.searchParams.get('from')==='USD'&&url.searchParams.get('to')==='GHS'),'all lookup requests convert transaction currency to accounting unit base')
+   await page.getByRole('link',{name:'Cancel',exact:true}).click()
    await page.getByLabel('Accounting unit',{exact:false}).selectOption(unit2);await page.getByText('No journals found',{exact:true}).waitFor();check(await page.getByRole('link',{name:'View',exact:true}).count()===0,'scope switch clears records')
    check(errors.length===0,'no browser runtime errors')
   }finally{await browser.close()}

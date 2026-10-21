@@ -141,8 +141,8 @@ async function execute() {
         <p class="text-xs text-slate-400">General Ledger / Transactions</p>
         <h1 class="mt-2 text-3xl font-semibold">Journals</h1>
         <p class="mt-2 text-sm text-slate-500">
-          Local and multi-currency drafts. Final posting updates ledger balances
-          atomically.
+          Single- and multi-currency drafts. Final posting updates ledger
+          balances atomically.
         </p>
       </div>
       <NuxtLink
@@ -254,7 +254,9 @@ async function execute() {
               <td>
                 {{ row.batchDate }}
                 <p class="mt-1 text-slate-400">
-                  {{ row.isMultiCurrency ? 'Multi-currency' : 'Local' }}
+                  {{
+                    row.isMultiCurrency ? 'Multi-currency' : 'Single currency'
+                  }}
                 </p>
               </td>
               <td class="text-right font-mono">

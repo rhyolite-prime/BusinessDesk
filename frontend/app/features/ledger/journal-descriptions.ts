@@ -50,7 +50,13 @@ export function suggestBatchDescription(context: {
   }
   return limitJournalDescription(
     [
-      context.isMultiCurrency ? 'Multi-currency journal' : 'Local journal',
+      context.isMultiCurrency
+        ? 'Multi-currency journal'
+        : context.lines.some(
+              (line) => line.currencyId !== context.options.baseCurrencyId,
+            )
+          ? 'Single-currency journal'
+          : 'Local journal',
       context.batchDate,
       currencies.join('/'),
       accounts.join(' / '),

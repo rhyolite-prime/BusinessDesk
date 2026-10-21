@@ -98,6 +98,10 @@ int main(){
  drogon::TestTransaction::failCommit=true;check(!call("create","",input).success,"commit failure surfaced");drogon::TestTransaction::failCommit=false;
  check(lockVerified,"real connection locking exercised");
  auto extreme=fx;extreme["lines"][0]["debit"]="0.000001";extreme["lines"][0]["exchangeRate"]="9999999999.9999999999";extreme["lines"][1]["credit"]="10000";auto maxRate=create(extreme);check(maxRate.success,"maximum numeric(20,10) rate allowed");post["version"]=maxRate.result["version"];check(call("post",maxRate.result["id"].asString(),post).success,"rate weighting does not overflow at rounding boundary");
+ auto mixedLocal=fx;mixedLocal["isMultiCurrency"]=false;check(!create(mixedLocal).success,"mixed currencies require multi-currency mode");
+ auto singleForeign=input;singleForeign["isMultiCurrency"]=false;for(auto& line:singleForeign["lines"]){line["accountId"]=foreign;line["currencyId"]=usd;line["exchangeRate"]="12.5";}
+ auto foreignDraft=create(singleForeign);check(foreignDraft.success&&foreignDraft.result["isMultiCurrency"]==false&&foreignDraft.result["totalDebit"]=="14.043200","single foreign-currency draft converts to unit base exactly");
+ post["version"]=foreignDraft.result["version"];check(call("post",foreignDraft.result["id"].asString(),post).success,"single foreign-currency journal posts atomically");
  sql("UPDATE gl_accounts SET is_deleted=true WHERE id=$1 AND is_deleted=false",{account});check(!call("create","",input).success,"deleted account rejected");check(call("options").result["accounts"].size()==2,"deleted account omitted");
  sql("DROP SCHEMA journal_test CASCADE");PQfinish(db);std::cout<<checks<<" journal PostgreSQL checks passed\n";
 }

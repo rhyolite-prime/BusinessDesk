@@ -62,7 +62,7 @@ drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::V
  int position=0;for(auto& l:body["lines"]){const auto a=l["accountId"].asString(),c=l["currencyId"].asString();
   if(!accountMap.count(a)||!currencyMap.count(c)||accountMap[a]["currency"]!=c)co_return invalid("GL must be active, manual-postable, non-control, in this unit and match the selected active currency.");
   if(!l["costCenterId"].isNull()&&!centerIds.count(l["costCenterId"].asString()))co_return invalid("Cost center must be live in this tenant.");
-  if((!body["isMultiCurrency"].asBool()&&c!=base)||(c==base&&!one(l["exchangeRate"].asString())))co_return invalid("Local journals use only the base currency; base-currency rates must equal 1.");
+  if((!body["isMultiCurrency"].asBool()&&c!=body["lines"][0]["currencyId"].asString())||(c==base&&!one(l["exchangeRate"].asString())))co_return invalid("Single-currency journals must use one currency throughout; base-currency rates must equal 1.");
   l["accountName"]=accountMap[a]["name"];l["standardAccountType"]=accountMap[a]["type"];l["currencyCode"]=currencyMap[c]["code"];l["currencyName"]=currencyMap[c]["name"];l["lineNumber"]=++position;
   l["organizationUnitId"]=Json::nullValue;l["organizationUnitName"]="";
   if(l.isMember("id")){l["organizationUnitId"]=prior[l["id"].asString()]["organizationUnitId"];l["organizationUnitName"]=prior[l["id"].asString()]["organizationUnitName"];}

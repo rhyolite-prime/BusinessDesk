@@ -106,11 +106,13 @@ Example local draft (replace all UUIDs with real catalog IDs):
   and sums use PostgreSQL `numeric`; preview math uses scaled BigInt, not binary
   floating point. Converted lines and batch totals must fit numeric(20,6);
   positive amounts that convert to zero are rejected.
-- Local mode permits only the selected unit's base currency at rate 1. In multi-
-  currency mode, a line uses its GL account's configured currency, or the unit's
-  base currency when the account has no explicit currency. Base-currency rates
-  must still equal 1. Foreign rates must be explicitly entered: no fixed GHS,
-  mock currencies, fabricated rates or FX-rate feed are used.
+- Non-multi-currency mode uses **one transaction currency throughout**, which
+  may be the unit's base currency or one selected foreign currency. Mixed
+  currencies require multi-currency mode. Each line must still match its GL's
+  configured currency (or the unit base if the GL has no explicit currency).
+  Base-currency rates must equal 1. Foreign rates can be suggested by the public
+  daily-rate service and edited manually; exact stored decimal strings remain
+  authoritative for both draft validation and posting.
 - GL accounts must be live, active, manual-postable, non-control and in this
   tenant/unit. Currencies must be live/active in the global catalog. Optional
   cost centers must be live and tenant-owned. Catalog names and account types
@@ -190,21 +192,56 @@ silently rewritten until the user explicitly selects a header value.
 Header **currency** uses the active entries from the exact paginated
 `/api/shared/currencies` catalog displayed in Shared Config, with bearer
 forwarding and no demo fallback. Both header and line currency dropdowns use
-this catalog. In local mode the existing API invariant still applies: the
-accounting unit's base currency at rate 1; foreign choices require multi-currency
-mode. Local header changes propagate through existing lines. In multi-currency
-mode, header changes only set a default for new lines; existing currencies,
-accounts, amounts and exchange rates are preserved. A new foreign-currency line
-waits for an explicit rate before suggesting a converted balancing amount.
-Switching explicitly back to local mode reapplies the base currency, clearing
-incompatible GL selections for the user to replace.
+this catalog. In single-currency (non-multi) mode, header changes set every
+line's currency and request its transaction-to-unit-base rate; incompatible GL
+selections are cleared for the user to replace. Line currency selectors display
+the active Shared Config catalog but follow the header until multi-currency mode
+is enabled. In multi-currency mode, header changes only default new lines;
+existing currencies, accounts, amounts and rates are preserved. New foreign lines
+request a rate; saved draft rates are never automatically refreshed on load.
+Turning multi-currency mode off applies the selected header currency to all lines
+(or the first line/base currency if no default was selected).
 
 Header selectors are convenience controls over persisted line dimensions, not
-new database columns. Individual line overrides remain possible. Draft payloads
+new database columns. Individual cost-center and foreign-rate overrides remain possible; currency
+overrides require multi-currency mode. Draft payloads
 still send only supported header properties plus the actual line values; mixed
 journals remain editable without a mandatory single header currency. No new
 migration is needed for these controls. Base debit/credit labels and amounts
 are bold in both line previews and batch totals.
+
+### Indicative public daily exchange rates
+
+`GET /api/ledger/journals/exchange-rate?from=USD&to=GHS` requires a validated
+BusinessDesk session. `from` is the transaction currency; `to` is the accounting
+unit's base currency. The server fetches latest daily quotes from the open-source
+[Fawaz Ahmed Currency API](https://github.com/fawazahmed0/exchange-api), trying
+`cdn.jsdelivr.net/npm/@fawazahmed0/currency-api@latest/v1/currencies/{from}.json`
+and its documented `latest.currency-api.pages.dev` fallback. No credentials,
+accounting unit IDs or transaction data are sent to the public provider. Only
+validated three-letter symbols are interpolated into fixed HTTPS hosts; redirects
+are disabled and each provider attempt has a five-second timeout. Deployments
+must permit outbound HTTPS to both provider hosts.
+
+Quotes are **latest indicative daily rates**, not historical batch-date rates,
+real-time dealing quotes, or an accounting policy decision. The UI shows source,
+quote date and explicit conversion direction. Quotes older than seven days,
+invalid/future dates, missing pairs and nonpositive/out-of-range values are
+rejected. Valid suggestions are half-up rounded to the ledger's ten decimal
+places and returned as decimal strings. Server caches are bounded (200 entries,
+five-minute TTL), and concurrent pair requests are coalesced with a bounded
+in-flight map. Base-to-base is exactly 1 and never needs an external request.
+
+Selecting a foreign currency (directly or through a different-currency GL),
+applying the single-currency header, or adding a foreign-default line requests a
+rate. Manual editing cancels any pending suggestion for that line. Late responses
+cannot overwrite an edited rate, newer currency selection, removed row, changed
+unit or departed editor. A lookup failure leaves a visible manual-entry warning
+and never inserts a fabricated rate. Users can still enter a valid rate and save;
+posting always uses the stored rate, without depending on the public API.
+Base-currency rates remain read-only at 1 to preserve the accounting invariant.
+No migration is required, but deploy the updated backend together with the
+frontend so single foreign-currency drafts pass the revised server validation.
 
 ### Description suggestions and new-row navigation
 
@@ -234,19 +271,20 @@ pending navigation.
 On desktop, GL selection and the five compact transaction-date/currency/rate/
 debit/credit controls share a row. Cost center, reference, cheque number and line
 description share the next row; smaller screens reflow responsively. Currency
-is a live catalog dropdown: local mode offers the base currency, multi-currency
-mode offers active currencies. A changed currency clears an incompatible GL;
+is a live Shared Config catalog dropdown; single-currency lines follow the
+header, while multi-currency lines may select independent active currencies. A changed currency clears an incompatible GL;
 select a matching GL before saving. Selecting a GL of the same currency preserves
 an already entered rate. Fixed GL currency rules remain enforced by the API.
 
 **Add line** takes the current valid base-currency debit minus credit total and
 fills the missing side on the new row (credit if debits lead, debit if credits
-lead). It defaults to base currency/rate 1 for an exact suggestion. A balanced
+lead). It inherits the header currency and uses rate 1 for the unit base, or requests
+a foreign rate before computing the suggested amount. A balanced
 journal adds zero amounts; invalid amounts/rates are not treated as zero when
 calculating a suggestion. Existing lines are never rewritten by Add line.
 
-If that suggested row switches to FX, its amounts wait for an explicit rate and
-are converted to transaction currency using BigInt arithmetic. Rounding remnants
+If that suggested row switches to FX, its amounts wait for a suggested or manual
+rate and are converted to transaction currency using BigInt arithmetic. Rounding remnants
 are flagged for review rather than silently plugged. Once either amount is
 manually edited, subsequent account/currency/rate changes do not overwrite it.
 Suggestions capture the deficit when the row is added, not a continuously moving
@@ -259,6 +297,7 @@ npm --prefix frontend run typecheck
 npm --prefix frontend run build
 node --experimental-strip-types test/ledger/journal_deficit_test.mjs
 node --experimental-strip-types test/ledger/journal_descriptions_test.mjs
+node --experimental-strip-types test/ledger/currency_rate_test.mjs
 JOURNAL_TEST_DATABASE_URL='...' JSONCPP_SOURCE_DIR='...' LIBPQ_LIB_DIR='...' \
   bash test/journals/run_pg.sh
 JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \
