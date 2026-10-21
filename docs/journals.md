@@ -114,8 +114,9 @@ Example local draft (replace all UUIDs with real catalog IDs):
   accounting configuration before transacting; changing a reference does not
   revalue historical journals.
 - Local (non-multi-currency) journals use only the company currency at rate
-  `1.0000`. Foreign header choices are disabled, and all line currencies follow
-  the local header. Switching multi-currency off restores the company default
+  `1.0000`. The header has no currency selector. Local mode offers only GL
+  accounts configured in the company currency; each row resolves its currency
+  from its selected GL. Switching multi-currency off restores the company default
   and rate 1 on every line, clearing incompatible GL selections. Foreign or
   mixed transaction currencies require multi-currency mode; GL currency matching
   and the base-currency rate-1 invariant remain enforced server-side.
@@ -201,25 +202,28 @@ selection clears every line. New lines inherit this default. On reopening,
 a common saved center is shown; mixed centers are shown as mixed and are not
 silently rewritten until the user explicitly selects a header value.
 
-Header **currency** uses the active entries from the exact paginated
-`/api/shared/currencies` catalog displayed in Shared Config, with bearer
-forwarding and no demo fallback. Both header and line currency dropdowns use
-this catalog. Local mode selects the company-profile currency by default and
-disables all foreign header choices. Existing and new lines inherit that currency
-at rate `1.0000`. The line currency selectors show the Shared Config catalog but
-are disabled in local mode. Multi-currency mode enables independent currencies;
-header changes then default only new lines, preserving existing currencies,
-accounts, amounts and rates. Foreign defaults request a daily quote. Saved rates
-are not refreshed automatically on load. Turning multi-currency off always
-restores the company-profile currency throughout, not a foreign header default.
+There is **no header currency**. Each row resolves its currency from its selected
+GL account; its disabled currency dropdown displays the corresponding active
+Shared Config catalog entry. All pages of `/api/shared/currencies` are loaded
+with authenticated requests, without demo fallback. Users cannot override a GL's
+currency by editing the dropdown. Foreign GLs are available in multi-currency
+mode; local mode offers only company-local GLs.
 
-Header selectors are convenience controls over persisted line dimensions, not
-new database columns. Individual cost-center and foreign-rate overrides remain possible; currency
-overrides require multi-currency mode. Draft payloads
-still send only supported header properties plus the actual line values; mixed
-journals remain editable without a mandatory single header currency. No new
-migration is needed for these controls. Base debit/credit labels and amounts
-are bold in both line previews and batch totals.
+Each explicit GL selection requests the resolved currency's daily quote into the
+Company Profile default currency (local-to-local is always `1.0000`). Foreign
+rates are editable and a manual edit wins over in-flight lookups. Changing a GL
+to a different currency clears that row's old amounts instead of reinterpreting
+them as the new currency. A foreign row starts with zero local/foreign values;
+local fields are read-only, and entering foreign amounts calculates their local
+equivalents. A local row's foreign fields stay read-only at zero. Merely loading
+an existing draft does not refresh or replace its saved rates or amounts.
+
+New rows inherit the header cost center, not another row's foreign currency or
+rate. They initially use the company-local reference until their GL is selected.
+Turning multi-currency off clears incompatible foreign GL selections and amounts
+and restores the company currency at `1.0000` throughout. No database migration
+is needed; API payloads still contain canonical transaction amounts/rates, while
+local previews and totals remain server-verifiable derived values.
 
 ### Indicative public daily exchange rates
 
@@ -243,9 +247,8 @@ places and returned as decimal strings. Server caches are bounded (200 entries,
 five-minute TTL), and concurrent pair requests are coalesced with a bounded
 in-flight map. Base-to-base is exactly 1 and never needs an external request.
 
-Selecting a foreign currency (directly or through a different-currency GL),
-or adding a foreign-default line requests a rate. Applying the local header
-sets rate `1.0000` throughout, with no external quote needed. Manual editing cancels any pending suggestion for that line. Late responses
+Selecting a GL resolves its currency and requests its rate. Local GLs use
+`1.0000` without an external quote; foreign GLs use the daily-rate API. Manual editing cancels any pending suggestion for that line. Late responses
 cannot overwrite an edited rate, newer currency selection, removed row, changed
 unit or departed editor. A lookup failure leaves a visible manual-entry warning
 and never inserts a fabricated rate. Users can still enter a valid rate and save;
@@ -285,11 +288,10 @@ multi-currency workflow, not the Razor/Bootstrap page or its placeholder actions
 - Manually editing row 2's amount immediately stops fresh-pair suggestions for
   that row. Existing saved drafts and posted journals are never auto-rebalanced.
   Adding a third row uses the established Add line deficit suggestion instead.
-- New rows respect an explicit header currency default. With a mixed/unset
-  multi-currency header, they fall back to the last row's currency. A valid
-  previous rate is inherited only when currencies match; otherwise the existing
-  daily-rate lookup/manual-entry flow applies. GL accounts are never guessed.
-  Smooth scrolling and inherited header cost centers are retained.
+- New rows inherit cost centers, not currency/rate defaults. Their currency is
+  resolved by the chosen GL, which requests a fresh quote. Smooth scrolling is
+  retained. Different-currency GL changes clear old amounts; users then enter
+  amounts in the newly resolved currency rather than reusing unrelated numbers.
 - Local totals and posting still require positive, exact base balance. Invalid
   arithmetic displays a waiting state rather than a misleading Balanced badge.
 
@@ -299,7 +301,7 @@ floating-point arithmetic are intentionally not copied into the accounting API.
 
 ### Description suggestions and new-row navigation
 
-Batch number, header currency, batch date and description occupy one desktop
+Batch number, batch date and description occupy one desktop
 row, reflowing on smaller screens. Cost center and journal mode remain below.
 
 New draft header descriptions use keywords from the local/multi-currency mode,
@@ -325,23 +327,24 @@ pending navigation.
 On desktop, GL selection and the five compact transaction-date/currency/rate/
 debit/credit controls share a row. Cost center, reference, cheque number and line
 description appear below the amount controls; smaller screens reflow responsively. Currency
-is a live Shared Config catalog dropdown; single-currency lines follow the
-header, while multi-currency lines may select independent active currencies. A changed currency clears an incompatible GL;
-select a matching GL before saving. Selecting a GL of the same currency preserves
-an already entered rate. Fixed GL currency rules remain enforced by the API.
+is a read-only Shared Config catalog display resolved from the GL. Every explicit
+GL selection refreshes the resolved currency's quote; saved rates are untouched
+on load. The foreign exchange-rate input remains editable. Fixed GL currency
+rules are still enforced by the API.
 
 **Add line** takes the current valid base-currency debit minus credit total and
 fills the missing side on the new row (credit if debits lead, debit if credits
-lead). It inherits the header currency and uses rate 1 for the unit base, or requests
-a foreign rate before computing the suggested amount when no matching previous
-rate is available. A balanced
+lead). Its initial suggestion uses the company-local reference at rate 1.
+Selecting a different-currency GL clears this suggestion and resolves a fresh
+rate, so old amounts are not silently reinterpreted as foreign currency. A balanced
 journal adds zero amounts; invalid amounts/rates are not treated as zero when
 calculating a suggestion. Existing lines are never rewritten by Add line.
 
-If that suggested row switches to FX, its amounts wait for a suggested or manual
-rate and are converted to transaction currency using BigInt arithmetic. Rounding remnants
+New two-row multi-currency balancing suggestions convert through the company
+local currency using BigInt arithmetic. Rounding remnants
 are flagged for review rather than silently plugged. Once either amount is
-manually edited, subsequent account/currency/rate changes do not overwrite it.
+manually edited, rate changes do not overwrite it. An explicit GL currency
+change clears old amounts, as described above.
 Suggestions capture the deficit when the row is added, not a continuously moving
 auto-balancing amount while other rows are edited.
 

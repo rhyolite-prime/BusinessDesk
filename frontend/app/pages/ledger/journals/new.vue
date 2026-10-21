@@ -48,26 +48,31 @@ const form = reactive({
     isMultiCurrency: false,
   }),
   lines = ref<JournalLine[]>([])
-// Header selectors are bulk/default controls. The authoritative dimensions
-// remain on each persisted line; mixed imported/edited journals stay mixed.
-const header = reactive({ currencyId: '', costCenterId: null as string | null })
+// Header cost center is a bulk/default control; currency is GL-resolved.
+// Persisted dimensions remain authoritative on each line.
+const header = reactive({ costCenterId: null as string | null })
 const batchNumber = ref('')
 const mixedCostCenters = '__mixed__'
 function applyHeaderCostCenter() {
   if (header.costCenterId === mixedCostCenters) return
   for (const line of lines.value) line.costCenterId = header.costCenterId
 }
-function applyHeaderCurrency() {
-  if (form.isMultiCurrency || !header.currencyId) return
-  for (const line of lines.value) {
-    line.currencyId = header.currencyId
-    selectCurrency(line)
-  }
-}
 function changeMode() {
   if (!form.isMultiCurrency) {
-    header.currencyId = options.value.baseCurrencyId
-    applyHeaderCurrency()
+    for (const line of lines.value) {
+      const account = options.value.accounts.find(
+        (a) => a.id === line.accountId,
+      )
+      if (account?.currencyId !== options.value.baseCurrencyId)
+        line.accountId = ''
+      if (line.currencyId !== options.value.baseCurrencyId) {
+        line.debit = '0'
+        line.credit = '0'
+        stopSuggestion(line)
+      }
+      line.currencyId = options.value.baseCurrencyId
+      void lookupRate(line)
+    }
   }
 }
 const readonly = computed(() =>
@@ -92,22 +97,13 @@ function registerLine(line: JournalLine, element: unknown) {
   else lineElements.delete(toRaw(line))
 }
 function blank(): JournalLine {
-  const last = form.isMultiCurrency ? lines.value.at(-1) : undefined
-  const currencyId =
-    header.currencyId || last?.currencyId || options.value.baseCurrencyId
-  const previousScaled =
-    last?.currencyId === currencyId ? parseLedgerRate(last.exchangeRate) : null
-  const previousRate =
-    previousScaled !== null && previousScaled > 0n && previousScaled <= max
-      ? last!.exchangeRate
-      : ''
+  const currencyId = options.value.baseCurrencyId
   return {
     accountId: '',
     currencyId,
     costCenterId:
       header.costCenterId === mixedCostCenters ? null : header.costCenterId,
-    exchangeRate:
-      currencyId === options.value.baseCurrencyId ? '1' : previousRate,
+    exchangeRate: '1',
     debit: '0',
     credit: '0',
     description: '',
@@ -204,6 +200,7 @@ async function lookupRate(line: JournalLine) {
     return
   }
   line.exchangeRate = ''
+  if (editingRate.value === raw) rateDraft.value = ''
   refreshSuggestion(line)
   rateStates.set(raw, {
     request,
@@ -258,17 +255,25 @@ async function lookupRate(line: JournalLine) {
       })
   }
 }
-function selectCurrency(line: JournalLine) {
-  const account = options.value.accounts.find((a) => a.id === line.accountId)
-  if (account && account.currencyId !== line.currencyId) line.accountId = ''
-  void lookupRate(line)
-}
 function selectAccount(line: JournalLine) {
   const account = options.value.accounts.find((a) => a.id === line.accountId)
-  const previousCurrency = line.currencyId
-  line.currencyId = account?.currencyId || previousCurrency
-  if (line.currencyId !== previousCurrency) void lookupRate(line)
-  else refreshSuggestion(line)
+  const currencyId = account?.currencyId || options.value.baseCurrencyId
+  if (line.currencyId !== currencyId) {
+    // Never reinterpret amounts entered in the old currency as the new one.
+    line.debit = '0'
+    line.credit = '0'
+    stopSuggestion(line)
+    manualAmounts.delete(toRaw(line))
+  }
+  line.currencyId = currencyId
+  if (!account) {
+    line.debit = '0'
+    line.credit = '0'
+    stopSuggestion(line)
+  }
+  // Every explicit GL selection refreshes the quote; manual rate edits win
+  // over any request in flight and saved drafts are not refreshed on load.
+  void lookupRate(line)
 }
 async function addLine() {
   if (saving.value || readonly.value || lines.value.length >= 500) return
@@ -285,15 +290,6 @@ async function addLine() {
   const scope = version,
     request = ++scrollRequest
   lines.value.push(line)
-  if (line.currencyId !== options.value.baseCurrencyId) {
-    if ((parseLedgerRate(line.exchangeRate) || 0n) <= 0n) void lookupRate(line)
-    else
-      rateStates.set(line, {
-        request: ++rateRequest,
-        loading: false,
-        message: `Inherited previous matching-currency rate ${journalRateDisplay(line.exchangeRate)}. Editable.`,
-      })
-  }
   await nextTick()
   const element = lineElements.get(line)
   if (scope !== version || request !== scrollRequest || !element?.isConnected)
@@ -311,6 +307,9 @@ async function addLine() {
 function base(l: JournalLine, side: 'debit' | 'credit') {
   const value = parseLedgerAmount(l[side], true),
     rate = parseLedgerRate(l.exchangeRate)
+  // A zero transaction amount is locally zero even while its quote is pending.
+  // Positive amounts still require a valid rate; validation never assumes one.
+  if (value === 0n) return 0n
   return value === null || rate === null || rate <= 0n
     ? null
     : convertLedgerAmount(value, rate)
@@ -434,7 +433,6 @@ async function load() {
   saveError.value = ''
   batchNumber.value = ''
   manualHeaderDescription.value = false
-  header.currencyId = ''
   header.costCenterId = null
   if (!unit) {
     loading.value = false
@@ -457,17 +455,14 @@ async function load() {
     })
     batchNumber.value = row?.batchNumber || preview?.batchNumber || ''
     if (row) {
-      const currencies = new Set(row.lines.map((line) => line.currencyId))
       const centers = new Set(
         row.lines.map((line) => line.costCenterId || null),
       )
-      header.currencyId =
-        currencies.size === 1 ? row.lines[0]?.currencyId || '' : ''
       header.costCenterId =
         centers.size === 1
           ? row.lines[0]?.costCenterId || null
           : mixedCostCenters
-    } else header.currencyId = o.baseCurrencyId
+    }
     lines.value = row ? row.lines.map((l) => ({ ...l })) : [blank(), blank()]
     manualHeaderDescription.value = Boolean(row?.description.trim())
     if (row)
@@ -508,7 +503,7 @@ watchEffect(() => {
     form.description = suggestBatchDescription({
       batchDate: form.batchDate,
       isMultiCurrency: form.isMultiCurrency,
-      currencyId: header.currencyId,
+      currencyId: options.value.baseCurrencyId,
       lines: lines.value,
       options: options.value,
     })
@@ -623,7 +618,7 @@ async function save() {
     <form v-if="loaded" @submit.prevent="save">
       <fieldset :disabled="saving || readonly" class="min-w-0 space-y-5">
         <section
-          class="grid min-w-0 grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-4"
+          class="grid min-w-0 grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-3"
           data-testid="journal-header"
         >
           <label class="min-w-0 text-xs font-semibold"
@@ -634,39 +629,6 @@ async function save() {
               readonly
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
             />
-          </label>
-          <label class="min-w-0 text-xs font-semibold"
-            >Header currency
-            <select
-              v-model="header.currencyId"
-              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
-              @change="applyHeaderCurrency"
-            >
-              <option value="" disabled>
-                Mixed currencies — choose a new-line default
-              </option>
-              <option
-                v-if="
-                  header.currencyId &&
-                  !options.currencies.some((c) => c.id === header.currencyId)
-                "
-                :value="header.currencyId"
-                disabled
-              >
-                Unavailable currency (replace)
-              </option>
-              <option
-                v-for="currency in options.currencies"
-                :key="currency.id"
-                :value="currency.id"
-                :disabled="
-                  !form.isMultiCurrency &&
-                  currency.id !== options.baseCurrencyId
-                "
-              >
-                {{ currency.code }} · {{ currency.name }}
-              </option>
-            </select>
           </label>
           <label class="min-w-0 text-xs font-semibold"
             >Batch date<input
@@ -684,7 +646,7 @@ async function save() {
               maxlength="200"
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
           /></label>
-          <p class="text-[10px] text-slate-400 xl:col-span-4">
+          <p class="text-[10px] text-slate-400 xl:col-span-3">
             {{
               original
                 ? 'Batch number is server-assigned.'
@@ -692,7 +654,7 @@ async function save() {
             }}
             {{
               form.isMultiCurrency
-                ? 'Header currency defaults new lines only.'
+                ? 'Each row’s currency comes from its GL account; foreign rates remain editable.'
                 : 'Local currency comes from Company Profile and applies to every line at rate 1.0000.'
             }}
             Descriptions use journal/account, currency, date and reference
@@ -813,7 +775,7 @@ async function save() {
                     v-for="a in options.accounts.filter(
                       (a) =>
                         form.isMultiCurrency ||
-                        a.currencyId === header.currencyId,
+                        a.currencyId === options.baseCurrencyId,
                     )"
                     :key="a.id"
                     :value="a.id"
@@ -837,10 +799,9 @@ async function save() {
                 >Currency
                 <select
                   v-model="l.currencyId"
-                  :disabled="!form.isMultiCurrency"
+                  disabled
                   required
                   class="journal-input"
-                  @change="selectCurrency(l)"
                 >
                   <option value="" disabled>Select currency</option>
                   <option
@@ -948,7 +909,7 @@ async function save() {
                 >Foreign debit
                 <input
                   :value="foreignLine(l) ? l.debit : '0.000000'"
-                  :disabled="!foreignLine(l)"
+                  :readonly="!foreignLine(l)"
                   inputmode="decimal"
                   class="journal-input font-mono"
                   @input="inputForeignAmount(l, 'debit', $event)"
@@ -958,7 +919,7 @@ async function save() {
                 >Foreign credit
                 <input
                   :value="foreignLine(l) ? l.credit : '0.000000'"
-                  :disabled="!foreignLine(l)"
+                  :readonly="!foreignLine(l)"
                   inputmode="decimal"
                   class="journal-input font-mono"
                   @input="inputForeignAmount(l, 'credit', $event)"
