@@ -92,15 +92,22 @@ function registerLine(line: JournalLine, element: unknown) {
   else lineElements.delete(toRaw(line))
 }
 function blank(): JournalLine {
+  const last = form.isMultiCurrency ? lines.value.at(-1) : undefined
+  const currencyId =
+    header.currencyId || last?.currencyId || options.value.baseCurrencyId
+  const previousScaled =
+    last?.currencyId === currencyId ? parseLedgerRate(last.exchangeRate) : null
+  const previousRate =
+    previousScaled !== null && previousScaled > 0n && previousScaled <= max
+      ? last!.exchangeRate
+      : ''
   return {
     accountId: '',
-    currencyId: header.currencyId || options.value.baseCurrencyId,
+    currencyId,
     costCenterId:
       header.costCenterId === mixedCostCenters ? null : header.costCenterId,
     exchangeRate:
-      !header.currencyId || header.currencyId === options.value.baseCurrencyId
-        ? '1'
-        : '',
+      currencyId === options.value.baseCurrencyId ? '1' : previousRate,
     debit: '0',
     credit: '0',
     description: '',
@@ -111,6 +118,28 @@ function blank(): JournalLine {
 }
 // Only suggested amounts are recalculated on currency/rate changes. Once a user
 // types an amount, their input is authoritative and is never overwritten.
+// Transaction amounts are the persisted source; local amounts are exact derived
+// previews. Never sum foreign amounts belonging to different currencies.
+const manualAmounts = reactive(new WeakSet<JournalLine>())
+function foreignLine(line: JournalLine) {
+  return line.currencyId !== options.value.baseCurrencyId
+}
+function inputAmount(line: JournalLine, side: 'debit' | 'credit') {
+  manualAmounts.add(toRaw(line))
+  stopSuggestion(line)
+  const amount = parseLedgerAmount(line[side], true)
+  if (amount !== null && amount > 0n)
+    line[side === 'debit' ? 'credit' : 'debit'] = '0'
+}
+function inputForeignAmount(
+  line: JournalLine,
+  side: 'debit' | 'credit',
+  event: Event,
+) {
+  line[side] = (event.target as HTMLInputElement).value
+  inputAmount(line, side)
+}
+const freshBalanceNotice = ref('')
 const suggestedDeficits = new WeakMap<JournalLine, bigint>()
 function stopSuggestion(line: JournalLine) {
   suggestedDeficits.delete(toRaw(line))
@@ -256,7 +285,15 @@ async function addLine() {
   const scope = version,
     request = ++scrollRequest
   lines.value.push(line)
-  if (line.currencyId !== options.value.baseCurrencyId) void lookupRate(line)
+  if (line.currencyId !== options.value.baseCurrencyId) {
+    if ((parseLedgerRate(line.exchangeRate) || 0n) <= 0n) void lookupRate(line)
+    else
+      rateStates.set(line, {
+        request: ++rateRequest,
+        loading: false,
+        message: `Inherited previous matching-currency rate ${journalRateDisplay(line.exchangeRate)}. Editable.`,
+      })
+  }
   await nextTick()
   const element = lineElements.get(line)
   if (scope !== version || request !== scrollRequest || !element?.isConnected)
@@ -278,10 +315,42 @@ function base(l: JournalLine, side: 'debit' | 'credit') {
     ? null
     : convertLedgerAmount(value, rate)
 }
+// Like the template's fresh two-row entry, but convert through the local
+// currency even when both rows are foreign and use different currencies/rates.
+watchEffect(() => {
+  freshBalanceNotice.value = ''
+  if (
+    !loaded.value ||
+    readonly.value ||
+    original.value ||
+    !form.isMultiCurrency ||
+    lines.value.length !== 2
+  )
+    return
+  const first = lines.value[0]!,
+    second = lines.value[1]!
+  if (manualAmounts.has(toRaw(second))) return
+  const deficit = journalDeficit([first])
+  const suggested =
+    deficit === null
+      ? null
+      : journalBalancingAmounts(deficit, second.exchangeRate)
+  second.debit = suggested?.debit || '0'
+  second.credit = suggested?.credit || '0'
+  freshBalanceNotice.value = !suggested
+    ? 'Second-line suggestion is waiting for valid amounts and exchange rates. No rate is assumed.'
+    : !suggested.exact
+      ? 'The second-line suggestion leaves an FX rounding remainder. Review local totals before posting.'
+      : 'Second line suggested from the first line’s local balance. Editing its amount stops automatic suggestions.'
+})
 const totals = computed(() => ({
   debit: lines.value.reduce((s, l) => s + (base(l, 'debit') || 0n), 0n),
   credit: lines.value.reduce((s, l) => s + (base(l, 'credit') || 0n), 0n),
 }))
+const balanceDeficit = computed(() => journalDeficit(lines.value))
+const positiveBalanced = computed(
+  () => balanceDeficit.value === 0n && totals.value.debit > 0n,
+)
 function realDate(s: string) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(s) || s < '1900-01-01' || s > '2999-12-31')
     return false
@@ -492,7 +561,7 @@ async function save() {
 }
 </script>
 <template>
-  <div class="space-y-5">
+  <div class="min-w-0 space-y-5">
     <NuxtLink
       to="/ledger/journals"
       class="inline-flex items-center gap-2 text-xs text-slate-500"
@@ -517,12 +586,12 @@ async function save() {
         >
       </p>
     </header>
-    <div class="flex items-end gap-3">
-      <label class="text-xs font-semibold"
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="min-w-0 text-xs font-semibold"
         >Accounting unit<select
           v-model="unitId"
           :disabled="loading || saving || Boolean(editingId)"
-          class="mt-2 block h-10 rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+          class="mt-2 block h-10 w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
         >
           <option value="">Select an accounting unit</option>
           <option v-for="u in units" :key="u.id" :value="u.id">
@@ -554,10 +623,10 @@ async function save() {
     <form v-if="loaded" @submit.prevent="save">
       <fieldset :disabled="saving || readonly" class="min-w-0 space-y-5">
         <section
-          class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-4"
+          class="grid min-w-0 grid-cols-1 gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-4"
           data-testid="journal-header"
         >
-          <label class="text-xs font-semibold"
+          <label class="min-w-0 text-xs font-semibold"
             >Batch number
             <input
               :value="batchNumber"
@@ -566,7 +635,7 @@ async function save() {
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
             />
           </label>
-          <label class="text-xs font-semibold"
+          <label class="min-w-0 text-xs font-semibold"
             >Header currency
             <select
               v-model="header.currencyId"
@@ -599,7 +668,7 @@ async function save() {
               </option>
             </select>
           </label>
-          <label class="text-xs font-semibold"
+          <label class="min-w-0 text-xs font-semibold"
             >Batch date<input
               v-model="form.batchDate"
               required
@@ -607,7 +676,7 @@ async function save() {
               min="1900-01-01"
               max="2999-12-31"
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700" /></label
-          ><label class="text-xs font-semibold"
+          ><label class="min-w-0 text-xs font-semibold"
             >Description<input
               v-model="form.description"
               @input="manualHeaderDescription = true"
@@ -629,7 +698,7 @@ async function save() {
             Descriptions use journal/account, currency, date and reference
             keywords until you edit them.
           </p>
-          <label class="text-xs font-semibold"
+          <label class="min-w-0 text-xs font-semibold"
             >Header cost center
             <select
               v-model="header.costCenterId"
@@ -707,7 +776,7 @@ async function save() {
             :aria-label="`Journal line ${i + 1}`"
           >
             <header class="mb-3 flex items-center justify-between">
-              <h3 class="text-xs font-semibold">Line {{ i + 1 }}</h3>
+              <h3 class="min-w-0 text-xs font-semibold">Line {{ i + 1 }}</h3>
               <button
                 v-if="!readonly"
                 type="button"
@@ -720,7 +789,7 @@ async function save() {
               </button>
             </header>
             <div
-              class="journal-amount-fields grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
+              class="journal-amount-fields grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
               <label class="min-w-0 text-[11px] xl:col-span-3"
                 >GL account
@@ -809,25 +878,100 @@ async function save() {
                   @input="inputRate(l, $event)"
                 />
               </label>
-              <label class="min-w-0 text-[11px]"
-                >Debit
+              <label
+                class="min-w-0 text-[11px]"
+                :class="form.isMultiCurrency ? 'font-bold' : ''"
+              >
+                {{ form.isMultiCurrency ? 'Local debit' : 'Debit' }}
                 <input
+                  v-if="form.isMultiCurrency && foreignLine(l)"
+                  :value="
+                    base(l, 'debit') === null
+                      ? ''
+                      : formatLedgerAmount(base(l, 'debit')!)
+                  "
+                  readonly
+                  inputmode="decimal"
+                  class="journal-input font-mono bg-slate-50 dark:bg-slate-900"
+                />
+                <input
+                  v-else
                   v-model="l.debit"
                   inputmode="decimal"
                   class="journal-input font-mono"
-                  @input="stopSuggestion(l)"
+                  @input="inputAmount(l, 'debit')"
                 />
               </label>
-              <label class="min-w-0 text-[11px]"
-                >Credit
+              <label
+                class="min-w-0 text-[11px]"
+                :class="form.isMultiCurrency ? 'font-bold' : ''"
+              >
+                {{ form.isMultiCurrency ? 'Local credit' : 'Credit' }}
                 <input
+                  v-if="form.isMultiCurrency && foreignLine(l)"
+                  :value="
+                    base(l, 'credit') === null
+                      ? ''
+                      : formatLedgerAmount(base(l, 'credit')!)
+                  "
+                  readonly
+                  inputmode="decimal"
+                  class="journal-input font-mono bg-slate-50 dark:bg-slate-900"
+                />
+                <input
+                  v-else
                   v-model="l.credit"
                   inputmode="decimal"
                   class="journal-input font-mono"
-                  @input="stopSuggestion(l)"
+                  @input="inputAmount(l, 'credit')"
                 />
               </label>
             </div>
+            <div
+              v-if="form.isMultiCurrency"
+              class="mt-3 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-4"
+              data-testid="foreign-amounts"
+            >
+              <p class="text-[11px] text-slate-500 sm:col-span-2">
+                {{
+                  foreignLine(l)
+                    ? 'Enter foreign amounts; local equivalents are calculated using the exchange rate.'
+                    : 'Company local-currency account: enter local amounts above; foreign entry is disabled.'
+                }}
+                {{
+                  options.currencies.find((c) => c.id === l.currencyId)?.code ||
+                  'Unavailable'
+                }}
+                → {{ baseCode }}
+              </p>
+              <label class="min-w-0 text-[11px]"
+                >Foreign debit
+                <input
+                  :value="foreignLine(l) ? l.debit : '0.000000'"
+                  :disabled="!foreignLine(l)"
+                  inputmode="decimal"
+                  class="journal-input font-mono"
+                  @input="inputForeignAmount(l, 'debit', $event)"
+                />
+              </label>
+              <label class="min-w-0 text-[11px]"
+                >Foreign credit
+                <input
+                  :value="foreignLine(l) ? l.credit : '0.000000'"
+                  :disabled="!foreignLine(l)"
+                  inputmode="decimal"
+                  class="journal-input font-mono"
+                  @input="inputForeignAmount(l, 'credit', $event)"
+                />
+              </label>
+            </div>
+            <p
+              v-if="i === 1 && freshBalanceNotice"
+              role="status"
+              class="mt-2 text-[10px] text-slate-500"
+            >
+              {{ freshBalanceNotice }}
+            </p>
             <p
               v-if="rateStates.get(toRaw(l))"
               role="status"
@@ -836,7 +980,7 @@ async function save() {
               {{ rateStates.get(toRaw(l))?.message }}
             </p>
             <div
-              class="journal-detail-fields mt-3 grid items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
+              class="journal-detail-fields mt-3 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
               <label class="min-w-0 text-[11px] xl:col-span-2"
                 >Cost center
@@ -932,17 +1076,15 @@ async function save() {
               formatLedgerAmount(totals.credit)
             }}</strong>
           </p>
-          <p
-            :class="
-              totals.debit === totals.credit
-                ? 'text-emerald-600'
-                : 'text-amber-600'
-            "
-          >
+          <p :class="positiveBalanced ? 'text-emerald-600' : 'text-amber-600'">
             {{
-              totals.debit === totals.credit
-                ? 'Balanced'
-                : 'Unbalanced draft — correct before posting'
+              balanceDeficit === null
+                ? 'Awaiting valid amounts and exchange rates'
+                : positiveBalanced
+                  ? 'Balanced'
+                  : totals.debit === 0n && totals.credit === 0n
+                    ? 'Enter journal amounts'
+                    : 'Unbalanced draft — correct before posting'
             }}
           </p>
         </div>

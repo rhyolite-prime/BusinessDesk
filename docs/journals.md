@@ -257,6 +257,46 @@ existing tenants must have a configured active company default before journals
 can be entered or posted. Previous single-foreign-currency drafts must enable
 multi-currency mode before being saved/posted; posted history is not rewritten.
 
+### Template-guided multi-currency entry
+
+The reference behavior is in `templates/Journal.cshtml` and
+`templates/journal.js` (pulled in commit `f351288`). The Nuxt editor adapts the
+multi-currency workflow, not the Razor/Bootstrap page or its placeholder actions:
+
+- In multi-currency mode each line shows **Local debit/Local credit**, plus
+  **Foreign debit/Foreign credit** on a separate responsive row. A company-local
+  currency account accepts local amounts at rate `1.0000`; foreign fields are
+  disabled. A foreign account accepts foreign amounts, while its local equivalents
+  are read-only and recalculated from the actual stored rate. Blank/invalid rates
+  leave local previews unavailable rather than assuming a rate of 1.
+- The canonical API `debit`/`credit` remain transaction-currency amounts. Local
+  previews are derived, never client-authoritative fields in the payload. There
+  is no schema or API migration. Rates remain editable for foreign currencies,
+  as previously requested, and display four places without rounding untouched
+  stored precision. Shared Config choices and GL/currency validation are retained.
+- Entering a positive amount clears the opposing side on that same row. This
+  applies to local and foreign entry and never zeroes another manually edited row.
+- A **new multi-currency draft with exactly two lines** suggests row 2's missing
+  side from row 1's local balance. It converts through the company currency into
+  row 2's currency/rate. It does **not** copy raw foreign numbers across different
+  currencies, sum unlike currencies, or use floating-point balance tolerances.
+  A missing/invalid rate pauses suggestions; a nonrepresentable six-place amount
+  produces a rounding warning rather than a silently fabricated balance.
+- Manually editing row 2's amount immediately stops fresh-pair suggestions for
+  that row. Existing saved drafts and posted journals are never auto-rebalanced.
+  Adding a third row uses the established Add line deficit suggestion instead.
+- New rows respect an explicit header currency default. With a mixed/unset
+  multi-currency header, they fall back to the last row's currency. A valid
+  previous rate is inherited only when currencies match; otherwise the existing
+  daily-rate lookup/manual-entry flow applies. GL accounts are never guessed.
+  Smooth scrolling and inherited header cost centers are retained.
+- Local totals and posting still require positive, exact base balance. Invalid
+  arithmetic displays a waiting state rather than a misleading Balanced badge.
+
+Template-specific recipient/organizational dimensions, browser-generated saved
+IDs, disabled foreign-rate editing, dummy export/delete actions and two-decimal
+floating-point arithmetic are intentionally not copied into the accounting API.
+
 ### Description suggestions and new-row navigation
 
 Batch number, header currency, batch date and description occupy one desktop
@@ -284,7 +324,7 @@ pending navigation.
 
 On desktop, GL selection and the five compact transaction-date/currency/rate/
 debit/credit controls share a row. Cost center, reference, cheque number and line
-description share the next row; smaller screens reflow responsively. Currency
+description appear below the amount controls; smaller screens reflow responsively. Currency
 is a live Shared Config catalog dropdown; single-currency lines follow the
 header, while multi-currency lines may select independent active currencies. A changed currency clears an incompatible GL;
 select a matching GL before saving. Selecting a GL of the same currency preserves
@@ -293,7 +333,8 @@ an already entered rate. Fixed GL currency rules remain enforced by the API.
 **Add line** takes the current valid base-currency debit minus credit total and
 fills the missing side on the new row (credit if debits lead, debit if credits
 lead). It inherits the header currency and uses rate 1 for the unit base, or requests
-a foreign rate before computing the suggested amount. A balanced
+a foreign rate before computing the suggested amount when no matching previous
+rate is available. A balanced
 journal adds zero amounts; invalid amounts/rates are not treated as zero when
 calculating a suggestion. Existing lines are never rewritten by Add line.
 
@@ -313,6 +354,7 @@ node --experimental-strip-types test/ledger/journal_deficit_test.mjs
 node --experimental-strip-types test/ledger/journal_descriptions_test.mjs
 node --experimental-strip-types test/ledger/currency_rate_test.mjs
 node --experimental-strip-types test/ledger/journal_rate_display_test.mjs
+node --experimental-strip-types test/ledger/journal_multi_currency_test.mjs
 JOURNAL_TEST_DATABASE_URL='...' JSONCPP_SOURCE_DIR='...' LIBPQ_LIB_DIR='...' \
   bash test/journals/run_pg.sh
 JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \
