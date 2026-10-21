@@ -46,13 +46,14 @@ int main(){
  sql("DROP SCHEMA IF EXISTS journal_test CASCADE");sql("CREATE SCHEMA journal_test");sql("SET search_path TO journal_test");
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY,is_deleted boolean NOT NULL DEFAULT false)");sql("CREATE TABLE users(id uuid PRIMARY KEY)");
  auto migrate=[&](const char* path){std::ifstream file(path);std::string line,clean;while(std::getline(file,line))if(line.find_first_not_of(" \t")!=std::string::npos&&!line.substr(line.find_first_not_of(" \t")).starts_with("--"))clean+=line+"\n";std::stringstream statements(clean);std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);};
- migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");
+ migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");migrate("database/migrations/008_company_profiles.sql");
  drogon::app().getDbClient()->execute=sql;
  const std::string unit="30000000-0000-4000-8000-000000000001",unit2="30000000-0000-4000-8000-000000000002",currency="40000000-0000-4000-8000-000000000001",usd="40000000-0000-4000-8000-000000000002",account="50000000-0000-4000-8000-000000000001",account2="50000000-0000-4000-8000-000000000002",foreign="50000000-0000-4000-8000-000000000003",period="60000000-0000-4000-8000-000000000001";
  auto call=[&](std::string op,std::string id="",Json::Value body=Json::Value{},std::string u="30000000-0000-4000-8000-000000000001",AuditIdentity who={tenant,actor}){return JournalService::execute(op,id,u,body,who).get();};
  check(call("list").error["code"]=="schema_not_ready","pending migration diagnosed");migrate("database/migrations/012_journals.sql");migrate("database/migrations/012_journals.down.sql");migrate("database/migrations/012_journals.sql");
  sql("INSERT INTO tenants(id) VALUES($1),($2)",{tenant,other});sql("INSERT INTO users VALUES($1),($2)",{actor,actor2});
  sql("INSERT INTO core_currencies(id,code,name) VALUES($1,'GHS','Cedi'),($2,'USD','US dollar')",{currency,usd});
+ sql("INSERT INTO core_company_profiles(tenant_id,company_name,email,default_currency_id,created_by_user_id) VALUES($1,'Test tenant','test@example.test',$2,$3)",{tenant,currency,actor});
  for(const auto& u:{unit,unit2})sql("INSERT INTO core_accounting_units(id,tenant_id,code,name,base_currency_id) VALUES($1,$2,$4,'Unit',$3)",{u,tenant,currency,u});
  for(auto [u,a,c]:std::vector<std::tuple<std::string,std::string,std::string>>{{unit,account,currency},{unit,account2,currency},{unit,foreign,usd}}){auto group=sql("INSERT INTO gl_account_groups(tenant_id,accounting_unit_id,name,standard_account_type) VALUES($1,$2,$3,0) RETURNING id",{tenant,u,a})[0].value["id"];sql("INSERT INTO gl_accounts(id,tenant_id,accounting_unit_id,account_group_id,account_number,account_name,currency_id,standard_account_type) VALUES($1,$2,$3,$4,$6,'Cash',$5,0)",{a,tenant,u,group,c,a});}
  sql("INSERT INTO gl_accounting_periods(id,tenant_id,accounting_unit_id,period,period_start_date,period_end_date) VALUES($1,$2,$3,202610,'2026-10-01','2026-10-31')",{period,tenant,unit});
@@ -100,8 +101,11 @@ int main(){
  auto extreme=fx;extreme["lines"][0]["debit"]="0.000001";extreme["lines"][0]["exchangeRate"]="9999999999.9999999999";extreme["lines"][1]["credit"]="10000";auto maxRate=create(extreme);check(maxRate.success,"maximum numeric(20,10) rate allowed");post["version"]=maxRate.result["version"];check(call("post",maxRate.result["id"].asString(),post).success,"rate weighting does not overflow at rounding boundary");
  auto mixedLocal=fx;mixedLocal["isMultiCurrency"]=false;check(!create(mixedLocal).success,"mixed currencies require multi-currency mode");
  auto singleForeign=input;singleForeign["isMultiCurrency"]=false;for(auto& line:singleForeign["lines"]){line["accountId"]=foreign;line["currencyId"]=usd;line["exchangeRate"]="12.5";}
- auto foreignDraft=create(singleForeign);check(foreignDraft.success&&foreignDraft.result["isMultiCurrency"]==false&&foreignDraft.result["totalDebit"]=="14.043200","single foreign-currency draft converts to unit base exactly");
- post["version"]=foreignDraft.result["version"];check(call("post",foreignDraft.result["id"].asString(),post).success,"single foreign-currency journal posts atomically");
+ check(!call("create","",singleForeign).success,"foreign single-currency journal rejected in local mode");
+ sql("UPDATE core_company_profiles SET default_currency_id=NULL WHERE tenant_id=$1",{tenant});check(!call("options").success,"missing company default blocks journal entry");
+ sql("UPDATE core_company_profiles SET default_currency_id=$2 WHERE tenant_id=$1",{tenant,usd});check(!call("options").success,"unit/company currency mismatch cannot mix ledger base balances");
+ sql("UPDATE core_company_profiles SET default_currency_id=$2 WHERE tenant_id=$1",{tenant,currency});check(call("options").result["baseCurrencyId"]==currency,"company profile is local currency reference");
+ sql("UPDATE core_company_profiles SET is_deleted=true WHERE tenant_id=$1",{tenant});check(!call("options").success,"deleted company profile never supplies journal currency");sql("UPDATE core_company_profiles SET is_deleted=false WHERE tenant_id=$1",{tenant});
  sql("UPDATE gl_accounts SET is_deleted=true WHERE id=$1 AND is_deleted=false",{account});check(!call("create","",input).success,"deleted account rejected");check(call("options").result["accounts"].size()==2,"deleted account omitted");
  sql("DROP SCHEMA journal_test CASCADE");PQfinish(db);std::cout<<checks<<" journal PostgreSQL checks passed\n";
 }

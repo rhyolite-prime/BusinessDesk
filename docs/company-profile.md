@@ -68,8 +68,10 @@ are accepted only for optional UUIDs, not strings/numbers/booleans.
   so it is format-validated and stored separately from `countryName`, not checked
   against a fabricated lookup table.
 - `firstMonthOfFiscalYear`: integer 1–12.
-- `defaultCurrencyId`: optional UUID referencing an active, nondeleted global
-  currency. The C# typo `DefaultCurrenyId` is exposed canonically as
+- `defaultCurrencyId`: required UUID referencing an active, nondeleted global
+  currency. This is the transaction local-currency reference; null/empty/Guid.Empty
+  can no longer clear it. Host tenant creation initializes the profile from the
+  supplied name, email and default currency in the provisioning transaction. The C# typo `DefaultCurrenyId` is exposed canonically as
   `defaultCurrencyId`; legacy input `defaultCurrenyId` is accepted, but supplying
   both names is rejected. Responses always use the canonical spelling.
 - `companyLogoUrl`: max 2048 bytes; HTTP(S) or app-relative path, without control
@@ -79,7 +81,8 @@ are accepted only for optional UUIDs, not strings/numbers/booleans.
 Currency validation locks the selected currency in the write transaction. The
 existing currency service now treats any live profile default as a reference,
 blocking currency deletion, deactivation and code/precision changes; currency
-name changes remain allowed. Null/blank/Guid.Empty UUID inputs normalize to null.
+name changes remain allowed. Null/blank/Guid.Empty UUID inputs normalize to null
+only for optional UUIDs such as country; the default currency cannot be cleared.
 
 ### Statutory and fund settings
 

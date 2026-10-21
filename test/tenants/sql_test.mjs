@@ -74,9 +74,22 @@ check((await db.query('SELECT password_hash FROM users WHERE id=$1',[admin])).ro
 check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===1,'rerun does not create extra host');
 const template=(await db.query("INSERT INTO core_system_numbers(module_id,item_name,key,prefix,format_pattern,padding,last_no,created_by_user_id) VALUES(1,'Journal','journal','JV-','{PREFIX}{NO}',5,20,$1) RETURNING id",[admin])).rows[0].id;
 await db.query("INSERT INTO core_system_numbers(module_id,item_name,key,is_deleted,created_by_user_id) VALUES(1,'Deleted','deleted',true,$1)",[admin]);
-const params=['RhyolitePrimeLtd','RhyolitePrimeLtd','',admin,'kwabenaimhotep@gmail.com','["ledger.read"]',hash];
+const currency='40000000-0000-4000-8000-000000000001';
+await db.exec(`CREATE TABLE core_currencies(id uuid PRIMARY KEY,is_active boolean NOT NULL DEFAULT true,is_deleted boolean NOT NULL DEFAULT false);`);
+await db.query('INSERT INTO core_currencies(id) VALUES($1)',[currency]);
+await db.exec(fs.readFileSync(path.join(root,'database/migrations/008_company_profiles.sql'),'utf8'));
+const params=['RhyolitePrimeLtd','RhyolitePrimeLtd','',admin,'kwabenaimhotep@gmail.com','["ledger.read"]',hash,currency];
 const result=await db.query(sql.create,params), tenant=result.rows[0].tenant_id, user=result.rows[0].admin_user_id;
 check(result.rows.length===1,'create returns provisioned ids');
+const profile=(await db.query('SELECT * FROM core_company_profiles WHERE tenant_id=$1 AND is_deleted=false',[tenant])).rows[0];
+check(profile.company_name===params[1]&&profile.email===params[4]&&profile.default_currency_id===currency&&profile.created_by_user_id===admin,'company profile initialized from tenant input with host audit');
+const countBefore=(await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n;
+await db.exec("ALTER TABLE core_company_profiles ADD CONSTRAINT reject_profile_test CHECK(company_name <> 'Profile failure')");
+await fails(sql.create,['ProfileFail','Profile failure','',admin,'profilefail@example.test','[]',hash,currency]);
+check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===countBefore,'company profile failure rolls back the complete provisioning statement');
+await db.exec('ALTER TABLE core_company_profiles DROP CONSTRAINT reject_profile_test');
+for(const condition of ['is_active=false','is_deleted=true']){await db.exec('UPDATE core_currencies SET '+condition);const rejected=await db.query(sql.create,['BadCurrency','Rejected','',admin,'badcurrency@example.test','[]',hash,currency]);check(rejected.rows.length===0,'inactive/deleted currency provisions nothing');check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===countBefore,'invalid currency does not leave tenant');await db.exec('UPDATE core_currencies SET is_active=true,is_deleted=false');}
+
 let t=(await db.query('SELECT * FROM tenants WHERE id=$1',[tenant])).rows[0];
 let u=(await db.query('SELECT * FROM users WHERE id=$1',[user])).rows[0];
 check(t.connection_string===null && t.is_active && !t.is_deleted,'null connection and live tenant');
@@ -93,7 +106,7 @@ await db.query("UPDATE core_system_numbers SET prefix='NEW-' WHERE id=$1",[templ
 check((await db.query('SELECT prefix FROM core_system_numbers WHERE tenant_id=$1',[tenant])).rows[0].prefix==='OWN-','template changes do not overwrite existing copies');
 await db.exec(`CREATE FUNCTION reject_number_copy() RETURNS trigger LANGUAGE plpgsql AS $$ BEGIN IF NEW.tenant_id IS NOT NULL THEN RAISE EXCEPTION 'forced copy failure'; END IF; RETURN NEW; END $$;
 CREATE TRIGGER reject_copy BEFORE INSERT ON core_system_numbers FOR EACH ROW EXECUTE FUNCTION reject_number_copy();`);
-await fails(sql.create,['CopyFail','Copy failure','',admin,'copyfail@example.test','[]',hash]);
+await fails(sql.create,['CopyFail','Copy failure','',admin,'copyfail@example.test','[]',hash,currency]);
 check((await db.query("SELECT count(*)::int AS n FROM tenants WHERE tenancy_name='CopyFail'")).rows[0].n===0,'copy failure rolls back tenant');
 check((await db.query("SELECT count(*)::int AS n FROM users WHERE email='copyfail@example.test'")).rows[0].n===0,'copy failure rolls back initial admin');
 check((await db.query('SELECT count(*)::int AS n FROM roles')).rows[0].n===2,'copy failure rolls back role');
@@ -103,7 +116,7 @@ await fails(sql.create,['rhyoliteprimeltd',...params.slice(1)]);
 check((await db.query('SELECT count(*)::int AS n FROM tenants')).rows[0].n===before,'case insensitive duplicate rolled back');
 // Force admin insert failure; its tenant and role must roll back too.
 await db.exec(`ALTER TABLE users ADD CONSTRAINT reject_admin_test CHECK (email <> 'fail@example.com')`);
-await fails(sql.create,['FailTenant','Failure','',admin,'fail@example.com','[]',hash]);
+await fails(sql.create,['FailTenant','Failure','',admin,'fail@example.com','[]',hash,currency]);
 check((await db.query("SELECT count(*)::int AS n FROM tenants WHERE tenancy_name='FailTenant'")).rows[0].n===0,'admin failure rolls back tenant');
 check((await db.query('SELECT count(*)::int AS n FROM roles')).rows[0].n===2,'admin failure rolls back role');
 await db.exec('ALTER TABLE users DROP CONSTRAINT reject_admin_test');
@@ -124,7 +137,7 @@ check((await db.query('SELECT name FROM tenants WHERE id=$1',[tenant])).rows[0].
 await db.query('UPDATE tenants SET is_deleted=true WHERE id=$1',[tenant]);
 check((await db.query(sql.update,[tenant,false,'',true,'Deleted',false,'',admin,false,''])).rows.length===0,'deleted tenant cannot be updated');
 await db.query('UPDATE core_system_numbers SET is_deleted=true WHERE id=$1',[template]);
-const fresh=await db.query(sql.create,['FreshTenant','Fresh tenant','',admin,'fresh@example.test','[]',hash]);
+const fresh=await db.query(sql.create,['FreshTenant','Fresh tenant','',admin,'fresh@example.test','[]',hash,currency]);
 check((await db.query('SELECT count(*)::int AS n FROM core_system_numbers WHERE tenant_id=$1',[fresh.rows[0].tenant_id])).rows[0].n===0,'deleted host templates excluded from future provisioning');
 check((await db.query('SELECT prefix FROM core_system_numbers WHERE tenant_id=$1',[tenant])).rows[0].prefix==='OWN-','host soft deletion preserves existing copies');
 await db.close();

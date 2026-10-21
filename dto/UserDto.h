@@ -86,11 +86,15 @@ namespace business_desk::dto {
             if (json.isMember("tenancyName")) setTenancyName(json["tenancyName"].asString());
             if (json.isMember("name")) setName(json["name"].asString());
             if (json.isMember("adminEmailAddress")) setAdminEmailAddress(json["adminEmailAddress"].asString());
+            if (json.isMember("defaultCurrencyId")) setDefaultCurrencyId(json["defaultCurrencyId"].asString());
             if (json.isMember("connectionString")) {
                 hasConnectionString_ = true;
                 if (!json["connectionString"].isNull()) connectionString_ = json["connectionString"].asString();
             }
         }
+        const std::string &getDefaultCurrencyId() const { return defaultCurrencyId_; }
+        bool hasDefaultCurrencyId() const { return hasDefaultCurrencyId_; }
+        void setDefaultCurrencyId(const std::string &value) { defaultCurrencyId_=value; hasDefaultCurrencyId_=true; }
         const std::string &getTenancyName() const { return tenancyName_; }
         const std::string &getName() const { return name_; }
         const std::string &getAdminEmailAddress() const { return adminEmailAddress_; }
@@ -104,7 +108,8 @@ namespace business_desk::dto {
         void setAdminEmailAddress(const std::string &value) { adminEmailAddress_=value; hasAdminEmailAddress_=true; }
         void setConnectionString(const std::string &value) { connectionString_=value; hasConnectionString_=true; }
     private:
-        std::string tenancyName_, name_, adminEmailAddress_, connectionString_;
+        std::string tenancyName_, name_, adminEmailAddress_, connectionString_, defaultCurrencyId_;
+        bool hasDefaultCurrencyId_=false;
         bool hasTenancyName_=false, hasName_=false, hasAdminEmailAddress_=false, hasConnectionString_=false;
     };
 }

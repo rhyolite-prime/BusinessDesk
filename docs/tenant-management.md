@@ -88,6 +88,21 @@ All bodies use the existing `BaseApiResponse` envelope. Successful create return
 201; validation/authorization/missing/conflict failures use 400/403/404/409. Database
 or internal failures return 500 without SQL, connection strings or credentials.
 
+## Company currency prerequisite
+
+Apply existing migration `008_company_profiles.sql` (and its predecessors) before
+using host tenant creation. Provisioning now initializes the company profile in
+the same atomic statement as the tenant, role, administrator and system-number
+copies. There is no new migration and no automatic currency guess/backfill for
+existing tenants. Configure existing tenant profiles with an active currency.
+The plain-insert first-install host seed is unchanged.
+
+The existing permission-protected host management API is the tenant-creation
+flow; the retired self-signup screen does not provision tenants. Select a
+`defaultCurrencyId` from the global Shared Config catalog when calling it.
+Tenant update does not accept currency changes: use Company Profile settings,
+and reconcile existing ledger/unit currency configuration before transacting.
+
 ## Create
 
 ```json
@@ -95,13 +110,17 @@ or internal failures return 500 without SQL, connection strings or credentials.
   "tenancyName": "RhyolitePrimeLtd",
   "name": "RhyolitePrimeLtd",
   "adminEmailAddress": "kwabenaimhotep@gmail.com",
+  "defaultCurrencyId": "40000000-0000-4000-8000-000000000001",
   "connectionString": null
 }
 ```
 
 `tenancyName` accepts 1–64 ASCII letters, digits, `_` or `-`; `host` is reserved.
 `name` is required and at most 128 characters. A valid `adminEmailAddress` is
-required and normalized to lowercase. `connectionString` is optional/null or a
+required and normalized to lowercase. `defaultCurrencyId` is required on creation
+and must identify a live active currency in Shared Config (replace the example
+UUID with a real catalog ID). Missing, malformed, inactive or deleted currencies
+are rejected without provisioning any tenant records. `connectionString` is optional/null or a
 string of at most 1024 characters. It is stored as metadata; this endpoint does
 not create a separate database or switch the application's shared DB connection.
 
@@ -113,13 +132,19 @@ A single atomic PostgreSQL statement creates:
   **admin**, username **admin**, the supplied email, tenant-admin=true and
   host-admin=false. User creation auditing records the host actor.
 
-If any insert fails, all three roll back. No orphan tenant or role is retained.
+- A company profile whose `company_name` is the supplied tenant `name`, `email`
+  is the normalized `adminEmailAddress`, and `default_currency_id` is the supplied
+  `defaultCurrencyId`. Its creation audit records the authenticated host actor.
+- Tenant-owned copies of live host system-number templates.
+
+If any insert fails (including company profile creation), the entire statement
+rolls back. No orphan tenant or role is retained.
 Concurrent duplicate names are protected by the database index and return 409.
 
 The payload deliberately has no password. A cryptographically random 24-character
 password is generated, bcrypt-hashed at cost 12, and returned **once** as
 `result.temporaryPassword` along with `id`, `tenancyName`, `name`, `adminUserId`,
-`adminUsername` and `adminEmailAddress`. Deliver it securely to the administrator;
+`adminUsername`, `adminEmailAddress` and `defaultCurrencyId`. Deliver it securely to the administrator;
 it is not emailed automatically. It is never returned by list/get/update. Responses
 are `Cache-Control: no-store`; ensure proxies/APM do not log provisioning responses.
 There is no forced-password-change column/workflow yet; rotate the password via

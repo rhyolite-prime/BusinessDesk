@@ -19,6 +19,7 @@ int main() {
  const std::string id="10000000-0000-4000-8000-000000000001";
  Json::Value payload; payload["tenancyName"]="RhyolitePrimeLtd"; payload["name"]="RhyolitePrimeLtd";
  payload["adminEmailAddress"]="kwabenaimhotep@gmail.com"; payload["connectionString"]=Json::nullValue;
+ payload["defaultCurrencyId"]="40000000-0000-4000-8000-000000000001";
  dto::TenantDto input; input.fromJson(payload);
  check(input.getAdminEmailAddress()=="kwabenaimhotep@gmail.com" && input.getConnectionString().empty(),"payload fields independent");
  check(input.hasConnectionString(),"explicit null connection presence");
@@ -33,6 +34,8 @@ int main() {
  invalid=input; invalid.setTenancyName("HOST"); check(!service.createTenant(invalid,host).get().success,"reserved name");
  invalid=input; invalid.setAdminEmailAddress("bad-email"); check(!service.createTenant(invalid,host).get().success,"invalid email");
  invalid=input; invalid.setConnectionString(std::string(1025,'x')); check(!service.createTenant(invalid,host).get().success,"connection length");
+ invalid=input;invalid.setDefaultCurrencyId("");check(!service.createTenant(invalid,host).get().success,"default currency required");
+ invalid=input;invalid.setDefaultCurrencyId("not-a-uuid");check(!service.createTenant(invalid,host).get().success,"currency UUID validated");
  Json::Value permission; permission["systemName"]="ledger.read";
  drogon::app().config["AdminPermissions"]=Json::arrayValue; drogon::app().config["AdminPermissions"].append(permission);
  std::vector<Json::Value> createParams,updateParams;
@@ -50,7 +53,8 @@ int main() {
   return rows;
  };
  auto created=service.createTenant(input,host).get(); check(created.success,"provisioning success response");
- check(createParams.size()==7 && createParams[4].asString()=="kwabenaimhotep@gmail.com","email passed separately");
+ check(createParams.size()==8 && createParams[4].asString()=="kwabenaimhotep@gmail.com","email passed separately");
+ check(createParams[7].asString()==payload["defaultCurrencyId"].asString(),"default currency passed to atomic provisioning");
  check(createParams[3].asString()==host.userId,"host provisioning actor");
  check(created.result["temporaryPassword"].asString().size()==24,"strong generated password");
  check(bcrypt::validatePassword(created.result["temporaryPassword"].asString(),createParams[6].asString()),"bcrypt password roundtrip");

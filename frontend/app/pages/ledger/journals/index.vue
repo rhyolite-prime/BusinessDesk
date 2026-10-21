@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { journalRateDisplay } from '../../../features/ledger/journal-rate-display'
 import {
   Plus,
   Pencil,
@@ -316,7 +317,10 @@ async function execute() {
                         </p>
                       </td>
                       <td>{{ l.transactionDate }}</td>
-                      <td>{{ l.currencyCode }} / {{ l.exchangeRate }}</td>
+                      <td>
+                        {{ l.currencyCode }} /
+                        {{ journalRateDisplay(l.exchangeRate) }}
+                      </td>
                       <td class="text-right font-mono">
                         {{ l.debit }} / {{ l.baseDebit }}
                       </td>

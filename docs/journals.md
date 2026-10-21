@@ -106,13 +106,25 @@ Example local draft (replace all UUIDs with real catalog IDs):
   and sums use PostgreSQL `numeric`; preview math uses scaled BigInt, not binary
   floating point. Converted lines and batch totals must fit numeric(20,6);
   positive amounts that convert to zero are rejected.
-- Non-multi-currency mode uses **one transaction currency throughout**, which
-  may be the unit's base currency or one selected foreign currency. Mixed
-  currencies require multi-currency mode. Each line must still match its GL's
-  configured currency (or the unit base if the GL has no explicit currency).
-  Base-currency rates must equal 1. Foreign rates can be suggested by the public
-  daily-rate service and edited manually; exact stored decimal strings remain
-  authoritative for both draft validation and posting.
+- **Company Profile `defaultCurrencyId` is the local/base reference.** The
+  profile and currency must be live, and the currency must be active. Missing,
+  null or deleted configuration blocks journal entry/posting with an actionable
+  message. An accounting unit's base must agree with this default: mismatches
+  are rejected, never silently used to mix base balances. Reconcile existing
+  accounting configuration before transacting; changing a reference does not
+  revalue historical journals.
+- Local (non-multi-currency) journals use only the company currency at rate
+  `1.0000`. Foreign header choices are disabled, and all line currencies follow
+  the local header. Switching multi-currency off restores the company default
+  and rate 1 on every line, clearing incompatible GL selections. Foreign or
+  mixed transaction currencies require multi-currency mode; GL currency matching
+  and the base-currency rate-1 invariant remain enforced server-side.
+- Exchange-rate fields, line previews and quote notices present **four decimal
+  places**. While typing, decimal input remains editable; on blur it returns to
+  four-place presentation. Existing stored rates and financial calculations keep
+  their full ten-place precision: merely opening, focusing, blurring or saving an
+  untouched rate never silently rounds financial data. Manually edited rates
+  remain authoritative, with up to ten places accepted by the accounting API.
 - GL accounts must be live, active, manual-postable, non-control and in this
   tenant/unit. Currencies must be live/active in the global catalog. Optional
   cost centers must be live and tenant-owned. Catalog names and account types
@@ -192,15 +204,14 @@ silently rewritten until the user explicitly selects a header value.
 Header **currency** uses the active entries from the exact paginated
 `/api/shared/currencies` catalog displayed in Shared Config, with bearer
 forwarding and no demo fallback. Both header and line currency dropdowns use
-this catalog. In single-currency (non-multi) mode, header changes set every
-line's currency and request its transaction-to-unit-base rate; incompatible GL
-selections are cleared for the user to replace. Line currency selectors display
-the active Shared Config catalog but follow the header until multi-currency mode
-is enabled. In multi-currency mode, header changes only default new lines;
-existing currencies, accounts, amounts and rates are preserved. New foreign lines
-request a rate; saved draft rates are never automatically refreshed on load.
-Turning multi-currency mode off applies the selected header currency to all lines
-(or the first line/base currency if no default was selected).
+this catalog. Local mode selects the company-profile currency by default and
+disables all foreign header choices. Existing and new lines inherit that currency
+at rate `1.0000`. The line currency selectors show the Shared Config catalog but
+are disabled in local mode. Multi-currency mode enables independent currencies;
+header changes then default only new lines, preserving existing currencies,
+accounts, amounts and rates. Foreign defaults request a daily quote. Saved rates
+are not refreshed automatically on load. Turning multi-currency off always
+restores the company-profile currency throughout, not a foreign header default.
 
 Header selectors are convenience controls over persisted line dimensions, not
 new database columns. Individual cost-center and foreign-rate overrides remain possible; currency
@@ -233,15 +244,18 @@ five-minute TTL), and concurrent pair requests are coalesced with a bounded
 in-flight map. Base-to-base is exactly 1 and never needs an external request.
 
 Selecting a foreign currency (directly or through a different-currency GL),
-applying the single-currency header, or adding a foreign-default line requests a
-rate. Manual editing cancels any pending suggestion for that line. Late responses
+or adding a foreign-default line requests a rate. Applying the local header
+sets rate `1.0000` throughout, with no external quote needed. Manual editing cancels any pending suggestion for that line. Late responses
 cannot overwrite an edited rate, newer currency selection, removed row, changed
 unit or departed editor. A lookup failure leaves a visible manual-entry warning
 and never inserts a fabricated rate. Users can still enter a valid rate and save;
 posting always uses the stored rate, without depending on the public API.
-Base-currency rates remain read-only at 1 to preserve the accounting invariant.
-No migration is required, but deploy the updated backend together with the
-frontend so single foreign-currency drafts pass the revised server validation.
+Local-currency rates remain read-only at `1.0000`. Deploy frontend and backend
+together. Existing migration 008 (Company Profiles), in addition to the journal
+migration prerequisites, must be installed. No new schema migration is needed;
+existing tenants must have a configured active company default before journals
+can be entered or posted. Previous single-foreign-currency drafts must enable
+multi-currency mode before being saved/posted; posted history is not rewritten.
 
 ### Description suggestions and new-row navigation
 
@@ -298,6 +312,7 @@ npm --prefix frontend run build
 node --experimental-strip-types test/ledger/journal_deficit_test.mjs
 node --experimental-strip-types test/ledger/journal_descriptions_test.mjs
 node --experimental-strip-types test/ledger/currency_rate_test.mjs
+node --experimental-strip-types test/ledger/journal_rate_display_test.mjs
 JOURNAL_TEST_DATABASE_URL='...' JSONCPP_SOURCE_DIR='...' LIBPQ_LIB_DIR='...' \
   bash test/journals/run_pg.sh
 JOURNAL_BROWSER_DEPS='path-to-playwright-core-and-@sparticuz/chromium' \

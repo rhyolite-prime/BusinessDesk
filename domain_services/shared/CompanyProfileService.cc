@@ -24,7 +24,7 @@ bool valid(Json::Value& b){
    if(v.isNull())continue;if(!v.isString())return false;auto text=trim(v.asString());if(text.empty()||text=="00000000-0000-0000-0000-000000000000")v=Json::nullValue;else if(!uuid(text))return false;else v=text;
   }else{if(!v.isString())return false;auto text=trim(v.asString());if(text.size()>static_cast<size_t>(f.limit)||text.find('\0')!=std::string::npos)return false;v=text;}
  }
- if(b["companyName"].asString().empty())return false;
+ if(b["companyName"].asString().empty()||b["defaultCurrencyId"].isNull())return false;
  const std::regex email(R"(^[^\s@]+@[^\s@]+\.[^\s@]+$)");
  for(const auto& key:{"email","primaryEmailAddress"})if(!b[key].asString().empty()&&!std::regex_match(b[key].asString(),email))return false;
  const auto host=b["mailHostName"].asString();if(!host.empty()&&(std::any_of(host.begin(),host.end(),[](unsigned char c){return std::isspace(c)||c<32||c==127||c=='/'||c=='\\'||c=='@';})||b["portNumber"].asInt()<1||b["primaryEmailAddress"].asString().empty()))return false;

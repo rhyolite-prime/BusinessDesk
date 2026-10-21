@@ -55,7 +55,7 @@ drogon::Task<drogon::HttpResponsePtr> dispatch(drogon::HttpRequestPtr request,st
     else {
         const auto json=request->getJsonObject();
         if (!json || !json->isObject()) co_return invalid("Expected a JSON object.");
-        for (const char *field : {"tenancyName","name","adminEmailAddress","connectionString"}) {
+        for (const char *field : {"tenancyName","name","adminEmailAddress","connectionString","defaultCurrencyId"}) {
             if (json->isMember(field) && !(*json)[field].isString() &&
                 !(std::string(field)=="connectionString" && (*json)[field].isNull()))
                 co_return invalid(std::string(field)+" must be a string (connectionString may be null).");

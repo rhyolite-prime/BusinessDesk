@@ -84,11 +84,21 @@ export async function journalRequest(
     const status = e?.response?.status || e?.statusCode
     const code =
       e?.data?.error?.code || e?.response?._data?.error?.code || e?.data?.code
+    const detail = e?.data?.error?.message || e?.response?._data?.error?.message
+    const currencyConfigurationMessages = [
+      'Set a live active default currency on the company profile before entering journals.',
+      'Accounting unit base currency must match the company profile default currency. Reconcile currency configuration before entering or posting journals.',
+    ]
+    if (
+      code === 'validation_error' &&
+      currencyConfigurationMessages.includes(detail)
+    )
+      throw createError({ statusCode: 400, statusMessage: detail })
     if (code === 'schema_not_ready')
       throw createError({
         statusCode: 503,
         statusMessage:
-          'Journal database upgrade required. Apply migration 012_journals.sql to the backend database.',
+          'Journal database upgrade required. Apply migrations 008_company_profiles.sql and 012_journals.sql (after their prerequisites) to the backend database.',
       })
     if (code === 'approval_required')
       throw createError({

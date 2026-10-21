@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeft, Plus, Trash2, Save } from '@lucide/vue'
 import { toRaw } from 'vue'
+import { journalRateDisplay } from '../../../features/ledger/journal-rate-display'
 import {
   suggestBatchDescription,
   suggestLineDescription,
@@ -65,8 +66,7 @@ function applyHeaderCurrency() {
 }
 function changeMode() {
   if (!form.isMultiCurrency) {
-    header.currencyId ||=
-      lines.value[0]?.currencyId || options.value.baseCurrencyId
+    header.currencyId = options.value.baseCurrencyId
     applyHeaderCurrency()
   }
 }
@@ -132,6 +132,22 @@ function refreshSuggestion(line: JournalLine) {
     saveError.value = ''
 }
 type RateState = { request: number; loading: boolean; message: string }
+const editingRate = shallowRef<JournalLine | null>(null)
+const rateDraft = ref('')
+function beginRateEdit(line: JournalLine) {
+  editingRate.value = toRaw(line)
+  rateDraft.value = journalRateDisplay(line.exchangeRate)
+}
+function inputRate(line: JournalLine, event: Event) {
+  const input = event.target as HTMLInputElement
+  if (!/^\d*(?:\.\d{0,10})?$/.test(input.value)) {
+    input.value = rateDraft.value
+    return
+  }
+  rateDraft.value = input.value
+  line.exchangeRate = input.value
+  editRate(line)
+}
 const rateStates = reactive(new WeakMap<JournalLine, RateState>())
 let rateRequest = 0
 function editRate(line: JournalLine) {
@@ -149,10 +165,11 @@ async function lookupRate(line: JournalLine) {
     request = ++rateRequest
   if (currencyId === options.value.baseCurrencyId) {
     line.exchangeRate = '1'
+    if (editingRate.value === raw) rateDraft.value = '1.0000'
     rateStates.set(raw, {
       request,
       loading: false,
-      message: 'Base currency: rate 1.',
+      message: 'Company local currency: rate 1.0000.',
     })
     refreshSuggestion(line)
     return
@@ -195,10 +212,12 @@ async function lookupRate(line: JournalLine) {
     )
       throw new Error('Invalid quote')
     line.exchangeRate = quote.rate
+    if (editingRate.value === raw)
+      rateDraft.value = journalRateDisplay(quote.rate)
     rateStates.set(raw, {
       request,
       loading: false,
-      message: `${quote.source} · ${quote.date} · 1 ${from} = ${quote.rate} ${to}. Editable indicative rate.`,
+      message: `${quote.source} · ${quote.date} · 1 ${from} = ${journalRateDisplay(quote.rate)} ${to}. Editable indicative rate.`,
     })
     refreshSuggestion(line)
   } catch {
@@ -291,8 +310,11 @@ const issues = computed(() => {
       !options.value.currencies.some((c) => c.id === l.currencyId)
     )
       e.push(prefix + 'select an active manual-postable GL and its currency.')
-    if (!form.isMultiCurrency && l.currencyId !== header.currencyId)
-      e.push(prefix + 'use the header currency or enable multi-currency mode.')
+    if (!form.isMultiCurrency && l.currencyId !== options.value.baseCurrencyId)
+      e.push(
+        prefix +
+          'use the company profile local currency or enable multi-currency mode.',
+      )
     if (!realDate(l.transactionDate))
       e.push(prefix + 'enter a valid transaction date.')
     if (d === null || c === null || (d === 0n) === (c === 0n))
@@ -568,6 +590,10 @@ async function save() {
                 v-for="currency in options.currencies"
                 :key="currency.id"
                 :value="currency.id"
+                :disabled="
+                  !form.isMultiCurrency &&
+                  currency.id !== options.baseCurrencyId
+                "
               >
                 {{ currency.code }} · {{ currency.name }}
               </option>
@@ -598,7 +624,7 @@ async function save() {
             {{
               form.isMultiCurrency
                 ? 'Header currency defaults new lines only.'
-                : 'Header currency and its suggested rate apply to every line in single-currency mode.'
+                : 'Local currency comes from Company Profile and applies to every line at rate 1.0000.'
             }}
             Descriptions use journal/account, currency, date and reference
             keywords until you edit them.
@@ -652,7 +678,7 @@ async function save() {
             {{
               form.isMultiCurrency
                 ? 'Rates are explicit: 1 unit of transaction currency × rate = base currency. No demo rates are supplied.'
-                : 'Single-currency journals use the header currency on every line. Base-currency rates are always 1.'
+                : 'Local journals use the Company Profile default currency on every line at rate 1.0000. Enable multi-currency for foreign currencies.'
             }}
           </p>
         </section>
@@ -769,12 +795,18 @@ async function save() {
               <label class="min-w-0 text-[11px]"
                 >Exchange rate
                 <input
-                  v-model="l.exchangeRate"
+                  :value="
+                    editingRate === toRaw(l)
+                      ? rateDraft
+                      : journalRateDisplay(l.exchangeRate)
+                  "
+                  @focus="beginRateEdit(l)"
+                  @blur="editingRate = null"
                   required
                   :readonly="l.currencyId === options.baseCurrencyId"
                   inputmode="decimal"
                   class="journal-input"
-                  @input="editRate(l)"
+                  @input="inputRate(l, $event)"
                 />
               </label>
               <label class="min-w-0 text-[11px]"

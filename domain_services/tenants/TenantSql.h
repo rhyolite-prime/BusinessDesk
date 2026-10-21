@@ -4,13 +4,16 @@ namespace business_desk::domain_services::tenant_sql {
 // PostgreSQL data-modifying CTEs are single atomic statements: an admin/role
 // failure rolls back the tenant insert, and success is returned only after commit.
 inline constexpr const char *create = R"SQL(
-WITH new_tenant AS (
+WITH selected_currency AS (
+    SELECT id FROM core_currencies WHERE id=$8::uuid AND is_deleted=false AND is_active=true FOR SHARE
+), new_tenant AS (
     INSERT INTO tenants (require_two_factor_auth, has_subscribed_to_gl, gl_subscription_fee, has_subscribed_to_payroll, payroll_subscription_fee, has_subscribed_to_school_manager, school_manager_subscription_fee, has_subscribed_to_ap, ap_subscription_fee, has_subscribed_to_ar, ar_subscription_fee, has_subscribed_to_fixed_assets, fixed_assets_subscription_fee, has_subscribed_to_human_resource, human_resource_subscription_fee, has_subscribed_to_inventory, inventory_subscription_fee, has_subscribed_to_manufacturing, manufacturing_subscription_fee, has_subscribed_to_point_of_sale, point_of_sale_subscription_fee, has_subscribed_to_core_banking, core_banking_subscription_fee, has_subscribed_to_supply_chain, supply_chain_subscription_fee, has_subscribed_to_property_rentals, property_rentals_subscription_fee, has_subscribed_to_document_management, document_management_subscription_fee, is_direct_debit_enabled,
                          id, tenancy_name, name, connection_string, is_active, is_deleted,
                          creation_time, creator_user_id, last_modification_time, last_modifier_user_id)
-    VALUES (false, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false,
+    SELECT false, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false, 0, false,
             gen_random_uuid(), $1, $2, NULLIF($3, ''), true, false,
-            CURRENT_TIMESTAMP, $4::uuid, CURRENT_TIMESTAMP, $4::uuid)
+            CURRENT_TIMESTAMP, $4::uuid, CURRENT_TIMESTAMP, $4::uuid
+    FROM selected_currency
     RETURNING id, tenancy_name, name
 ), admin_role AS (
     INSERT INTO roles (id, name, description, tenant_id, permissions, created_at)
@@ -25,6 +28,11 @@ WITH new_tenant AS (
            CURRENT_TIMESTAMP, $4::uuid, CURRENT_TIMESTAMP, $4::uuid
     FROM new_tenant t JOIN admin_role r ON r.tenant_id = t.id
     RETURNING id, tenant_id
+), company_profile AS (
+    INSERT INTO core_company_profiles(tenant_id,company_name,email,default_currency_id,created_by_user_id)
+    SELECT t.id,t.name,$5,$8::uuid,$4::uuid
+    FROM new_tenant t JOIN admin_user u ON u.tenant_id=t.id
+    RETURNING id,tenant_id
 ), copied_system_numbers AS (
     INSERT INTO core_system_numbers (tenant_id, source_template_id, module_id, item_name, key,
         prefix, suffix, format_pattern, padding, last_no, created_by_user_id)
@@ -36,6 +44,7 @@ WITH new_tenant AS (
 )
 SELECT t.id::text AS tenant_id, t.tenancy_name, t.name, u.id::text AS admin_user_id
 FROM new_tenant t JOIN admin_user u ON u.tenant_id = t.id
+JOIN company_profile p ON p.tenant_id=t.id
 )SQL";
 
 // A tenant's initial admin is the oldest live admin account, never a deleted one.

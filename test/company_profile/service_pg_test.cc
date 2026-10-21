@@ -78,7 +78,7 @@ int main(){
  check(sql("SELECT * FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["created_by_user_id"]==actor,"creation audit");
  r=call("create",input);check(!r.success&&r.error["code"]=="conflict","singleton rejects second profile");
  r=call("get",{},{other,actor2});check(!r.success&&r.error["code"]=="not_found","foreign tenant cannot read profile");
- Json::Value second;second["companyName"]="Other Company";r=call("create",second,{other,actor2});check(r.success&&r.result["id"]!=id,"each tenant has independent singleton");
+ Json::Value second;second["companyName"]="Other Company";second["defaultCurrencyId"]=currency;r=call("create",second,{other,actor2});check(r.success&&r.result["id"]!=id,"each tenant has independent singleton");
  Json::Value patch;patch["cityName"]="Accra";r=call("update",patch,{tenant,actor2});check(r.success&&r.result["cityName"]=="Accra"&&r.result["paySocialSecurityFund"].asBool()&&r.result["socialSecurityFundEmployeeRate"]==5.5,"partial update preserves omitted model fields");
  check(call("get",{},{other,actor2}).result["cityName"]=="","updates tenant isolated");check(sql("SELECT * FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["last_modified_by_user_id"]==actor2,"modification audit");
  patch["emailPassword"]="";check(call("update",patch).success&&sql("SELECT email_password_encrypted FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["email_password_encrypted"]==cipher,"blank password retains ciphertext");
@@ -101,7 +101,7 @@ int main(){
  sql("UPDATE core_currencies SET is_active=false WHERE id=$1",{currency});check(!call("update",Json::Value(Json::objectValue)).success,"inactive currency rejected");sql("UPDATE core_currencies SET is_active=true WHERE id=$1",{currency});
  sql("UPDATE core_currencies SET is_deleted=true WHERE id=$1",{currency});check(!call("update",Json::Value(Json::objectValue)).success,"deleted currency rejected");sql("UPDATE core_currencies SET is_deleted=false WHERE id=$1",{currency});
  Json::Value legacy;legacy["defaultCurrenyId"]=currency;check(call("update",legacy).success,"legacy C# spelling accepted");legacy["defaultCurrencyId"]=currency;check(!call("update",legacy).success,"ambiguous currency aliases rejected");
- legacy.removeMember("defaultCurrenyId");legacy["defaultCurrencyId"]="00000000-0000-0000-0000-000000000000";r=call("update",legacy);check(r.success&&r.result["defaultCurrencyId"].isNull(),"Guid.Empty currency normalizes null");
+ legacy.removeMember("defaultCurrenyId");legacy["defaultCurrencyId"]="00000000-0000-0000-0000-000000000000";r=call("update",legacy);check(!r.success,"company local currency cannot be cleared with Guid.Empty");legacy["defaultCurrencyId"]=Json::nullValue;check(!call("update",legacy).success,"company local currency cannot be null");
  drogon::TestTransaction::failCommit=true;Json::Value rollback;rollback["companyName"]="Must not persist";check(!call("update",rollback).success,"commit failure reported");drogon::TestTransaction::failCommit=false;check(call("get").result["companyName"]=="Example Company","failed commit rolled back");
  check(call("delete").error["code"]=="forbidden","no deletion after create");
  sql("UPDATE core_company_profiles SET is_deleted=true WHERE tenant_id=$1",{tenant});check(!call("get").success&&!call("update",patch).success,"deleted records not read or modified");check(!call("create",input).success,"unique tenant constraint reserves singleton even if externally soft deleted");

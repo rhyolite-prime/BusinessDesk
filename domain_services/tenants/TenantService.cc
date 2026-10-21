@@ -56,6 +56,8 @@ std::string validate(const dto::TenantDto &input, bool creating) {
             std::any_of(email.begin(),email.end(),[](unsigned char c){return std::isspace(c) || c<32;}))
             return "A valid adminEmailAddress is required.";
     }
+    if (creating && !uuid(input.getDefaultCurrencyId())) return "A valid defaultCurrencyId is required.";
+    if (!creating && input.hasDefaultCurrencyId()) return "Change default currency through Company Profile, not tenant updates.";
     if (input.getConnectionString().size()>1024) return "connectionString cannot exceed 1024 characters.";
     return {};
 }
@@ -157,14 +159,15 @@ drogon::Task<dto::BaseApiResponse> TenantService::createTenant(const dto::Tenant
         const auto hash=bcrypt::generateHash(temporaryPassword,12);
         const auto rows=co_await drogon::app().getDbClient()->execSqlCoro(tenant_sql::create,
             input.getTenancyName(),input.getName(),input.getConnectionString(),identity.userId,
-            lower(input.getAdminEmailAddress()),adminPermissions(),hash);
-        if (rows.size()!=1) co_return error("database_error","Tenant provisioning failed.");
-        dto::BaseApiResponse r; r.success=true; r.message="Tenant and initial administrator created.";
+            lower(input.getAdminEmailAddress()),adminPermissions(),hash,lower(input.getDefaultCurrencyId()));
+        if (rows.size()!=1) co_return error("validation_error","Select a live active default currency.");
+        dto::BaseApiResponse r; r.success=true; r.message="Tenant, company profile and initial administrator created.";
         r.result["id"]=rows[0]["tenant_id"].as<std::string>();
         r.result["tenancyName"]=rows[0]["tenancy_name"].as<std::string>();
         r.result["name"]=rows[0]["name"].as<std::string>();
         r.result["adminUserId"]=rows[0]["admin_user_id"].as<std::string>();
         r.result["adminUsername"]="admin"; r.result["adminEmailAddress"]=lower(input.getAdminEmailAddress());
+        r.result["defaultCurrencyId"]=lower(input.getDefaultCurrencyId());
         r.result["temporaryPassword"]=temporaryPassword;
         co_return r;
     } catch (const UniqueViolation &) { co_return error("conflict","A tenant or administrator with those identifiers already exists."); }

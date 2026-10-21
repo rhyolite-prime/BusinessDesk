@@ -34,7 +34,7 @@ drogon::Task<bool> ready(DbClientPtr db){auto r=co_await db->execSqlCoro(R"(SELE
  EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_batches') AND attname='version' AND NOT attisdropped)
  AND EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_lines') AND attname='line_number' AND NOT attisdropped)
  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_lines_live_position') AND indisvalid AND indisready)
- AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_batches_idempotency') AND NOT indnullsnotdistinct AND indisvalid) AND to_regclass('core_cost_centers') IS NOT NULL AS ready)");co_return !r.empty()&&r[0]["ready"].as<bool>();}
+ AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_batches_idempotency') AND NOT indnullsnotdistinct AND indisvalid) AND to_regclass('core_cost_centers') IS NOT NULL AND to_regclass('core_company_profiles') IS NOT NULL AS ready)");co_return !r.empty()&&r[0]["ready"].as<bool>();}
 struct Normalized {Json::Value body;std::string error;};
 drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::Value& current,const std::string& base,const std::string& unit,const utils::AuditIdentity& who,bool write){
  Normalized n;auto invalid=[&](std::string error){Normalized x;x.error=error;return x;};
@@ -62,7 +62,7 @@ drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::V
  int position=0;for(auto& l:body["lines"]){const auto a=l["accountId"].asString(),c=l["currencyId"].asString();
   if(!accountMap.count(a)||!currencyMap.count(c)||accountMap[a]["currency"]!=c)co_return invalid("GL must be active, manual-postable, non-control, in this unit and match the selected active currency.");
   if(!l["costCenterId"].isNull()&&!centerIds.count(l["costCenterId"].asString()))co_return invalid("Cost center must be live in this tenant.");
-  if((!body["isMultiCurrency"].asBool()&&c!=body["lines"][0]["currencyId"].asString())||(c==base&&!one(l["exchangeRate"].asString())))co_return invalid("Single-currency journals must use one currency throughout; base-currency rates must equal 1.");
+  if((!body["isMultiCurrency"].asBool()&&c!=base)||(c==base&&!one(l["exchangeRate"].asString())))co_return invalid("Local journals must use the company profile default currency at rate 1; enable multi-currency mode for foreign currencies.");
   l["accountName"]=accountMap[a]["name"];l["standardAccountType"]=accountMap[a]["type"];l["currencyCode"]=currencyMap[c]["code"];l["currencyName"]=currencyMap[c]["name"];l["lineNumber"]=++position;
   l["organizationUnitId"]=Json::nullValue;l["organizationUnitName"]="";
   if(l.isMember("id")){l["organizationUnitId"]=prior[l["id"].asString()]["organizationUnitId"];l["organizationUnitName"]=prior[l["id"].asString()]["organizationUnitName"];}
@@ -80,7 +80,14 @@ Json::Value editable(const Json::Value& current){Json::Value b;b["batchDate"]=cu
 drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,const std::string& id,const std::string& unit,Json::Value input,const utils::AuditIdentity& who){
  const bool write=op=="create"||op=="update"||op=="delete"||op=="post";
  const std::string unitSql="SELECT id,base_currency_id FROM core_accounting_units WHERE tenant_id=$1 AND id=$2 AND is_deleted=false AND is_active=true"+std::string(write?" FOR UPDATE":"");
- auto units=co_await db->execSqlCoro(unitSql,who.tenantId,unit);if(units.empty())co_return fail("not_found","Active accounting unit not found.");const std::string base=units[0]["base_currency_id"].as<std::string>();
+ auto units=co_await db->execSqlCoro(unitSql,who.tenantId,unit);if(units.empty())co_return fail("not_found","Active accounting unit not found.");std::string base=units[0]["base_currency_id"].as<std::string>();
+ if(op=="options"||op=="create"||op=="update"||op=="validate"||op=="post"){
+  auto profiles=co_await db->execSqlCoro("SELECT p.default_currency_id FROM core_company_profiles p JOIN core_currencies c ON c.id=p.default_currency_id AND c.is_deleted=false AND c.is_active=true WHERE p.tenant_id=$1 AND p.is_deleted=false"+std::string(write?" FOR SHARE OF p,c":""),who.tenantId);
+  if(profiles.empty())co_return fail("validation_error","Set a live active default currency on the company profile before entering journals.");
+  const std::string companyCurrency=profiles[0]["default_currency_id"].as<std::string>();
+  if(base!=companyCurrency)co_return fail("validation_error","Accounting unit base currency must match the company profile default currency. Reconcile currency configuration before entering or posting journals.");
+  base=companyCurrency;
+ }
  dto::BaseApiResponse result;
  if(op=="options"){
   auto accounts=co_await db->execSqlCoro("SELECT id,account_number,account_name,COALESCE(currency_id,$3::uuid) AS currency_id FROM gl_accounts WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND status='active' AND allow_manual_posting=true AND is_control_account=false ORDER BY account_number,id",who.tenantId,unit,base);
@@ -185,7 +192,7 @@ drogon::Task<dto::BaseApiResponse> JournalService::execute(std::string op,std::s
   if((op=="update"||op=="delete"||op=="post")&&(!body["version"].isInt()||body["version"].asInt()<1))co_return fail("validation_error","Supply the current journal version.");
  }
  try{
-  auto db=drogon::app().getDbClient();if(!(co_await ready(db)))co_return fail("schema_not_ready","Journal database upgrade required. Apply database/migrations/012_journals.sql after prior migrations.");
+  auto db=drogon::app().getDbClient();if(!(co_await ready(db)))co_return fail("schema_not_ready","Journal database upgrade required. Apply 008_company_profiles.sql and 012_journals.sql after their prerequisites.");
   if(op=="list"||op=="get"||op=="options"||op=="next-number"||op=="validate")co_return co_await run(db,op,id,unit,body,who);
   auto tx=co_await db->newTransactionCoro();dto::BaseApiResponse r;
   try{r=co_await run(tx,op,id,unit,body,who);}catch(...){tx->rollback();throw;}
