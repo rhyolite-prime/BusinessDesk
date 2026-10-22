@@ -46,3 +46,11 @@ safeguards](preferences.md) before deployment or testing. Backups and a maintena
 window are required operational precautions: confirmed resets permanently remove
 posted and archived test data while preserving company profile, access/security,
 preferences and reset audit. Never test initialization against a production DB.
+
+### Supplier shared configuration
+
+Migration `016_suppliers.sql` adds tenant-owned supplier groups and supplier
+masters, live-only audited CRUD, posting-account/currency lookups, voucher
+reference safeguards and Preferences reset registration. See
+[Supplier groups and suppliers](suppliers.md) for deployment order, decimal-string
+contracts, balance protection, API routes and disposable integration tests.

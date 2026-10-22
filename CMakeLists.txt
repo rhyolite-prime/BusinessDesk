@@ -31,6 +31,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/shared/CompanyProfileService.cc
         domain_services/shared/CostCenterService.cc
         domain_services/shared/SystemNumberService.cc
+        domain_services/shared/SupplierService.cc
         domain_services/shared/BankService.cc
         domain_services/shared/CurrencyService.cc
         domain_services/gl/AccountDetailService.cc
