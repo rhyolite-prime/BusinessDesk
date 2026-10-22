@@ -35,6 +35,7 @@ export interface LedgerVoucherRetention {
 }
 
 export interface LedgerVoucher {
+  accountingUnitId?: string
   id: string
   voucherNumber: string
   batchNumber: string
@@ -85,6 +86,7 @@ export interface LedgerVoucherRetentionInput {
 }
 
 export interface CreateLedgerVoucherInput {
+  accountingUnitId?: string
   type: LedgerVoucherType
   payeeId: string
   entryDate: string

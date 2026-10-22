@@ -1,0 +1,65 @@
+import http from 'node:http'
+import assert from 'node:assert/strict'
+import {spawn} from 'node:child_process'
+import {createRequire} from 'node:module'
+let checks=0,fail=false
+const seen=[],check=(v,label)=>{assert.ok(v,label);checks++}
+const id=n=>`90000000-0000-4000-8000-${String(n).padStart(12,'0')}`
+const unit=id(1),bank=id(2),debit=id(3),supplier=id(4),center=id(5),usd=id(6),eur=id(7)
+const upstream=http.createServer(async(req,res)=>{
+ const url=new URL(req.url,'http://fixture'),p=url.pathname;seen.push({p,query:url.search,token:req.headers.authorization})
+ const send=(code,result)=>{res.writeHead(code,{'content-type':'application/json'});res.end(JSON.stringify({success:code<300,result,error:code>=300?{code:'database_error'}:undefined}))}
+ if(p==='/api/v1/auth/tenant-login')return send(200,{token:'tenant-token',requiresTwoFactorAuth:false,expiresIn:3600})
+ if(p==='/api/v1/auth/me')return send(200,{userId:id(99),username:'admin',accountId:'acme'})
+ if(req.headers.authorization!=='Bearer tenant-token')return send(401,null)
+ const paged=(data,totalPages=1)=>send(200,{data,totalPages,totalCount:data.length})
+ if(p==='/api/v1/ledger/accounting-units')return paged([{id:unit,name:'USD office',code:'USD-HQ',baseCurrencyId:usd,isActive:true}])
+ if(p==='/api/v1/shared/currencies')return paged([{id:usd,name:'US dollar',code:'USD',isActive:true},{id:eur,name:'Euro',code:'EUR',isActive:true}])
+ if(p==='/api/v1/shared/cost-centers')return send(200,{data:[{id:center,name:'API Operations',parentId:null}]})
+ if(p==='/api/v1/shared/suppliers')return paged(url.searchParams.get('pageNo')==='2'?[{id:supplier,name:'API Supplier',accountNumber:'API-S001',accountingUnitId:unit,creditAccountId:debit,statusId:'active',currencyCode:'EUR'}]:[{id:id(40),name:'Other Unit Supplier',accountNumber:'OTHER',accountingUnitId:id(41),statusId:'active'}],2)
+ if(p==='/api/v1/ledger/accounts'){
+  if(fail)return send(503,null)
+  return paged([{id:bank,accountNumber:'1010',accountName:'API Operating Bank',status:'active',accountType:0},{id:debit,accountNumber:'2100',accountName:'API Payables',status:'active',accountType:1}])
+ }
+ if(p==='/api/v1/ledger/bank-accounts')return send(200,{data:[{id:id(8),accountId:bank,bankName:'API Bank',accountNumber:'00042',isActive:true}]})
+ send(404,null)
+})
+await new Promise(r=>upstream.listen(0,'0.0.0.0',r))
+const reserve=http.createServer();await new Promise(r=>reserve.listen(0,'0.0.0.0',r));const port=reserve.address().port;await new Promise(r=>reserve.close(r))
+const base=`http://127.0.0.1:${port}`,backend=`http://127.0.0.1:${upstream.address().port}`
+const app=spawn(process.execPath,['frontend/.output/server/index.mjs'],{env:{...process.env,PORT:String(port),HOST:'0.0.0.0',NODE_ENV:'production',NUXT_AUTH_API_BASE_URL:backend,NUXT_LEDGER_API_BASE_URL:backend},stdio:['ignore','pipe','pipe']})
+let log='';app.stderr.on('data',d=>log+=d)
+await new Promise((resolve,reject)=>{const timer=setTimeout(()=>reject(new Error(log)),30000);app.stdout.on('data',d=>{log+=d;if(log.includes('Listening on')){clearTimeout(timer);resolve()}});app.on('exit',code=>{clearTimeout(timer);reject(new Error(`App exit ${code}: ${log}`))})})
+async function call(path,method='GET',body,cookie='',origin=base){const response=await fetch(base+path,{method,headers:{origin,cookie,'content-type':'application/json'},body:body?JSON.stringify(body):undefined});return {response,body:await response.json()}}
+try{
+ let r=await call('/api/ledger/vouchers/exchange-rate?from=USD&to=USD');check(r.response.status===401,'quote endpoint requires authentication')
+ const login=await call('/api/auth/login','POST',{accountId:'acme',usernameOrEmail:'admin',password:'test'}),cookie=login.response.headers.getSetCookie().find(c=>c.startsWith('bd_access=')).split(';')[0]
+ r=await call('/api/ledger/vouchers/exchange-rate?from=USD&to=USD','GET',undefined,cookie);check(r.response.status===200&&r.body.rate==='1'&&r.response.headers.get('cache-control')==='no-store','authenticated base quote is exactly one and not cached in browser')
+ const require=createRequire((process.env.VOUCHER_BROWSER_DEPS||'/tmp/supplier-tools')+'/package.json'),{chromium}=require('playwright-core'),binary=require('@sparticuz/chromium').default||require('@sparticuz/chromium')
+ const browser=await chromium.launch({args:binary.args.filter(x=>x!=='--single-process'),executablePath:await binary.executablePath(),headless:true})
+ try{
+  const ctx=await browser.newContext();await ctx.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(5000)
+  let quoteCalls=0
+  await page.route('**/api/ledger/vouchers/exchange-rate?**',async route=>{quoteCalls++;await new Promise(r=>setTimeout(r,100));await route.fulfill({json:{rate:'1.2500000000',date:'2026-10-22',source:'test indicative'}})})
+  await page.goto(base+'/ledger/vouchers/new/supplier-payment');await page.getByLabel('Supplier / payee',{exact:true}).locator('option').filter({hasText:'API Supplier'}).waitFor({state:'attached'})
+  check(await page.getByLabel('Accounting unit',{exact:true}).inputValue()===unit,'live accounting unit selected')
+  check(await page.getByLabel('Transaction currency',{exact:true}).inputValue()==='USD','base currency comes from API unit, not GHS constant')
+  check(await page.getByLabel('Supplier / payee',{exact:true}).locator('option').filter({hasText:'Other Unit Supplier'}).count()===0,'supplier options are scoped to posting unit')
+  await page.getByLabel('Supplier / payee',{exact:true}).selectOption(supplier);await page.waitForFunction(()=>document.querySelector('input[aria-label="Exchange rate"]').value==='1.2500000000')
+  check(quoteCalls===1,'supplier currency selection fetches foreign-to-base quote')
+  check(await page.getByLabel('Debit GL line 1',{exact:true}).inputValue()===debit,'supplier AP liability default is an actual chart account')
+  await page.getByLabel('Bank / cash G/L',{exact:true}).selectOption(bank);await page.getByLabel('Organizational unit line 1',{exact:true}).selectOption(center)
+  await page.getByPlaceholder('Invoice',{exact:true}).fill('INV-42');await page.getByPlaceholder('Reference',{exact:true}).fill('PO-19');await page.getByPlaceholder('0.00',{exact:true}).fill('10')
+  const description=await page.getByLabel('Voucher description',{exact:true}).inputValue();check(description.includes('API Supplier')&&description.includes('INV-42')&&description.includes('PO-19')&&description.includes('EUR 10.000000'),'description includes supplier, amounts, currency and references')
+  await page.getByLabel('Voucher description',{exact:true}).fill('My custom purpose');await page.getByPlaceholder('Reference',{exact:true}).fill('PO-20');check(await page.getByLabel('Voucher description',{exact:true}).inputValue()==='My custom purpose','manual description is preserved')
+  await page.getByRole('button',{name:'Use suggested description',exact:true}).click();check((await page.getByLabel('Voucher description',{exact:true}).inputValue()).includes('PO-20'),'suggestion can be explicitly regenerated')
+  await page.getByLabel('Transaction currency',{exact:true}).selectOption('USD');check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.0000000000','returning to base currency restores exact rate one')
+  await page.getByLabel('Transaction currency',{exact:true}).selectOption('EUR');await page.getByLabel('Exchange rate',{exact:true}).fill('1.4000000000');await page.waitForTimeout(200);check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.4000000000','late quote never overwrites a manual rate')
+  await page.route('**/api/ledger/vouchers/exchange-rate?**',route=>route.fulfill({status:503,json:{statusMessage:'Unavailable'}}));await page.getByRole('button',{name:'Refresh rate',exact:true}).click();await page.getByText('Rate unavailable. Enter a verified exchange rate manually; no fallback rate has been assumed.',{exact:true}).waitFor();check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='','failed quote never reuses an unrelated rate')
+  fail=true;await page.reload();await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor();check(await page.getByLabel('Bank / cash G/L',{exact:true}).locator('option').count()===1,'failed chart lookup never falls back to demo records')
+  check(errors.length===0,'no browser runtime errors')
+ }finally{await browser.close()}
+ check(seen.filter(x=>x.p.startsWith('/api/v1/shared/')||x.p.startsWith('/api/v1/ledger/')).every(x=>x.token==='Bearer tenant-token'),'every upstream lookup forwards bearer authentication')
+ check(seen.some(x=>x.p.endsWith('/suppliers')&&x.query.includes('pageNo=2')),'supplier catalog traverses API pagination')
+ console.log(`${checks} voucher lookup browser checks passed`)
+}finally{app.kill('SIGTERM');await new Promise(r=>upstream.close(r))}
