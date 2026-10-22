@@ -61,6 +61,7 @@ class GlJournalLines
         static const std::string _account_name;
         static const std::string _organization_unit_id;
         static const std::string _organization_unit_name;
+        static const std::string _cost_center_id;
         static const std::string _reference_number;
         static const std::string _cheque_number;
         static const std::string _description;
@@ -224,6 +225,16 @@ class GlJournalLines
     void setOrganizationUnitName(const std::string &pOrganizationUnitName) noexcept;
     void setOrganizationUnitName(std::string &&pOrganizationUnitName) noexcept;
     void setOrganizationUnitNameToNull() noexcept;
+
+    /**  For column cost_center_id  */
+    ///Get the value of the column cost_center_id, returns the default value if the column is null
+    const std::string &getValueOfCostCenterId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getCostCenterId() const noexcept;
+    ///Set the value of the column cost_center_id
+    void setCostCenterId(const std::string &pCostCenterId) noexcept;
+    void setCostCenterId(std::string &&pCostCenterId) noexcept;
+    void setCostCenterIdToNull() noexcept;
 
     /**  For column reference_number  */
     ///Get the value of the column reference_number, returns the default value if the column is null
@@ -525,7 +536,7 @@ class GlJournalLines
 
 
 
-    static size_t getColumnNumber() noexcept {  return 41;  }
+    static size_t getColumnNumber() noexcept {  return 42;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -571,6 +582,7 @@ class GlJournalLines
     std::shared_ptr<std::string> accountName_;
     std::shared_ptr<std::string> organizationUnitId_;
     std::shared_ptr<std::string> organizationUnitName_;
+    std::shared_ptr<std::string> costCenterId_;
     std::shared_ptr<std::string> referenceNumber_;
     std::shared_ptr<std::string> chequeNumber_;
     std::shared_ptr<std::string> description_;
@@ -616,7 +628,7 @@ class GlJournalLines
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[41]={ false };
+    bool dirtyFlag_[42]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -690,21 +702,25 @@ class GlJournalLines
             ++parametersCount;
         }
 
-
-
         if(dirtyFlag_[8])
         {
-            sql += "reference_number,";
+            sql += "cost_center_id,";
             ++parametersCount;
         }
 
         if(dirtyFlag_[9])
         {
-            sql += "cheque_number,";
+            sql += "reference_number,";
             ++parametersCount;
         }
 
         if(dirtyFlag_[10])
+        {
+            sql += "cheque_number,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[11])
         {
             sql += "description,";
             ++parametersCount;
@@ -712,33 +728,33 @@ class GlJournalLines
         sql += "debit_amount,";
         ++parametersCount;
 
-        if(!dirtyFlag_[11])
+        if(!dirtyFlag_[12])
         {
             needSelection=true;
         }
         sql += "credit_amount,";
         ++parametersCount;
 
-        if(!dirtyFlag_[12])
+        if(!dirtyFlag_[13])
         {
             needSelection=true;
         }
         sql += "base_debit_amount,";
         ++parametersCount;
 
-        if(!dirtyFlag_[13])
+        if(!dirtyFlag_[14])
         {
             needSelection=true;
         }
         sql += "base_credit_amount,";
         ++parametersCount;
 
-        if(!dirtyFlag_[14])
+        if(!dirtyFlag_[15])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[15])
+        if(dirtyFlag_[16])
         {
             sql += "transaction_date,";
             ++parametersCount;
@@ -746,58 +762,58 @@ class GlJournalLines
         sql += "transaction_source,";
         ++parametersCount;
 
-        if(!dirtyFlag_[16])
+        if(!dirtyFlag_[17])
         {
             needSelection=true;
         }
         sql += "is_multi_currency,";
         ++parametersCount;
 
-        if(!dirtyFlag_[17])
+        if(!dirtyFlag_[18])
         {
             needSelection=true;
         }
         sql += "is_reconciled,";
         ++parametersCount;
 
-        if(!dirtyFlag_[18])
+        if(!dirtyFlag_[19])
         {
             needSelection=true;
         }
         sql += "is_opening_balance,";
         ++parametersCount;
 
-        if(!dirtyFlag_[19])
+        if(!dirtyFlag_[20])
         {
             needSelection=true;
         }
         sql += "is_consolidated,";
         ++parametersCount;
 
-        if(!dirtyFlag_[20])
+        if(!dirtyFlag_[21])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[21])
+        if(dirtyFlag_[22])
         {
             sql += "date_consolidated,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[22])
+        if(dirtyFlag_[23])
         {
             sql += "currency_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[23])
+        if(dirtyFlag_[24])
         {
             sql += "currency_name,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[24])
+        if(dirtyFlag_[25])
         {
             sql += "currency_code,";
             ++parametersCount;
@@ -805,49 +821,49 @@ class GlJournalLines
         sql += "buy_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[25])
+        if(!dirtyFlag_[26])
         {
             needSelection=true;
         }
         sql += "sell_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[26])
+        if(!dirtyFlag_[27])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[27])
+        if(dirtyFlag_[28])
         {
             sql += "batch_date,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[28])
+        if(dirtyFlag_[29])
         {
             sql += "closed_date,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[29])
+        if(dirtyFlag_[30])
         {
             sql += "petty_cash_recipient_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[30])
+        if(dirtyFlag_[31])
         {
             sql += "petty_cash_recipient_name,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[31])
+        if(dirtyFlag_[32])
         {
             sql += "standard_account_type,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[32])
+        if(dirtyFlag_[33])
         {
             sql += "batch_number,";
             ++parametersCount;
@@ -855,24 +871,24 @@ class GlJournalLines
         sql += "created_at,";
         ++parametersCount;
 
-        if(!dirtyFlag_[33])
+        if(!dirtyFlag_[34])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[34])
+        if(dirtyFlag_[35])
         {
             sql += "created_by_user_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[35])
+        if(dirtyFlag_[36])
         {
             sql += "last_modified_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[36])
+        if(dirtyFlag_[37])
         {
             sql += "last_modified_by_user_id,";
             ++parametersCount;
@@ -880,24 +896,24 @@ class GlJournalLines
         sql += "is_deleted,";
         ++parametersCount;
 
-        if(!dirtyFlag_[37])
+        if(!dirtyFlag_[38])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[38])
+        if(dirtyFlag_[39])
         {
             sql += "deleted_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[39])
+        if(dirtyFlag_[40])
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[40])
+        if(dirtyFlag_[41])
         {
             sql += "line_number,";
             ++parametersCount;
@@ -985,8 +1001,6 @@ class GlJournalLines
 
         }
 
-
-
         if(dirtyFlag_[8])
         {
 
@@ -1017,11 +1031,6 @@ class GlJournalLines
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[12])
@@ -1071,17 +1080,17 @@ class GlJournalLines
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[16])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[17])
@@ -1144,6 +1153,11 @@ class GlJournalLines
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[22])
         {
 
@@ -1176,11 +1190,6 @@ class GlJournalLines
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[26])
         {
 
@@ -1200,6 +1209,11 @@ class GlJournalLines
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[28])
@@ -1250,17 +1264,17 @@ class GlJournalLines
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[34])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[35])
@@ -1287,17 +1301,17 @@ class GlJournalLines
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[38])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[39])
@@ -1309,6 +1323,14 @@ class GlJournalLines
         }
 
         if(dirtyFlag_[40])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[41])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

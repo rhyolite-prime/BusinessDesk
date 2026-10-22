@@ -45,6 +45,8 @@ class CoreAccountingUnits;
 
 class CoreCurrencies;
 
+class CoreSuppliers;
+
 class GlBankAccounts;
 
 class GlJournalBatches;
@@ -791,6 +793,16 @@ class GlPaymentVouchers
     void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreSuppliers getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(CoreSuppliers)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreSuppliers getSupplier(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getSupplier(const drogon::orm::DbClientPtr &clientPtr,
+                     const std::function<void(CoreSuppliers)> &rcb,
+                     const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlPaymentVouchers>;

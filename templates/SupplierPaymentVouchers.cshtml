@@ -1,0 +1,676 @@
+@using Microsoft.Extensions.Configuration
+@inject IConfiguration Configuration
+@{
+    ViewBag.Title = "Supplier Payment Voucher";
+    Layout = "~/Views/Shared/Layout/_adminLedgerLayout.cshtml";
+    decimal withHoldingVatPercentage = Convert.ToDecimal(Configuration["GeneralLedgerConfig:WithHoldingVatPercentage"]);
+}
+
+<div class="app-content content">
+    <div class="content-wrapper">
+        <div class="content-header row">
+            <div class="content-header-left col-md-6 col-12 mb-2">
+                <h3 class="content-header-title"> Supplier Payment Vouchers </h3>
+                <div class="row breadcrumbs-top">
+                    <div class="breadcrumb-wrapper col-12">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item">
+                                <a href="#">Home</a>
+                            </li>
+                            <li class="breadcrumb-item">
+                                <a href="#">General Ledger </a>
+                            </li>
+                            <li class="breadcrumb-item active">
+                                Supplier Payment Voucher
+                            </li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+        <div class="content-body">
+            <!-- Basic Tables start -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4 class="card-title"> Supplier Payment Voucher </h4>
+                            <a class="heading-elements-toggle"><i class="la la-ellipsis-v font-medium-3"></i></a>
+                            <div class="heading-elements">
+                                <ul class="list-inline mb-0">
+                                    <li><a data-action="expand"><i class="ft-maximize"></i></a></li>
+                                    <li><a data-action="close"><i class="ft-x"></i></a></li>
+                                </ul>
+                            </div>
+                        </div>
+                        <div class="card-content collapse show">
+                            
+                            <div class="card-body" id="app">
+                            
+                                <div class="row d-none" id="main-content">
+                
+                                    <div class="col-sm-12">
+        
+                                        <ul class="nav nav-pills nav-fill" role="tablist" id="processBillTab">
+                                            <li class="nav-item">
+                                                <a class="nav-link active" data-toggle="tab" role="tab" aria-controls="payVoucher" aria-selected="true" href="#payVoucher"> Payment Voucher </a>
+                                            </li>
+                                            <li class="nav-item">
+                                                <a class="nav-link" data-toggle="tab" role="tab" aria-controls="retentions" aria-selected="true" href="#retentions"> Retentions </a>
+                                            </li>
+        
+                                        </ul>
+                                        <br />
+                                        <hr />
+                
+                                        <div class="tab-content" id="myTabContent">
+                
+                                            <div class="tab-pane fade show active" id="payVoucher" role="tabpanel" aria-labelledby="fees-tab">
+                 
+                                                <form id="pvForm">
+                
+                                                    <div class="row">
+                
+                                                        <div class="col-sm-3">
+                
+                                                            <div class="form-group">
+                                                                <label> <strong> Supplier/Payee: </strong>  </label>
+                
+                                                                <select class="form-control" v-model="supplierId" id="supplierId" name="SupplierId" ref="supplierId">
+                                                                    <option disabled value="">Select Supplier</option>
+                                                                    <option v-for="supplier in supplierList" :value="supplier.id">{{ supplier.name }}</option>
+                                                                </select>
+                                                                
+                                                                <span class="text-danger" v-if="!$v.supplierId.required && $v.supplierId.$dirty"> Select a supplier </span>
+
+                                                            </div>
+                
+                                                        </div>
+                
+                                                        <div class="col-sm-2">
+                
+                                                            <div class="form-group">
+                                                                <label> <strong> Entry Date: </strong>  </label>
+                                                                <input type="date" class="form-control" name="voucherEntryDate" id="voucherEntryDate" v-model="voucherEntryDate" ref="voucherEntryDate">
+                                                                <span class="text-danger" v-if="!$v.voucherEntryDate.required && $v.voucherEntryDate.$dirty"> Voucher entry date is required  </span>
+                                                            </div>
+                
+                                                        </div>
+                
+                                                        <div class="col-sm-3">
+                
+                                                            <div class="form-group">
+                                                                <label> <strong> Bank G/L: </strong> </label>
+                                                                <select class="form-control" v-model="bankAccountId" id="bankAccountId" name="bankAccountId">
+                                                                    <option disabled value="">Select Account</option>
+                                                                    <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                </select>
+                                                                <span class="text-danger" v-if="!$v.bankAccountId.required && $v.bankAccountId.$dirty"> Select a Bank G/L  </span>
+                                                        
+                                                            </div>
+                
+                                                        </div>
+                
+                                                        <div class="col-sm-2">
+                                                            <div class="form-group">
+                                                                <label> <strong> Currency: </strong>  </label>
+                                                                <select class="form-control" id="currencyId" name="CurrencyId" v-model="currencyId" ref="currencyId">
+                                                                    <option disabled value="">Select Currency</option>
+                                                                    <option v-for="curr in currencyList" :value="curr.id">{{ curr.currencyName }}</option>
+                                                                </select>
+                                                                <span class="text-danger" v-if="!$v.currencyId.required && $v.currencyId.$dirty"> Select a currency  </span>
+                                                            </div>
+                                                        </div>
+                                                    
+                                                        <div class="col-sm-2 d-flex align-items-center">
+                                                            <div class="form-group">
+                                                                <input type="checkbox" v-model="isMultiCurrency" id="isMultiCurrency" disabled>
+                                                                <label for="isMultiCurrency" class="ml-1">Multi-Currency</label>
+                                                            </div>
+                                                        </div>
+                                                    
+                
+                                                    </div>
+                
+                                                    <hr />
+                
+                                                    <div class="row">
+                 
+                                                        <div class="col-sm-2">
+                
+                                                            <div class="form-group">
+                                                        
+                                                                <label> <strong> Mode Of Payment: </strong> </label>
+
+                                                                <select class="form-control" id="modeOfPayment" name="modePayment" v-model="modePayment">
+                                                                    <option value="Cash">Cash</option>
+                                                                    <option value="Cheque">Cheque</option>
+                                                                </select>
+
+                                                            </div>
+                
+                                                        </div>
+                
+                                                        <div class="col-sm-2">
+                
+                                                            <div class="form-group">
+                                                                <label> <strong> Payment Date: </strong> </label>
+                                                                <input type="date" class="form-control" name="paymentDate" id="paymentDate" v-model="paymentDate" ref="paymentDate">
+                                                                <span class="text-danger" v-if="!$v.paymentDate.required && $v.paymentDate.$dirty"> Payment date is required  </span>
+                                                            </div>
+                
+                                                        </div>
+                
+                                                        <div class="col-sm-2">
+                
+                                                            <div class="form-group">
+                                                                <label> <strong> Batch No#: </strong>  </label>
+                                                                <input type="text" class="form-control" v-model="batchNo" ref="batchNo" placeholder="Batch No#">
+                
+                                                            </div>
+                
+                                                        </div>
+                                                
+                                                        <div class="col-sm-2" v-if="modePayment == 'Cheque'">
+                                                                    
+                                                            <div class="form-group">
+                                                                <label> <strong> Cheque No#: </strong>  </label>
+                                                                <input type="text" class="form-control" v-model="chequeNo" ref="chequeNo" placeholder="Cheque No">
+                                                                    
+                                                            </div>
+                                                                    
+                                                        </div>
+                                                    
+                                                        <div class="col-sm-2">
+                                                        
+                                                            <div class="form-group">
+                                                                <label> <strong> Currency Rate: </strong> </label>
+                                                                <input type="text" class="form-control" v-model="currencyRate" placeholder="Currency Rate" readonly>
+                                                            </div>
+                                                        </div>
+                                                
+                
+                                                        <div class="col-sm-2 mt-1">
+                                                    
+                                                            <div class="form-group">
+                                                        
+                                                                <div class="btn-group mt-1">
+                                                                    <button type="button" v-on:click="saveVoucher()" :disabled="isLoading" class="btn btn-primary">
+                                                                         {{ saveButtonText }}
+                                                                        <i class="fa fa-spinner fa-spin" v-if="isLoading"></i>
+                                                                    </button>
+                                                                    
+                                                                </div>
+
+                                                            </div>
+
+                                                        </div>
+                                                        
+                                                        <div class="col-sm-2 mt-1">
+                                                    
+                                                            <div class="form-group">
+                                                        
+                                                                <button type="button" v-if="voucherId" v-on:click="previewVoucher()" class="btn btn-primary mt-1">
+                                                                    Preview
+                                                                </button>
+
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                
+                                                </form>
+                                         
+                                                <hr />
+                
+                                                <div class="row">
+                                                    <button type="button" class="btn btn-sm btn-success mx-2" @@click="addVoucherRow()">
+                                                        <i class="fa fa-plus"></i> Add Row
+                                                    </button>
+                                                    <div class="table-responsive">
+                                                        <table class="table table-bordered table-sm table-striped mt-1">
+                                                            <thead class="bg-primary text-white">
+                                                                <tr>
+                                                                    <th style="width: 3%;">WithHold?</th>
+                                                                    <th style="width: 10%;">Invoice No.</th>
+                                                                    <th style="width: 10%;">Ref No.</th>
+                                                                    <th style="width: 20%; min-width: 300px;">Debit G/L</th>
+                                                                    <th style="width: 50%;">Description</th>
+                                                                    <th style="width: 12%;">Local Amount</th>
+                                                                    <th style="width: 12%;">Foreign Amount</th>
+                                                                    <th style="width: 25%; min-width: 250px;">Cost Center (OU)</th>
+                                                                    <th style="width: 5%;"></th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody>
+                                                                <tr v-for="(v, index) in voucherList" :key="v.id">
+                                                                    <td class="text-center align-middle">
+                                                                        <input type="checkbox" v-model="v.withHold" @@change="onWithHoldChange()" />
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="text" class="form-control form-control-sm" v-model="v.invoiceNo" placeholder="Invoice No." />
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="text" class="form-control form-control-sm" v-model="v.referenceNo" placeholder="Ref No." />
+                                                                    </td>
+                                                                    <td>
+                                                                        <select class="form-control-sm" v-model="v.accountId">
+                                                                            <option disabled value="">Select Account...</option>
+                                                                            <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="text" class="form-control form-control-sm" v-model="v.description" placeholder="Description" />
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" class="form-control form-control-sm text-right" v-model.number="v.localDebitAmount" placeholder="0.00" min="0" @@input="reComputeVoucherSummary()" />
+                                                                    </td>
+                                                                    <td>
+                                                                        <input type="number" class="form-control form-control-sm text-right" v-model.number="v.foreignDebitAmount" placeholder="0.00" min="0" disabled />
+                                                                    </td>
+                                                                    <td>
+                                                                        <select class="form-control-sm" v-model="v.ouId">
+                                                                            <option disabled value="">Select OU...</option>
+                                                                            <option v-for="ou in costCenterHierachyList" :value="ou.id">{{ ou.name }}</option>
+                                                                        </select>
+                                                                    </td>
+                                                                    <td class="text-center align-middle">
+                                                                        <button type="button" class="btn btn-sm btn-danger" @@click="removeVoucherRow(index)">
+                                                                            <i class="ft-trash"></i>
+                                                                        </button>
+                                                                    </td>
+                                                                </tr>
+                                                            </tbody>
+                                                            
+                                                        </table>
+                                                    </div>
+                
+                                                </div>
+                 
+                                                <fieldset class="form-group">
+
+                                                    <div class="row mt-2">
+                                        
+                                                        <div class="col-sm-4">
+                                                
+                                                            <div class="form-group">
+
+                                                                <label> <strong> WithHolding Rate(%): </strong>  </label>
+                                                                <input type="number" class="form-control" v-model="withHoldingRate" ref="withHoldingRate" min="0" placeholder="0.00" @@input="reComputeVoucherSummary()">
+
+                                                            </div>
+                                                            
+                                                            <div class="form-group">
+                                                    
+                                                                <label> <strong> WithHolding Tax Type: </strong>  </label>
+                                                                <input type="text" class="form-control" v-model="taxType" id="taxType" placeholder="Tax Type">
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                    
+                                                                <label> <strong> WithHolding Credit G/L: </strong>  </label>
+                                                                <select class="form-control" v-model="withHoldingAccountId" id="withHoldingAccountId" name="WithHoldingAccountId">
+                                                                    <option disabled value="">Select Account</option>
+                                                                    <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                </select>
+
+                                                            </div>
+                                                
+                                                            
+                                                
+                                                            <div class="form-group">
+                                                    
+                                                                <label> <strong> VAT/Withhold Account : </strong> </label>
+                                                                <select class="form-control" v-model="vatWithHoldingAccountId" id="vatWithHoldingAccountId" name="vatWithHoldingAccountId">
+                                                                    <option disabled value="">Select Account</option>
+                                                                    <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                </select>
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> VAT Amount: </strong> </label>
+                                                                <input type="number" class="form-control" readonly v-model="totalVatAmount" ref="totalVatAmount" min="0" placeholder="0.00">
+
+                                                            </div>
+                                                            
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> Base Amount: </strong> </label>
+                                                                <input type="number" class="form-control" readonly v-model="amountWithoutTaxes" ref="amountWithoutTaxes" min="0" placeholder="0.00">
+
+                                                            </div>
+
+                                                        </div>
+                                            
+                                                        <div class="col-sm-4">
+                                                
+                                                            <div class="form-group">
+                                                                         
+                                                                <div class="row">
+                                                        
+                                                                    <div class="col-sm-4">
+                                                                        <label class="checkbox checkbox-primary mt-2">
+                                                                
+                                                                            <input type="checkbox" v-model="hasGetFundLevy" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> GETFL ? </strong> </span> <span class="checkmark"></span>
+                                                                
+                                                                        </label> 
+                                                                    </div>
+                                                        
+                                                                    <div class="col-sm-8">
+                                                            
+                                                                        <div class="form-group mt-3" v-if="hasGetFundLevy">
+                                                                
+                                                                            <label> <b> GETFL Rate (%): </b> </label>
+                                                                            <input v-model="getFundLevyRate" type="number" ref="getFundLevyRate" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+
+                                                                        </div>
+                                                                    </div>
+                                                        
+                                                                </div>
+                                                     
+                                                    
+                                                            </div>
+                                                 
+                                                            <div class="form-group mt-2">
+                                                    
+                                                                <div class="row">
+                                                        
+                                                                    <div class="col-sm-4">
+
+                                                                        <label class="checkbox checkbox-primary">
+                                                            
+                                                                            <input type="checkbox" v-model="hasNationalHealthInsuranceLevy" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> NHIL ? </strong> </span> <span class="checkmark"></span>
+                                                                        </label>
+                                                            
+                                                                    </div>
+
+                                                                    <div class="col-sm-8">
+
+                                                                        <div class="form-group" v-if="hasNationalHealthInsuranceLevy">
+                                                                                                                        
+                                                                            <label> <b> NHIL Rate (%): </b> </label>
+                                                                            <input v-model="nationalHealthInsuranceLevyRate" type="number" ref="nationalHealthInsuranceLevyRate" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+                                                                                                                         
+                                                                        </div>
+                                                            
+
+                                                                    </div>
+
+
+                                                                </div>
+
+                                                            </div>
+                                                
+                                                            <div class="form-group mt-2">
+                                                    
+                                                                <div class="row">
+                                                        
+                                                                    <div class="col-sm-4">
+                                                                        <label class="checkbox checkbox-primary">
+                                                            
+                                                                            <input type="checkbox" v-model="hasCommunicationServiceTax" ref="hasCommunicationServiceTax" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> CST ? </strong> </span> <span class="checkmark"></span>
+                                                                        </label>
+                                                            
+                                                            
+                                                                    </div>
+                                                        
+                                                                    <div class="col-sm-8">
+                                                                        <div class="form-group" v-if="hasCommunicationServiceTax">
+                                                                                                                         
+                                                                            <label> <strong> CST Tax Rate (%): </strong> </label>
+                                                                            <input v-model="communicationServiceTaxRate" type="number" ref="communicationServiceTaxRate" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+                                                            
+                                                                        </div>
+                                                             
+                                                                    </div>
+                                                        
+                                                                </div>
+                                                     
+                                                            </div>
+                                                
+                                                            <div class="form-group mt-2">
+                                                    
+                                                                <div class="row">
+
+                                                                    <div class="col-sm-4">
+                                                                        <label class="checkbox checkbox-primary">
+
+                                                                            <input type="checkbox" v-model="hasCovidTax" ref="hasCovidTax" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> COVID ? </strong> </span> <span class="checkmark"></span>
+                                                                        </label>
+
+                                                                    </div>
+
+                                                                    <div class="col-sm-8">
+                                                                        <div class="form-group" v-if="hasCovidTax">
+
+                                                                            <label> <strong> COVID Tax Rate (%): </strong> </label>
+                                                                            <input v-model="covidTaxRate" type="number" ref="covidTaxRate" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+
+                                                                        </div>
+
+                                                                    </div>
+
+                                                                </div>
+
+                                                            </div>
+                                                
+                                                            <div class="form-group mt-2">
+                                                    
+                                                                <div class="row">
+
+                                                                    <div class="col-sm-4">
+
+                                                                        <label class="checkbox checkbox-primary">
+
+                                                                            <input type="checkbox" v-model="hasVat" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> VAT ? </strong> </span> <span class="checkmark"></span>
+                                                                        </label>
+
+                                                                    </div>
+
+                                                                    <div class="col-sm-8">
+
+                                                                        <div class="form-group" v-if="hasVat">
+
+                                                                            <label> <b> VAT Rate (%): </b> </label>
+                                                                            <input v-model="vatRate" type="number" ref="vatRate" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+
+                                                                        </div>
+
+                                                                    </div>
+
+
+                                                                </div>
+
+                                                            </div>
+
+                                                            <div class="form-group mt-2">
+                                                    
+                                                                <div class="row">
+
+                                                                    <div class="col-sm-5">
+
+                                                                        <label class="checkbox checkbox-primary">
+                                                                            <input type="checkbox" v-model="hasVatWithhold" :disabled="!hasWithHolding"> <span class="ml-2"> <strong> VAT Withhold </strong> </span> <span class="checkmark"></span>
+                                                                        </label>
+
+                                                                    </div>
+
+                                                                    <div class="col-sm-7">
+
+                                                                        <div class="form-group" v-if="hasVatWithhold">
+
+                                                                            <label> <b> VAT Withhold Rate (%): </b> </label>
+                                                                            <input v-model="withHoldingVatPercentage" type="number" ref="withHoldingVatPercentage" placeholder="0" class="form-control" @@input="reComputeVoucherSummary()"/>
+
+                                                                        </div>
+
+                                                                    </div>
+
+
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                            
+                                                        <div class="col-sm-4">
+                                                
+                                                            <div class="form-group">
+
+                                                                <label> <strong> Total: </strong> </label>
+                                                                <input type="number" readonly class="form-control" v-model="totalDebit" ref="totalDebit" min="0" placeholder="0.00">
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> With Held: </strong> </label>
+                                                                <input type="number" readonly class="form-control" v-model="totalWithHeldAmount" min="0" placeholder="0.00">
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> Retained: </strong> </label>
+                                                                <input type="number" readonly class="form-control" v-model="totalRetentionCredit" min="0" placeholder="0.00">
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> Net Amount: </strong> </label>
+                                                                <input type="number" readonly class="form-control" v-model="totalNetAmount" min="0" placeholder="0.00">
+
+                                                            </div>
+                                                
+                                                            <div class="form-group">
+                                                     
+                                                                <label> <strong> VAT Withheld Amount: </strong> </label>
+                                                                <input type="number" readonly class="form-control" v-model="totalVatWithHeldAmount" min="0" placeholder="0.00">
+
+                                                            </div>
+
+                                                        </div>
+                                             
+                                            
+                                                    </div>
+                                        
+                                                </fieldset>
+                                                
+                                            </div>
+                
+                                            <div class="tab-pane fade" id="retentions" role="tabpanel" aria-labelledby="retensions-tab">
+                
+                                                <div class="row">
+                
+                                                    <div class="col-sm-12">
+                                                        <div class="table-responsive">
+                                                            <table class="table table-bordered table-sm table-striped mt-1">
+                                                                <thead class="bg-primary text-white">
+                                                                    <tr>
+                                                                        <th style="width: 25%;">Description</th>
+                                                                        <th style="width: 25%;">Credit G/L</th>
+                                                                        <th style="width: 15%;">Amount</th>
+                                                                        <th style="width: 15%;">Fixed Amt/Percentage?</th>
+                                                                        <th style="width: 15%;">Total Amount</th>
+                                                                        <th style="width: 5%;">Act.</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    <tr v-for="(r, index) in retentionsList" :key="r.id">
+                                                                        <td>
+                                                                            <input type="text" class="form-control form-control-sm" v-model="r.description" placeholder="Description" />
+                                                                        </td>
+                                                                        <td>
+                                                                            <select class="form-control form-control-sm" v-model="r.accountId">
+                                                                                <option disabled value="">Select Account...</option>
+                                                                                <option v-for="acc in accountsList" :value="acc.id">{{ acc.accountIdentifier }}</option>
+                                                                            </select>
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number" class="form-control form-control-sm text-right" v-model.number="r.amount" placeholder="0.00" min="0" @@input="onRetentionAmountChange(r)" />
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <input type="checkbox" v-model="r.IsPercentage" @@change="onRetentionAmountChange(r)" />
+                                                                        </td>
+                                                                        <td>
+                                                                            <input type="number" class="form-control form-control-sm text-right" v-model.number="r.totalAmount" placeholder="0.00" min="0" disabled />
+                                                                        </td>
+                                                                        <td class="text-center align-middle">
+                                                                            <button type="button" class="btn btn-sm btn-danger" @@click="removeRetentionRow(index)">
+                                                                                <i class="fa fa-trash"></i>
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                                <tfoot>
+                                                                    <tr>
+                                                                        <td colspan="4" class="text-right align-middle"><strong>Total Retention:</strong></td>
+                                                                        <td class="text-right align-middle"><strong>{{ totalRetentionCredit }}</strong></td>
+                                                                        <td></td>
+                                                                    </tr>
+                                                                    <tr>
+                                                                        <td colspan="6">
+                                                                            <button type="button" class="btn btn-sm btn-success" @@click="addRetentionRow()">
+                                                                                <i class="fa fa-plus"></i> Add Row
+                                                                            </button>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tfoot>
+                                                            </table>
+                                                        </div>
+                                                    </div>
+                
+                                                </div>
+                                            </div>
+                                        </div>
+                            
+                                    </div>
+                
+                                </div>
+                                
+                            </div>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+
+        </div>
+    </div>
+</div>
+
+<script>
+let withHoldingVatPercentage = '@withHoldingVatPercentage';
+let voucherId = '@(Model?.VoucherId ?? "")';
+</script>
+
+<script src="https://unpkg.com/vue-select@3.0.0"></script>
+<link rel="stylesheet" href="https://unpkg.com/vue-select@3.0.0/dist/vue-select.css">
+<style>
+    /* Ensure vue-select has a white background and looks like a form control */
+    .v-select { background: #fff; }
+    .vs__dropdown-toggle { 
+        border: 1px solid #cacfe7; 
+        border-radius: 0.25rem; 
+        padding: 0.6rem 0.5rem;
+    }
+    .vs__selected, .vs__search, .vs__search:focus {
+        margin: 0;
+    }
+    .vs__actions {
+        padding-top: 0;
+    }
+</style>
+<script>
+    Vue.component('v-select', VueSelect.VueSelect);
+</script>
+
+<script src="~/libs/vuelidate/vuelidate.min.js"></script>
+<script src="~/libs/vuelidate/validators.min.js"></script>
+
+<script src="~/js/gl/data-entry/supplier-payment-voucher.js" asp-append-version="true"></script>
