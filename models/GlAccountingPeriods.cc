@@ -55,6 +55,8 @@ const std::string GlAccountingPeriods::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string GlAccountingPeriods::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string GlAccountingPeriods::Cols::_version = "\"version\"";
+
 
 const std::string GlAccountingPeriods::primaryKeyName = "id";
 
@@ -80,7 +82,8 @@ const std::vector<typename GlAccountingPeriods::MetaData> GlAccountingPeriods::m
 {"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","std::string","uuid",0,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"version","int32_t","integer",4,0,0,1}
 
 };
 const std::string &GlAccountingPeriods::getColumnName(size_t index) noexcept(false)
@@ -288,11 +291,18 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
 
         }
 
+        if(!r["version"].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r["version"].as<int32_t>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 17 > r.size())
+        if(offset + 18 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -511,13 +521,21 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
 
         }
 
+        index = offset + 17;
+        if(!r[index].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
     }
 
 }
 
 GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -761,6 +779,15 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson[pMasqueradingVector[17]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[17]].asInt64());
         }
     }
 
@@ -1010,12 +1037,21 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         }
     }
 
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[17]=true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
+        }
+    }
+
 }
 
 void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1261,6 +1297,15 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson[pMasqueradingVector[17]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[17]].asInt64());
+        }
+    }
+
 }
 
 void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -1503,6 +1548,15 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
         }
     }
 
@@ -1887,6 +1941,23 @@ void GlAccountingPeriods::setDeletedByUserIdToNull() noexcept
     dirtyFlag_[16] = true;
 }
 
+const int32_t &GlAccountingPeriods::getValueOfVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(version_)
+        return *version_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &GlAccountingPeriods::getVersion() const noexcept
+{
+    return version_;
+}
+void GlAccountingPeriods::setVersion(const int32_t &pVersion) noexcept
+{
+    version_ = std::make_shared<int32_t>(pVersion);
+    dirtyFlag_[17] = true;
+}
+
 void GlAccountingPeriods::updateId(const uint64_t id)
 {
 }
@@ -1911,7 +1982,8 @@ const std::vector<std::string> &GlAccountingPeriods::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "version"
 
     };
     return inCols;
@@ -2124,6 +2196,18 @@ void GlAccountingPeriods::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[17])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlAccountingPeriods::updateColumns() const
@@ -2213,6 +2297,11 @@ const std::vector<std::string> GlAccountingPeriods::updateColumns() const
     if(dirtyFlag_[16])
     {
         ret.push_back(getColumnName(16));
+    }
+
+    if(dirtyFlag_[17])
+    {
+        ret.push_back(getColumnName(17));
     }
 
     return ret;
@@ -2425,6 +2514,18 @@ void GlAccountingPeriods::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[17])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlAccountingPeriods::toJson() const
 {
@@ -2617,6 +2718,17 @@ Json::Value GlAccountingPeriods::toJson() const
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -2629,7 +2741,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 17)
+    if(pMasqueradingVector.size() == 18)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -2870,6 +2982,20 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[17].empty())
+        {
+            if(getVersion())
+            {
+
+                ret[pMasqueradingVector[17]]=getValueOfVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[17]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -3061,6 +3187,17 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -3199,13 +3336,19 @@ bool GlAccountingPeriods::validateJsonForCreation(const Json::Value &pJson, std:
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(17, "version", pJson["version"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlAccountingPeriods::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         err = "Bad masquerading vector";
         return false;
@@ -3412,6 +3555,16 @@ bool GlAccountingPeriods::validateMasqueradedJsonForCreation(const Json::Value &
 
       }
 
+      if(!pMasqueradingVector[17].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[17]))
+          {
+              if(!validJsonOfField(17, pMasqueradingVector[17], pJson[pMasqueradingVector[17]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -3531,13 +3684,19 @@ bool GlAccountingPeriods::validateJsonForUpdate(const Json::Value &pJson, std::s
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(17, "version", pJson["version"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlAccountingPeriods::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         err = "Bad masquerading vector";
         return false;
@@ -3649,6 +3808,12 @@ bool GlAccountingPeriods::validateMasqueradedJsonForUpdate(const Json::Value &pJ
       if(!pMasqueradingVector[16].empty() && pJson.isMember(pMasqueradingVector[16]))
       {
           if(!validJsonOfField(16, pMasqueradingVector[16], pJson[pMasqueradingVector[16]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+      {
+          if(!validJsonOfField(17, pMasqueradingVector[17], pJson[pMasqueradingVector[17]], err, false))
               return false;
       }
 
@@ -3934,6 +4099,22 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
             }
 
             if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 17:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

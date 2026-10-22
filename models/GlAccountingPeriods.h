@@ -66,6 +66,7 @@ class GlAccountingPeriods
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _version;
 
     };
 
@@ -275,9 +276,17 @@ class GlAccountingPeriods
     void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column version  */
+    ///Get the value of the column version, returns the default value if the column is null
+    const int32_t &getValueOfVersion() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getVersion() const noexcept;
+    ///Set the value of the column version
+    void setVersion(const int32_t &pVersion) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 17;  }
+
+    static size_t getColumnNumber() noexcept {  return 18;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -322,6 +331,7 @@ class GlAccountingPeriods
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
     std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> version_;
 
     struct MetaData
     {
@@ -334,7 +344,7 @@ class GlAccountingPeriods
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[17]={ false };
+    bool dirtyFlag_[18]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -463,6 +473,13 @@ class GlAccountingPeriods
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
+        }
+        sql += "version,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[17])
+        {
+            needSelection=true;
         }
 
         if(parametersCount > 0)
@@ -632,6 +649,19 @@ class GlAccountingPeriods
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        if(dirtyFlag_[17])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(parametersCount > 0)
