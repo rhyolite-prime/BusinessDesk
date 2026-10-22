@@ -45,6 +45,7 @@ export interface LedgerVoucher {
   version?: number
   requestId?: string
   periodId?: string | null
+  taxType?: string
   taxes?: VoucherTaxes
   baseCurrencyCode?: string
   taxSummary?: VoucherTaxSummary
@@ -115,6 +116,7 @@ export interface CreateLedgerVoucherInput {
   version?: number
   requestId?: string
   periodId?: string | null
+  taxType?: string
   taxes?: VoucherTaxes
 
   accountingUnitId?: string
