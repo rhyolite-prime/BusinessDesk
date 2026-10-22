@@ -3,8 +3,8 @@ import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {calculateVoucher} from '../../frontend/app/features/ledger/voucher-tax.ts'
-let checks=0,fail=false,failEmployees=false
-let stored=null, savedInput=null
+let checks=0,fail=false,failEmployees=false,failCustomers=false
+let stored=null, savedInput=null, catalogMode=false, catalogRows=[]
 const seen=[],check=(v,label)=>{assert.ok(v,label);checks++}
 const id=n=>`90000000-0000-4000-8000-${String(n).padStart(12,'0')}`
 const unit=id(1),bank=id(2),debit=id(3),supplier=id(4),center=id(5),usd=id(6),eur=id(7)
@@ -18,7 +18,7 @@ const upstream=http.createServer(async(req,res)=>{
  if(p==='/api/v1/ledger/vouchers'&&req.method==='POST'){
   let raw='';for await(const chunk of req)raw+=chunk;savedInput=JSON.parse(raw)
   const summary=calculateVoucher(savedInput)
-  stored={...savedInput,id:id(21),voucherNumber:savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',batchNumber:savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+  stored={...savedInput,id:id(21),voucherNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',batchNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
   return send(201,stored)
  }
  if(p===`/api/v1/ledger/vouchers/${id(21)}`&&req.method==='GET')return send(200,stored)
@@ -32,6 +32,19 @@ const upstream=http.createServer(async(req,res)=>{
  const paged=(data,totalPages=1)=>send(200,{data,totalPages,totalCount:data.length})
  if(p==='/api/v1/ledger/accounting-units')return paged([{id:unit,name:'USD office',code:'USD-HQ',baseCurrencyId:usd,isActive:true}])
  if(p==='/api/v1/shared/currencies')return paged([{id:usd,name:'US dollar',code:'USD',isActive:true},{id:eur,name:'Euro',code:'EUR',isActive:true}])
+ if(p.startsWith('/api/v1/shared/customers/')&&catalogMode){
+  let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw)
+  if(req.method==='PUT'){catalogRows=catalogRows.map(c=>({...c,...body,version:2}));return send(200,catalogRows[0])}
+  if(req.method==='DELETE'){catalogRows=[];return send(200,{deleted:true})}
+ }
+ if(p==='/api/v1/shared/customers'){
+  if(catalogMode){
+    if(req.method==='POST') { let raw='';for await(const chunk of req)raw+=chunk;const body=JSON.parse(raw);catalogRows.push({...body,id:id(80),currencyCode:'USD',version:1});return send(201,catalogRows.at(-1)) }
+    return send(200,{data:catalogRows,totalPages:1,totalCount:catalogRows.length})
+  }
+  if(failCustomers)return send(503,null)
+  return send(200,{data:url.searchParams.get('pageNo')==='2'?[{id:id(71),name:'Live Customer',accountNumber:'DB-CUS-001',accountingUnitId:unit,receivableAccountId:debit,currencyId:usd,currencyCode:'USD',isActive:true,version:1},{id:id(72),name:'Inactive Customer',accountNumber:'OFF',accountingUnitId:unit,receivableAccountId:debit,currencyId:usd,currencyCode:'USD',isActive:false,version:1}]:[{id:id(73),name:'Other Unit Customer',accountNumber:'OTHER',accountingUnitId:id(74),receivableAccountId:debit,currencyId:usd,currencyCode:'USD',isActive:true,version:1}],totalPages:2,totalCount:3})
+ }
  if(p==='/api/v1/shared/employees/options'){
   if(failEmployees)return send(503,null)
   return send(200,{data:url.searchParams.get('pageNo')==='2'?[{id:id(62),name:'Database Employee Two',employeeIdentifier:'DB-EMP-002',status:0}]:[{id:id(61),name:'Database Employee One',employeeIdentifier:'DB-EMP-001',status:0}],totalCount:2})
@@ -161,6 +174,55 @@ try{
   check(await page.getByText('Legacy retention',{exact:true}).count()===0&&(await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'legacy employee retention rows are discarded and unflagged amounts remain untaxed')
   failEmployees=true;await page.reload();await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor()
   check(await employeeSelect.locator('option').count()===1,'failed employee API leaves no stale or demo employees')
+  failEmployees=false
+  await page.goto(base+'/ledger/vouchers/new/customer-receipt')
+  const customerSelect=page.getByLabel('Customer',{exact:true})
+  await customerSelect.locator('option').filter({hasText:'Live Customer'}).waitFor({state:'attached'})
+  check(await customerSelect.locator('option').count()===2,'receipt customers are live, active, paginated and posting-unit scoped without demos')
+  check(seen.some(x=>x.p==='/api/v1/shared/customers'&&x.query.includes('pageNo=2')),'customer catalog follows pagination')
+  await customerSelect.selectOption(id(71))
+  check(await page.getByLabel('Credit GL line 1',{exact:true}).inputValue()===debit,'customer selection defaults the mapped receivable GL')
+  check(await page.getByRole('heading',{name:'Taxes & withholding',exact:true}).count()===0&&await page.getByRole('heading',{name:'Retentions',exact:true}).count()===0&&await page.getByRole('columnheader',{name:'Withhold?',exact:true}).count()===0,'receipt has no tax, withholding, imprest or retention controls')
+  await page.getByLabel('Bank / cash G/L',{exact:true}).selectOption(bank)
+  await page.getByLabel('Organizational unit line 1',{exact:true}).selectOption(center)
+  await page.getByPlaceholder('Invoice',{exact:true}).fill('CUS-INV-1')
+  await page.getByPlaceholder('0.00',{exact:true}).fill('80')
+  await page.getByRole('button',{name:'Add line',exact:true}).click()
+  check(await page.getByLabel('Credit GL line 2',{exact:true}).inputValue()===debit&&await page.getByLabel('Organizational unit line 2',{exact:true}).inputValue()===center,'new receipt allocations inherit mapped AR and organization')
+  await page.getByPlaceholder('0.00',{exact:true}).nth(1).fill('40')
+  check((await page.getByText('Net received · USD',{exact:true}).locator('..').innerText()).includes('120.00'),'receipt sums every allocation without deductions')
+  const receiptJournal=page.locator('section').filter({has:page.getByRole('heading',{name:'Proposed journal entry',exact:true})})
+  check(await receiptJournal.locator('tbody tr').count()===2&&(await receiptJournal.innerText()).includes('Customer receivable settlement'),'receipt preview shows legacy two-line bank debit and AR credit')
+  await page.getByRole('button',{name:'Save draft',exact:true}).click()
+  await page.waitForURL('**/ledger/vouchers');await page.getByText('CRV-TEST',{exact:true}).first().waitFor()
+  check(savedInput.type==='customer-receipt'&&savedInput.payeeId===id(71)&&savedInput.receiptDate&&savedInput.lines.length===2&&savedInput.retentions.length===0,'receipt save sends customer, receipt date and all source rows through live BFF')
+  check(savedInput.lines.every(l=>!l.isWithhold&&!Object.hasOwn(l,'isImprest'))&&Object.values(savedInput.taxes).every(t=>!t.enabled),'receipt payload never carries hidden payment flags or enabled taxes')
+  await page.goto(base+`/ledger/vouchers/new/customer-receipt?id=${id(21)}`)
+  await page.getByText('Net received · USD',{exact:true}).locator('..').filter({hasText:'120.00'}).waitFor()
+  check(await customerSelect.inputValue()===id(71)&&await page.getByLabel('Credit GL line 2',{exact:true}).inputValue()===debit,'receipt customer and all allocations restore for editing')
+  result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
+  check(result.response.status===200&&result.body.status==='Posted','receipt posting BFF forwards live server response')
+  failCustomers=true;await page.goto(base+'/ledger/vouchers/new/customer-receipt');await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor()
+  check(await customerSelect.locator('option').count()===1,'customer load failure does not reuse stale or demo choices')
+  failCustomers=false;catalogMode=true
+  await page.goto(base+'/ledger/shared-config/customers')
+  await page.getByRole('button',{name:'Add customer',exact:true}).click()
+  await page.getByLabel('Customer number',{exact:true}).fill('CUS-NEW')
+  await page.getByLabel('Customer name',{exact:true}).fill('Managed Customer')
+  await page.getByLabel('Receivable G/L',{exact:true}).selectOption(debit)
+  await page.getByLabel('Transaction currency',{exact:true}).selectOption(usd)
+  await page.getByRole('button',{name:'Save customer',exact:true}).click()
+  await page.getByText('Managed Customer',{exact:true}).waitFor()
+  check(catalogRows[0].accountNumber==='CUS-NEW'&&catalogRows[0].accountingUnitId===unit&&catalogRows[0].receivableAccountId===debit,'customer catalog form creates a connected live receivable mapping')
+  await page.getByRole('button',{name:'Edit Managed Customer',exact:true}).click()
+  await page.getByLabel('Customer name',{exact:true}).fill('Renamed Customer')
+  await page.getByRole('button',{name:'Save customer',exact:true}).click()
+  await page.getByText('Renamed Customer',{exact:true}).waitFor()
+  check(catalogRows[0].version===2,'customer edit forwards current version through BFF')
+  page.once('dialog',dialog=>dialog.accept())
+  await page.getByRole('button',{name:'Archive Renamed Customer',exact:true}).click()
+  await page.getByText('No customers to display.',{exact:true}).waitFor()
+  check(catalogRows.length===0,'customer archive uses live authenticated DELETE transport')
   check(errors.length===0,'no browser runtime errors')
  }finally{await browser.close()}
  check(seen.filter(x=>x.p.startsWith('/api/v1/shared/')||x.p.startsWith('/api/v1/ledger/')).every(x=>x.token==='Bearer tenant-token'),'every upstream lookup forwards bearer authentication')

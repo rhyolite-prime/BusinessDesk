@@ -3,7 +3,7 @@
 #include "utils/AuditUtil.h"
 #include <drogon/drogon.h>
 namespace business_desk::domain_services {
-// Shared supplier/employee payment workflow. Retains the existing class name
+// Shared supplier/employee payment and customer receipt workflow. Retains the existing class name
 // and controller routes so supplier clients need no endpoint migration.
 class SupplierVoucherService {
 public:

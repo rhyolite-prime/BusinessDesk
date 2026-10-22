@@ -13,6 +13,17 @@ export interface VoucherAccount {
   currencyId: string | null
   accountType: number
 }
+export interface CustomerVoucherOption {
+  id: string
+  name: string
+  accountNumber: string
+  accountingUnitId: string
+  receivableAccountId: string
+  currencyCode: string
+  currencyId: string
+  isActive: boolean
+  version: number
+}
 interface Unit {
   id: string
   name: string
@@ -33,6 +44,7 @@ interface Center {
 }
 export function useVoucherLookups(
   includeEmployees: () => boolean = () => false,
+  includeCustomers: () => boolean = () => false,
 ) {
   const request = useRequestFetch(),
     { user } = useBusinessDeskAuth()
@@ -41,6 +53,7 @@ export function useVoucherLookups(
     currencies = ref<Currency[]>([]),
     suppliers = ref<SupplierRecord[]>([]),
     employees = ref<EmployeeVoucherOption[]>([]),
+    customers = ref<CustomerVoucherOption[]>([]),
     centers = ref<Center[]>([]),
     accounts = ref<VoucherAccount[]>([]),
     banks = ref<BankAccount[]>([]),
@@ -69,10 +82,11 @@ export function useVoucherLookups(
     loading.value = true
     error.value = ''
     employees.value = []
+    customers.value = []
     accounts.value = []
     banks.value = []
     try {
-      const [u, c, s, o, e] = await Promise.all([
+      const [u, c, s, o, e, customerOptions] = await Promise.all([
         pages<Unit>('/api/ledger/accounting-units'),
         pages<Currency>('/api/shared/currencies'),
         pages<SupplierRecord>('/api/shared/suppliers'),
@@ -84,6 +98,9 @@ export function useVoucherLookups(
               }),
             )
           : Promise.resolve([] as EmployeeVoucherOption[]),
+        includeCustomers()
+          ? pages<CustomerVoucherOption>('/api/shared/customers')
+          : Promise.resolve([] as CustomerVoucherOption[]),
       ])
       if (current !== generation || who !== identity()) return
       units.value = u.filter((x) => x.isActive)
@@ -91,6 +108,7 @@ export function useVoucherLookups(
       suppliers.value = s.filter((x) => x.statusId !== 'inactive')
       centers.value = o.data
       employees.value = e
+      customers.value = customerOptions.filter((c) => c.isActive)
       if (!units.value.some((x) => x.id === unitId.value)) {
         unitId.value = units.value[0]?.id || ''
         if (unitId.value) return
@@ -146,6 +164,7 @@ export function useVoucherLookups(
     }),
   )
   watch(unitId, () => void load())
+  watch(includeCustomers, () => void load())
   watch(includeEmployees, () => void load())
   onMounted(load)
   watch(identity, () => {
@@ -154,6 +173,7 @@ export function useVoucherLookups(
     currencies.value = []
     suppliers.value = []
     employees.value = []
+    customers.value = []
     centers.value = []
     accounts.value = []
     banks.value = []
@@ -169,6 +189,7 @@ export function useVoucherLookups(
     currencies,
     suppliers,
     employees,
+    customers,
     costCenters,
     accounts,
     banks,

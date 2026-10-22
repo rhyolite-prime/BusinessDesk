@@ -119,8 +119,7 @@ voucher posting and prerequisites). No new application migration is needed:
 No migration or seed was applied to an application database during development.
 The legacy JS only stores `hasImprest`; it does not create an imprest advance.
 This implementation likewise preserves the flag without inventing an advance,
-retirement, refund or separate imprest subledger ceremony. Customer-receipt
-persistence remains unsupported.
+retirement, refund or separate imprest subledger ceremony. Customer receipt persistence is described below.
 
 Verification: pure employee options/flag tests, the shared frontend/C++ voucher
 math parity tests, `test/vouchers/lookups_browser_test.mjs` (real Chromium and
@@ -129,3 +128,79 @@ PostgreSQL and the actual voucher/journal services with a synchronous coroutine
 transport seam). Coverage includes supplier regression, employee pagination,
 save/edit hydration, independent flags, no retention, withholding, FX, live payee
 scope, approval, transaction rollback, posting retry and immutable posted rows.
+
+
+## Customer receipt vouchers
+
+The live receipt form follows `templates/CustomerReceiptVouchers.cshtml` and
+`templates/customer-receipt-voucher.js` from commit 74e54a8. It selects a live
+customer, bank/cash GL and linked bank record, entry/receipt dates, payment mode,
+cheque number when needed, transaction currency/rate, and invoice/reference/
+description/organization allocations. Customer choices come from the paginated,
+authenticated `/api/shared/customers` BFF (`/api/v1/shared/customers` upstream),
+not demo payees. Only active customers in the posting unit are offered. Catalog
+failures clear choices and block saving; every upstream call carries the token.
+
+The supplied JS explicitly builds **two journal lines**: bank/cash debit for the
+sum of *all* allocations, and customer receivable credit for that same total.
+This implementation preserves that mapping. All allocations must use the selected
+customer's mapped receivable GL and one organizational unit (the first row's OU
+and reference are used on the aggregate journal). Unlike the legacy script,
+conflicting accounts or OUs are rejected rather than silently discarded. The
+form defaults customer GL/currency on selection and inherits GL/OU for new rows.
+The table correctly calls the receivable allocation a **Credit G/L** despite the
+legacy template's misleading Debit label. Individual invoice/reference details
+remain in the saved voucher; this does not implement invoice matching/settlement.
+
+Receipts have **no tax, withholding, retention or imprest controls**. Hidden old
+payment flags/taxes/retentions are cleared during receipt hydration/payload
+construction, and the server rejects enabled taxes, withholding, retentions or
+imprest fields. Gross equals net received. Shared fixed-point rounding is kept:
+local amounts round half-up to two decimals per row, and foreign amounts convert
+once to the unit base currency before rounding. Source foreign amounts and the
+entered rate remain on the voucher; the journal posts in base currency at rate 1.
+
+The same voucher API implements preview, create, read/list, optimistic-versioned
+draft update/delete, submit, administrator approval and posting. Receipt numbers
+use `CRV-` and the existing shared tenant/unit sequence (gaps per type are normal).
+The common voucher table stores `customer_id/customer_name`, `is_payment=false`,
+and the receipt date in its existing `payment_date` column, while `source_payload`
+retains `receiptDate`. Existing generic `debit_account_id` line columns retain
+source allocation GLs, not a claim about the posted journal side. Posting calls
+`JournalService::createAndPost` transactionally: voucher linkage, posted journal,
+history and GL balances commit or roll back together; retries cannot duplicate
+posting and posted vouchers cannot be edited/deleted. Unit/date/period, active
+payee, accounts/currencies and organization scope are revalidated on posting.
+Posting period selection stays available outside the payment-only tax section.
+
+### Customer catalog prerequisite and deployment
+
+No customer table/API existed in this checkout, so migration
+**020_customer_receipts.sql** adds the minimal tenant-owned `core_customers`
+catalog and tenant-scoped voucher customer FK/live-link trigger. It uses existing
+migrations through 019 and has a matching down migration. It is registered for
+the existing audited tenant business-data reset. No seed/demo customer is added.
+**No application database migration was applied during development.**
+
+Create customers at **Shared config → Customers** (`/ledger/shared-config/customers`).
+Fields: customer number, name, posting unit, receivable G/L, transaction currency,
+and active flag. Authenticated live tenant users can read the minimal catalog;
+only tenant administrators can create/update/archive. Tenant/audit scope comes
+from the authenticated actor, never the body. Mapping validates a live,
+manual-postable, non-control base-currency GL in the chosen active unit, plus an
+active transaction currency. Numbers remain reserved after archive; stale
+versions fail. A live receipt prevents changes/archival that could invalidate
+its customer mapping. This is a minimal receipt prerequisite, not a full sales,
+credit-control or accounts-receivable/invoice management subsystem.
+
+Verification includes real PostgreSQL migrations (020 up/down/up), customer CRUD,
+minimal lookup access/admin-only writes, scoped validation and soft deletion;
+receipt preview/save/edit/delete/approval/posting, all-row sums and correct bank
+and receivable balance directions, rollback after journal creation, idempotent
+retries, FX and incoming direction, and supplier/employee regressions. Chromium
+exercises real built Nuxt/BFF with controlled upstream contracts for customer
+pagination/filtering, receipt defaults/preview/save/hydration/post transport,
+failure without stale/demo choices and customer catalog CRUD. PostgreSQL tests
+run the actual services with a synchronous coroutine transport seam, not a fully
+linked Drogon HTTP application. The new controller and both affected services
+also pass native syntax checking with real Drogon/Trantor/JsonCpp headers.
