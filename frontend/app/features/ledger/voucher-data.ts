@@ -26,6 +26,8 @@ export interface LedgerVoucherLine {
   localAmount: string
   foreignAmount: string
   isWithhold: boolean
+  /** Independent employee-payment line flag; omitted on other voucher types. */
+  isImprest?: boolean
 }
 
 export interface LedgerVoucherRetention {
@@ -98,6 +100,8 @@ export interface LedgerVoucherLineInput {
   localAmount: string
   foreignAmount: string
   isWithhold: boolean
+  /** Independent employee-payment line flag; omitted on other voucher types. */
+  isImprest?: boolean
 }
 
 export interface LedgerVoucherRetentionInput {

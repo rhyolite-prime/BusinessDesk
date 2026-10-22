@@ -80,10 +80,13 @@ preview lines, or retention deductions. Their payload has `retentions: []`, even
 when hydrating an old draft containing retentions. Supplier forms retain their
 existing tax/withholding/retention functionality.
 
-The employee line checkbox reads **Imprest ?**, with an employee-specific
-accessible label. It retains the existing `isWithhold` wire field for DTO
-compatibility; employee calculations do not treat it as tax withholding. This
-is a form-label change, not a new imprest disbursement/posting ceremony.
+Employee lines show independent **Imprest ?** (`isImprest`) and **Withhold?**
+(`isWithhold`) checkboxes, each with a distinct accessible label. New employee
+payloads carry both booleans; other voucher types omit `isImprest`. Older
+employee drafts without `isImprest` interpret their legacy `isWithhold` value as
+Imprest only, starting the new withholding flag unchecked. This adds independent
+form state; it does not implement tax calculation rules or a new imprest
+disbursement/posting ceremony.
 
 **Existing limitation remains:** the C++ voucher service currently accepts only
 supplier-payment persistence/posting. The employee form still displays that
