@@ -51,6 +51,7 @@ const ledgerGroups: NavigationGroup[] = [
           { label: 'Currencies', to: '/ledger/shared-config/currencies', icon: 'banknotes' },
           { label: 'Supplier groups', to: '/ledger/shared-config/supplier-groups', icon: 'user-group' },
           { label: 'Suppliers', to: '/ledger/shared-config/suppliers', icon: 'truck' },
+          { label: 'Employees', to: '/ledger/shared-config/employees', icon: 'identification' },
           { label: 'Banks and branches', to: '/ledger/shared-config/banks-and-branches', icon: 'building-library' },
           { label: 'System numbers', to: '/ledger/shared-config/system-numbers', icon: 'document-text' },
           { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
