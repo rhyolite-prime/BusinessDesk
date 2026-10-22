@@ -20,6 +20,8 @@ type Event = {
   reason: string
   createdAt: string
   createdByUserId: string
+  actorFullName: string | null
+  actorEmail: string | null
 }
 const api = useJournals(),
   { unitId } = api,
@@ -144,6 +146,9 @@ function hideHistory() {
   historyPeriod.value = null
   historyRequest++
 }
+function cancelTransition() {
+  if (!saving.value) target.value = null
+}
 function confirm(period: Period, next: 'open' | 'close') {
   target.value = period
   action.value = next
@@ -205,276 +210,423 @@ async function showHistory(period: Period) {
 </script>
 <template>
   <div class="min-w-0 space-y-6">
-    <header class="flex flex-wrap items-start justify-between gap-3">
-      <div>
-        <p class="text-xs text-slate-400">General Ledger / Period controls</p>
-        <h1 class="mt-2 text-3xl font-semibold">Accounting periods</h1>
-        <p class="mt-2 max-w-2xl text-sm text-slate-500">
-          Create non-overlapping periods, then open them for posting. Closing
-          blocks new postings without changing posted journals or balances.
-        </p>
-      </div>
-      <NuxtLink
-        to="/ledger/journals"
-        class="rounded-lg border px-3 py-2 text-xs"
-        >Journal posting →</NuxtLink
+    <PageHeader
+      title="Accounting Periods"
+      icon="calendar-days"
+      subtitle="Create, open and close accounting periods for journal posting."
+    >
+      <BaseButton to="/ledger/journals" variant="secondary" icon="book-open">
+        Journal posting →
+      </BaseButton>
+    </PageHeader>
+
+    <BaseCard>
+      <div
+        class="grid min-w-0 items-end gap-4 sm:grid-cols-[minmax(0,1fr)_8rem_auto]"
       >
-    </header>
-    <div class="flex flex-wrap items-end gap-3">
-      <label class="min-w-0 text-xs"
-        >Accounting unit<select
-          v-model="unitId"
-          :disabled="saving"
-          class="mt-2 block h-10 max-w-full rounded-lg border bg-transparent px-3"
+        <FormField label="Accounting unit">
+          <select v-model="unitId" :disabled="saving" class="period-input">
+            <option value="">Select an accounting unit</option>
+            <option v-for="u in units" :key="u.id" :value="u.id">
+              {{ u.code }} · {{ u.name }}
+            </option>
+          </select>
+        </FormField>
+        <FormField label="Period year">
+          <input
+            v-model.number="year"
+            type="number"
+            min="1900"
+            max="2999"
+            :disabled="saving"
+            class="period-input tnum"
+          />
+        </FormField>
+        <BaseButton
+          variant="secondary"
+          icon="arrow-path"
+          :disabled="saving || loading || !unitId"
+          @click="load"
         >
-          <option value="">Select an accounting unit</option>
-          <option v-for="u in units" :key="u.id" :value="u.id">
-            {{ u.code }} · {{ u.name }}
-          </option>
-        </select></label
-      ><label class="text-xs"
-        >Period year<input
-          v-model.number="year"
-          type="number"
-          min="1900"
-          max="2999"
-          :disabled="saving"
-          class="mt-2 block h-10 w-28 rounded-lg border bg-transparent px-3" /></label
-      ><button
-        :disabled="saving || loading || !unitId"
-        class="h-10 rounded-lg border px-3 text-xs disabled:opacity-40"
-        @click="load"
-      >
-        Refresh periods
-      </button>
-    </div>
-    <p v-if="!unitId" class="text-sm text-slate-500">
-      Select an accounting unit to manage its periods.
+          Refresh periods
+        </BaseButton>
+      </div>
+      <p class="mt-3 flex items-start gap-2 text-xs text-ink-faint">
+        <AppIcon name="information-circle" :size="15" />
+        Period dates are inclusive. Closing prevents new postings without
+        changing existing journals or balances.
+      </p>
+    </BaseCard>
+
+    <BaseCard v-if="!unitId && !loading">
+      <EmptyState
+        icon="building-office"
+        title="Select an accounting unit"
+        message="Select an accounting unit to manage its periods."
+      />
+    </BaseCard>
+    <p
+      v-if="loading"
+      role="status"
+      class="flex items-center gap-2 text-sm text-ink-faint"
+    >
+      <AppIcon
+        name="arrow-path"
+        :size="16"
+        class="animate-spin motion-reduce:animate-none"
+      />
+      Loading periods…
     </p>
-    <p v-if="loading" role="status">Loading periods…</p>
-    <p v-if="error" role="alert" class="text-sm text-rose-600">{{ error }}</p>
+    <p
+      v-if="error"
+      role="alert"
+      class="period-alert border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"
+    >
+      <AppIcon name="exclamation-triangle" :size="18" /> {{ error }}
+    </p>
     <p
       v-if="success"
       role="status"
-      class="rounded-lg bg-emerald-50 p-3 text-sm text-emerald-800"
+      class="period-alert border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/30 dark:text-emerald-300"
     >
-      {{ success }}
+      <AppIcon name="check-circle" :size="18" /> {{ success }}
     </p>
-    <form
+
+    <BaseCard
       v-if="loaded"
-      class="rounded-xl border bg-white p-5 dark:bg-[#15201e]"
-      @submit.prevent="create"
+      title="Create accounting period"
+      icon="plus"
+      subtitle="New periods start closed. Open them when ready to accept postings."
     >
-      <h2 class="font-semibold">Create accounting period</h2>
-      <p class="mt-1 text-xs text-slate-500">
-        Created closed. Dates may be customized for fiscal calendars;
-        overlapping periods are not permitted. Dates cannot be changed here
-        after creation.
-      </p>
-      <fieldset
-        :disabled="saving"
-        class="mt-4 grid min-w-0 gap-4 sm:grid-cols-3"
-      >
-        <label class="min-w-0 text-xs"
-          >Period month / code<input
-            v-model="month"
-            type="month"
-            required
-            min="1900-01"
-            max="2999-12"
-            class="mt-2 h-10 w-full min-w-0 rounded-lg border bg-transparent px-3"
-            @change="defaultDates" /></label
-        ><label class="min-w-0 text-xs"
-          >Start date<input
-            v-model="beginDate"
-            type="date"
-            required
-            min="1900-01-01"
-            max="2999-12-31"
-            class="mt-2 h-10 w-full min-w-0 rounded-lg border bg-transparent px-3" /></label
-        ><label class="min-w-0 text-xs"
-          >End date<input
-            v-model="endDate"
-            type="date"
-            required
-            :min="beginDate || '1900-01-01'"
-            max="2999-12-31"
-            class="mt-2 h-10 w-full min-w-0 rounded-lg border bg-transparent px-3"
-        /></label>
-      </fieldset>
-      <button
-        :disabled="saving"
-        class="mt-4 rounded-lg bg-brand-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
-      >
-        {{ saving ? 'Saving…' : 'Create period' }}
-      </button>
-    </form>
-    <p v-if="saveError && !target" role="alert" class="text-sm text-rose-600">
-      {{ saveError }}
+      <form @submit.prevent="create">
+        <fieldset :disabled="saving" class="grid min-w-0 gap-4 sm:grid-cols-3">
+          <FormField label="Period month / code">
+            <input
+              v-model="month"
+              type="month"
+              required
+              min="1900-01"
+              max="2999-12"
+              class="period-input tnum"
+              @change="defaultDates"
+            />
+          </FormField>
+          <FormField label="Start date">
+            <input
+              v-model="beginDate"
+              type="date"
+              required
+              min="1900-01-01"
+              max="2999-12-31"
+              class="period-input tnum"
+            />
+          </FormField>
+          <FormField label="End date">
+            <input
+              v-model="endDate"
+              type="date"
+              required
+              :min="beginDate || '1900-01-01'"
+              max="2999-12-31"
+              class="period-input tnum"
+            />
+          </FormField>
+        </fieldset>
+        <div
+          class="mt-5 flex flex-wrap items-center justify-between gap-4 border-t border-line pt-4"
+        >
+          <p class="max-w-xl text-xs text-ink-faint">
+            Dates may be customized for fiscal calendars. Ranges cannot overlap,
+            and dates cannot be changed here after creation.
+          </p>
+          <BaseButton type="submit" icon="plus" :disabled="saving">{{
+            saving ? 'Saving…' : 'Create period'
+          }}</BaseButton>
+        </div>
+      </form>
+    </BaseCard>
+    <p
+      v-if="saveError && !target"
+      role="alert"
+      class="period-alert border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"
+    >
+      <AppIcon name="exclamation-triangle" :size="18" /> {{ saveError }}
     </p>
-    <section v-if="loaded" class="overflow-x-auto rounded-xl border">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-slate-50 text-xs dark:bg-slate-900">
-          <tr>
-            <th class="p-3">Period</th>
-            <th class="p-3">Dates (inclusive)</th>
-            <th class="p-3">Status</th>
-            <th class="p-3">Last close</th>
-            <th class="p-3">Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="p in periods" :key="p.id" class="border-t">
-            <td class="p-3 font-mono">{{ p.period }}</td>
-            <td class="whitespace-nowrap p-3 text-xs">
-              {{ p.beginDate }} — {{ p.endDate }}
-            </td>
-            <td class="p-3">
-              <span
-                :class="
-                  p.status === 'open' ? 'text-emerald-600' : 'text-amber-600'
-                "
-                >{{ p.status }}</span
-              ><span class="ml-2 text-[10px] text-slate-400"
-                >v{{ p.version }}</span
+
+    <BaseCard
+      v-if="loaded"
+      title="Accounting periods"
+      icon="calendar-days"
+      :subtitle="`Period year ${year}`"
+      :pad="false"
+      class="min-w-0 overflow-hidden"
+    >
+      <template #actions
+        ><Badge tone="gray" size="sm"
+          >{{ periods.length }} periods</Badge
+        ></template
+      >
+      <div class="overflow-x-auto">
+        <table class="w-full min-w-[760px] text-left text-sm">
+          <thead
+            class="border-b border-line bg-canvas/50 text-[11px] font-semibold uppercase tracking-wide text-ink-faint"
+          >
+            <tr>
+              <th scope="col" class="px-5 py-3">Period</th>
+              <th scope="col" class="px-5 py-3">Dates (inclusive)</th>
+              <th scope="col" class="px-5 py-3">Status</th>
+              <th scope="col" class="px-5 py-3">Last close</th>
+              <th scope="col" class="px-5 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-line/60">
+            <tr
+              v-for="p in periods"
+              :key="p.id"
+              class="transition-colors hover:bg-primary-soft/40"
+            >
+              <td class="px-5 py-4 font-semibold text-ink tnum">
+                {{ p.period }}
+              </td>
+              <td
+                class="whitespace-nowrap px-5 py-4 text-xs text-ink-soft tnum"
               >
-            </td>
-            <td class="p-3 text-xs">
-              <span>{{
-                p.lastClosedAt ? new Date(p.lastClosedAt).toLocaleString() : '—'
-              }}</span>
-              <p class="max-w-xs break-words text-slate-500">
-                {{ p.closeReason }}
-              </p>
-            </td>
-            <td class="p-3">
-              <div class="flex gap-2">
-                <button
-                  v-if="p.status === 'closed'"
-                  :disabled="saving"
-                  class="rounded border px-3 py-1 text-xs text-emerald-700"
-                  @click="confirm(p, 'open')"
+                {{ p.beginDate }} — {{ p.endDate }}
+              </td>
+              <td class="px-5 py-4">
+                <Badge
+                  :tone="
+                    p.status === 'open'
+                      ? 'green'
+                      : p.status === 'closed'
+                        ? 'amber'
+                        : 'gray'
+                  "
+                  dot
+                  size="sm"
+                  >{{ p.status }}</Badge
                 >
-                  Open</button
-                ><button
-                  v-if="p.status === 'open'"
-                  :disabled="saving"
-                  class="rounded border px-3 py-1 text-xs text-amber-700"
-                  @click="confirm(p, 'close')"
+                <p class="mt-1.5 text-[11px] text-ink-faint">
+                  v{{ p.version }}
+                </p>
+              </td>
+              <td class="px-5 py-4 text-xs text-ink-soft">
+                <span class="whitespace-nowrap tnum">{{
+                  p.lastClosedAt
+                    ? new Date(p.lastClosedAt).toLocaleString()
+                    : '—'
+                }}</span>
+                <p
+                  v-if="p.closeReason"
+                  class="mt-1 max-w-xs break-words text-ink-faint"
                 >
-                  Close</button
-                ><button
-                  :disabled="saving"
-                  class="rounded border px-3 py-1 text-xs"
-                  @click="showHistory(p)"
-                >
-                  History
-                </button>
-              </div>
-            </td>
-          </tr>
-          <tr v-if="!periods.length">
-            <td colspan="5" class="p-6 text-center text-slate-500">
-              No periods configured for this year.
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </section>
-    <section v-if="historyPeriod" class="rounded-xl border p-5">
-      <header class="flex justify-between">
-        <h2 class="font-semibold">Period {{ historyPeriod.period }} history</h2>
-        <button class="text-xs underline" @click="hideHistory">
-          Hide history
-        </button>
-      </header>
-      <p v-if="historyLoading" role="status">Loading history…</p>
-      <p v-if="historyError" role="alert" class="text-rose-600">
-        {{ historyError }}
+                  {{ p.closeReason }}
+                </p>
+              </td>
+              <td class="px-5 py-4">
+                <div class="flex justify-end gap-2">
+                  <BaseButton
+                    v-if="p.status === 'closed'"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="saving"
+                    @click="confirm(p, 'open')"
+                    >Open</BaseButton
+                  >
+                  <BaseButton
+                    v-if="p.status === 'open'"
+                    variant="ghost"
+                    size="sm"
+                    :disabled="saving"
+                    @click="confirm(p, 'close')"
+                    >Close</BaseButton
+                  >
+                  <BaseButton
+                    variant="ghost"
+                    size="sm"
+                    icon="clock"
+                    :disabled="saving"
+                    @click="showHistory(p)"
+                    >History</BaseButton
+                  >
+                </div>
+              </td>
+            </tr>
+            <tr v-if="!periods.length">
+              <td colspan="5">
+                <EmptyState
+                  icon="calendar-days"
+                  title="No periods configured for this year."
+                  message="Create a period above, then open it to enable journal posting."
+                />
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <template #footer
+        ><p class="text-xs text-ink-faint">
+          Open periods accept postings. Closed and locked periods remain
+          available for review.
+        </p></template
+      >
+    </BaseCard>
+
+    <BaseCard
+      v-if="historyPeriod"
+      :title="`Period ${historyPeriod.period} history`"
+      icon="clock"
+      subtitle="Status changes and the actors who made them."
+    >
+      <template #actions
+        ><BaseButton
+          variant="ghost"
+          size="sm"
+          icon="x-mark"
+          @click="hideHistory"
+          >Hide history</BaseButton
+        ></template
+      >
+      <p v-if="historyLoading" role="status" class="text-sm text-ink-faint">
+        Loading history…
       </p>
       <p
-        v-if="!historyLoading && !historyError && !history.length"
-        class="mt-3 text-xs text-slate-500"
+        v-if="historyError"
+        role="alert"
+        class="period-alert border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"
       >
-        No events recorded since period management was enabled.
+        {{ historyError }}
       </p>
-      <ol class="mt-3 space-y-3">
+      <EmptyState
+        v-if="!historyLoading && !historyError && !history.length"
+        icon="clock"
+        title="No events recorded since period management was enabled."
+      />
+      <ol class="space-y-3">
         <li
           v-for="event in history"
           :key="event.version"
-          class="rounded-lg bg-slate-50 p-3 text-xs dark:bg-slate-900"
+          class="rounded-lg border border-line bg-canvas/50 p-4 text-xs"
         >
-          <strong>{{ event.action }} · v{{ event.version }}</strong> ·
-          {{ new Date(event.createdAt).toLocaleString() }}
-          <p>
-            {{ event.previousStatus || 'New' }} → {{ event.newStatus }} ·
-            {{ event.reason }}
+          <div class="flex flex-wrap items-center justify-between gap-2">
+            <strong class="text-ink"
+              >{{ event.action }} · v{{ event.version }}</strong
+            >
+            <time :datetime="event.createdAt" class="text-ink-faint tnum">{{
+              new Date(event.createdAt).toLocaleString()
+            }}</time>
+          </div>
+          <p class="mt-2 text-ink-soft">
+            {{ event.previousStatus || 'New' }} → {{ event.newStatus
+            }}<span v-if="event.reason"> · {{ event.reason }}</span>
           </p>
-          <p class="mt-1 break-all text-[10px] text-slate-400">
-            Actor: {{ event.createdByUserId }}
+          <p class="mt-2 break-all text-[11px] text-ink-faint">
+            Actor: {{ event.actorFullName || 'Unavailable user'
+            }}<template v-if="event.actorEmail">
+              · {{ event.actorEmail }}</template
+            >
           </p>
         </li>
       </ol>
-    </section>
-    <div
-      v-if="target"
-      class="fixed inset-0 z-[90] grid place-items-center bg-slate-950/50 p-4"
-    >
-      <form
-        role="dialog"
-        aria-modal="true"
-        :aria-label="
-          action === 'open'
-            ? 'Open accounting period'
-            : 'Close accounting period'
-        "
-        class="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl dark:bg-[#15201e]"
-        @submit.prevent="transition"
+    </BaseCard>
+
+    <Teleport to="body">
+      <div
+        v-if="target"
+        class="fixed inset-0 z-[90] flex items-center justify-center overflow-y-auto bg-slate-950/40 p-4 backdrop-blur-sm"
+        @click.self="cancelTransition"
+        @keydown.esc.prevent="cancelTransition"
       >
-        <h2 class="font-semibold">
-          {{ action === 'open' ? 'Open' : 'Close' }} period {{ target.period }}?
-        </h2>
-        <p class="mt-3 text-xs text-slate-500">
-          {{
+        <form
+          role="dialog"
+          aria-modal="true"
+          :aria-label="
             action === 'open'
-              ? 'Opening permits journals dated within this period to be posted. Reopening does not reverse prior postings.'
-              : 'Closing stops subsequent postings. Unposted drafts remain drafts; existing postings and balances are unchanged.'
-          }}
-        </p>
-        <label class="mt-4 block text-xs"
-          >Reason<textarea
-            v-model="reason"
-            required
-            maxlength="500"
-            :disabled="saving"
-            class="mt-2 min-h-24 w-full rounded-lg border bg-transparent p-3"
-          />
-        </label>
-        <p v-if="saveError" role="alert" class="mt-2 text-xs text-rose-600">
-          {{ saveError }}
-        </p>
-        <div class="mt-4 flex justify-end gap-2">
-          <button
-            type="button"
-            :disabled="saving"
-            class="rounded-lg border px-3 py-2 text-xs"
-            @click="target = null"
+              ? 'Open accounting period'
+              : 'Close accounting period'
+          "
+          class="my-auto w-full max-w-lg rounded-2xl border border-line bg-surface shadow-2xl"
+          @submit.prevent="transition"
+        >
+          <header
+            class="flex items-start justify-between gap-4 border-b border-line px-6 py-4"
           >
-            Cancel</button
-          ><button
-            :disabled="saving || !reason.trim()"
-            class="rounded-lg bg-brand-700 px-3 py-2 text-xs text-white disabled:opacity-40"
+            <div>
+              <p class="mb-1 text-xs text-ink-faint">
+                Accounting periods / Status change
+              </p>
+              <h2 class="text-base font-semibold text-ink">
+                {{ action === 'open' ? 'Open' : 'Close' }} period
+                {{ target.period }}?
+              </h2>
+            </div>
+            <button
+              type="button"
+              :disabled="saving"
+              aria-label="Close dialog"
+              class="rounded-md p-1 text-ink-faint transition hover:bg-canvas hover:text-ink disabled:opacity-50"
+              @click="cancelTransition"
+            >
+              <AppIcon name="x-mark" :size="18" />
+            </button>
+          </header>
+          <div class="space-y-4 px-6 py-5">
+            <p class="text-sm text-ink-soft">
+              {{
+                action === 'open'
+                  ? 'Opening permits journals dated within this period to be posted. Reopening does not reverse prior postings.'
+                  : 'Closing stops subsequent postings. Unposted drafts remain drafts; existing postings and balances are unchanged.'
+              }}
+            </p>
+            <FormField label="Reason">
+              <textarea
+                v-model="reason"
+                required
+                maxlength="500"
+                :disabled="saving"
+                rows="3"
+                class="period-input min-h-24 resize-y"
+                placeholder="Explain why this period is being changed…"
+              />
+            </FormField>
+            <p
+              v-if="saveError"
+              role="alert"
+              class="period-alert border-rose-200 bg-rose-50 text-rose-700 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-300"
+            >
+              {{ saveError }}
+            </p>
+          </div>
+          <footer
+            class="flex justify-end gap-2 rounded-b-2xl border-t border-line bg-canvas/50 px-6 py-4"
           >
-            {{
+            <BaseButton
+              variant="secondary"
+              :disabled="saving"
+              @click="cancelTransition"
+              >Cancel</BaseButton
+            >
+            <BaseButton type="submit" :disabled="saving || !reason.trim()">{{
               saving
                 ? 'Saving…'
                 : action === 'open'
                   ? 'Confirm open'
                   : 'Confirm close'
-            }}
-          </button>
-        </div>
-      </form>
-    </div>
+            }}</BaseButton>
+          </footer>
+        </form>
+      </div>
+    </Teleport>
   </div>
 </template>
+
+<style scoped>
+@reference "../../../../layers/shared/app/assets/css/main.css";
+
+.period-input {
+  @apply block w-full min-w-0 rounded-lg border border-line bg-surface px-3 py-2 text-sm text-ink transition placeholder:text-ink-faint focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/30 disabled:cursor-not-allowed disabled:bg-canvas disabled:opacity-50;
+}
+.period-alert {
+  @apply flex items-start gap-2 rounded-lg border p-3 text-sm;
+}
+</style>

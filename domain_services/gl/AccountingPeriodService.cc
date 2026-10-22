@@ -72,15 +72,16 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
                                          who.tenantId, unit, id);
     if (rows.empty())
       co_return fail("not_found", "Accounting period not found.");
-    auto events = co_await db->execSqlCoro(
-        "SELECT "
-        "jsonb_build_object('action',action,'previousStatus',previous_status,'"
-        "newStatus',new_status,'version',version,'reason',reason,'createdAt',"
-        "created_at,'createdByUserId',created_by_user_id) AS record FROM "
-        "gl_accounting_period_events WHERE tenant_id=$1 AND "
-        "accounting_unit_id=$2 AND period_id=$3 AND is_deleted=false ORDER BY "
-        "version DESC",
-        who.tenantId, unit, id);
+    auto events = co_await db->execSqlCoro(R"(
+SELECT jsonb_build_object('action',e.action,'previousStatus',e.previous_status,
+ 'newStatus',e.new_status,'version',e.version,'reason',e.reason,'createdAt',e.created_at,
+ 'createdByUserId',e.created_by_user_id,
+ 'actorFullName',NULLIF(btrim(concat_ws(' ',NULLIF(btrim(u.first_name),''),NULLIF(btrim(u.last_name),''))),''),
+ 'actorEmail',NULLIF(btrim(u.email),'')) AS record
+FROM gl_accounting_period_events e
+LEFT JOIN users u ON u.id=e.created_by_user_id AND u.tenant_id=e.tenant_id AND u.is_deleted=false
+WHERE e.tenant_id=$1 AND e.accounting_unit_id=$2 AND e.period_id=$3 AND e.is_deleted=false
+ORDER BY e.version DESC)", who.tenantId, unit, id);
     result.result["items"] = Json::arrayValue;
     for (const auto &row : events)
       result.result["items"].append(decode(row));

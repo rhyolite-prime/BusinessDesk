@@ -37,3 +37,12 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I. \
 ```
 
 Never put real credentials in `config.local.example.json`, source control, or the Nuxt public runtime config.
+
+### Tenant preferences and training-data initialization
+
+Migration `015_tenant_preferences.sql` enables `/preferences` and administrator-only
+initialization of reviewed tenant business tables. See [Preferences and reset
+safeguards](preferences.md) before deployment or testing. Backups and a maintenance
+window are required operational precautions: confirmed resets permanently remove
+posted and archived test data while preserving company profile, access/security,
+preferences and reset audit. Never test initialization against a production DB.

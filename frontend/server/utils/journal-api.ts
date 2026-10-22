@@ -98,7 +98,7 @@ export async function journalRequest(
       throw createError({
         statusCode: 503,
         statusMessage:
-          'Journal database upgrade required. Apply migrations 008_company_profiles.sql and 012_journals.sql (after their prerequisites) to the backend database.',
+          'Journal database upgrade required. Apply migrations 008_company_profiles.sql, 012_journals.sql and 014_journal_organization_units.sql (after their prerequisites) to the backend database.',
       })
     if (code === 'approval_required')
       throw createError({

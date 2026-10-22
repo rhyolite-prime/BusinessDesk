@@ -23,7 +23,7 @@ std::string projection(){return R"(jsonb_build_object('id',b.id,'accountingUnitI
 'isMultiCurrency',EXISTS(SELECT 1 FROM gl_journal_lines l WHERE l.tenant_id=b.tenant_id AND l.accounting_unit_id=b.accounting_unit_id AND l.journal_batch_id=b.id AND l.is_deleted=false AND l.is_multi_currency=true),
 'lines',COALESCE((SELECT jsonb_agg(jsonb_build_object('id',l.id,'accountId',l.account_id,'accountName',l.account_name,
 'accountNumber',COALESCE((SELECT account_number FROM gl_accounts a WHERE a.id=l.account_id AND a.tenant_id=l.tenant_id AND a.accounting_unit_id=l.accounting_unit_id AND a.is_deleted=false),''),
-'costCenterId',l.cost_center_id,'organizationUnitId',l.organization_unit_id,'organizationUnitName',l.organization_unit_name,
+'costCenterId',l.organization_unit_id,'organizationUnitId',l.organization_unit_id,'organizationUnitName',l.organization_unit_name,
 'referenceNumber',COALESCE(l.reference_number,''),'chequeNumber',COALESCE(l.cheque_number,''),'description',COALESCE(l.description,''),'transactionDate',l.transaction_date,
 'currencyId',l.currency_id,'currencyCode',l.currency_code,'currencyName',l.currency_name,'exchangeRate',l.buy_rate::text,
 'debit',l.debit_amount::text,'credit',l.credit_amount::text,'baseDebit',l.base_debit_amount::text,'baseCredit',l.base_credit_amount::text)
@@ -33,6 +33,7 @@ std::string selection(){return "SELECT "+projection()+" FROM gl_journal_batches 
 drogon::Task<bool> ready(DbClientPtr db){auto r=co_await db->execSqlCoro(R"(SELECT
  EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_batches') AND attname='version' AND NOT attisdropped)
  AND EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_lines') AND attname='line_number' AND NOT attisdropped)
+ AND NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_lines') AND attname='cost_center_id' AND NOT attisdropped)
  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_lines_live_position') AND indisvalid AND indisready)
  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_batches_idempotency') AND NOT indnullsnotdistinct AND indisvalid) AND to_regclass('core_cost_centers') IS NOT NULL AND to_regclass('core_company_profiles') IS NOT NULL AS ready)");co_return !r.empty()&&r[0]["ready"].as<bool>();}
 struct Normalized {Json::Value body;std::string error;};
@@ -43,7 +44,11 @@ drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::V
  std::map<std::string,Json::Value> prior;for(auto& l:current["lines"])prior[l["id"].asString()]=l;std::set<std::string> seen;
  for(auto& l:body["lines"]){
   if(!l.isObject())co_return invalid("Each journal line must be an object.");
-  for(auto& k:l.getMemberNames())if(k!="id"&&k!="accountId"&&k!="currencyId"&&k!="costCenterId"&&k!="exchangeRate"&&k!="debit"&&k!="credit"&&k!="description"&&k!="referenceNumber"&&k!="chequeNumber"&&k!="transactionDate")co_return invalid("Unexpected journal line field; names, base amounts and organization assignments are server-owned.");
+  if(l.isMember("organizationUnitId")){
+   if(!optionalId(l["organizationUnitId"])||(l.isMember("costCenterId")&&(!optionalId(l["costCenterId"])||l["costCenterId"]!=l["organizationUnitId"])))co_return invalid("Organization unit and cost center must identify the same live unit.");
+   l["costCenterId"]=l["organizationUnitId"];l.removeMember("organizationUnitId");
+  }
+  for(auto& k:l.getMemberNames())if(k!="id"&&k!="accountId"&&k!="currencyId"&&k!="costCenterId"&&k!="organizationUnitId"&&k!="exchangeRate"&&k!="debit"&&k!="credit"&&k!="description"&&k!="referenceNumber"&&k!="chequeNumber"&&k!="transactionDate")co_return invalid("Unexpected journal line field; names, base amounts and organization assignments are server-owned.");
   if(l.isMember("id")){if(!l["id"].isString()||!uuid(l["id"].asString()))co_return invalid("Invalid line ID.");l["id"]=lower(l["id"].asString());auto id=l["id"].asString();if(!prior.count(id)||!seen.insert(id).second)co_return invalid("Line IDs must be unique live lines of this draft.");}
   for(auto k:{"accountId","currencyId"}){if(!l[k].isString()||!uuid(l[k].asString()))co_return invalid("Select a live GL and currency for every line.");l[k]=lower(l[k].asString());}
   if(!l.isMember("transactionDate"))l["transactionDate"]=body["batchDate"];
@@ -53,19 +58,18 @@ drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::V
  const std::string payload=Json::FastWriter().write(body["lines"]),lock=write?" FOR UPDATE":"";
  auto accounts=co_await db->execSqlCoro("SELECT id,account_name,COALESCE(currency_id,$4::uuid) AS currency_id,standard_account_type FROM gl_accounts WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND status='active' AND allow_manual_posting=true AND is_control_account=false AND id IN(SELECT (x->>'accountId')::uuid FROM jsonb_array_elements($3::jsonb) x) ORDER BY id"+lock,who.tenantId,unit,payload,base);
  auto currencies=co_await db->execSqlCoro("SELECT id,code,name FROM core_currencies WHERE is_deleted=false AND is_active=true AND (id=$1 OR id IN(SELECT (x->>'currencyId')::uuid FROM jsonb_array_elements($2::jsonb) x)) ORDER BY id"+lock,base,payload);
- auto centers=co_await db->execSqlCoro("SELECT id FROM core_cost_centers WHERE tenant_id=$1 AND is_deleted=false AND id IN(SELECT (x->>'costCenterId')::uuid FROM jsonb_array_elements($2::jsonb) x) ORDER BY id"+lock,who.tenantId,payload);
- std::map<std::string,Json::Value> accountMap,currencyMap;std::set<std::string> centerIds;
+ auto centers=co_await db->execSqlCoro("SELECT id,name FROM core_cost_centers WHERE tenant_id=$1 AND is_deleted=false AND id IN(SELECT (x->>'costCenterId')::uuid FROM jsonb_array_elements($2::jsonb) x) ORDER BY id"+lock,who.tenantId,payload);
+ std::map<std::string,Json::Value> accountMap,currencyMap;std::map<std::string,std::string> centerNames;
  for(auto& r:accounts){Json::Value a;a["name"]=r["account_name"].as<std::string>();a["currency"]=r["currency_id"].as<std::string>();a["type"]=r["standard_account_type"].as<int>();accountMap[r["id"].as<std::string>()]=a;}
  for(auto& r:currencies){Json::Value c;c["code"]=r["code"].as<std::string>();c["name"]=r["name"].as<std::string>();currencyMap[r["id"].as<std::string>()]=c;}
- for(auto& r:centers)centerIds.insert(r["id"].as<std::string>());
+ for(auto& r:centers)centerNames[r["id"].as<std::string>()]=r["name"].as<std::string>();
  if(!currencyMap.count(base))co_return invalid("The unit's base currency must be live and active.");
  int position=0;for(auto& l:body["lines"]){const auto a=l["accountId"].asString(),c=l["currencyId"].asString();
   if(!accountMap.count(a)||!currencyMap.count(c)||accountMap[a]["currency"]!=c)co_return invalid("GL must be active, manual-postable, non-control, in this unit and match the selected active currency.");
-  if(!l["costCenterId"].isNull()&&!centerIds.count(l["costCenterId"].asString()))co_return invalid("Cost center must be live in this tenant.");
+  if(!l["costCenterId"].isNull()&&!centerNames.count(l["costCenterId"].asString()))co_return invalid("Cost center must be live in this tenant.");
   if((!body["isMultiCurrency"].asBool()&&c!=base)||(c==base&&!one(l["exchangeRate"].asString())))co_return invalid("Local journals must use the company profile default currency at rate 1; enable multi-currency mode for foreign currencies.");
   l["accountName"]=accountMap[a]["name"];l["standardAccountType"]=accountMap[a]["type"];l["currencyCode"]=currencyMap[c]["code"];l["currencyName"]=currencyMap[c]["name"];l["lineNumber"]=++position;
-  l["organizationUnitId"]=Json::nullValue;l["organizationUnitName"]="";
-  if(l.isMember("id")){l["organizationUnitId"]=prior[l["id"].asString()]["organizationUnitId"];l["organizationUnitName"]=prior[l["id"].asString()]["organizationUnitName"];}
+  l["organizationUnitId"]=l["costCenterId"];l["organizationUnitName"]=l["costCenterId"].isNull()?"":centerNames[l["costCenterId"].asString()];
  }
  const std::string normalized=Json::FastWriter().write(body["lines"]);
  auto math=co_await db->execSqlCoro(R"(WITH lines AS(SELECT x,round((x->>'debit')::numeric*(x->>'exchangeRate')::numeric,6) d,round((x->>'credit')::numeric*(x->>'exchangeRate')::numeric,6) c FROM jsonb_array_elements($1::jsonb) x)
@@ -161,17 +165,19 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,cons
  for(const auto& line:body["lines"]){
   const std::string values=Json::FastWriter().write(line);
   if(!line.isMember("id")){
-   co_await db->execSqlCoro(R"(INSERT INTO gl_journal_lines(tenant_id,accounting_unit_id,journal_batch_id,account_id,account_name,cost_center_id,reference_number,cheque_number,description,debit_amount,credit_amount,base_debit_amount,base_credit_amount,transaction_date,is_multi_currency,currency_id,currency_name,currency_code,buy_rate,sell_rate,batch_date,standard_account_type,batch_number,line_number,created_by_user_id)
- VALUES($1,$2,$3,($4::jsonb->>'accountId')::uuid,$4::jsonb->>'accountName',($4::jsonb->>'costCenterId')::uuid,$4::jsonb->>'referenceNumber',$4::jsonb->>'chequeNumber',$4::jsonb->>'description',($4::jsonb->>'debit')::numeric,($4::jsonb->>'credit')::numeric,($4::jsonb->>'baseDebit')::numeric,($4::jsonb->>'baseCredit')::numeric,($4::jsonb->>'transactionDate')::date,($5::jsonb->>'isMultiCurrency')::boolean,($4::jsonb->>'currencyId')::uuid,$4::jsonb->>'currencyName',$4::jsonb->>'currencyCode',($4::jsonb->>'exchangeRate')::numeric,($4::jsonb->>'exchangeRate')::numeric,($5::jsonb->>'batchDate')::date,($4::jsonb->>'standardAccountType')::smallint,$5::jsonb->>'batchNumber',($4::jsonb->>'lineNumber')::integer,$6))",who.tenantId,unit,saved,values,payload,who.userId);
+   co_await db->execSqlCoro(R"(INSERT INTO gl_journal_lines(tenant_id,accounting_unit_id,journal_batch_id,account_id,account_name,organization_unit_id,organization_unit_name,reference_number,cheque_number,description,debit_amount,credit_amount,base_debit_amount,base_credit_amount,transaction_date,is_multi_currency,currency_id,currency_name,currency_code,buy_rate,sell_rate,batch_date,standard_account_type,batch_number,line_number,created_by_user_id)
+ VALUES($1,$2,$3,($4::jsonb->>'accountId')::uuid,$4::jsonb->>'accountName',($4::jsonb->>'organizationUnitId')::uuid,$4::jsonb->>'organizationUnitName',$4::jsonb->>'referenceNumber',$4::jsonb->>'chequeNumber',$4::jsonb->>'description',($4::jsonb->>'debit')::numeric,($4::jsonb->>'credit')::numeric,($4::jsonb->>'baseDebit')::numeric,($4::jsonb->>'baseCredit')::numeric,($4::jsonb->>'transactionDate')::date,($5::jsonb->>'isMultiCurrency')::boolean,($4::jsonb->>'currencyId')::uuid,$4::jsonb->>'currencyName',$4::jsonb->>'currencyCode',($4::jsonb->>'exchangeRate')::numeric,($4::jsonb->>'exchangeRate')::numeric,($5::jsonb->>'batchDate')::date,($4::jsonb->>'standardAccountType')::smallint,$5::jsonb->>'batchNumber',($4::jsonb->>'lineNumber')::integer,$6))",who.tenantId,unit,saved,values,payload,who.userId);
   }else{
-   co_await db->execSqlCoro(R"(UPDATE gl_journal_lines SET account_id=($4::jsonb->>'accountId')::uuid,account_name=$4::jsonb->>'accountName',cost_center_id=($4::jsonb->>'costCenterId')::uuid,reference_number=$4::jsonb->>'referenceNumber',cheque_number=$4::jsonb->>'chequeNumber',description=$4::jsonb->>'description',debit_amount=($4::jsonb->>'debit')::numeric,credit_amount=($4::jsonb->>'credit')::numeric,base_debit_amount=($4::jsonb->>'baseDebit')::numeric,base_credit_amount=($4::jsonb->>'baseCredit')::numeric,transaction_date=($4::jsonb->>'transactionDate')::date,is_multi_currency=($5::jsonb->>'isMultiCurrency')::boolean,currency_id=($4::jsonb->>'currencyId')::uuid,currency_name=$4::jsonb->>'currencyName',currency_code=$4::jsonb->>'currencyCode',buy_rate=($4::jsonb->>'exchangeRate')::numeric,sell_rate=($4::jsonb->>'exchangeRate')::numeric,batch_date=($5::jsonb->>'batchDate')::date,standard_account_type=($4::jsonb->>'standardAccountType')::smallint,line_number=($4::jsonb->>'lineNumber')::integer,last_modified_at=now(),last_modified_by_user_id=$6
+   co_await db->execSqlCoro(R"(UPDATE gl_journal_lines SET account_id=($4::jsonb->>'accountId')::uuid,account_name=$4::jsonb->>'accountName',organization_unit_id=($4::jsonb->>'organizationUnitId')::uuid,organization_unit_name=$4::jsonb->>'organizationUnitName',reference_number=$4::jsonb->>'referenceNumber',cheque_number=$4::jsonb->>'chequeNumber',description=$4::jsonb->>'description',debit_amount=($4::jsonb->>'debit')::numeric,credit_amount=($4::jsonb->>'credit')::numeric,base_debit_amount=($4::jsonb->>'baseDebit')::numeric,base_credit_amount=($4::jsonb->>'baseCredit')::numeric,transaction_date=($4::jsonb->>'transactionDate')::date,is_multi_currency=($5::jsonb->>'isMultiCurrency')::boolean,currency_id=($4::jsonb->>'currencyId')::uuid,currency_name=$4::jsonb->>'currencyName',currency_code=$4::jsonb->>'currencyCode',buy_rate=($4::jsonb->>'exchangeRate')::numeric,sell_rate=($4::jsonb->>'exchangeRate')::numeric,batch_date=($5::jsonb->>'batchDate')::date,standard_account_type=($4::jsonb->>'standardAccountType')::smallint,line_number=($4::jsonb->>'lineNumber')::integer,last_modified_at=now(),last_modified_by_user_id=$6
  WHERE tenant_id=$1 AND accounting_unit_id=$2 AND journal_batch_id=$3 AND id=($4::jsonb->>'id')::uuid AND is_deleted=false)",who.tenantId,unit,saved,values,payload,who.userId);
   }
  }
  if(op=="post"){
+  // Organization selection uses the historical manual-journal cost-center balance
+  // key. Do not split existing balances by introducing a second organization key.
   co_await db->execSqlCoro(R"(INSERT INTO gl_account_balances(tenant_id,accounting_unit_id,account_id,organization_unit_id,cost_center_id,currency_id,debit_balance,credit_balance,foreign_debit_balance,foreign_credit_balance,buy_rate,sell_rate)
- SELECT tenant_id,accounting_unit_id,account_id,organization_unit_id,cost_center_id,currency_id,sum(base_debit_amount),sum(base_credit_amount),sum(debit_amount),sum(credit_amount),round(sum(buy_rate*(debit_amount+credit_amount))/sum(debit_amount+credit_amount),10),round(sum(sell_rate*(debit_amount+credit_amount))/sum(debit_amount+credit_amount),10)
- FROM gl_journal_lines WHERE tenant_id=$1 AND accounting_unit_id=$2 AND journal_batch_id=$3 AND is_deleted=false GROUP BY tenant_id,accounting_unit_id,account_id,organization_unit_id,cost_center_id,currency_id
+ SELECT tenant_id,accounting_unit_id,account_id,NULL::uuid,organization_unit_id,currency_id,sum(base_debit_amount),sum(base_credit_amount),sum(debit_amount),sum(credit_amount),round(sum(buy_rate*(debit_amount+credit_amount))/sum(debit_amount+credit_amount),10),round(sum(sell_rate*(debit_amount+credit_amount))/sum(debit_amount+credit_amount),10)
+ FROM gl_journal_lines WHERE tenant_id=$1 AND accounting_unit_id=$2 AND journal_batch_id=$3 AND is_deleted=false GROUP BY tenant_id,accounting_unit_id,account_id,organization_unit_id,currency_id
  ON CONFLICT ON CONSTRAINT uq_gl_account_balances_dimensions DO UPDATE SET debit_balance=gl_account_balances.debit_balance+EXCLUDED.debit_balance,credit_balance=gl_account_balances.credit_balance+EXCLUDED.credit_balance,foreign_debit_balance=gl_account_balances.foreign_debit_balance+EXCLUDED.foreign_debit_balance,foreign_credit_balance=gl_account_balances.foreign_credit_balance+EXCLUDED.foreign_credit_balance,buy_rate=EXCLUDED.buy_rate,sell_rate=EXCLUDED.sell_rate,updated_at=now())",who.tenantId,unit,saved);
   co_await db->execSqlCoro("UPDATE gl_journal_batches SET status='posted',posted_at=now(),posted_by_user_id=$4 WHERE tenant_id=$1 AND accounting_unit_id=$2 AND id=$3 AND status='draft' AND is_deleted=false",who.tenantId,unit,saved,who.userId);
   co_await db->execSqlCoro("INSERT INTO gl_journal_history(tenant_id,accounting_unit_id,journal_batch_id,batch_number,batch_date,total_credit,total_debit,journal_details,captured_by_user_id,created_by_user_id) SELECT tenant_id,accounting_unit_id,id,batch_number,batch_date,total_credit,total_debit,$4::jsonb->'lines',$5,$5 FROM gl_journal_batches WHERE tenant_id=$1 AND accounting_unit_id=$2 AND id=$3 AND is_deleted=false",who.tenantId,unit,saved,payload,who.userId);
@@ -192,7 +198,7 @@ drogon::Task<dto::BaseApiResponse> JournalService::execute(std::string op,std::s
   if((op=="update"||op=="delete"||op=="post")&&(!body["version"].isInt()||body["version"].asInt()<1))co_return fail("validation_error","Supply the current journal version.");
  }
  try{
-  auto db=drogon::app().getDbClient();if(!(co_await ready(db)))co_return fail("schema_not_ready","Journal database upgrade required. Apply 008_company_profiles.sql and 012_journals.sql after their prerequisites.");
+  auto db=drogon::app().getDbClient();if(!(co_await ready(db)))co_return fail("schema_not_ready","Journal database upgrade required. Apply 008_company_profiles.sql, 012_journals.sql and 014_journal_organization_units.sql after their prerequisites.");
   if(op=="list"||op=="get"||op=="options"||op=="next-number"||op=="validate")co_return co_await run(db,op,id,unit,body,who);
   auto tx=co_await db->newTransactionCoro();dto::BaseApiResponse r;
   try{r=co_await run(tx,op,id,unit,body,who);}catch(...){tx->rollback();throw;}

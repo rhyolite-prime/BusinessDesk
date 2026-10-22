@@ -41,7 +41,6 @@ const std::string GlJournalLines::Cols::_organization_unit_id = "\"organization_
 
 const std::string GlJournalLines::Cols::_organization_unit_name = "\"organization_unit_name\"";
 
-const std::string GlJournalLines::Cols::_cost_center_id = "\"cost_center_id\"";
 
 const std::string GlJournalLines::Cols::_reference_number = "\"reference_number\"";
 
@@ -126,7 +125,6 @@ const std::vector<typename GlJournalLines::MetaData> GlJournalLines::metaData_={
 {"account_name","std::string","character varying",200,0,0,0},
 {"organization_unit_id","std::string","uuid",0,0,0,0},
 {"organization_unit_name","std::string","character varying",160,0,0,0},
-{"cost_center_id","std::string","uuid",0,0,0,0},
 {"reference_number","std::string","character varying",40,0,0,0},
 {"cheque_number","std::string","character varying",40,0,0,0},
 {"description","std::string","character varying",300,0,0,0},
@@ -228,12 +226,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        if(!r["cost_center_id"].isNull())
-        {
 
-            costCenterId_=std::make_shared<std::string>(r["cost_center_id"].as<std::string>());
-
-        }
 
         if(!r["reference_number"].isNull())
         {
@@ -537,7 +530,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 42 > r.size())
+        if(offset + 41 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -608,15 +601,9 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
+
+
         index = offset + 8;
-        if(!r[index].isNull())
-        {
-
-            costCenterId_=std::make_shared<std::string>(r[index].as<std::string>());
-
-        }
-
-        index = offset + 9;
         if(!r[index].isNull())
         {
 
@@ -624,7 +611,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 10;
+        index = offset + 9;
         if(!r[index].isNull())
         {
 
@@ -632,7 +619,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 11;
+        index = offset + 10;
         if(!r[index].isNull())
         {
 
@@ -640,7 +627,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 12;
+        index = offset + 11;
         if(!r[index].isNull())
         {
 
@@ -648,7 +635,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 13;
+        index = offset + 12;
         if(!r[index].isNull())
         {
 
@@ -656,7 +643,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 14;
+        index = offset + 13;
         if(!r[index].isNull())
         {
 
@@ -664,7 +651,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 15;
+        index = offset + 14;
         if(!r[index].isNull())
         {
 
@@ -672,7 +659,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 16;
+        index = offset + 15;
         if(!r[index].isNull())
         {
             auto daysStr = r[index].as<std::string>();
@@ -684,7 +671,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             transactionDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
 
-        index = offset + 17;
+        index = offset + 16;
         if(!r[index].isNull())
         {
 
@@ -692,7 +679,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 18;
+        index = offset + 17;
         if(!r[index].isNull())
         {
 
@@ -700,7 +687,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 19;
+        index = offset + 18;
         if(!r[index].isNull())
         {
 
@@ -708,7 +695,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 20;
+        index = offset + 19;
         if(!r[index].isNull())
         {
 
@@ -716,7 +703,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 21;
+        index = offset + 20;
         if(!r[index].isNull())
         {
 
@@ -724,7 +711,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 22;
+        index = offset + 21;
         if(!r[index].isNull())
         {
             auto daysStr = r[index].as<std::string>();
@@ -736,7 +723,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             dateConsolidated_=std::make_shared<::trantor::Date>(t*1000000);
         }
 
-        index = offset + 23;
+        index = offset + 22;
         if(!r[index].isNull())
         {
 
@@ -744,7 +731,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 24;
+        index = offset + 23;
         if(!r[index].isNull())
         {
 
@@ -752,7 +739,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 25;
+        index = offset + 24;
         if(!r[index].isNull())
         {
 
@@ -760,7 +747,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 26;
+        index = offset + 25;
         if(!r[index].isNull())
         {
 
@@ -768,7 +755,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 27;
+        index = offset + 26;
         if(!r[index].isNull())
         {
 
@@ -776,7 +763,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 28;
+        index = offset + 27;
         if(!r[index].isNull())
         {
             auto daysStr = r[index].as<std::string>();
@@ -788,7 +775,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             batchDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
 
-        index = offset + 29;
+        index = offset + 28;
         if(!r[index].isNull())
         {
             auto daysStr = r[index].as<std::string>();
@@ -800,7 +787,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             closedDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
 
-        index = offset + 30;
+        index = offset + 29;
         if(!r[index].isNull())
         {
 
@@ -808,7 +795,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 31;
+        index = offset + 30;
         if(!r[index].isNull())
         {
 
@@ -816,7 +803,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 32;
+        index = offset + 31;
         if(!r[index].isNull())
         {
 
@@ -824,7 +811,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 33;
+        index = offset + 32;
         if(!r[index].isNull())
         {
 
@@ -832,7 +819,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 34;
+        index = offset + 33;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -857,7 +844,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 35;
+        index = offset + 34;
         if(!r[index].isNull())
         {
 
@@ -865,7 +852,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 36;
+        index = offset + 35;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -890,7 +877,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 37;
+        index = offset + 36;
         if(!r[index].isNull())
         {
 
@@ -898,7 +885,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 38;
+        index = offset + 37;
         if(!r[index].isNull())
         {
 
@@ -906,7 +893,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 39;
+        index = offset + 38;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -931,7 +918,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 40;
+        index = offset + 39;
         if(!r[index].isNull())
         {
 
@@ -939,7 +926,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 41;
+        index = offset + 40;
         if(!r[index].isNull())
         {
 
@@ -953,7 +940,7 @@ GlJournalLines::GlJournalLines(const Row &r, const ssize_t indexOffset) noexcept
 
 GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 42)
+    if(pMasqueradingVector.size() != 41)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1031,12 +1018,14 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+
+
     if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
     {
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            costCenterId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            referenceNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -1045,7 +1034,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            referenceNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+            chequeNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -1054,7 +1043,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            chequeNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
+            description_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -1063,7 +1052,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            description_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+            debitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -1072,7 +1061,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            debitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
+            creditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -1081,7 +1070,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            creditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
+            baseDebitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -1090,7 +1079,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            baseDebitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
+            baseCreditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1099,16 +1088,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            baseCreditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[16].empty() && pJson.isMember(pMasqueradingVector[16]))
-    {
-        dirtyFlag_[16] = true;
-        if(!pJson[pMasqueradingVector[16]].isNull())
-        {
-            auto daysStr = pJson[pMasqueradingVector[16]].asString();
+            auto daysStr = pJson[pMasqueradingVector[15]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1118,12 +1098,21 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+    if(!pMasqueradingVector[16].empty() && pJson.isMember(pMasqueradingVector[16]))
+    {
+        dirtyFlag_[16] = true;
+        if(!pJson[pMasqueradingVector[16]].isNull())
+        {
+            transactionSource_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
     {
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            transactionSource_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
+            isMultiCurrency_=std::make_shared<bool>(pJson[pMasqueradingVector[17]].asBool());
         }
     }
 
@@ -1132,7 +1121,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            isMultiCurrency_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
+            isReconciled_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
         }
     }
 
@@ -1141,7 +1130,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            isReconciled_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
+            isOpeningBalance_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
         }
     }
 
@@ -1150,7 +1139,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            isOpeningBalance_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
+            isConsolidated_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -1159,16 +1148,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            isConsolidated_=std::make_shared<bool>(pJson[pMasqueradingVector[21]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[22].empty() && pJson.isMember(pMasqueradingVector[22]))
-    {
-        dirtyFlag_[22] = true;
-        if(!pJson[pMasqueradingVector[22]].isNull())
-        {
-            auto daysStr = pJson[pMasqueradingVector[22]].asString();
+            auto daysStr = pJson[pMasqueradingVector[21]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1178,12 +1158,21 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+    if(!pMasqueradingVector[22].empty() && pJson.isMember(pMasqueradingVector[22]))
+    {
+        dirtyFlag_[22] = true;
+        if(!pJson[pMasqueradingVector[22]].isNull())
+        {
+            currencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[23].empty() && pJson.isMember(pMasqueradingVector[23]))
     {
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            currencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            currencyName_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
         }
     }
 
@@ -1192,7 +1181,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            currencyName_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
+            currencyCode_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
         }
     }
 
@@ -1201,7 +1190,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[25] = true;
         if(!pJson[pMasqueradingVector[25]].isNull())
         {
-            currencyCode_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
+            buyRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
         }
     }
 
@@ -1210,7 +1199,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            buyRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
+            sellRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
         }
     }
 
@@ -1219,7 +1208,13 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            sellRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
+            auto daysStr = pJson[pMasqueradingVector[27]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
+            time_t t = mktime(&stm);
+            batchDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
     }
 
@@ -1234,7 +1229,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
             stm.tm_isdst = -1;
             strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
             time_t t = mktime(&stm);
-            batchDate_=std::make_shared<::trantor::Date>(t*1000000);
+            closedDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
     }
 
@@ -1243,13 +1238,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[29] = true;
         if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            auto daysStr = pJson[pMasqueradingVector[29]].asString();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            stm.tm_isdst = -1;
-            strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
-            time_t t = mktime(&stm);
-            closedDate_=std::make_shared<::trantor::Date>(t*1000000);
+            pettyCashRecipientId_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
         }
     }
 
@@ -1258,7 +1247,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[30] = true;
         if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            pettyCashRecipientId_=std::make_shared<std::string>(pJson[pMasqueradingVector[30]].asString());
+            pettyCashRecipientName_=std::make_shared<std::string>(pJson[pMasqueradingVector[30]].asString());
         }
     }
 
@@ -1267,7 +1256,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[31] = true;
         if(!pJson[pMasqueradingVector[31]].isNull())
         {
-            pettyCashRecipientName_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
+            standardAccountType_=std::make_shared<short>((short)pJson[pMasqueradingVector[31]].asInt64());
         }
     }
 
@@ -1276,7 +1265,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            standardAccountType_=std::make_shared<short>((short)pJson[pMasqueradingVector[32]].asInt64());
+            batchNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
         }
     }
 
@@ -1285,16 +1274,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            batchNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[34].empty() && pJson.isMember(pMasqueradingVector[34]))
-    {
-        dirtyFlag_[34] = true;
-        if(!pJson[pMasqueradingVector[34]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[34]].asString();
+            auto timeStr = pJson[pMasqueradingVector[33]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1317,21 +1297,21 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+    if(!pMasqueradingVector[34].empty() && pJson.isMember(pMasqueradingVector[34]))
+    {
+        dirtyFlag_[34] = true;
+        if(!pJson[pMasqueradingVector[34]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[35].empty() && pJson.isMember(pMasqueradingVector[35]))
     {
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[36].empty() && pJson.isMember(pMasqueradingVector[36]))
-    {
-        dirtyFlag_[36] = true;
-        if(!pJson[pMasqueradingVector[36]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[36]].asString();
+            auto timeStr = pJson[pMasqueradingVector[35]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1354,12 +1334,21 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+    if(!pMasqueradingVector[36].empty() && pJson.isMember(pMasqueradingVector[36]))
+    {
+        dirtyFlag_[36] = true;
+        if(!pJson[pMasqueradingVector[36]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[37].empty() && pJson.isMember(pMasqueradingVector[37]))
     {
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[37]].asBool());
         }
     }
 
@@ -1368,16 +1357,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[38] = true;
         if(!pJson[pMasqueradingVector[38]].isNull())
         {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[38]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
-    {
-        dirtyFlag_[39] = true;
-        if(!pJson[pMasqueradingVector[39]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[39]].asString();
+            auto timeStr = pJson[pMasqueradingVector[38]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1400,21 +1380,21 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson, const std::vector<std::
         }
     }
 
+    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
+    {
+        dirtyFlag_[39] = true;
+        if(!pJson[pMasqueradingVector[39]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
     {
         dirtyFlag_[40] = true;
         if(!pJson[pMasqueradingVector[40]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[40]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[41].empty() && pJson.isMember(pMasqueradingVector[41]))
-    {
-        dirtyFlag_[41] = true;
-        if(!pJson[pMasqueradingVector[41]].isNull())
-        {
-            lineNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[41]].asInt64());
+            lineNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[40]].asInt64());
         }
     }
 
@@ -1495,18 +1475,11 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("cost_center_id"))
-    {
-        dirtyFlag_[8]=true;
-        if(!pJson["cost_center_id"].isNull())
-        {
-            costCenterId_=std::make_shared<std::string>(pJson["cost_center_id"].asString());
-        }
-    }
+
 
     if(pJson.isMember("reference_number"))
     {
-        dirtyFlag_[9]=true;
+        dirtyFlag_[8]=true;
         if(!pJson["reference_number"].isNull())
         {
             referenceNumber_=std::make_shared<std::string>(pJson["reference_number"].asString());
@@ -1515,7 +1488,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("cheque_number"))
     {
-        dirtyFlag_[10]=true;
+        dirtyFlag_[9]=true;
         if(!pJson["cheque_number"].isNull())
         {
             chequeNumber_=std::make_shared<std::string>(pJson["cheque_number"].asString());
@@ -1524,7 +1497,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("description"))
     {
-        dirtyFlag_[11]=true;
+        dirtyFlag_[10]=true;
         if(!pJson["description"].isNull())
         {
             description_=std::make_shared<std::string>(pJson["description"].asString());
@@ -1533,7 +1506,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("debit_amount"))
     {
-        dirtyFlag_[12]=true;
+        dirtyFlag_[11]=true;
         if(!pJson["debit_amount"].isNull())
         {
             debitAmount_=std::make_shared<std::string>(pJson["debit_amount"].asString());
@@ -1542,7 +1515,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("credit_amount"))
     {
-        dirtyFlag_[13]=true;
+        dirtyFlag_[12]=true;
         if(!pJson["credit_amount"].isNull())
         {
             creditAmount_=std::make_shared<std::string>(pJson["credit_amount"].asString());
@@ -1551,7 +1524,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("base_debit_amount"))
     {
-        dirtyFlag_[14]=true;
+        dirtyFlag_[13]=true;
         if(!pJson["base_debit_amount"].isNull())
         {
             baseDebitAmount_=std::make_shared<std::string>(pJson["base_debit_amount"].asString());
@@ -1560,7 +1533,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("base_credit_amount"))
     {
-        dirtyFlag_[15]=true;
+        dirtyFlag_[14]=true;
         if(!pJson["base_credit_amount"].isNull())
         {
             baseCreditAmount_=std::make_shared<std::string>(pJson["base_credit_amount"].asString());
@@ -1569,7 +1542,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("transaction_date"))
     {
-        dirtyFlag_[16]=true;
+        dirtyFlag_[15]=true;
         if(!pJson["transaction_date"].isNull())
         {
             auto daysStr = pJson["transaction_date"].asString();
@@ -1584,7 +1557,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("transaction_source"))
     {
-        dirtyFlag_[17]=true;
+        dirtyFlag_[16]=true;
         if(!pJson["transaction_source"].isNull())
         {
             transactionSource_=std::make_shared<std::string>(pJson["transaction_source"].asString());
@@ -1593,7 +1566,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_multi_currency"))
     {
-        dirtyFlag_[18]=true;
+        dirtyFlag_[17]=true;
         if(!pJson["is_multi_currency"].isNull())
         {
             isMultiCurrency_=std::make_shared<bool>(pJson["is_multi_currency"].asBool());
@@ -1602,7 +1575,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_reconciled"))
     {
-        dirtyFlag_[19]=true;
+        dirtyFlag_[18]=true;
         if(!pJson["is_reconciled"].isNull())
         {
             isReconciled_=std::make_shared<bool>(pJson["is_reconciled"].asBool());
@@ -1611,7 +1584,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_opening_balance"))
     {
-        dirtyFlag_[20]=true;
+        dirtyFlag_[19]=true;
         if(!pJson["is_opening_balance"].isNull())
         {
             isOpeningBalance_=std::make_shared<bool>(pJson["is_opening_balance"].asBool());
@@ -1620,7 +1593,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_consolidated"))
     {
-        dirtyFlag_[21]=true;
+        dirtyFlag_[20]=true;
         if(!pJson["is_consolidated"].isNull())
         {
             isConsolidated_=std::make_shared<bool>(pJson["is_consolidated"].asBool());
@@ -1629,7 +1602,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("date_consolidated"))
     {
-        dirtyFlag_[22]=true;
+        dirtyFlag_[21]=true;
         if(!pJson["date_consolidated"].isNull())
         {
             auto daysStr = pJson["date_consolidated"].asString();
@@ -1644,7 +1617,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_id"))
     {
-        dirtyFlag_[23]=true;
+        dirtyFlag_[22]=true;
         if(!pJson["currency_id"].isNull())
         {
             currencyId_=std::make_shared<std::string>(pJson["currency_id"].asString());
@@ -1653,7 +1626,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_name"))
     {
-        dirtyFlag_[24]=true;
+        dirtyFlag_[23]=true;
         if(!pJson["currency_name"].isNull())
         {
             currencyName_=std::make_shared<std::string>(pJson["currency_name"].asString());
@@ -1662,7 +1635,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_code"))
     {
-        dirtyFlag_[25]=true;
+        dirtyFlag_[24]=true;
         if(!pJson["currency_code"].isNull())
         {
             currencyCode_=std::make_shared<std::string>(pJson["currency_code"].asString());
@@ -1671,7 +1644,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("buy_rate"))
     {
-        dirtyFlag_[26]=true;
+        dirtyFlag_[25]=true;
         if(!pJson["buy_rate"].isNull())
         {
             buyRate_=std::make_shared<std::string>(pJson["buy_rate"].asString());
@@ -1680,7 +1653,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("sell_rate"))
     {
-        dirtyFlag_[27]=true;
+        dirtyFlag_[26]=true;
         if(!pJson["sell_rate"].isNull())
         {
             sellRate_=std::make_shared<std::string>(pJson["sell_rate"].asString());
@@ -1689,7 +1662,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("batch_date"))
     {
-        dirtyFlag_[28]=true;
+        dirtyFlag_[27]=true;
         if(!pJson["batch_date"].isNull())
         {
             auto daysStr = pJson["batch_date"].asString();
@@ -1704,7 +1677,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("closed_date"))
     {
-        dirtyFlag_[29]=true;
+        dirtyFlag_[28]=true;
         if(!pJson["closed_date"].isNull())
         {
             auto daysStr = pJson["closed_date"].asString();
@@ -1719,7 +1692,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("petty_cash_recipient_id"))
     {
-        dirtyFlag_[30]=true;
+        dirtyFlag_[29]=true;
         if(!pJson["petty_cash_recipient_id"].isNull())
         {
             pettyCashRecipientId_=std::make_shared<std::string>(pJson["petty_cash_recipient_id"].asString());
@@ -1728,7 +1701,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("petty_cash_recipient_name"))
     {
-        dirtyFlag_[31]=true;
+        dirtyFlag_[30]=true;
         if(!pJson["petty_cash_recipient_name"].isNull())
         {
             pettyCashRecipientName_=std::make_shared<std::string>(pJson["petty_cash_recipient_name"].asString());
@@ -1737,7 +1710,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("standard_account_type"))
     {
-        dirtyFlag_[32]=true;
+        dirtyFlag_[31]=true;
         if(!pJson["standard_account_type"].isNull())
         {
             standardAccountType_=std::make_shared<short>((short)pJson["standard_account_type"].asInt64());
@@ -1746,7 +1719,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("batch_number"))
     {
-        dirtyFlag_[33]=true;
+        dirtyFlag_[32]=true;
         if(!pJson["batch_number"].isNull())
         {
             batchNumber_=std::make_shared<std::string>(pJson["batch_number"].asString());
@@ -1755,7 +1728,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[34]=true;
+        dirtyFlag_[33]=true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -1783,7 +1756,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[35]=true;
+        dirtyFlag_[34]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -1792,7 +1765,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[36]=true;
+        dirtyFlag_[35]=true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -1820,7 +1793,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[37]=true;
+        dirtyFlag_[36]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -1829,7 +1802,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[38]=true;
+        dirtyFlag_[37]=true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -1838,7 +1811,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[39]=true;
+        dirtyFlag_[38]=true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -1866,7 +1839,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[40]=true;
+        dirtyFlag_[39]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -1875,7 +1848,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("line_number"))
     {
-        dirtyFlag_[41]=true;
+        dirtyFlag_[40]=true;
         if(!pJson["line_number"].isNull())
         {
             lineNumber_=std::make_shared<int32_t>((int32_t)pJson["line_number"].asInt64());
@@ -1887,7 +1860,7 @@ GlJournalLines::GlJournalLines(const Json::Value &pJson) noexcept(false)
 void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 42)
+    if(pMasqueradingVector.size() != 41)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1964,12 +1937,14 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+
+
     if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
     {
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            costCenterId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            referenceNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -1978,7 +1953,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            referenceNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+            chequeNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -1987,7 +1962,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            chequeNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
+            description_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -1996,7 +1971,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            description_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+            debitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -2005,7 +1980,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            debitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
+            creditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -2014,7 +1989,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            creditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
+            baseDebitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -2023,7 +1998,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            baseDebitAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
+            baseCreditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -2032,16 +2007,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            baseCreditAmount_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[16].empty() && pJson.isMember(pMasqueradingVector[16]))
-    {
-        dirtyFlag_[16] = true;
-        if(!pJson[pMasqueradingVector[16]].isNull())
-        {
-            auto daysStr = pJson[pMasqueradingVector[16]].asString();
+            auto daysStr = pJson[pMasqueradingVector[15]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2051,12 +2017,21 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[16].empty() && pJson.isMember(pMasqueradingVector[16]))
+    {
+        dirtyFlag_[16] = true;
+        if(!pJson[pMasqueradingVector[16]].isNull())
+        {
+            transactionSource_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
     {
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            transactionSource_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
+            isMultiCurrency_=std::make_shared<bool>(pJson[pMasqueradingVector[17]].asBool());
         }
     }
 
@@ -2065,7 +2040,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            isMultiCurrency_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
+            isReconciled_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
         }
     }
 
@@ -2074,7 +2049,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            isReconciled_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
+            isOpeningBalance_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
         }
     }
 
@@ -2083,7 +2058,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            isOpeningBalance_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
+            isConsolidated_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -2092,16 +2067,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            isConsolidated_=std::make_shared<bool>(pJson[pMasqueradingVector[21]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[22].empty() && pJson.isMember(pMasqueradingVector[22]))
-    {
-        dirtyFlag_[22] = true;
-        if(!pJson[pMasqueradingVector[22]].isNull())
-        {
-            auto daysStr = pJson[pMasqueradingVector[22]].asString();
+            auto daysStr = pJson[pMasqueradingVector[21]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2111,12 +2077,21 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[22].empty() && pJson.isMember(pMasqueradingVector[22]))
+    {
+        dirtyFlag_[22] = true;
+        if(!pJson[pMasqueradingVector[22]].isNull())
+        {
+            currencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[23].empty() && pJson.isMember(pMasqueradingVector[23]))
     {
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            currencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            currencyName_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
         }
     }
 
@@ -2125,7 +2100,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            currencyName_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
+            currencyCode_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
         }
     }
 
@@ -2134,7 +2109,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[25] = true;
         if(!pJson[pMasqueradingVector[25]].isNull())
         {
-            currencyCode_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
+            buyRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
         }
     }
 
@@ -2143,7 +2118,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            buyRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
+            sellRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
         }
     }
 
@@ -2152,7 +2127,13 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            sellRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
+            auto daysStr = pJson[pMasqueradingVector[27]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
+            time_t t = mktime(&stm);
+            batchDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
     }
 
@@ -2167,7 +2148,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
             stm.tm_isdst = -1;
             strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
             time_t t = mktime(&stm);
-            batchDate_=std::make_shared<::trantor::Date>(t*1000000);
+            closedDate_=std::make_shared<::trantor::Date>(t*1000000);
         }
     }
 
@@ -2176,13 +2157,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[29] = true;
         if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            auto daysStr = pJson[pMasqueradingVector[29]].asString();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            stm.tm_isdst = -1;
-            strptime(daysStr.c_str(),"%Y-%m-%d",&stm);
-            time_t t = mktime(&stm);
-            closedDate_=std::make_shared<::trantor::Date>(t*1000000);
+            pettyCashRecipientId_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
         }
     }
 
@@ -2191,7 +2166,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[30] = true;
         if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            pettyCashRecipientId_=std::make_shared<std::string>(pJson[pMasqueradingVector[30]].asString());
+            pettyCashRecipientName_=std::make_shared<std::string>(pJson[pMasqueradingVector[30]].asString());
         }
     }
 
@@ -2200,7 +2175,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[31] = true;
         if(!pJson[pMasqueradingVector[31]].isNull())
         {
-            pettyCashRecipientName_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
+            standardAccountType_=std::make_shared<short>((short)pJson[pMasqueradingVector[31]].asInt64());
         }
     }
 
@@ -2209,7 +2184,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            standardAccountType_=std::make_shared<short>((short)pJson[pMasqueradingVector[32]].asInt64());
+            batchNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
         }
     }
 
@@ -2218,16 +2193,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            batchNumber_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[34].empty() && pJson.isMember(pMasqueradingVector[34]))
-    {
-        dirtyFlag_[34] = true;
-        if(!pJson[pMasqueradingVector[34]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[34]].asString();
+            auto timeStr = pJson[pMasqueradingVector[33]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2250,21 +2216,21 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[34].empty() && pJson.isMember(pMasqueradingVector[34]))
+    {
+        dirtyFlag_[34] = true;
+        if(!pJson[pMasqueradingVector[34]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[35].empty() && pJson.isMember(pMasqueradingVector[35]))
     {
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[36].empty() && pJson.isMember(pMasqueradingVector[36]))
-    {
-        dirtyFlag_[36] = true;
-        if(!pJson[pMasqueradingVector[36]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[36]].asString();
+            auto timeStr = pJson[pMasqueradingVector[35]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2287,12 +2253,21 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[36].empty() && pJson.isMember(pMasqueradingVector[36]))
+    {
+        dirtyFlag_[36] = true;
+        if(!pJson[pMasqueradingVector[36]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[37].empty() && pJson.isMember(pMasqueradingVector[37]))
     {
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[37]].asBool());
         }
     }
 
@@ -2301,16 +2276,7 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[38] = true;
         if(!pJson[pMasqueradingVector[38]].isNull())
         {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[38]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
-    {
-        dirtyFlag_[39] = true;
-        if(!pJson[pMasqueradingVector[39]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[39]].asString();
+            auto timeStr = pJson[pMasqueradingVector[38]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2333,21 +2299,21 @@ void GlJournalLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
+    {
+        dirtyFlag_[39] = true;
+        if(!pJson[pMasqueradingVector[39]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
     {
         dirtyFlag_[40] = true;
         if(!pJson[pMasqueradingVector[40]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[40]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[41].empty() && pJson.isMember(pMasqueradingVector[41]))
-    {
-        dirtyFlag_[41] = true;
-        if(!pJson[pMasqueradingVector[41]].isNull())
-        {
-            lineNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[41]].asInt64());
+            lineNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[40]].asInt64());
         }
     }
 
@@ -2427,18 +2393,11 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("cost_center_id"))
-    {
-        dirtyFlag_[8] = true;
-        if(!pJson["cost_center_id"].isNull())
-        {
-            costCenterId_=std::make_shared<std::string>(pJson["cost_center_id"].asString());
-        }
-    }
+
 
     if(pJson.isMember("reference_number"))
     {
-        dirtyFlag_[9] = true;
+        dirtyFlag_[8] = true;
         if(!pJson["reference_number"].isNull())
         {
             referenceNumber_=std::make_shared<std::string>(pJson["reference_number"].asString());
@@ -2447,7 +2406,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("cheque_number"))
     {
-        dirtyFlag_[10] = true;
+        dirtyFlag_[9] = true;
         if(!pJson["cheque_number"].isNull())
         {
             chequeNumber_=std::make_shared<std::string>(pJson["cheque_number"].asString());
@@ -2456,7 +2415,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("description"))
     {
-        dirtyFlag_[11] = true;
+        dirtyFlag_[10] = true;
         if(!pJson["description"].isNull())
         {
             description_=std::make_shared<std::string>(pJson["description"].asString());
@@ -2465,7 +2424,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("debit_amount"))
     {
-        dirtyFlag_[12] = true;
+        dirtyFlag_[11] = true;
         if(!pJson["debit_amount"].isNull())
         {
             debitAmount_=std::make_shared<std::string>(pJson["debit_amount"].asString());
@@ -2474,7 +2433,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("credit_amount"))
     {
-        dirtyFlag_[13] = true;
+        dirtyFlag_[12] = true;
         if(!pJson["credit_amount"].isNull())
         {
             creditAmount_=std::make_shared<std::string>(pJson["credit_amount"].asString());
@@ -2483,7 +2442,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("base_debit_amount"))
     {
-        dirtyFlag_[14] = true;
+        dirtyFlag_[13] = true;
         if(!pJson["base_debit_amount"].isNull())
         {
             baseDebitAmount_=std::make_shared<std::string>(pJson["base_debit_amount"].asString());
@@ -2492,7 +2451,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("base_credit_amount"))
     {
-        dirtyFlag_[15] = true;
+        dirtyFlag_[14] = true;
         if(!pJson["base_credit_amount"].isNull())
         {
             baseCreditAmount_=std::make_shared<std::string>(pJson["base_credit_amount"].asString());
@@ -2501,7 +2460,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("transaction_date"))
     {
-        dirtyFlag_[16] = true;
+        dirtyFlag_[15] = true;
         if(!pJson["transaction_date"].isNull())
         {
             auto daysStr = pJson["transaction_date"].asString();
@@ -2516,7 +2475,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("transaction_source"))
     {
-        dirtyFlag_[17] = true;
+        dirtyFlag_[16] = true;
         if(!pJson["transaction_source"].isNull())
         {
             transactionSource_=std::make_shared<std::string>(pJson["transaction_source"].asString());
@@ -2525,7 +2484,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_multi_currency"))
     {
-        dirtyFlag_[18] = true;
+        dirtyFlag_[17] = true;
         if(!pJson["is_multi_currency"].isNull())
         {
             isMultiCurrency_=std::make_shared<bool>(pJson["is_multi_currency"].asBool());
@@ -2534,7 +2493,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_reconciled"))
     {
-        dirtyFlag_[19] = true;
+        dirtyFlag_[18] = true;
         if(!pJson["is_reconciled"].isNull())
         {
             isReconciled_=std::make_shared<bool>(pJson["is_reconciled"].asBool());
@@ -2543,7 +2502,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_opening_balance"))
     {
-        dirtyFlag_[20] = true;
+        dirtyFlag_[19] = true;
         if(!pJson["is_opening_balance"].isNull())
         {
             isOpeningBalance_=std::make_shared<bool>(pJson["is_opening_balance"].asBool());
@@ -2552,7 +2511,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_consolidated"))
     {
-        dirtyFlag_[21] = true;
+        dirtyFlag_[20] = true;
         if(!pJson["is_consolidated"].isNull())
         {
             isConsolidated_=std::make_shared<bool>(pJson["is_consolidated"].asBool());
@@ -2561,7 +2520,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("date_consolidated"))
     {
-        dirtyFlag_[22] = true;
+        dirtyFlag_[21] = true;
         if(!pJson["date_consolidated"].isNull())
         {
             auto daysStr = pJson["date_consolidated"].asString();
@@ -2576,7 +2535,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_id"))
     {
-        dirtyFlag_[23] = true;
+        dirtyFlag_[22] = true;
         if(!pJson["currency_id"].isNull())
         {
             currencyId_=std::make_shared<std::string>(pJson["currency_id"].asString());
@@ -2585,7 +2544,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_name"))
     {
-        dirtyFlag_[24] = true;
+        dirtyFlag_[23] = true;
         if(!pJson["currency_name"].isNull())
         {
             currencyName_=std::make_shared<std::string>(pJson["currency_name"].asString());
@@ -2594,7 +2553,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("currency_code"))
     {
-        dirtyFlag_[25] = true;
+        dirtyFlag_[24] = true;
         if(!pJson["currency_code"].isNull())
         {
             currencyCode_=std::make_shared<std::string>(pJson["currency_code"].asString());
@@ -2603,7 +2562,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("buy_rate"))
     {
-        dirtyFlag_[26] = true;
+        dirtyFlag_[25] = true;
         if(!pJson["buy_rate"].isNull())
         {
             buyRate_=std::make_shared<std::string>(pJson["buy_rate"].asString());
@@ -2612,7 +2571,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("sell_rate"))
     {
-        dirtyFlag_[27] = true;
+        dirtyFlag_[26] = true;
         if(!pJson["sell_rate"].isNull())
         {
             sellRate_=std::make_shared<std::string>(pJson["sell_rate"].asString());
@@ -2621,7 +2580,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("batch_date"))
     {
-        dirtyFlag_[28] = true;
+        dirtyFlag_[27] = true;
         if(!pJson["batch_date"].isNull())
         {
             auto daysStr = pJson["batch_date"].asString();
@@ -2636,7 +2595,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("closed_date"))
     {
-        dirtyFlag_[29] = true;
+        dirtyFlag_[28] = true;
         if(!pJson["closed_date"].isNull())
         {
             auto daysStr = pJson["closed_date"].asString();
@@ -2651,7 +2610,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("petty_cash_recipient_id"))
     {
-        dirtyFlag_[30] = true;
+        dirtyFlag_[29] = true;
         if(!pJson["petty_cash_recipient_id"].isNull())
         {
             pettyCashRecipientId_=std::make_shared<std::string>(pJson["petty_cash_recipient_id"].asString());
@@ -2660,7 +2619,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("petty_cash_recipient_name"))
     {
-        dirtyFlag_[31] = true;
+        dirtyFlag_[30] = true;
         if(!pJson["petty_cash_recipient_name"].isNull())
         {
             pettyCashRecipientName_=std::make_shared<std::string>(pJson["petty_cash_recipient_name"].asString());
@@ -2669,7 +2628,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("standard_account_type"))
     {
-        dirtyFlag_[32] = true;
+        dirtyFlag_[31] = true;
         if(!pJson["standard_account_type"].isNull())
         {
             standardAccountType_=std::make_shared<short>((short)pJson["standard_account_type"].asInt64());
@@ -2678,7 +2637,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("batch_number"))
     {
-        dirtyFlag_[33] = true;
+        dirtyFlag_[32] = true;
         if(!pJson["batch_number"].isNull())
         {
             batchNumber_=std::make_shared<std::string>(pJson["batch_number"].asString());
@@ -2687,7 +2646,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[34] = true;
+        dirtyFlag_[33] = true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -2715,7 +2674,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[35] = true;
+        dirtyFlag_[34] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -2724,7 +2683,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[36] = true;
+        dirtyFlag_[35] = true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -2752,7 +2711,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[37] = true;
+        dirtyFlag_[36] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -2761,7 +2720,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[38] = true;
+        dirtyFlag_[37] = true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -2770,7 +2729,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[39] = true;
+        dirtyFlag_[38] = true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -2798,7 +2757,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[40] = true;
+        dirtyFlag_[39] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -2807,7 +2766,7 @@ void GlJournalLines::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("line_number"))
     {
-        dirtyFlag_[41] = true;
+        dirtyFlag_[40] = true;
         if(!pJson["line_number"].isNull())
         {
             lineNumber_=std::make_shared<int32_t>((int32_t)pJson["line_number"].asInt64());
@@ -3012,32 +2971,11 @@ void GlJournalLines::setOrganizationUnitNameToNull() noexcept
     dirtyFlag_[7] = true;
 }
 
-const std::string &GlJournalLines::getValueOfCostCenterId() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(costCenterId_)
-        return *costCenterId_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &GlJournalLines::getCostCenterId() const noexcept
-{
-    return costCenterId_;
-}
-void GlJournalLines::setCostCenterId(const std::string &pCostCenterId) noexcept
-{
-    costCenterId_ = std::make_shared<std::string>(pCostCenterId);
-    dirtyFlag_[8] = true;
-}
-void GlJournalLines::setCostCenterId(std::string &&pCostCenterId) noexcept
-{
-    costCenterId_ = std::make_shared<std::string>(std::move(pCostCenterId));
-    dirtyFlag_[8] = true;
-}
-void GlJournalLines::setCostCenterIdToNull() noexcept
-{
-    costCenterId_.reset();
-    dirtyFlag_[8] = true;
-}
+
+
+
+
+
 
 const std::string &GlJournalLines::getValueOfReferenceNumber() const noexcept
 {
@@ -3053,17 +2991,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getReferenceNumber() const n
 void GlJournalLines::setReferenceNumber(const std::string &pReferenceNumber) noexcept
 {
     referenceNumber_ = std::make_shared<std::string>(pReferenceNumber);
-    dirtyFlag_[9] = true;
+    dirtyFlag_[8] = true;
 }
 void GlJournalLines::setReferenceNumber(std::string &&pReferenceNumber) noexcept
 {
     referenceNumber_ = std::make_shared<std::string>(std::move(pReferenceNumber));
-    dirtyFlag_[9] = true;
+    dirtyFlag_[8] = true;
 }
 void GlJournalLines::setReferenceNumberToNull() noexcept
 {
     referenceNumber_.reset();
-    dirtyFlag_[9] = true;
+    dirtyFlag_[8] = true;
 }
 
 const std::string &GlJournalLines::getValueOfChequeNumber() const noexcept
@@ -3080,17 +3018,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getChequeNumber() const noex
 void GlJournalLines::setChequeNumber(const std::string &pChequeNumber) noexcept
 {
     chequeNumber_ = std::make_shared<std::string>(pChequeNumber);
-    dirtyFlag_[10] = true;
+    dirtyFlag_[9] = true;
 }
 void GlJournalLines::setChequeNumber(std::string &&pChequeNumber) noexcept
 {
     chequeNumber_ = std::make_shared<std::string>(std::move(pChequeNumber));
-    dirtyFlag_[10] = true;
+    dirtyFlag_[9] = true;
 }
 void GlJournalLines::setChequeNumberToNull() noexcept
 {
     chequeNumber_.reset();
-    dirtyFlag_[10] = true;
+    dirtyFlag_[9] = true;
 }
 
 const std::string &GlJournalLines::getValueOfDescription() const noexcept
@@ -3107,17 +3045,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getDescription() const noexc
 void GlJournalLines::setDescription(const std::string &pDescription) noexcept
 {
     description_ = std::make_shared<std::string>(pDescription);
-    dirtyFlag_[11] = true;
+    dirtyFlag_[10] = true;
 }
 void GlJournalLines::setDescription(std::string &&pDescription) noexcept
 {
     description_ = std::make_shared<std::string>(std::move(pDescription));
-    dirtyFlag_[11] = true;
+    dirtyFlag_[10] = true;
 }
 void GlJournalLines::setDescriptionToNull() noexcept
 {
     description_.reset();
-    dirtyFlag_[11] = true;
+    dirtyFlag_[10] = true;
 }
 
 const std::string &GlJournalLines::getValueOfDebitAmount() const noexcept
@@ -3134,12 +3072,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getDebitAmount() const noexc
 void GlJournalLines::setDebitAmount(const std::string &pDebitAmount) noexcept
 {
     debitAmount_ = std::make_shared<std::string>(pDebitAmount);
-    dirtyFlag_[12] = true;
+    dirtyFlag_[11] = true;
 }
 void GlJournalLines::setDebitAmount(std::string &&pDebitAmount) noexcept
 {
     debitAmount_ = std::make_shared<std::string>(std::move(pDebitAmount));
-    dirtyFlag_[12] = true;
+    dirtyFlag_[11] = true;
 }
 
 const std::string &GlJournalLines::getValueOfCreditAmount() const noexcept
@@ -3156,12 +3094,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getCreditAmount() const noex
 void GlJournalLines::setCreditAmount(const std::string &pCreditAmount) noexcept
 {
     creditAmount_ = std::make_shared<std::string>(pCreditAmount);
-    dirtyFlag_[13] = true;
+    dirtyFlag_[12] = true;
 }
 void GlJournalLines::setCreditAmount(std::string &&pCreditAmount) noexcept
 {
     creditAmount_ = std::make_shared<std::string>(std::move(pCreditAmount));
-    dirtyFlag_[13] = true;
+    dirtyFlag_[12] = true;
 }
 
 const std::string &GlJournalLines::getValueOfBaseDebitAmount() const noexcept
@@ -3178,12 +3116,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getBaseDebitAmount() const n
 void GlJournalLines::setBaseDebitAmount(const std::string &pBaseDebitAmount) noexcept
 {
     baseDebitAmount_ = std::make_shared<std::string>(pBaseDebitAmount);
-    dirtyFlag_[14] = true;
+    dirtyFlag_[13] = true;
 }
 void GlJournalLines::setBaseDebitAmount(std::string &&pBaseDebitAmount) noexcept
 {
     baseDebitAmount_ = std::make_shared<std::string>(std::move(pBaseDebitAmount));
-    dirtyFlag_[14] = true;
+    dirtyFlag_[13] = true;
 }
 
 const std::string &GlJournalLines::getValueOfBaseCreditAmount() const noexcept
@@ -3200,12 +3138,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getBaseCreditAmount() const 
 void GlJournalLines::setBaseCreditAmount(const std::string &pBaseCreditAmount) noexcept
 {
     baseCreditAmount_ = std::make_shared<std::string>(pBaseCreditAmount);
-    dirtyFlag_[15] = true;
+    dirtyFlag_[14] = true;
 }
 void GlJournalLines::setBaseCreditAmount(std::string &&pBaseCreditAmount) noexcept
 {
     baseCreditAmount_ = std::make_shared<std::string>(std::move(pBaseCreditAmount));
-    dirtyFlag_[15] = true;
+    dirtyFlag_[14] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfTransactionDate() const noexcept
@@ -3222,7 +3160,7 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getTransactionDate() con
 void GlJournalLines::setTransactionDate(const ::trantor::Date &pTransactionDate) noexcept
 {
     transactionDate_ = std::make_shared<::trantor::Date>(pTransactionDate.roundDay());
-    dirtyFlag_[16] = true;
+    dirtyFlag_[15] = true;
 }
 
 const std::string &GlJournalLines::getValueOfTransactionSource() const noexcept
@@ -3239,12 +3177,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getTransactionSource() const
 void GlJournalLines::setTransactionSource(const std::string &pTransactionSource) noexcept
 {
     transactionSource_ = std::make_shared<std::string>(pTransactionSource);
-    dirtyFlag_[17] = true;
+    dirtyFlag_[16] = true;
 }
 void GlJournalLines::setTransactionSource(std::string &&pTransactionSource) noexcept
 {
     transactionSource_ = std::make_shared<std::string>(std::move(pTransactionSource));
-    dirtyFlag_[17] = true;
+    dirtyFlag_[16] = true;
 }
 
 const bool &GlJournalLines::getValueOfIsMultiCurrency() const noexcept
@@ -3261,7 +3199,7 @@ const std::shared_ptr<bool> &GlJournalLines::getIsMultiCurrency() const noexcept
 void GlJournalLines::setIsMultiCurrency(const bool &pIsMultiCurrency) noexcept
 {
     isMultiCurrency_ = std::make_shared<bool>(pIsMultiCurrency);
-    dirtyFlag_[18] = true;
+    dirtyFlag_[17] = true;
 }
 
 const bool &GlJournalLines::getValueOfIsReconciled() const noexcept
@@ -3278,7 +3216,7 @@ const std::shared_ptr<bool> &GlJournalLines::getIsReconciled() const noexcept
 void GlJournalLines::setIsReconciled(const bool &pIsReconciled) noexcept
 {
     isReconciled_ = std::make_shared<bool>(pIsReconciled);
-    dirtyFlag_[19] = true;
+    dirtyFlag_[18] = true;
 }
 
 const bool &GlJournalLines::getValueOfIsOpeningBalance() const noexcept
@@ -3295,7 +3233,7 @@ const std::shared_ptr<bool> &GlJournalLines::getIsOpeningBalance() const noexcep
 void GlJournalLines::setIsOpeningBalance(const bool &pIsOpeningBalance) noexcept
 {
     isOpeningBalance_ = std::make_shared<bool>(pIsOpeningBalance);
-    dirtyFlag_[20] = true;
+    dirtyFlag_[19] = true;
 }
 
 const bool &GlJournalLines::getValueOfIsConsolidated() const noexcept
@@ -3312,7 +3250,7 @@ const std::shared_ptr<bool> &GlJournalLines::getIsConsolidated() const noexcept
 void GlJournalLines::setIsConsolidated(const bool &pIsConsolidated) noexcept
 {
     isConsolidated_ = std::make_shared<bool>(pIsConsolidated);
-    dirtyFlag_[21] = true;
+    dirtyFlag_[20] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfDateConsolidated() const noexcept
@@ -3329,12 +3267,12 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getDateConsolidated() co
 void GlJournalLines::setDateConsolidated(const ::trantor::Date &pDateConsolidated) noexcept
 {
     dateConsolidated_ = std::make_shared<::trantor::Date>(pDateConsolidated.roundDay());
-    dirtyFlag_[22] = true;
+    dirtyFlag_[21] = true;
 }
 void GlJournalLines::setDateConsolidatedToNull() noexcept
 {
     dateConsolidated_.reset();
-    dirtyFlag_[22] = true;
+    dirtyFlag_[21] = true;
 }
 
 const std::string &GlJournalLines::getValueOfCurrencyId() const noexcept
@@ -3351,12 +3289,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getCurrencyId() const noexce
 void GlJournalLines::setCurrencyId(const std::string &pCurrencyId) noexcept
 {
     currencyId_ = std::make_shared<std::string>(pCurrencyId);
-    dirtyFlag_[23] = true;
+    dirtyFlag_[22] = true;
 }
 void GlJournalLines::setCurrencyId(std::string &&pCurrencyId) noexcept
 {
     currencyId_ = std::make_shared<std::string>(std::move(pCurrencyId));
-    dirtyFlag_[23] = true;
+    dirtyFlag_[22] = true;
 }
 
 const std::string &GlJournalLines::getValueOfCurrencyName() const noexcept
@@ -3373,17 +3311,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getCurrencyName() const noex
 void GlJournalLines::setCurrencyName(const std::string &pCurrencyName) noexcept
 {
     currencyName_ = std::make_shared<std::string>(pCurrencyName);
-    dirtyFlag_[24] = true;
+    dirtyFlag_[23] = true;
 }
 void GlJournalLines::setCurrencyName(std::string &&pCurrencyName) noexcept
 {
     currencyName_ = std::make_shared<std::string>(std::move(pCurrencyName));
-    dirtyFlag_[24] = true;
+    dirtyFlag_[23] = true;
 }
 void GlJournalLines::setCurrencyNameToNull() noexcept
 {
     currencyName_.reset();
-    dirtyFlag_[24] = true;
+    dirtyFlag_[23] = true;
 }
 
 const std::string &GlJournalLines::getValueOfCurrencyCode() const noexcept
@@ -3400,17 +3338,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getCurrencyCode() const noex
 void GlJournalLines::setCurrencyCode(const std::string &pCurrencyCode) noexcept
 {
     currencyCode_ = std::make_shared<std::string>(pCurrencyCode);
-    dirtyFlag_[25] = true;
+    dirtyFlag_[24] = true;
 }
 void GlJournalLines::setCurrencyCode(std::string &&pCurrencyCode) noexcept
 {
     currencyCode_ = std::make_shared<std::string>(std::move(pCurrencyCode));
-    dirtyFlag_[25] = true;
+    dirtyFlag_[24] = true;
 }
 void GlJournalLines::setCurrencyCodeToNull() noexcept
 {
     currencyCode_.reset();
-    dirtyFlag_[25] = true;
+    dirtyFlag_[24] = true;
 }
 
 const std::string &GlJournalLines::getValueOfBuyRate() const noexcept
@@ -3427,12 +3365,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getBuyRate() const noexcept
 void GlJournalLines::setBuyRate(const std::string &pBuyRate) noexcept
 {
     buyRate_ = std::make_shared<std::string>(pBuyRate);
-    dirtyFlag_[26] = true;
+    dirtyFlag_[25] = true;
 }
 void GlJournalLines::setBuyRate(std::string &&pBuyRate) noexcept
 {
     buyRate_ = std::make_shared<std::string>(std::move(pBuyRate));
-    dirtyFlag_[26] = true;
+    dirtyFlag_[25] = true;
 }
 
 const std::string &GlJournalLines::getValueOfSellRate() const noexcept
@@ -3449,12 +3387,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getSellRate() const noexcept
 void GlJournalLines::setSellRate(const std::string &pSellRate) noexcept
 {
     sellRate_ = std::make_shared<std::string>(pSellRate);
-    dirtyFlag_[27] = true;
+    dirtyFlag_[26] = true;
 }
 void GlJournalLines::setSellRate(std::string &&pSellRate) noexcept
 {
     sellRate_ = std::make_shared<std::string>(std::move(pSellRate));
-    dirtyFlag_[27] = true;
+    dirtyFlag_[26] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfBatchDate() const noexcept
@@ -3471,7 +3409,7 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getBatchDate() const noe
 void GlJournalLines::setBatchDate(const ::trantor::Date &pBatchDate) noexcept
 {
     batchDate_ = std::make_shared<::trantor::Date>(pBatchDate.roundDay());
-    dirtyFlag_[28] = true;
+    dirtyFlag_[27] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfClosedDate() const noexcept
@@ -3488,12 +3426,12 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getClosedDate() const no
 void GlJournalLines::setClosedDate(const ::trantor::Date &pClosedDate) noexcept
 {
     closedDate_ = std::make_shared<::trantor::Date>(pClosedDate.roundDay());
-    dirtyFlag_[29] = true;
+    dirtyFlag_[28] = true;
 }
 void GlJournalLines::setClosedDateToNull() noexcept
 {
     closedDate_.reset();
-    dirtyFlag_[29] = true;
+    dirtyFlag_[28] = true;
 }
 
 const std::string &GlJournalLines::getValueOfPettyCashRecipientId() const noexcept
@@ -3510,17 +3448,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getPettyCashRecipientId() co
 void GlJournalLines::setPettyCashRecipientId(const std::string &pPettyCashRecipientId) noexcept
 {
     pettyCashRecipientId_ = std::make_shared<std::string>(pPettyCashRecipientId);
-    dirtyFlag_[30] = true;
+    dirtyFlag_[29] = true;
 }
 void GlJournalLines::setPettyCashRecipientId(std::string &&pPettyCashRecipientId) noexcept
 {
     pettyCashRecipientId_ = std::make_shared<std::string>(std::move(pPettyCashRecipientId));
-    dirtyFlag_[30] = true;
+    dirtyFlag_[29] = true;
 }
 void GlJournalLines::setPettyCashRecipientIdToNull() noexcept
 {
     pettyCashRecipientId_.reset();
-    dirtyFlag_[30] = true;
+    dirtyFlag_[29] = true;
 }
 
 const std::string &GlJournalLines::getValueOfPettyCashRecipientName() const noexcept
@@ -3537,17 +3475,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getPettyCashRecipientName() 
 void GlJournalLines::setPettyCashRecipientName(const std::string &pPettyCashRecipientName) noexcept
 {
     pettyCashRecipientName_ = std::make_shared<std::string>(pPettyCashRecipientName);
-    dirtyFlag_[31] = true;
+    dirtyFlag_[30] = true;
 }
 void GlJournalLines::setPettyCashRecipientName(std::string &&pPettyCashRecipientName) noexcept
 {
     pettyCashRecipientName_ = std::make_shared<std::string>(std::move(pPettyCashRecipientName));
-    dirtyFlag_[31] = true;
+    dirtyFlag_[30] = true;
 }
 void GlJournalLines::setPettyCashRecipientNameToNull() noexcept
 {
     pettyCashRecipientName_.reset();
-    dirtyFlag_[31] = true;
+    dirtyFlag_[30] = true;
 }
 
 const short &GlJournalLines::getValueOfStandardAccountType() const noexcept
@@ -3564,7 +3502,7 @@ const std::shared_ptr<short> &GlJournalLines::getStandardAccountType() const noe
 void GlJournalLines::setStandardAccountType(const short &pStandardAccountType) noexcept
 {
     standardAccountType_ = std::make_shared<short>(pStandardAccountType);
-    dirtyFlag_[32] = true;
+    dirtyFlag_[31] = true;
 }
 
 const std::string &GlJournalLines::getValueOfBatchNumber() const noexcept
@@ -3581,12 +3519,12 @@ const std::shared_ptr<std::string> &GlJournalLines::getBatchNumber() const noexc
 void GlJournalLines::setBatchNumber(const std::string &pBatchNumber) noexcept
 {
     batchNumber_ = std::make_shared<std::string>(pBatchNumber);
-    dirtyFlag_[33] = true;
+    dirtyFlag_[32] = true;
 }
 void GlJournalLines::setBatchNumber(std::string &&pBatchNumber) noexcept
 {
     batchNumber_ = std::make_shared<std::string>(std::move(pBatchNumber));
-    dirtyFlag_[33] = true;
+    dirtyFlag_[32] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfCreatedAt() const noexcept
@@ -3603,7 +3541,7 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getCreatedAt() const noe
 void GlJournalLines::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
 {
     createdAt_ = std::make_shared<::trantor::Date>(pCreatedAt);
-    dirtyFlag_[34] = true;
+    dirtyFlag_[33] = true;
 }
 
 const std::string &GlJournalLines::getValueOfCreatedByUserId() const noexcept
@@ -3620,17 +3558,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getCreatedByUserId() const n
 void GlJournalLines::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
-    dirtyFlag_[35] = true;
+    dirtyFlag_[34] = true;
 }
 void GlJournalLines::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
-    dirtyFlag_[35] = true;
+    dirtyFlag_[34] = true;
 }
 void GlJournalLines::setCreatedByUserIdToNull() noexcept
 {
     createdByUserId_.reset();
-    dirtyFlag_[35] = true;
+    dirtyFlag_[34] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfLastModifiedAt() const noexcept
@@ -3647,12 +3585,12 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getLastModifiedAt() cons
 void GlJournalLines::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
 {
     lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
-    dirtyFlag_[36] = true;
+    dirtyFlag_[35] = true;
 }
 void GlJournalLines::setLastModifiedAtToNull() noexcept
 {
     lastModifiedAt_.reset();
-    dirtyFlag_[36] = true;
+    dirtyFlag_[35] = true;
 }
 
 const std::string &GlJournalLines::getValueOfLastModifiedByUserId() const noexcept
@@ -3669,17 +3607,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getLastModifiedByUserId() co
 void GlJournalLines::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 void GlJournalLines::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 void GlJournalLines::setLastModifiedByUserIdToNull() noexcept
 {
     lastModifiedByUserId_.reset();
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 
 const bool &GlJournalLines::getValueOfIsDeleted() const noexcept
@@ -3696,7 +3634,7 @@ const std::shared_ptr<bool> &GlJournalLines::getIsDeleted() const noexcept
 void GlJournalLines::setIsDeleted(const bool &pIsDeleted) noexcept
 {
     isDeleted_ = std::make_shared<bool>(pIsDeleted);
-    dirtyFlag_[38] = true;
+    dirtyFlag_[37] = true;
 }
 
 const ::trantor::Date &GlJournalLines::getValueOfDeletedAt() const noexcept
@@ -3713,12 +3651,12 @@ const std::shared_ptr<::trantor::Date> &GlJournalLines::getDeletedAt() const noe
 void GlJournalLines::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
 {
     deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
-    dirtyFlag_[39] = true;
+    dirtyFlag_[38] = true;
 }
 void GlJournalLines::setDeletedAtToNull() noexcept
 {
     deletedAt_.reset();
-    dirtyFlag_[39] = true;
+    dirtyFlag_[38] = true;
 }
 
 const std::string &GlJournalLines::getValueOfDeletedByUserId() const noexcept
@@ -3735,17 +3673,17 @@ const std::shared_ptr<std::string> &GlJournalLines::getDeletedByUserId() const n
 void GlJournalLines::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
-    dirtyFlag_[40] = true;
+    dirtyFlag_[39] = true;
 }
 void GlJournalLines::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
-    dirtyFlag_[40] = true;
+    dirtyFlag_[39] = true;
 }
 void GlJournalLines::setDeletedByUserIdToNull() noexcept
 {
     deletedByUserId_.reset();
-    dirtyFlag_[40] = true;
+    dirtyFlag_[39] = true;
 }
 
 const int32_t &GlJournalLines::getValueOfLineNumber() const noexcept
@@ -3762,12 +3700,12 @@ const std::shared_ptr<int32_t> &GlJournalLines::getLineNumber() const noexcept
 void GlJournalLines::setLineNumber(const int32_t &pLineNumber) noexcept
 {
     lineNumber_ = std::make_shared<int32_t>(pLineNumber);
-    dirtyFlag_[41] = true;
+    dirtyFlag_[40] = true;
 }
 void GlJournalLines::setLineNumberToNull() noexcept
 {
     lineNumber_.reset();
-    dirtyFlag_[41] = true;
+    dirtyFlag_[40] = true;
 }
 
 void GlJournalLines::updateId(const uint64_t id)
@@ -3786,7 +3724,6 @@ const std::vector<std::string> &GlJournalLines::insertColumns() noexcept
         "account_name",
         "organization_unit_id",
         "organization_unit_name",
-        "cost_center_id",
         "reference_number",
         "cheque_number",
         "description",
@@ -3924,19 +3861,9 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[8])
-    {
-        if(getCostCenterId())
-        {
-            binder << getValueOfCostCenterId();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
 
-    if(dirtyFlag_[9])
+
+    if(dirtyFlag_[8])
     {
         if(getReferenceNumber())
         {
@@ -3948,7 +3875,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[10])
+    if(dirtyFlag_[9])
     {
         if(getChequeNumber())
         {
@@ -3960,7 +3887,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[11])
+    if(dirtyFlag_[10])
     {
         if(getDescription())
         {
@@ -3972,7 +3899,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[12])
+    if(dirtyFlag_[11])
     {
         if(getDebitAmount())
         {
@@ -3984,7 +3911,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[13])
+    if(dirtyFlag_[12])
     {
         if(getCreditAmount())
         {
@@ -3996,7 +3923,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[14])
+    if(dirtyFlag_[13])
     {
         if(getBaseDebitAmount())
         {
@@ -4008,7 +3935,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[15])
+    if(dirtyFlag_[14])
     {
         if(getBaseCreditAmount())
         {
@@ -4020,7 +3947,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[16])
+    if(dirtyFlag_[15])
     {
         if(getTransactionDate())
         {
@@ -4032,7 +3959,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[17])
+    if(dirtyFlag_[16])
     {
         if(getTransactionSource())
         {
@@ -4044,7 +3971,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[18])
+    if(dirtyFlag_[17])
     {
         if(getIsMultiCurrency())
         {
@@ -4056,7 +3983,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[19])
+    if(dirtyFlag_[18])
     {
         if(getIsReconciled())
         {
@@ -4068,7 +3995,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[20])
+    if(dirtyFlag_[19])
     {
         if(getIsOpeningBalance())
         {
@@ -4080,7 +4007,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[20])
     {
         if(getIsConsolidated())
         {
@@ -4092,7 +4019,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[21])
     {
         if(getDateConsolidated())
         {
@@ -4104,7 +4031,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[22])
     {
         if(getCurrencyId())
         {
@@ -4116,7 +4043,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[23])
     {
         if(getCurrencyName())
         {
@@ -4128,7 +4055,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[24])
     {
         if(getCurrencyCode())
         {
@@ -4140,7 +4067,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[25])
     {
         if(getBuyRate())
         {
@@ -4152,7 +4079,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[26])
     {
         if(getSellRate())
         {
@@ -4164,7 +4091,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[27])
     {
         if(getBatchDate())
         {
@@ -4176,7 +4103,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[28])
     {
         if(getClosedDate())
         {
@@ -4188,7 +4115,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[29])
     {
         if(getPettyCashRecipientId())
         {
@@ -4200,7 +4127,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[30])
     {
         if(getPettyCashRecipientName())
         {
@@ -4212,7 +4139,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[31])
     {
         if(getStandardAccountType())
         {
@@ -4224,7 +4151,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[33])
+    if(dirtyFlag_[32])
     {
         if(getBatchNumber())
         {
@@ -4236,7 +4163,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[34])
+    if(dirtyFlag_[33])
     {
         if(getCreatedAt())
         {
@@ -4248,7 +4175,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[34])
     {
         if(getCreatedByUserId())
         {
@@ -4260,7 +4187,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[35])
     {
         if(getLastModifiedAt())
         {
@@ -4272,7 +4199,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[36])
     {
         if(getLastModifiedByUserId())
         {
@@ -4284,7 +4211,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[37])
     {
         if(getIsDeleted())
         {
@@ -4296,7 +4223,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[38])
     {
         if(getDeletedAt())
         {
@@ -4308,7 +4235,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[40])
+    if(dirtyFlag_[39])
     {
         if(getDeletedByUserId())
         {
@@ -4320,7 +4247,7 @@ void GlJournalLines::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[41])
+    if(dirtyFlag_[40])
     {
         if(getLineNumber())
         {
@@ -4377,6 +4304,8 @@ const std::vector<std::string> GlJournalLines::updateColumns() const
     {
         ret.push_back(getColumnName(7));
     }
+
+
 
     if(dirtyFlag_[8])
     {
@@ -4543,11 +4472,6 @@ const std::vector<std::string> GlJournalLines::updateColumns() const
         ret.push_back(getColumnName(40));
     }
 
-    if(dirtyFlag_[41])
-    {
-        ret.push_back(getColumnName(41));
-    }
-
     return ret;
 }
 
@@ -4650,19 +4574,9 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[8])
-    {
-        if(getCostCenterId())
-        {
-            binder << getValueOfCostCenterId();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
 
-    if(dirtyFlag_[9])
+
+    if(dirtyFlag_[8])
     {
         if(getReferenceNumber())
         {
@@ -4674,7 +4588,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[10])
+    if(dirtyFlag_[9])
     {
         if(getChequeNumber())
         {
@@ -4686,7 +4600,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[11])
+    if(dirtyFlag_[10])
     {
         if(getDescription())
         {
@@ -4698,7 +4612,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[12])
+    if(dirtyFlag_[11])
     {
         if(getDebitAmount())
         {
@@ -4710,7 +4624,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[13])
+    if(dirtyFlag_[12])
     {
         if(getCreditAmount())
         {
@@ -4722,7 +4636,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[14])
+    if(dirtyFlag_[13])
     {
         if(getBaseDebitAmount())
         {
@@ -4734,7 +4648,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[15])
+    if(dirtyFlag_[14])
     {
         if(getBaseCreditAmount())
         {
@@ -4746,7 +4660,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[16])
+    if(dirtyFlag_[15])
     {
         if(getTransactionDate())
         {
@@ -4758,7 +4672,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[17])
+    if(dirtyFlag_[16])
     {
         if(getTransactionSource())
         {
@@ -4770,7 +4684,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[18])
+    if(dirtyFlag_[17])
     {
         if(getIsMultiCurrency())
         {
@@ -4782,7 +4696,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[19])
+    if(dirtyFlag_[18])
     {
         if(getIsReconciled())
         {
@@ -4794,7 +4708,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[20])
+    if(dirtyFlag_[19])
     {
         if(getIsOpeningBalance())
         {
@@ -4806,7 +4720,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[20])
     {
         if(getIsConsolidated())
         {
@@ -4818,7 +4732,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[21])
     {
         if(getDateConsolidated())
         {
@@ -4830,7 +4744,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[22])
     {
         if(getCurrencyId())
         {
@@ -4842,7 +4756,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[23])
     {
         if(getCurrencyName())
         {
@@ -4854,7 +4768,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[24])
     {
         if(getCurrencyCode())
         {
@@ -4866,7 +4780,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[25])
     {
         if(getBuyRate())
         {
@@ -4878,7 +4792,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[26])
     {
         if(getSellRate())
         {
@@ -4890,7 +4804,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[27])
     {
         if(getBatchDate())
         {
@@ -4902,7 +4816,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[28])
     {
         if(getClosedDate())
         {
@@ -4914,7 +4828,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[29])
     {
         if(getPettyCashRecipientId())
         {
@@ -4926,7 +4840,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[30])
     {
         if(getPettyCashRecipientName())
         {
@@ -4938,7 +4852,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[31])
     {
         if(getStandardAccountType())
         {
@@ -4950,7 +4864,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[33])
+    if(dirtyFlag_[32])
     {
         if(getBatchNumber())
         {
@@ -4962,7 +4876,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[34])
+    if(dirtyFlag_[33])
     {
         if(getCreatedAt())
         {
@@ -4974,7 +4888,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[34])
     {
         if(getCreatedByUserId())
         {
@@ -4986,7 +4900,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[35])
     {
         if(getLastModifiedAt())
         {
@@ -4998,7 +4912,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[36])
     {
         if(getLastModifiedByUserId())
         {
@@ -5010,7 +4924,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[37])
     {
         if(getIsDeleted())
         {
@@ -5022,7 +4936,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[38])
     {
         if(getDeletedAt())
         {
@@ -5034,7 +4948,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[40])
+    if(dirtyFlag_[39])
     {
         if(getDeletedByUserId())
         {
@@ -5046,7 +4960,7 @@ void GlJournalLines::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[41])
+    if(dirtyFlag_[40])
     {
         if(getLineNumber())
         {
@@ -5151,16 +5065,7 @@ Json::Value GlJournalLines::toJson() const
         ret["organization_unit_name"]=Json::Value();
     }
 
-    if(getCostCenterId())
-    {
 
-        ret["cost_center_id"]=getValueOfCostCenterId();
-
-    }
-    else
-    {
-        ret["cost_center_id"]=Json::Value();
-    }
 
     if(getReferenceNumber())
     {
@@ -5537,7 +5442,7 @@ Json::Value GlJournalLines::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 42)
+    if(pMasqueradingVector.size() == 41)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -5652,12 +5557,14 @@ Json::Value GlJournalLines::toMasqueradedJson(
             }
         }
 
+
+
         if(!pMasqueradingVector[8].empty())
         {
-            if(getCostCenterId())
+            if(getReferenceNumber())
             {
 
-                ret[pMasqueradingVector[8]]=getValueOfCostCenterId();
+                ret[pMasqueradingVector[8]]=getValueOfReferenceNumber();
 
             }
             else
@@ -5668,10 +5575,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[9].empty())
         {
-            if(getReferenceNumber())
+            if(getChequeNumber())
             {
 
-                ret[pMasqueradingVector[9]]=getValueOfReferenceNumber();
+                ret[pMasqueradingVector[9]]=getValueOfChequeNumber();
 
             }
             else
@@ -5682,10 +5589,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[10].empty())
         {
-            if(getChequeNumber())
+            if(getDescription())
             {
 
-                ret[pMasqueradingVector[10]]=getValueOfChequeNumber();
+                ret[pMasqueradingVector[10]]=getValueOfDescription();
 
             }
             else
@@ -5696,10 +5603,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[11].empty())
         {
-            if(getDescription())
+            if(getDebitAmount())
             {
 
-                ret[pMasqueradingVector[11]]=getValueOfDescription();
+                ret[pMasqueradingVector[11]]=getValueOfDebitAmount();
 
             }
             else
@@ -5710,10 +5617,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[12].empty())
         {
-            if(getDebitAmount())
+            if(getCreditAmount())
             {
 
-                ret[pMasqueradingVector[12]]=getValueOfDebitAmount();
+                ret[pMasqueradingVector[12]]=getValueOfCreditAmount();
 
             }
             else
@@ -5724,10 +5631,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[13].empty())
         {
-            if(getCreditAmount())
+            if(getBaseDebitAmount())
             {
 
-                ret[pMasqueradingVector[13]]=getValueOfCreditAmount();
+                ret[pMasqueradingVector[13]]=getValueOfBaseDebitAmount();
 
             }
             else
@@ -5738,10 +5645,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[14].empty())
         {
-            if(getBaseDebitAmount())
+            if(getBaseCreditAmount())
             {
 
-                ret[pMasqueradingVector[14]]=getValueOfBaseDebitAmount();
+                ret[pMasqueradingVector[14]]=getValueOfBaseCreditAmount();
 
             }
             else
@@ -5752,10 +5659,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[15].empty())
         {
-            if(getBaseCreditAmount())
+            if(getTransactionDate())
             {
 
-                ret[pMasqueradingVector[15]]=getValueOfBaseCreditAmount();
+                ret[pMasqueradingVector[15]]=getTransactionDate()->toDbStringLocal();
 
             }
             else
@@ -5766,10 +5673,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[16].empty())
         {
-            if(getTransactionDate())
+            if(getTransactionSource())
             {
 
-                ret[pMasqueradingVector[16]]=getTransactionDate()->toDbStringLocal();
+                ret[pMasqueradingVector[16]]=getValueOfTransactionSource();
 
             }
             else
@@ -5780,10 +5687,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[17].empty())
         {
-            if(getTransactionSource())
+            if(getIsMultiCurrency())
             {
 
-                ret[pMasqueradingVector[17]]=getValueOfTransactionSource();
+                ret[pMasqueradingVector[17]]=getValueOfIsMultiCurrency();
 
             }
             else
@@ -5794,10 +5701,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[18].empty())
         {
-            if(getIsMultiCurrency())
+            if(getIsReconciled())
             {
 
-                ret[pMasqueradingVector[18]]=getValueOfIsMultiCurrency();
+                ret[pMasqueradingVector[18]]=getValueOfIsReconciled();
 
             }
             else
@@ -5808,10 +5715,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[19].empty())
         {
-            if(getIsReconciled())
+            if(getIsOpeningBalance())
             {
 
-                ret[pMasqueradingVector[19]]=getValueOfIsReconciled();
+                ret[pMasqueradingVector[19]]=getValueOfIsOpeningBalance();
 
             }
             else
@@ -5822,10 +5729,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[20].empty())
         {
-            if(getIsOpeningBalance())
+            if(getIsConsolidated())
             {
 
-                ret[pMasqueradingVector[20]]=getValueOfIsOpeningBalance();
+                ret[pMasqueradingVector[20]]=getValueOfIsConsolidated();
 
             }
             else
@@ -5836,10 +5743,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[21].empty())
         {
-            if(getIsConsolidated())
+            if(getDateConsolidated())
             {
 
-                ret[pMasqueradingVector[21]]=getValueOfIsConsolidated();
+                ret[pMasqueradingVector[21]]=getDateConsolidated()->toDbStringLocal();
 
             }
             else
@@ -5850,10 +5757,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[22].empty())
         {
-            if(getDateConsolidated())
+            if(getCurrencyId())
             {
 
-                ret[pMasqueradingVector[22]]=getDateConsolidated()->toDbStringLocal();
+                ret[pMasqueradingVector[22]]=getValueOfCurrencyId();
 
             }
             else
@@ -5864,10 +5771,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[23].empty())
         {
-            if(getCurrencyId())
+            if(getCurrencyName())
             {
 
-                ret[pMasqueradingVector[23]]=getValueOfCurrencyId();
+                ret[pMasqueradingVector[23]]=getValueOfCurrencyName();
 
             }
             else
@@ -5878,10 +5785,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[24].empty())
         {
-            if(getCurrencyName())
+            if(getCurrencyCode())
             {
 
-                ret[pMasqueradingVector[24]]=getValueOfCurrencyName();
+                ret[pMasqueradingVector[24]]=getValueOfCurrencyCode();
 
             }
             else
@@ -5892,10 +5799,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[25].empty())
         {
-            if(getCurrencyCode())
+            if(getBuyRate())
             {
 
-                ret[pMasqueradingVector[25]]=getValueOfCurrencyCode();
+                ret[pMasqueradingVector[25]]=getValueOfBuyRate();
 
             }
             else
@@ -5906,10 +5813,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[26].empty())
         {
-            if(getBuyRate())
+            if(getSellRate())
             {
 
-                ret[pMasqueradingVector[26]]=getValueOfBuyRate();
+                ret[pMasqueradingVector[26]]=getValueOfSellRate();
 
             }
             else
@@ -5920,10 +5827,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[27].empty())
         {
-            if(getSellRate())
+            if(getBatchDate())
             {
 
-                ret[pMasqueradingVector[27]]=getValueOfSellRate();
+                ret[pMasqueradingVector[27]]=getBatchDate()->toDbStringLocal();
 
             }
             else
@@ -5934,10 +5841,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[28].empty())
         {
-            if(getBatchDate())
+            if(getClosedDate())
             {
 
-                ret[pMasqueradingVector[28]]=getBatchDate()->toDbStringLocal();
+                ret[pMasqueradingVector[28]]=getClosedDate()->toDbStringLocal();
 
             }
             else
@@ -5948,10 +5855,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[29].empty())
         {
-            if(getClosedDate())
+            if(getPettyCashRecipientId())
             {
 
-                ret[pMasqueradingVector[29]]=getClosedDate()->toDbStringLocal();
+                ret[pMasqueradingVector[29]]=getValueOfPettyCashRecipientId();
 
             }
             else
@@ -5962,10 +5869,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[30].empty())
         {
-            if(getPettyCashRecipientId())
+            if(getPettyCashRecipientName())
             {
 
-                ret[pMasqueradingVector[30]]=getValueOfPettyCashRecipientId();
+                ret[pMasqueradingVector[30]]=getValueOfPettyCashRecipientName();
 
             }
             else
@@ -5976,10 +5883,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[31].empty())
         {
-            if(getPettyCashRecipientName())
+            if(getStandardAccountType())
             {
 
-                ret[pMasqueradingVector[31]]=getValueOfPettyCashRecipientName();
+                ret[pMasqueradingVector[31]]=getValueOfStandardAccountType();
 
             }
             else
@@ -5990,10 +5897,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[32].empty())
         {
-            if(getStandardAccountType())
+            if(getBatchNumber())
             {
 
-                ret[pMasqueradingVector[32]]=getValueOfStandardAccountType();
+                ret[pMasqueradingVector[32]]=getValueOfBatchNumber();
 
             }
             else
@@ -6004,10 +5911,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[33].empty())
         {
-            if(getBatchNumber())
+            if(getCreatedAt())
             {
 
-                ret[pMasqueradingVector[33]]=getValueOfBatchNumber();
+                ret[pMasqueradingVector[33]]=getCreatedAt()->toDbStringLocal();
 
             }
             else
@@ -6018,10 +5925,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[34].empty())
         {
-            if(getCreatedAt())
+            if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[34]]=getCreatedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[34]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -6032,10 +5939,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[35].empty())
         {
-            if(getCreatedByUserId())
+            if(getLastModifiedAt())
             {
 
-                ret[pMasqueradingVector[35]]=getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[35]]=getLastModifiedAt()->toDbStringLocal();
 
             }
             else
@@ -6046,10 +5953,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[36].empty())
         {
-            if(getLastModifiedAt())
+            if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[36]]=getLastModifiedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[36]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -6060,10 +5967,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[37].empty())
         {
-            if(getLastModifiedByUserId())
+            if(getIsDeleted())
             {
 
-                ret[pMasqueradingVector[37]]=getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[37]]=getValueOfIsDeleted();
 
             }
             else
@@ -6074,10 +5981,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[38].empty())
         {
-            if(getIsDeleted())
+            if(getDeletedAt())
             {
 
-                ret[pMasqueradingVector[38]]=getValueOfIsDeleted();
+                ret[pMasqueradingVector[38]]=getDeletedAt()->toDbStringLocal();
 
             }
             else
@@ -6088,10 +5995,10 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[39].empty())
         {
-            if(getDeletedAt())
+            if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[39]]=getDeletedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[39]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -6102,29 +6009,15 @@ Json::Value GlJournalLines::toMasqueradedJson(
 
         if(!pMasqueradingVector[40].empty())
         {
-            if(getDeletedByUserId())
+            if(getLineNumber())
             {
 
-                ret[pMasqueradingVector[40]]=getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[40]]=getValueOfLineNumber();
 
             }
             else
             {
                 ret[pMasqueradingVector[40]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[41].empty())
-        {
-            if(getLineNumber())
-            {
-
-                ret[pMasqueradingVector[41]]=getValueOfLineNumber();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[41]]=Json::Value();
             }
         }
 
@@ -6220,16 +6113,7 @@ Json::Value GlJournalLines::toMasqueradedJson(
         ret["organization_unit_name"]=Json::Value();
     }
 
-    if(getCostCenterId())
-    {
 
-        ret["cost_center_id"]=getValueOfCostCenterId();
-
-    }
-    else
-    {
-        ret["cost_center_id"]=Json::Value();
-    }
 
     if(getReferenceNumber())
     {
@@ -6672,57 +6556,53 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
             return false;
     }
 
-    if(pJson.isMember("cost_center_id"))
-    {
-        if(!validJsonOfField(8, "cost_center_id", pJson["cost_center_id"], err, true))
-            return false;
-    }
+
 
     if(pJson.isMember("reference_number"))
     {
-        if(!validJsonOfField(9, "reference_number", pJson["reference_number"], err, true))
+        if(!validJsonOfField(8, "reference_number", pJson["reference_number"], err, true))
             return false;
     }
 
     if(pJson.isMember("cheque_number"))
     {
-        if(!validJsonOfField(10, "cheque_number", pJson["cheque_number"], err, true))
+        if(!validJsonOfField(9, "cheque_number", pJson["cheque_number"], err, true))
             return false;
     }
 
     if(pJson.isMember("description"))
     {
-        if(!validJsonOfField(11, "description", pJson["description"], err, true))
+        if(!validJsonOfField(10, "description", pJson["description"], err, true))
             return false;
     }
 
     if(pJson.isMember("debit_amount"))
     {
-        if(!validJsonOfField(12, "debit_amount", pJson["debit_amount"], err, true))
+        if(!validJsonOfField(11, "debit_amount", pJson["debit_amount"], err, true))
             return false;
     }
 
     if(pJson.isMember("credit_amount"))
     {
-        if(!validJsonOfField(13, "credit_amount", pJson["credit_amount"], err, true))
+        if(!validJsonOfField(12, "credit_amount", pJson["credit_amount"], err, true))
             return false;
     }
 
     if(pJson.isMember("base_debit_amount"))
     {
-        if(!validJsonOfField(14, "base_debit_amount", pJson["base_debit_amount"], err, true))
+        if(!validJsonOfField(13, "base_debit_amount", pJson["base_debit_amount"], err, true))
             return false;
     }
 
     if(pJson.isMember("base_credit_amount"))
     {
-        if(!validJsonOfField(15, "base_credit_amount", pJson["base_credit_amount"], err, true))
+        if(!validJsonOfField(14, "base_credit_amount", pJson["base_credit_amount"], err, true))
             return false;
     }
 
     if(pJson.isMember("transaction_date"))
     {
-        if(!validJsonOfField(16, "transaction_date", pJson["transaction_date"], err, true))
+        if(!validJsonOfField(15, "transaction_date", pJson["transaction_date"], err, true))
             return false;
     }
 
@@ -6734,43 +6614,43 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
 
     if(pJson.isMember("transaction_source"))
     {
-        if(!validJsonOfField(17, "transaction_source", pJson["transaction_source"], err, true))
+        if(!validJsonOfField(16, "transaction_source", pJson["transaction_source"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_multi_currency"))
     {
-        if(!validJsonOfField(18, "is_multi_currency", pJson["is_multi_currency"], err, true))
+        if(!validJsonOfField(17, "is_multi_currency", pJson["is_multi_currency"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_reconciled"))
     {
-        if(!validJsonOfField(19, "is_reconciled", pJson["is_reconciled"], err, true))
+        if(!validJsonOfField(18, "is_reconciled", pJson["is_reconciled"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_opening_balance"))
     {
-        if(!validJsonOfField(20, "is_opening_balance", pJson["is_opening_balance"], err, true))
+        if(!validJsonOfField(19, "is_opening_balance", pJson["is_opening_balance"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_consolidated"))
     {
-        if(!validJsonOfField(21, "is_consolidated", pJson["is_consolidated"], err, true))
+        if(!validJsonOfField(20, "is_consolidated", pJson["is_consolidated"], err, true))
             return false;
     }
 
     if(pJson.isMember("date_consolidated"))
     {
-        if(!validJsonOfField(22, "date_consolidated", pJson["date_consolidated"], err, true))
+        if(!validJsonOfField(21, "date_consolidated", pJson["date_consolidated"], err, true))
             return false;
     }
 
     if(pJson.isMember("currency_id"))
     {
-        if(!validJsonOfField(23, "currency_id", pJson["currency_id"], err, true))
+        if(!validJsonOfField(22, "currency_id", pJson["currency_id"], err, true))
             return false;
     }
 
@@ -6782,31 +6662,31 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
 
     if(pJson.isMember("currency_name"))
     {
-        if(!validJsonOfField(24, "currency_name", pJson["currency_name"], err, true))
+        if(!validJsonOfField(23, "currency_name", pJson["currency_name"], err, true))
             return false;
     }
 
     if(pJson.isMember("currency_code"))
     {
-        if(!validJsonOfField(25, "currency_code", pJson["currency_code"], err, true))
+        if(!validJsonOfField(24, "currency_code", pJson["currency_code"], err, true))
             return false;
     }
 
     if(pJson.isMember("buy_rate"))
     {
-        if(!validJsonOfField(26, "buy_rate", pJson["buy_rate"], err, true))
+        if(!validJsonOfField(25, "buy_rate", pJson["buy_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("sell_rate"))
     {
-        if(!validJsonOfField(27, "sell_rate", pJson["sell_rate"], err, true))
+        if(!validJsonOfField(26, "sell_rate", pJson["sell_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("batch_date"))
     {
-        if(!validJsonOfField(28, "batch_date", pJson["batch_date"], err, true))
+        if(!validJsonOfField(27, "batch_date", pJson["batch_date"], err, true))
             return false;
     }
 
@@ -6818,25 +6698,25 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
 
     if(pJson.isMember("closed_date"))
     {
-        if(!validJsonOfField(29, "closed_date", pJson["closed_date"], err, true))
+        if(!validJsonOfField(28, "closed_date", pJson["closed_date"], err, true))
             return false;
     }
 
     if(pJson.isMember("petty_cash_recipient_id"))
     {
-        if(!validJsonOfField(30, "petty_cash_recipient_id", pJson["petty_cash_recipient_id"], err, true))
+        if(!validJsonOfField(29, "petty_cash_recipient_id", pJson["petty_cash_recipient_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("petty_cash_recipient_name"))
     {
-        if(!validJsonOfField(31, "petty_cash_recipient_name", pJson["petty_cash_recipient_name"], err, true))
+        if(!validJsonOfField(30, "petty_cash_recipient_name", pJson["petty_cash_recipient_name"], err, true))
             return false;
     }
 
     if(pJson.isMember("standard_account_type"))
     {
-        if(!validJsonOfField(32, "standard_account_type", pJson["standard_account_type"], err, true))
+        if(!validJsonOfField(31, "standard_account_type", pJson["standard_account_type"], err, true))
             return false;
     }
 
@@ -6848,7 +6728,7 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
 
     if(pJson.isMember("batch_number"))
     {
-        if(!validJsonOfField(33, "batch_number", pJson["batch_number"], err, true))
+        if(!validJsonOfField(32, "batch_number", pJson["batch_number"], err, true))
             return false;
     }
 
@@ -6860,49 +6740,49 @@ bool GlJournalLines::validateJsonForCreation(const Json::Value &pJson, std::stri
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(34, "created_at", pJson["created_at"], err, true))
+        if(!validJsonOfField(33, "created_at", pJson["created_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(35, "created_by_user_id", pJson["created_by_user_id"], err, true))
+        if(!validJsonOfField(34, "created_by_user_id", pJson["created_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(36, "last_modified_at", pJson["last_modified_at"], err, true))
+        if(!validJsonOfField(35, "last_modified_at", pJson["last_modified_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(37, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+        if(!validJsonOfField(36, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(38, "is_deleted", pJson["is_deleted"], err, true))
+        if(!validJsonOfField(37, "is_deleted", pJson["is_deleted"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(39, "deleted_at", pJson["deleted_at"], err, true))
+        if(!validJsonOfField(38, "deleted_at", pJson["deleted_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(40, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
+        if(!validJsonOfField(39, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("line_number"))
     {
-        if(!validJsonOfField(41, "line_number", pJson["line_number"], err, true))
+        if(!validJsonOfField(40, "line_number", pJson["line_number"], err, true))
             return false;
     }
 
@@ -6912,7 +6792,7 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
                                                         const std::vector<std::string> &pMasqueradingVector,
                                                         std::string &err)
 {
-    if(pMasqueradingVector.size() != 42)
+    if(pMasqueradingVector.size() != 41)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7023,6 +6903,8 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
 
       }
 
+
+
       if(!pMasqueradingVector[8].empty())
       {
           if(pJson.isMember(pMasqueradingVector[8]))
@@ -7101,6 +6983,12 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
                   return false;
           }
 
+        else
+        {
+            err="The " + pMasqueradingVector[15] + " column cannot be null";
+            return false;
+        }
+
       }
 
       if(!pMasqueradingVector[16].empty())
@@ -7110,12 +6998,6 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
               if(!validJsonOfField(16, pMasqueradingVector[16], pJson[pMasqueradingVector[16]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[16] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -7177,6 +7059,12 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
                   return false;
           }
 
+        else
+        {
+            err="The " + pMasqueradingVector[22] + " column cannot be null";
+            return false;
+        }
+
       }
 
       if(!pMasqueradingVector[23].empty())
@@ -7186,12 +7074,6 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
               if(!validJsonOfField(23, pMasqueradingVector[23], pJson[pMasqueradingVector[23]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[23] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -7233,6 +7115,12 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
                   return false;
           }
 
+        else
+        {
+            err="The " + pMasqueradingVector[27] + " column cannot be null";
+            return false;
+        }
+
       }
 
       if(!pMasqueradingVector[28].empty())
@@ -7242,12 +7130,6 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
               if(!validJsonOfField(28, pMasqueradingVector[28], pJson[pMasqueradingVector[28]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[28] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -7279,6 +7161,12 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
                   return false;
           }
 
+        else
+        {
+            err="The " + pMasqueradingVector[31] + " column cannot be null";
+            return false;
+        }
+
       }
 
       if(!pMasqueradingVector[32].empty())
@@ -7304,12 +7192,6 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
               if(!validJsonOfField(33, pMasqueradingVector[33], pJson[pMasqueradingVector[33]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[33] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -7383,16 +7265,6 @@ bool GlJournalLines::validateMasqueradedJsonForCreation(const Json::Value &pJson
 
       }
 
-      if(!pMasqueradingVector[41].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[41]))
-          {
-              if(!validJsonOfField(41, pMasqueradingVector[41], pJson[pMasqueradingVector[41]], err, true))
-                  return false;
-          }
-
-      }
-
     }
     catch(const Json::LogicError &e)
     {
@@ -7458,207 +7330,203 @@ bool GlJournalLines::validateJsonForUpdate(const Json::Value &pJson, std::string
             return false;
     }
 
-    if(pJson.isMember("cost_center_id"))
-    {
-        if(!validJsonOfField(8, "cost_center_id", pJson["cost_center_id"], err, false))
-            return false;
-    }
+
 
     if(pJson.isMember("reference_number"))
     {
-        if(!validJsonOfField(9, "reference_number", pJson["reference_number"], err, false))
+        if(!validJsonOfField(8, "reference_number", pJson["reference_number"], err, false))
             return false;
     }
 
     if(pJson.isMember("cheque_number"))
     {
-        if(!validJsonOfField(10, "cheque_number", pJson["cheque_number"], err, false))
+        if(!validJsonOfField(9, "cheque_number", pJson["cheque_number"], err, false))
             return false;
     }
 
     if(pJson.isMember("description"))
     {
-        if(!validJsonOfField(11, "description", pJson["description"], err, false))
+        if(!validJsonOfField(10, "description", pJson["description"], err, false))
             return false;
     }
 
     if(pJson.isMember("debit_amount"))
     {
-        if(!validJsonOfField(12, "debit_amount", pJson["debit_amount"], err, false))
+        if(!validJsonOfField(11, "debit_amount", pJson["debit_amount"], err, false))
             return false;
     }
 
     if(pJson.isMember("credit_amount"))
     {
-        if(!validJsonOfField(13, "credit_amount", pJson["credit_amount"], err, false))
+        if(!validJsonOfField(12, "credit_amount", pJson["credit_amount"], err, false))
             return false;
     }
 
     if(pJson.isMember("base_debit_amount"))
     {
-        if(!validJsonOfField(14, "base_debit_amount", pJson["base_debit_amount"], err, false))
+        if(!validJsonOfField(13, "base_debit_amount", pJson["base_debit_amount"], err, false))
             return false;
     }
 
     if(pJson.isMember("base_credit_amount"))
     {
-        if(!validJsonOfField(15, "base_credit_amount", pJson["base_credit_amount"], err, false))
+        if(!validJsonOfField(14, "base_credit_amount", pJson["base_credit_amount"], err, false))
             return false;
     }
 
     if(pJson.isMember("transaction_date"))
     {
-        if(!validJsonOfField(16, "transaction_date", pJson["transaction_date"], err, false))
+        if(!validJsonOfField(15, "transaction_date", pJson["transaction_date"], err, false))
             return false;
     }
 
     if(pJson.isMember("transaction_source"))
     {
-        if(!validJsonOfField(17, "transaction_source", pJson["transaction_source"], err, false))
+        if(!validJsonOfField(16, "transaction_source", pJson["transaction_source"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_multi_currency"))
     {
-        if(!validJsonOfField(18, "is_multi_currency", pJson["is_multi_currency"], err, false))
+        if(!validJsonOfField(17, "is_multi_currency", pJson["is_multi_currency"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_reconciled"))
     {
-        if(!validJsonOfField(19, "is_reconciled", pJson["is_reconciled"], err, false))
+        if(!validJsonOfField(18, "is_reconciled", pJson["is_reconciled"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_opening_balance"))
     {
-        if(!validJsonOfField(20, "is_opening_balance", pJson["is_opening_balance"], err, false))
+        if(!validJsonOfField(19, "is_opening_balance", pJson["is_opening_balance"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_consolidated"))
     {
-        if(!validJsonOfField(21, "is_consolidated", pJson["is_consolidated"], err, false))
+        if(!validJsonOfField(20, "is_consolidated", pJson["is_consolidated"], err, false))
             return false;
     }
 
     if(pJson.isMember("date_consolidated"))
     {
-        if(!validJsonOfField(22, "date_consolidated", pJson["date_consolidated"], err, false))
+        if(!validJsonOfField(21, "date_consolidated", pJson["date_consolidated"], err, false))
             return false;
     }
 
     if(pJson.isMember("currency_id"))
     {
-        if(!validJsonOfField(23, "currency_id", pJson["currency_id"], err, false))
+        if(!validJsonOfField(22, "currency_id", pJson["currency_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("currency_name"))
     {
-        if(!validJsonOfField(24, "currency_name", pJson["currency_name"], err, false))
+        if(!validJsonOfField(23, "currency_name", pJson["currency_name"], err, false))
             return false;
     }
 
     if(pJson.isMember("currency_code"))
     {
-        if(!validJsonOfField(25, "currency_code", pJson["currency_code"], err, false))
+        if(!validJsonOfField(24, "currency_code", pJson["currency_code"], err, false))
             return false;
     }
 
     if(pJson.isMember("buy_rate"))
     {
-        if(!validJsonOfField(26, "buy_rate", pJson["buy_rate"], err, false))
+        if(!validJsonOfField(25, "buy_rate", pJson["buy_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("sell_rate"))
     {
-        if(!validJsonOfField(27, "sell_rate", pJson["sell_rate"], err, false))
+        if(!validJsonOfField(26, "sell_rate", pJson["sell_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("batch_date"))
     {
-        if(!validJsonOfField(28, "batch_date", pJson["batch_date"], err, false))
+        if(!validJsonOfField(27, "batch_date", pJson["batch_date"], err, false))
             return false;
     }
 
     if(pJson.isMember("closed_date"))
     {
-        if(!validJsonOfField(29, "closed_date", pJson["closed_date"], err, false))
+        if(!validJsonOfField(28, "closed_date", pJson["closed_date"], err, false))
             return false;
     }
 
     if(pJson.isMember("petty_cash_recipient_id"))
     {
-        if(!validJsonOfField(30, "petty_cash_recipient_id", pJson["petty_cash_recipient_id"], err, false))
+        if(!validJsonOfField(29, "petty_cash_recipient_id", pJson["petty_cash_recipient_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("petty_cash_recipient_name"))
     {
-        if(!validJsonOfField(31, "petty_cash_recipient_name", pJson["petty_cash_recipient_name"], err, false))
+        if(!validJsonOfField(30, "petty_cash_recipient_name", pJson["petty_cash_recipient_name"], err, false))
             return false;
     }
 
     if(pJson.isMember("standard_account_type"))
     {
-        if(!validJsonOfField(32, "standard_account_type", pJson["standard_account_type"], err, false))
+        if(!validJsonOfField(31, "standard_account_type", pJson["standard_account_type"], err, false))
             return false;
     }
 
     if(pJson.isMember("batch_number"))
     {
-        if(!validJsonOfField(33, "batch_number", pJson["batch_number"], err, false))
+        if(!validJsonOfField(32, "batch_number", pJson["batch_number"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(34, "created_at", pJson["created_at"], err, false))
+        if(!validJsonOfField(33, "created_at", pJson["created_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(35, "created_by_user_id", pJson["created_by_user_id"], err, false))
+        if(!validJsonOfField(34, "created_by_user_id", pJson["created_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(36, "last_modified_at", pJson["last_modified_at"], err, false))
+        if(!validJsonOfField(35, "last_modified_at", pJson["last_modified_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(37, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+        if(!validJsonOfField(36, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(38, "is_deleted", pJson["is_deleted"], err, false))
+        if(!validJsonOfField(37, "is_deleted", pJson["is_deleted"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(39, "deleted_at", pJson["deleted_at"], err, false))
+        if(!validJsonOfField(38, "deleted_at", pJson["deleted_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(40, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
+        if(!validJsonOfField(39, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("line_number"))
     {
-        if(!validJsonOfField(41, "line_number", pJson["line_number"], err, false))
+        if(!validJsonOfField(40, "line_number", pJson["line_number"], err, false))
             return false;
     }
 
@@ -7668,7 +7536,7 @@ bool GlJournalLines::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                       const std::vector<std::string> &pMasqueradingVector,
                                                       std::string &err)
 {
-    if(pMasqueradingVector.size() != 42)
+    if(pMasqueradingVector.size() != 41)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7728,6 +7596,8 @@ bool GlJournalLines::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
           if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, false))
               return false;
       }
+
+
 
       if(!pMasqueradingVector[8].empty() && pJson.isMember(pMasqueradingVector[8]))
       {
@@ -7927,12 +7797,6 @@ bool GlJournalLines::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
               return false;
       }
 
-      if(!pMasqueradingVector[41].empty() && pJson.isMember(pMasqueradingVector[41]))
-      {
-          if(!validJsonOfField(41, pMasqueradingVector[41], pJson[pMasqueradingVector[41]], err, false))
-              return false;
-      }
-
     }
     catch(const Json::LogicError &e)
     {
@@ -8104,6 +7968,14 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 return false;
             }
 
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 40)
+            {
+                err="String length exceeds limit for the " +
+                    fieldName +
+                    " field (the maximum value is 40)";
+                return false;
+            }
+
             break;
 
         case 9:
@@ -8142,11 +8014,11 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 40)
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 300)
             {
                 err="String length exceeds limit for the " +
                     fieldName +
-                    " field (the maximum value is 40)";
+                    " field (the maximum value is 300)";
                 return false;
             }
 
@@ -8156,20 +8028,13 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
 
             if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 300)
-            {
-                err="String length exceeds limit for the " +
-                    fieldName +
-                    " field (the maximum value is 300)";
                 return false;
             }
 
@@ -8253,6 +8118,14 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 return false;
             }
 
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 40)
+            {
+                err="String length exceeds limit for the " +
+                    fieldName +
+                    " field (the maximum value is 40)";
+                return false;
+            }
+
             break;
 
         case 17:
@@ -8263,17 +8136,9 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 40)
-            {
-                err="String length exceeds limit for the " +
-                    fieldName +
-                    " field (the maximum value is 40)";
                 return false;
             }
 
@@ -8331,22 +8196,6 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
-            }
-
-            if(!pJson.isBool())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 22:
-
-            if(pJson.isNull())
-            {
                 return true;
             }
 
@@ -8358,7 +8207,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 23:
+        case 22:
 
             if(pJson.isNull())
             {
@@ -8374,7 +8223,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 24:
+        case 23:
 
             if(pJson.isNull())
             {
@@ -8397,7 +8246,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 25:
+        case 24:
 
             if(pJson.isNull())
             {
@@ -8415,6 +8264,22 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 err="String length exceeds limit for the " +
                     fieldName +
                     " field (the maximum value is 3)";
+                return false;
+            }
+
+            break;
+
+        case 25:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
                 return false;
             }
 
@@ -8456,8 +8321,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -8496,21 +8360,6 @@ bool GlJournalLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            break;
-
-        case 31:
-
-            if(pJson.isNull())
-            {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
             if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 160)
             {
                 err="String length exceeds limit for the " +
@@ -8521,7 +8370,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 32:
+        case 31:
 
             if(pJson.isNull())
             {
@@ -8537,7 +8386,7 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 33:
+        case 32:
 
             if(pJson.isNull())
             {
@@ -8561,12 +8410,27 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             break;
 
-        case 34:
+        case 33:
 
             if(pJson.isNull())
             {
                 err="The " + fieldName + " column cannot be null";
                 return false;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 34:
+
+            if(pJson.isNull())
+            {
+                return true;
             }
 
             if(!pJson.isString())
@@ -8611,10 +8475,11 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8626,11 +8491,10 @@ bool GlJournalLines::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8654,21 +8518,6 @@ bool GlJournalLines::validJsonOfField(size_t index,
             break;
 
         case 40:
-
-            if(pJson.isNull())
-            {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 41:
 
             if(pJson.isNull())
             {

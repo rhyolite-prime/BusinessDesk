@@ -1011,13 +1011,6 @@ async function save() {
                 }}</span></span
               >
             </div>
-            <p
-              v-if="l.organizationUnitId"
-              class="mt-2 text-[10px] text-slate-400"
-            >
-              Legacy organization retained:
-              {{ l.organizationUnitName || l.organizationUnitId }}
-            </p>
           </article>
         </section>
       </fieldset>

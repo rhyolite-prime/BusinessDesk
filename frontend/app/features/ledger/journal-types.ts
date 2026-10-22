@@ -77,7 +77,7 @@ export function journalLineInput(line: JournalLine) {
     ...(id ? { id } : {}),
     accountId,
     currencyId,
-    costCenterId: costCenterId || null,
+    organizationUnitId: costCenterId || null,
     exchangeRate,
     debit: debit || '0',
     credit: credit || '0',

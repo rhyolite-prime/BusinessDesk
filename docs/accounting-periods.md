@@ -76,7 +76,10 @@ status, tenant, actor and audit fields) and query/body unit mismatches fail.
 Period responses include `id`, `accountingUnitId`, `period`, `beginDate`,
 `endDate`, `status`, `version`, creation/modification audits and last-close
 metadata. History is newest version first and records action, old/new status,
-version, reason, actor and timestamp. No-op transitions with the current version
+version, reason, actor and timestamp. Actor identity is displayed as
+**full name · email**, resolved from the live user in the same tenant; missing,
+deleted or out-of-scope users show “Unavailable user” rather than their UUID.
+The actor UUID remains in the audit record for traceability. No-op transitions with the current version
 return the existing record without incrementing the version or inventing a new
 event. A stale version fails even if the requested status already matches.
 Pre-migration rows have no synthetic creation event; their history begins with

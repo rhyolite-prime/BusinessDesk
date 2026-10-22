@@ -7,15 +7,17 @@ same database/schema/search path used by the backend. Apply prior feature
 migrations first, including the real cost-center catalog (`007_cost_centers.sql`).
 Apply **`013_accounting_period_management.sql`** as well to enable creating,
 opening and closing periods in Ledger → Journal → Accounting Periods.
-Then rebuild/restart the backend and frontend.
+Apply **`014_journal_organization_units.sql`** for the consolidated journal-line
+organization fields. Then rebuild/restart the backend and frontend.
 
 ```sh
 psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/012_journals.sql
 psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/013_accounting_period_management.sql
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/014_journal_organization_units.sql
 ```
 
 The backend does not run schema DDL on startup or per request. Missing migration
-readiness returns `schema_not_ready` / 503; the page identifies migration 012.
+readiness returns `schema_not_ready` / 503; the page identifies required migrations, including 014.
 Checks are not cached; applying the upgrade repairs the next request. Migration
 012 adds optimistic header versions and live line positions. It also fixes the
 original NULLS NOT DISTINCT idempotency constraint, which incorrectly allowed
@@ -133,12 +135,29 @@ Example local draft (replace all UUIDs with real catalog IDs):
   tenant/unit. Currencies must be live/active in the global catalog. Optional
   cost centers must be live and tenant-owned. Catalog names and account types
   are derived server-side, not trusted from the browser.
-- The organizational-unit registry is not connected. New assignments are not
-  accepted; no demo organizational IDs are persisted. Retained legacy lines
-  preserve their existing organizational ID/name. Newly added lines are
-  unassigned. To preserve a line, include its read-only `id` in PUT; it must be
-  a unique live line of this same draft. New lines omit `id`. Omitted existing
-  lines are audited soft deletes; deleted rows are never restored or updated.
+- Organization units use the live tenant cost-center catalog: selecting a cost
+  center saves its UUID in `gl_journal_lines.organization_unit_id` and its name
+  in `organization_unit_name`. Both fields are updated on edit and cleared
+  together when unassigned. The name is derived server-side, never trusted
+  from the client. The browser sends `organizationUnitId`; older clients may
+  send `costCenterId` as a compatibility alias. Conflicting IDs are rejected.
+  Responses retain `costCenterId` as an alias of `organizationUnitId` for the
+  existing header/line selectors, not as a separate stored dimension.
+  To preserve a line, include its read-only `id` in PUT; it must be a unique live
+  line of this draft. New lines omit `id`. Omitted lines are soft-deleted.
+- Migration 014 backfills **live** journal-line IDs/names from the live tenant
+  catalog before dropping `gl_journal_lines.cost_center_id`. It aborts rather
+  than discarding conflicting independent IDs, or an archived cost-center ID
+  not already preserved in that archived line's organization field. Such legacy
+  cases need operator review with backups before deployment. It does not query
+  deleted catalog identities, alter posted amounts/balances or rewrite immutable
+  posting snapshots. The down script recreates the compatibility column for live
+  lines only; it cannot reconstruct independent historic values. Back up first.
+  Other modules' cost-center columns are unchanged. In particular, balance-table
+  dimensions are retained: manual journal posting maps the selected organization
+  to the **existing cost-center balance key**, with the legacy organization key
+  null, so new postings still accumulate against existing manual-journal balances
+  instead of splitting historical balances into a new dimension.
 - PUT is a full draft replacement, not a sparse patch. It requires the current
   integer `version`; update/post/delete reject stale drafts rather than
   overwriting another user's changes. Retained line IDs and creation audit
@@ -179,7 +198,7 @@ Draft create/edit/delete do not change balances. Final posting:
    exactly equal base debit/credit totals (no rounding plug or tolerance).
 3. Requires a live, open period in this unit covering **both** the batch and every
    line's transaction date. It locks the period; no automatic period creation.
-   Configure periods through your existing administration/database process.
+   Configure periods through the Accounting Periods page.
 4. Refuses to bypass any active `journal`/`general_journal` approval policy whose
    minimum amount applies. Submission/approval workflow is not added in this
    CRUD implementation. Pending/approved/etc. records remain read-only here.
@@ -372,6 +391,7 @@ auto-balancing amount while other rows are edited.
 ```sh
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
+node test/ledger/journal_model_schema_test.mjs
 node --experimental-strip-types test/ledger/journal_deficit_test.mjs
 node --experimental-strip-types test/ledger/journal_descriptions_test.mjs
 node --experimental-strip-types test/ledger/currency_rate_test.mjs
@@ -403,3 +423,12 @@ The earlier JournalService/JournalController implementation was also syntax-chec
 against actual Drogon 1.9.5, Trantor and JsonCpp headers. The new period service
 and controller compile in the PostgreSQL transport seam; no full backend link
 or live Drogon/JWT deployment is claimed.
+
+The organization-unit update additionally passes native syntax checks for the
+journal/period services, period controller and updated `GlJournalLines` model
+against current Drogon, Trantor and JsonCpp headers. Current headers are needed
+for the generated model's existing `utf8Length` calls (not available in 1.9.5).
+Migration 014 is tested up/down/up, with live legacy backfill, conflict rollback,
+archived-data protection, organization create/edit/clear/post persistence and
+server-owned names. The model schema test checks positional indices after the
+physical column drop. These checks do not constitute a full backend link.

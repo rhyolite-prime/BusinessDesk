@@ -71,7 +71,7 @@ const ledgerGroups: NavigationGroup[] = [
         children: [
           { label: 'Journal', to: '/ledger/journals/new', icon: 'pencil-square' },
           { label: 'Journal History', to: '/ledger/journals', icon: 'clock' },
-          { label: 'Accounting Periods', to: '/ledger/accounting-periods', icon: 'calendar' },
+          { label: 'Accounting Periods', to: '/ledger/accounting-periods', icon: 'calendar-days' },
         ],
       },
       {
@@ -199,18 +199,14 @@ const moduleGroups = computed<NavigationGroup[]>(() => [
 const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : (props.navigationGroups ?? moduleGroups.value))
 const ledgerSetupLinks: NavigationLink[] = [
   { label: 'Accounting units', icon: 'building-office', comingSoon: true },
-  { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
+  { label: 'Preferences', icon: 'cog-6-tooth', to: '/preferences' },
 ]
 const moduleSetupLinks: NavigationLink[] = [
-  { label: 'Workspace settings', icon: 'cog-6-tooth', comingSoon: true },
+  { label: 'Preferences', icon: 'cog-6-tooth', to: '/preferences' },
   { label: 'User access', icon: 'user-group', comingSoon: true },
   { label: 'Data connections', icon: 'arrow-path', comingSoon: true },
 ]
 const setupLinks = computed(() => isLedgerWorkspace.value ? ledgerSetupLinks : moduleSetupLinks)
-
-function comingSoonTitle(label: string) {
-  return `${label} is planned for a later ${props.moduleName} phase`
-}
 
 function isActive(path?: string) {
   if (!path) return false
@@ -266,18 +262,13 @@ function isActive(path?: string) {
           <AppIcon name="cog-6-tooth" :size="13" /> Configuration
         </p>
         <div class="space-y-0.5">
-          <button
+          <SharedSidebarNavItem
             v-for="link in setupLinks"
             :key="link.label"
-            type="button"
-            disabled
-            :title="comingSoonTitle(link.label)"
-            class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
-          >
-            <AppIcon :name="link.icon" :size="18" />
-            <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
-            <span class="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>
-          </button>
+            :item="link"
+            :workspace-name="props.moduleName"
+            @navigate="emit('close')"
+          />
         </div>
       </section>
     </nav>
