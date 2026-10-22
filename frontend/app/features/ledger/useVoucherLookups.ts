@@ -1,3 +1,8 @@
+import {
+  loadEmployeeVoucherOptions,
+  type EmployeeOptionsPage,
+  type EmployeeVoucherOption,
+} from '../employees/voucher-options'
 import type { BankAccount } from './bank-account-types'
 import type { SupplierRecord } from './supplier-fields'
 export interface VoucherAccount {
@@ -26,13 +31,16 @@ interface Center {
   name: string
   parentId: string | null
 }
-export function useVoucherLookups() {
+export function useVoucherLookups(
+  includeEmployees: () => boolean = () => false,
+) {
   const request = useRequestFetch(),
     { user } = useBusinessDeskAuth()
   const unitId = useState<string>('ledger-accounting-unit', () => ''),
     units = ref<Unit[]>([]),
     currencies = ref<Currency[]>([]),
     suppliers = ref<SupplierRecord[]>([]),
+    employees = ref<EmployeeVoucherOption[]>([]),
     centers = ref<Center[]>([]),
     accounts = ref<VoucherAccount[]>([]),
     banks = ref<BankAccount[]>([]),
@@ -60,20 +68,29 @@ export function useVoucherLookups() {
       who = identity()
     loading.value = true
     error.value = ''
+    employees.value = []
     accounts.value = []
     banks.value = []
     try {
-      const [u, c, s, o] = await Promise.all([
+      const [u, c, s, o, e] = await Promise.all([
         pages<Unit>('/api/ledger/accounting-units'),
         pages<Currency>('/api/shared/currencies'),
         pages<SupplierRecord>('/api/shared/suppliers'),
         request<{ data: Center[] }>('/api/shared/cost-centers'),
+        includeEmployees()
+          ? loadEmployeeVoucherOptions((query) =>
+              request<EmployeeOptionsPage>('/api/shared/employees/options', {
+                query,
+              }),
+            )
+          : Promise.resolve([] as EmployeeVoucherOption[]),
       ])
       if (current !== generation || who !== identity()) return
       units.value = u.filter((x) => x.isActive)
       currencies.value = c.filter((x) => x.isActive)
       suppliers.value = s.filter((x) => x.statusId !== 'inactive')
       centers.value = o.data
+      employees.value = e
       if (!units.value.some((x) => x.id === unitId.value)) {
         unitId.value = units.value[0]?.id || ''
         if (unitId.value) return
@@ -129,12 +146,14 @@ export function useVoucherLookups() {
     }),
   )
   watch(unitId, () => void load())
+  watch(includeEmployees, () => void load())
   onMounted(load)
   watch(identity, () => {
     generation++
     units.value = []
     currencies.value = []
     suppliers.value = []
+    employees.value = []
     centers.value = []
     accounts.value = []
     banks.value = []
@@ -149,6 +168,7 @@ export function useVoucherLookups() {
     units,
     currencies,
     suppliers,
+    employees,
     costCenters,
     accounts,
     banks,

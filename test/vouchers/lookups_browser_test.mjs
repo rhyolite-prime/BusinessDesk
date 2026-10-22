@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {calculateVoucher} from '../../frontend/app/features/ledger/voucher-tax.ts'
-let checks=0,fail=false
+let checks=0,fail=false,failEmployees=false
 let stored=null, savedInput=null
 const seen=[],check=(v,label)=>{assert.ok(v,label);checks++}
 const id=n=>`90000000-0000-4000-8000-${String(n).padStart(12,'0')}`
@@ -21,11 +21,20 @@ const upstream=http.createServer(async(req,res)=>{
   stored={...savedInput,id:id(21),voucherNumber:'SPV-TEST',batchNumber:'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
   return send(201,stored)
  }
+ if(p===`/api/v1/ledger/vouchers/${id(63)}`&&req.method==='GET')return send(200,{
+  ...stored,id:id(63),type:'employee-payment',payeeId:id(61),currencyCode:'USD',exchangeRate:'1.0000000000',multiCurrency:false,
+  lines:[{id:id(64),invoiceNumber:'',referenceNumber:'',accountId:debit,description:'Employee allocation',organizationUnitId:center,localAmount:'100.000000',foreignAmount:'0.000000',isWithhold:true}],
+  retentions:[{id:id(65),accountId:debit,description:'Legacy retention',value:'25',isPercentage:false}],
+ })
  if(p==='/api/v1/ledger/vouchers'&&req.method==='GET')return send(200,{items:stored?[stored]:[],total:stored?1:0})
  if(p===`/api/v1/ledger/vouchers/${id(21)}/post`){if(!stored)return send(404,null);stored={...stored,status:'Posted',version:stored.version+1,journalId:id(22)};return send(200,stored)}
  const paged=(data,totalPages=1)=>send(200,{data,totalPages,totalCount:data.length})
  if(p==='/api/v1/ledger/accounting-units')return paged([{id:unit,name:'USD office',code:'USD-HQ',baseCurrencyId:usd,isActive:true}])
  if(p==='/api/v1/shared/currencies')return paged([{id:usd,name:'US dollar',code:'USD',isActive:true},{id:eur,name:'Euro',code:'EUR',isActive:true}])
+ if(p==='/api/v1/shared/employees/options'){
+  if(failEmployees)return send(503,null)
+  return send(200,{data:url.searchParams.get('pageNo')==='2'?[{id:id(62),name:'Database Employee Two',employeeIdentifier:'DB-EMP-002',status:0}]:[{id:id(61),name:'Database Employee One',employeeIdentifier:'DB-EMP-001',status:0}],totalCount:2})
+ }
  if(p==='/api/v1/shared/cost-centers')return send(200,{data:[{id:center,name:'API Operations',parentId:null}]})
  if(p==='/api/v1/shared/suppliers')return paged(url.searchParams.get('pageNo')==='2'?[{id:supplier,name:'API Supplier',accountNumber:'API-S001',accountingUnitId:unit,creditAccountId:debit,statusId:'active',currencyCode:'EUR'}]:[{id:id(40),name:'Other Unit Supplier',accountNumber:'OTHER',accountingUnitId:id(41),statusId:'active'}],2)
  if(p==='/api/v1/ledger/accounts'){
@@ -95,6 +104,29 @@ try{
   check(result.response.status===200&&result.body.status==='Posted'&&result.body.journalId===id(22),'posting BFF unwraps live server response')
   await page.goto(base+'/ledger/vouchers/new/supplier-payment')
   fail=true;await page.reload();await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor();check(await page.getByLabel('Bank / cash G/L',{exact:true}).locator('option').count()===1,'failed chart lookup never falls back to demo records')
+  fail=false
+  check(!seen.some(x=>x.p==='/api/v1/shared/employees/options'),'supplier voucher does not request employee biodata options')
+  await page.goto(base+'/ledger/vouchers/new/employee-payment')
+  const employeeSelect=page.getByLabel('Employee / payee',{exact:true})
+  await employeeSelect.locator('option').filter({hasText:'Database Employee Two'}).waitFor({state:'attached'})
+  check(await employeeSelect.locator('option').count()===3,'employee dropdown loads all API pages without demo employees')
+  check(seen.some(x=>x.p==='/api/v1/shared/employees/options'&&x.query.includes('pageNo=2')),'employee totalCount pagination loads the second page')
+  await employeeSelect.selectOption(id(62))
+  check((await employeeSelect.locator('option:checked').innerText()).includes('DB-EMP-002'),'employee identifier and database name are shown')
+  check(await page.getByRole('heading',{name:'Retentions',exact:true}).count()===0&&await page.getByRole('button',{name:'Add retention',exact:true}).count()===0,'employee vouchers have no retention controls')
+  check(await page.getByText('Retentions · USD',{exact:true}).count()===0,'employee vouchers have no retention summary card')
+  check(await page.getByRole('columnheader',{name:'Imprest ?',exact:true}).count()===1&&await page.getByRole('columnheader',{name:'Withhold?',exact:true}).count()===0,'employee line flag is labeled Imprest ?')
+  await page.getByPlaceholder('0.00',{exact:true}).fill('100')
+  await page.getByLabel('Imprest applies to line 1',{exact:true}).check()
+  check(await page.getByLabel('Imprest applies to line 1',{exact:true}).isChecked(),'employee imprest checkbox is selectable')
+  check((await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'employee payment has no retention or withholding deductions')
+  await page.goto(base+`/ledger/vouchers/new/employee-payment?id=${id(63)}`)
+  await page.getByLabel('Imprest applies to line 1',{exact:true}).waitFor()
+  await page.getByText('Net paid · USD',{exact:true}).locator('..').filter({hasText:'100.00'}).waitFor()
+  check(await page.getByLabel('Imprest applies to line 1',{exact:true}).isChecked(),'existing employee draft retains its line flag')
+  check(await page.getByText('Legacy retention',{exact:true}).count()===0&&(await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'legacy employee retentions and supplier tax settings cannot reduce net pay')
+  failEmployees=true;await page.reload();await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor()
+  check(await employeeSelect.locator('option').count()===1,'failed employee API leaves no stale or demo employees')
   check(errors.length===0,'no browser runtime errors')
  }finally{await browser.close()}
  check(seen.filter(x=>x.p.startsWith('/api/v1/shared/')||x.p.startsWith('/api/v1/ledger/')).every(x=>x.token==='Bearer tenant-token'),'every upstream lookup forwards bearer authentication')

@@ -63,3 +63,36 @@ They verify authenticated base-rate routing, bearer forwarding, paged suppliers,
 unit/currency scope, chart details, defaults, descriptions, manual overrides,
 quote failure and no fabricated fallback. They do not claim a live C++ voucher
 posting integration.
+
+## Employee payment form
+
+Employee payment vouchers now load payees from the authenticated, tenant-scoped
+`/api/shared/employees/options` BFF (`/api/v1/shared/employees/options` in C++).
+The form uses only the minimal UUID, employee identifier, name and status
+projection—not restricted personal/medical biodata. It follows `totalCount`
+pagination (100 rows per page, up to 10,000 rows) and displays no hardcoded/demo
+employee fallback. Failed loads clear employee choices; stale tenant/accounting
+unit requests cannot replace the current options. No status-code meanings are
+assumed because the EmployeeStatus enum has not been supplied.
+
+Employee forms have no retention editor, retention total card, retention credit
+preview lines, or retention deductions. Their payload has `retentions: []`, even
+when hydrating an old draft containing retentions. Supplier forms retain their
+existing tax/withholding/retention functionality.
+
+The employee line checkbox reads **Imprest ?**, with an employee-specific
+accessible label. It retains the existing `isWithhold` wire field for DTO
+compatibility; employee calculations do not treat it as tax withholding. This
+is a form-label change, not a new imprest disbursement/posting ceremony.
+
+**Existing limitation remains:** the C++ voucher service currently accepts only
+supplier-payment persistence/posting. The employee form still displays that
+limitation and does not pretend that employee drafts can be saved or posted.
+This change connects employee choices and adjusts the form; it does not add the
+employee voucher posting workflow.
+
+Verification: `node --experimental-strip-types test/vouchers/employee_options_test.mjs`
+and the expanded `test/vouchers/lookups_browser_test.mjs` (real Chromium/Nuxt/BFF
+with controlled authenticated upstream contracts). The browser test includes
+supplier regression coverage, employee pagination, no-retention UI/totals,
+Imprest checkbox labeling, and failure without demo fallbacks.

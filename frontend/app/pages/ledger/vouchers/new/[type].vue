@@ -95,6 +95,7 @@ const {
   units,
   currencies: ledgerCurrencyOptions,
   suppliers,
+  employees,
   costCenters: ledgerOrganizationalUnits,
   accounts: chartAccounts,
   banks,
@@ -102,7 +103,7 @@ const {
   loading: accountsPending,
   error: accountError,
   load: refreshAccounts,
-} = useVoucherLookups()
+} = useVoucherLookups(() => type.value === 'employee-payment')
 const voucherApi = useLedgerVoucherApi()
 const saving = ref(false)
 const saveError = ref('')
@@ -135,6 +136,9 @@ const form = reactive<Omit<CreateLedgerVoucherInput, 'lines' | 'retentions'>>({
 })
 const lines = ref<VoucherDraftLine[]>([makeLine()])
 const retentions = ref<VoucherDraftRetention[]>([])
+const supportsRetentions = computed(() => type.value === 'supplier-payment')
+// Hidden legacy retentions must never affect employee totals, previews or payloads.
+const applicableRetentions = computed(() => supportsRetentions.value ? retentions.value : [])
 const taxes = reactive(defaultVoucherTaxes())
 const requestId = ref(crypto.randomUUID())
 const periodId = ref('')
@@ -192,9 +196,9 @@ const calculation = computed(() => {
   try {
     return {
       value: calculateVoucher({
-        taxes,
+        taxes: type.value === 'employee-payment' ? defaultVoucherTaxes() : taxes,
         lines: lines.value,
-        retentions: retentions.value,
+        retentions: applicableRetentions.value,
         multiCurrency: form.multiCurrency,
         exchangeRate: form.exchangeRate,
       }),
@@ -237,7 +241,9 @@ const payees = computed(() =>
     ? suppliers.value
         .filter((s) => s.accountingUnitId === unitId.value)
         .map((s) => ({ id: s.id, name: s.name, code: s.accountNumber }))
-    : payeesForVoucherType(type.value),
+    : type.value === 'employee-payment'
+      ? employees.value.map(e => ({ id: e.id, name: e.name, code: e.employeeIdentifier }))
+      : payeesForVoucherType(type.value),
 )
 const editing = computed(() => Boolean(editingId.value))
 const isReceipt = computed(() => type.value === 'customer-receipt')
@@ -450,7 +456,7 @@ function retentionAmountText(retention: VoucherDraftRetention): string {
 }
 
 const retentionTotalUnits = computed(() =>
-  retentions.value.reduce(
+  applicableRetentions.value.reduce(
     (sum, retention) => sum + (retentionAmountUnits(retention) ?? BigInt(0)),
     BigInt(0),
   ),
@@ -562,7 +568,7 @@ const journalPreview = computed(() => {
         credit: amount,
       })
     }
-    for (const retention of retentions.value) {
+    for (const retention of applicableRetentions.value) {
       const account = activeAccounts.value.find(
         (item) => item.id === retention.accountId,
       )
@@ -700,8 +706,8 @@ const validationErrors = computed(() => {
     )
       errors.push(`Line ${index + 1}: select a valid organizational unit.`)
   })
-  if (!isReceipt.value) {
-    retentions.value.forEach((retention, index) => {
+  if (supportsRetentions.value) {
+    applicableRetentions.value.forEach((retention, index) => {
       if (!activeAccounts.value.some((a) => a.id === retention.accountId))
         errors.push(`Retention ${index + 1}: choose a credit G/L account.`)
       if (!retention.description.trim())
@@ -765,7 +771,7 @@ function hydrate(voucher: LedgerVoucher) {
   form.multiCurrency = voucher.multiCurrency
   form.chequeNumber = voucher.chequeNumber
   form.description = voucher.description
-  Object.assign(taxes, voucher.taxes || defaultVoucherTaxes())
+  Object.assign(taxes, voucher.type === 'employee-payment' ? defaultVoucherTaxes() : voucher.taxes || defaultVoucherTaxes())
   periodId.value = voucher.periodId || ''
   lines.value = voucher.lines.map((line) => ({
     key: line.id || crypto.randomUUID(),
@@ -778,7 +784,7 @@ function hydrate(voucher: LedgerVoucher) {
     foreignAmount: line.foreignAmount === '0.000000' ? '' : line.foreignAmount,
     isWithhold: line.isWithhold,
   }))
-  retentions.value = voucher.retentions.map((retention) => ({
+  retentions.value = (voucher.type === 'supplier-payment' ? voucher.retentions : []).map((retention) => ({
     key: retention.id || crypto.randomUUID(),
     accountId: retention.accountId,
     description: retention.description,
@@ -795,7 +801,14 @@ watch(
   { immediate: true },
 )
 watch(type, (newType) => {
-  if (!editing.value) form.type = newType
+  if (!editing.value) {
+    form.type = newType
+    form.payeeId = ''
+    if (newType === 'employee-payment') {
+      retentions.value = []
+      Object.assign(taxes, defaultVoucherTaxes())
+    }
+  }
 })
 
 function buildInput(): CreateLedgerVoucherInput {
@@ -805,7 +818,7 @@ function buildInput(): CreateLedgerVoucherInput {
       ? { version: existingVoucher.value?.version }
       : { requestId: requestId.value }),
     periodId: periodId.value,
-    taxes: structuredClone(toRaw(taxes)),
+    taxes: type.value === 'employee-payment' ? defaultVoucherTaxes() : structuredClone(toRaw(taxes)),
     accountingUnitId: unitId.value,
     payeeId: form.payeeId,
     entryDate: form.entryDate,
@@ -832,9 +845,10 @@ function buildInput(): CreateLedgerVoucherInput {
         ? localAmountText(line) || '0'
         : line.localAmount || '0',
       foreignAmount: form.multiCurrency ? line.foreignAmount || '0' : '0',
+      // Legacy wire flag: shown as Imprest ? for employees, not tax withholding.
       isWithhold: line.isWithhold,
     })),
-    retentions: isReceipt.value
+    retentions: !supportsRetentions.value
       ? []
       : retentions.value.map((retention) => ({
           accountId: retention.accountId,
@@ -925,7 +939,7 @@ async function saveDraft() {
 
     <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
       <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Voucher lines</h2><p class="mt-1 text-[11px] text-slate-500">Each line posts {{ typeInfo.accountDirection === 'debit' ? 'a debit' : 'a credit' }} to the selected G/L account.</p></div><button type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="addLine"><Plus :size="14" /> Add line</button></div>
-      <div class="overflow-x-auto"><table class="w-full min-w-[1380px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="w-12 px-5 py-3">#</th><th class="w-[135px] px-3 py-3">Invoice no.</th><th class="w-[135px] px-3 py-3">Reference no.</th><th class="min-w-[220px] px-3 py-3">{{ typeInfo.accountDirection === 'debit' ? 'Debit' : 'Credit' }} G/L</th><th class="min-w-[190px] px-3 py-3">Description</th><th class="w-[145px] px-3 py-3 text-right">Local · {{ baseCurrency }}</th><th class="w-[145px] px-3 py-3 text-right">Foreign · {{ form.currencyCode }}</th><th class="min-w-[185px] px-3 py-3">Organizational unit</th><th v-if="!isReceipt" class="w-[100px] px-3 py-3 text-center">Withhold?</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in lines" :key="line.key"><td class="px-5 py-3 text-xs font-medium text-slate-400">{{ String(index + 1).padStart(2, '0') }}</td><td class="px-3 py-2.5"><input v-model="line.invoiceNumber" maxlength="80" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Invoice" /></td><td class="px-3 py-2.5"><input v-model="line.referenceNumber" maxlength="40" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Reference" /></td><td class="px-3 py-2.5"><select :aria-label="`Debit GL line ${index+1}`" v-model="line.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select account</option><option v-for="account in lineAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="line.description" maxlength="300" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Line details" /></td><td class="px-3 py-2.5"><input v-if="!form.multiCurrency" v-model="line.localAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><input v-else :value="localAmountText(line)" readonly class="h-9 w-full rounded-md border border-slate-100 bg-slate-50 px-2.5 text-right text-xs tabular-nums text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300" placeholder="Converted" /></td><td class="px-3 py-2.5"><input v-if="form.multiCurrency" v-model="line.foreignAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span v-else class="block text-right text-xs text-slate-300">—</span></td><td class="px-3 py-2.5"><select :aria-label="`Organizational unit line ${index+1}`" v-model="line.organizationUnitId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">No unit</option><option v-for="unit in ledgerOrganizationalUnits" :key="unit.id" :value="unit.id">{{ unit.path }}</option></select></td><td v-if="!isReceipt" class="px-3 py-2.5 text-center"><input v-model="line.isWithhold" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="`Withholding applies to line ${index + 1}`" /></td><td class="px-3 py-2.5"><button type="button" :disabled="lines.length <= 1" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Remove voucher line" @click="removeLine(index)"><Trash2 :size="14" /></button></td></tr><tr class="bg-slate-50/70 dark:bg-slate-900/50"><td colspan="5" class="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voucher total</td><td class="px-3 py-3 text-right text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(grossAmount, baseCurrency) }}</td><td class="px-3 py-3 text-right text-xs text-slate-500">{{ form.multiCurrency ? formatVoucherAmount(formatLedgerAmount(lines.reduce((sum, line) => sum + (parseLedgerAmount(line.foreignAmount, true) ?? BigInt(0)), BigInt(0))), form.currencyCode) : '—' }}</td><td :colspan="isReceipt ? 2 : 3" /></tr></tbody></table></div>
+      <div class="overflow-x-auto"><table class="w-full min-w-[1380px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="w-12 px-5 py-3">#</th><th class="w-[135px] px-3 py-3">Invoice no.</th><th class="w-[135px] px-3 py-3">Reference no.</th><th class="min-w-[220px] px-3 py-3">{{ typeInfo.accountDirection === 'debit' ? 'Debit' : 'Credit' }} G/L</th><th class="min-w-[190px] px-3 py-3">Description</th><th class="w-[145px] px-3 py-3 text-right">Local · {{ baseCurrency }}</th><th class="w-[145px] px-3 py-3 text-right">Foreign · {{ form.currencyCode }}</th><th class="min-w-[185px] px-3 py-3">Organizational unit</th><th v-if="!isReceipt" class="w-[100px] px-3 py-3 text-center">{{ type === 'employee-payment' ? 'Imprest ?' : 'Withhold?' }}</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in lines" :key="line.key"><td class="px-5 py-3 text-xs font-medium text-slate-400">{{ String(index + 1).padStart(2, '0') }}</td><td class="px-3 py-2.5"><input v-model="line.invoiceNumber" maxlength="80" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Invoice" /></td><td class="px-3 py-2.5"><input v-model="line.referenceNumber" maxlength="40" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Reference" /></td><td class="px-3 py-2.5"><select :aria-label="`Debit GL line ${index+1}`" v-model="line.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select account</option><option v-for="account in lineAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="line.description" maxlength="300" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Line details" /></td><td class="px-3 py-2.5"><input v-if="!form.multiCurrency" v-model="line.localAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><input v-else :value="localAmountText(line)" readonly class="h-9 w-full rounded-md border border-slate-100 bg-slate-50 px-2.5 text-right text-xs tabular-nums text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300" placeholder="Converted" /></td><td class="px-3 py-2.5"><input v-if="form.multiCurrency" v-model="line.foreignAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span v-else class="block text-right text-xs text-slate-300">—</span></td><td class="px-3 py-2.5"><select :aria-label="`Organizational unit line ${index+1}`" v-model="line.organizationUnitId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">No unit</option><option v-for="unit in ledgerOrganizationalUnits" :key="unit.id" :value="unit.id">{{ unit.path }}</option></select></td><td v-if="!isReceipt" class="px-3 py-2.5 text-center"><input v-model="line.isWithhold" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="type === 'employee-payment' ? `Imprest applies to line ${index + 1}` : `Withholding applies to line ${index + 1}`" /></td><td class="px-3 py-2.5"><button type="button" :disabled="lines.length <= 1" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Remove voucher line" @click="removeLine(index)"><Trash2 :size="14" /></button></td></tr><tr class="bg-slate-50/70 dark:bg-slate-900/50"><td colspan="5" class="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voucher total</td><td class="px-3 py-3 text-right text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(grossAmount, baseCurrency) }}</td><td class="px-3 py-3 text-right text-xs text-slate-500">{{ form.multiCurrency ? formatVoucherAmount(formatLedgerAmount(lines.reduce((sum, line) => sum + (parseLedgerAmount(line.foreignAmount, true) ?? BigInt(0)), BigInt(0))), form.currencyCode) : '—' }}</td><td :colspan="isReceipt ? 2 : 3" /></tr></tbody></table></div>
     </section>
 
     <section v-if="type === 'supplier-payment'" class="space-y-4 rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]">
@@ -946,20 +960,20 @@ async function saveDraft() {
       <p v-if="periodError" class="text-xs text-rose-600">{{ periodError }}</p>
     </section>
 
-    <section v-if="!isReceipt" class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
+    <section v-if="supportsRetentions" class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
       <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Retentions</h2><p class="mt-1 text-[11px] text-slate-500">Percentage retentions apply to the full gross voucher amount; fixed deductions use the entered base-currency amount. Deductions round to two decimals.</p></div><button type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="addRetention"><Plus :size="14" /> Add retention</button></div>
       <div v-if="retentions.length" class="overflow-x-auto"><table class="w-full min-w-[800px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="min-w-[220px] px-5 py-3">Credit G/L</th><th class="min-w-[200px] px-3 py-3">Description</th><th class="w-[130px] px-3 py-3">Calculation</th><th class="w-[140px] px-3 py-3 text-right">Rate / amount</th><th class="w-[160px] px-3 py-3 text-right">Calculated · {{ baseCurrency }}</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(retention, index) in retentions" :key="retention.key"><td class="px-5 py-2.5"><select :aria-label="`Retention credit GL ${index+1}`" v-model="retention.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select credit account</option><option v-for="account in activeAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="retention.description" maxlength="160" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Withholding tax" /></td><td class="px-3 py-2.5"><select v-model="retention.isPercentage" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900"><option :value="true">Percentage</option><option :value="false">Fixed amount</option></select></td><td class="px-3 py-2.5"><div class="relative"><input :aria-label="`Retention rate or amount ${index+1}`" v-model="retention.value" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 pr-8 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">{{ retention.isPercentage ? '%' : baseCurrency }}</span></div></td><td class="px-3 py-2.5 text-right text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300">{{ retentionAmountText(retention) ? formatVoucherAmount(retentionAmountText(retention), baseCurrency) : '—' }}</td><td class="px-3 py-2.5"><button type="button" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30" aria-label="Remove retention" @click="removeRetention(index)"><Trash2 :size="14" /></button></td></tr></tbody></table></div>
       <div v-else class="px-5 py-6 text-center text-xs text-slate-400">No retentions added. The full voucher total will be paid.</div>
     </section>
 
-    <section class="grid gap-3 sm:grid-cols-3">
+    <section class="grid gap-3" :class="supportsRetentions ? 'sm:grid-cols-3' : 'sm:grid-cols-2'">
       <div class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><p class="text-[11px] font-medium text-slate-500">Total amount · {{ baseCurrency }}</p><p class="mt-2 text-xl font-semibold tabular-nums text-slate-900 dark:text-white">{{ formatVoucherAmount(grossAmount, baseCurrency) }}</p></div>
-      <div class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><p class="text-[11px] font-medium text-slate-500">Retentions · {{ baseCurrency }}</p><p class="mt-2 text-xl font-semibold tabular-nums text-amber-700 dark:text-amber-300">{{ formatVoucherAmount(retentionTotal, baseCurrency) }}</p></div>
+      <div v-if="supportsRetentions" class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><p class="text-[11px] font-medium text-slate-500">Retentions · {{ baseCurrency }}</p><p class="mt-2 text-xl font-semibold tabular-nums text-amber-700 dark:text-amber-300">{{ formatVoucherAmount(retentionTotal, baseCurrency) }}</p></div>
       <div class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><p class="text-[11px] font-medium text-slate-500">Net {{ isReceipt ? 'received' : 'paid' }} · {{ baseCurrency }}</p><p class="mt-2 text-xl font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{{ formatVoucherAmount(netAmount, baseCurrency) }}</p></div>
     </section>
 
     <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
-      <div class="flex flex-col justify-between gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white"><Calculator :size="15" /> Proposed journal entry</h2><p class="mt-1 text-[11px] text-slate-500">A balanced draft posts {{ isReceipt ? 'debit to cash / bank and credits to the selected offset accounts.' : 'debits to the selected accounts and credits to cash / bank and retention accounts.' }}</p></div><span class="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="journalBalanced ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300'"><Check v-if="journalBalanced" :size="12" />{{ journalBalanced ? 'Balanced' : 'Needs valid amounts' }}</span></div>
+      <div class="flex flex-col justify-between gap-2 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="flex items-center gap-2 text-sm font-semibold text-slate-900 dark:text-white"><Calculator :size="15" /> Proposed journal entry</h2><p class="mt-1 text-[11px] text-slate-500">A balanced draft posts {{ isReceipt ? 'debit to cash / bank and credits to the selected offset accounts.' : type === 'employee-payment' ? 'debits to the selected accounts and credits to cash / bank.' : 'debits to the selected accounts and credits to cash / bank and retention accounts.' }}</p></div><span class="inline-flex w-fit items-center gap-1.5 rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="journalBalanced ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300'"><Check v-if="journalBalanced" :size="12" />{{ journalBalanced ? 'Balanced' : 'Needs valid amounts' }}</span></div>
       <div class="overflow-x-auto"><table class="w-full min-w-[680px] text-left text-xs"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-5 py-3">Account</th><th class="px-3 py-3">Description</th><th class="px-3 py-3 text-right">Debit · {{ baseCurrency }}</th><th class="px-3 py-3 text-right">Credit · {{ baseCurrency }}</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in journalPreview" :key="`preview-${index}`"><td class="px-5 py-3 text-slate-700 dark:text-slate-300">{{ line.account }}</td><td class="px-3 py-3 text-slate-500">{{ line.description }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.debit === '0.000000' ? '—' : formatVoucherAmount(line.debit, baseCurrency) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.credit === '0.000000' ? '—' : formatVoucherAmount(line.credit, baseCurrency) }}</td></tr></tbody><tfoot class="bg-slate-50/70 font-semibold dark:bg-slate-900/50"><tr><td colspan="2" class="px-5 py-3 text-right text-slate-500">Totals</td><td class="px-3 py-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(formatLedgerAmount(debitPreviewUnits), baseCurrency) }}</td><td class="px-3 py-3 text-right tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(formatLedgerAmount(creditPreviewUnits), baseCurrency) }}</td></tr></tfoot></table></div>
     </section>
 
