@@ -18,9 +18,10 @@ const upstream=http.createServer(async(req,res)=>{
  if(p==='/api/v1/ledger/vouchers'&&req.method==='POST'){
   let raw='';for await(const chunk of req)raw+=chunk;savedInput=JSON.parse(raw)
   const summary=calculateVoucher(savedInput)
-  stored={...savedInput,id:id(21),voucherNumber:'SPV-TEST',batchNumber:'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+  stored={...savedInput,id:id(21),voucherNumber:savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',batchNumber:savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
   return send(201,stored)
  }
+ if(p===`/api/v1/ledger/vouchers/${id(21)}`&&req.method==='GET')return send(200,stored)
  if(p===`/api/v1/ledger/vouchers/${id(63)}`&&req.method==='GET')return send(200,{
   ...stored,id:id(63),type:'employee-payment',payeeId:id(61),currencyCode:'USD',exchangeRate:'1.0000000000',multiCurrency:false,
   lines:[{id:id(64),invoiceNumber:'',referenceNumber:'',accountId:debit,description:'Employee allocation',organizationUnitId:center,localAmount:'100.000000',foreignAmount:'0.000000',isWithhold:true}],
@@ -126,12 +127,38 @@ try{
   check(await page.getByLabel('Withholding applies to line 1',{exact:true}).isChecked(),'unchecking Imprest preserves Withhold')
 
   check((await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'employee payment has no retention or withholding deductions')
+  await page.getByLabel('Bank / cash G/L',{exact:true}).selectOption(bank)
+  await page.getByLabel('Debit GL line 1',{exact:true}).selectOption(debit)
+  await page.getByLabel('Organizational unit line 1',{exact:true}).selectOption(center)
+  await page.getByPlaceholder('0.00',{exact:true}).fill('120')
+  await page.getByLabel('Imprest applies to line 1',{exact:true}).check()
+  await page.getByLabel('Withholding tax type',{exact:true}).fill('Professional services')
+  for(const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5'],['VAT withholding','7']]) {
+    await page.getByLabel(`Enable ${label}`,{exact:true}).check()
+    await page.getByLabel(`${label} rate`,{exact:true}).fill(rate)
+  }
+  await page.getByLabel('Income withholding credit account',{exact:true}).selectOption(debit)
+  await page.getByLabel('VAT withholding credit account',{exact:true}).selectOption(debit)
+  check((await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('108.00'),'employee inclusive tax extraction and both withholding deductions match legacy math')
+  await page.getByLabel('Withholding applies to line 1',{exact:true}).uncheck()
+  check((await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('120.00'),'imprest alone does not trigger withholding deductions')
+  await page.getByLabel('Withholding applies to line 1',{exact:true}).check()
+  await page.getByRole('button',{name:'Save draft',exact:true}).click()
+  await page.waitForURL('**/ledger/vouchers');await page.getByText('EPV-TEST',{exact:true}).first().waitFor()
+  check(savedInput.type==='employee-payment'&&savedInput.payeeId===id(62)&&savedInput.retentions.length===0,'employee save reaches authenticated live voucher API without retentions')
+  check(savedInput.lines[0].isImprest&&savedInput.lines[0].isWithhold&&savedInput.taxType==='Professional services','employee save carries independent flags and tax classification')
+  check(stored.netAmount==='108.000000','employee save preserves authoritative withholding totals')
+  await page.goto(base+`/ledger/vouchers/new/employee-payment?id=${id(21)}`)
+  await page.getByLabel('Withholding tax type',{exact:true}).waitFor()
+  await page.getByText('Net paid · USD',{exact:true}).locator('..').filter({hasText:'108.00'}).waitFor()
+  check(await page.getByLabel('Withholding tax type',{exact:true}).inputValue()==='Professional services'&&await page.getByLabel('Enable VAT',{exact:true}).isChecked(),'employee saved tax configuration is restored for editing')
+  check(await page.getByLabel('Withholding applies to line 1',{exact:true}).isChecked()&&await page.getByLabel('Imprest applies to line 1',{exact:true}).isChecked(),'new employee draft restores both independent flags')
   await page.goto(base+`/ledger/vouchers/new/employee-payment?id=${id(63)}`)
   await page.getByLabel('Imprest applies to line 1',{exact:true}).waitFor()
   await page.getByText('Net paid · USD',{exact:true}).locator('..').filter({hasText:'100.00'}).waitFor()
   check(await page.getByLabel('Imprest applies to line 1',{exact:true}).isChecked(),'existing employee draft retains its line flag')
   check(!await page.getByLabel('Withholding applies to line 1',{exact:true}).isChecked(),'legacy Imprest value is not misread as new withholding')
-  check(await page.getByText('Legacy retention',{exact:true}).count()===0&&(await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'legacy employee retentions and supplier tax settings cannot reduce net pay')
+  check(await page.getByText('Legacy retention',{exact:true}).count()===0&&(await page.getByText('Net paid · USD',{exact:true}).locator('..').innerText()).includes('100.00'),'legacy employee retention rows are discarded and unflagged amounts remain untaxed')
   failEmployees=true;await page.reload();await page.getByText('Voucher configuration could not be loaded:',{exact:false}).waitFor()
   check(await employeeSelect.locator('option').count()===1,'failed employee API leaves no stale or demo employees')
   check(errors.length===0,'no browser runtime errors')

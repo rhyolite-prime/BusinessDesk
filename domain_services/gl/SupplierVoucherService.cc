@@ -95,11 +95,13 @@ void validate(Json::Value &b, bool create) {
            "lines",
            "retentions",
            "taxes",
+           "taxType",
            "periodId",
            "version",
            "requestId"});
-  if (b["type"] != "supplier-payment")
-    throw std::invalid_argument("This API implements supplier payments only.");
+  if (b["type"] != "supplier-payment" && b["type"] != "employee-payment")
+    throw std::invalid_argument("Only supplier and employee payments are supported.");
+  const bool employee = b["type"] == "employee-payment";
   for (auto k :
        {"accountingUnitId", "payeeId", "bankAccountId", "bankGlAccountId"})
     identifier(b[k]);
@@ -112,6 +114,8 @@ void validate(Json::Value &b, bool create) {
   date(b["paymentDate"]);
   text(b["description"], 200, true);
   text(b["chequeNumber"], 40);
+  if (b.isMember("taxType"))
+    text(b["taxType"], 40);
   if (!b["multiCurrency"].isBool() || !b["currencyCode"].isString() ||
       !std::regex_match(b["currencyCode"].asString(),
                         std::regex("^[A-Z]{3}$")) ||
@@ -127,10 +131,17 @@ void validate(Json::Value &b, bool create) {
       !b["retentions"].isArray() || b["retentions"].size() > 100)
     throw std::invalid_argument(
         "Enter 1–200 allocations and at most 100 retentions.");
+  if (employee && !b["retentions"].empty())
+    throw std::invalid_argument("Employee vouchers cannot have retentions.");
   for (auto &l : b["lines"]) {
+    if (!employee && l.isMember("isImprest"))
+      throw std::invalid_argument("Imprest applies only to employee payments.");
+    if (employee && !l["isImprest"].isBool())
+      throw std::invalid_argument("Imprest flag must be boolean.");
     keys(l,
          {"accountId", "invoiceNumber", "referenceNumber", "description",
-          "organizationUnitId", "localAmount", "foreignAmount", "isWithhold"});
+          "organizationUnitId", "localAmount", "foreignAmount", "isWithhold",
+          "isImprest"});
     identifier(l["accountId"]);
     identifier(l["organizationUnitId"], true);
     text(l["invoiceNumber"], 80);
@@ -162,7 +173,7 @@ std::string selection() {
  'totalAmount',v.calculation->>'gross','netAmount',v.calculation->>'net','retentionsTotal',v.calculation->>'retained','taxSummary',v.calculation,
  'proposedJournal',v.proposed_journal,'journalId',v.journal_batch_id,'periodId',v.posting_period_id))::text AS record
  FROM gl_payment_vouchers v LEFT JOIN users u ON u.id=v.created_by_user_id AND u.tenant_id=v.tenant_id AND u.is_deleted=false
- WHERE v.tenant_id=$1 AND v.is_deleted=false AND v.source_payload IS NOT NULL AND v.voucher_type='supplier-payment')";
+ WHERE v.tenant_id=$1 AND v.is_deleted=false AND v.source_payload IS NOT NULL AND v.voucher_type IN ('supplier-payment','employee-payment'))";
 }
 struct Prepared {
   Json::Value source, calc, proposal;
@@ -179,15 +190,19 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
   if (period.empty())
     throw std::invalid_argument(
         "Select a live posting period in this unit containing the entry date.");
-  auto supplier = co_await db->execSqlCoro(
-      "SELECT s.name FROM core_suppliers s JOIN gl_accounts a ON "
+  auto payee = co_await db->execSqlCoro(
+      b["type"] == "employee-payment"
+          ? "SELECT concat_ws(' ',first_name,NULLIF(other_name,''),last_name) AS "
+            "name FROM hr_employee_biodata WHERE id=$1 AND tenant_id=$2 AND "
+            "is_deleted=false AND $3::uuid IS NOT NULL FOR SHARE"
+          : "SELECT s.name FROM core_suppliers s JOIN gl_accounts a ON "
       "a.id=s.credit_account_id AND a.tenant_id=s.tenant_id AND "
       "a.is_deleted=false WHERE s.id=$1 AND s.tenant_id=$2 AND "
       "s.is_deleted=false AND s.status IN('active','on_hold') AND "
       "a.accounting_unit_id=$3 FOR SHARE OF s",
       b["payeeId"].asString(), who.tenantId, unit);
-  if (supplier.empty())
-    throw std::invalid_argument("Select a live supplier in this posting unit.");
+  if (payee.empty())
+    throw std::invalid_argument("Select a live payee in this tenant and posting unit.");
   auto currency = co_await db->execSqlCoro(
       "SELECT id FROM core_currencies WHERE code=$1 AND is_deleted=false AND "
       "is_active=true FOR SHARE",
@@ -248,7 +263,7 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
          l["referenceNumber"].asString());
   }
   line(b["bankGlAccountId"], calc["net"].asString(), true, firstOU,
-       "Net supplier payment", b["lines"][0]["referenceNumber"].asString());
+       b["type"] == "employee-payment" ? "Net employee payment" : "Net supplier payment", b["lines"][0]["referenceNumber"].asString());
   for (auto k : {"incomeWithholding", "vatWithholding"})
     if (math::parse(calc[k]) > 0)
       line(b["taxes"][k]["accountId"], calc[k].asString(), true, firstOU,
@@ -316,7 +331,7 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
       names[b["bankGlAccountId"].asString()]["name"].asString();
   b["bankAccountName"] = bank[0]["bank_name"].as<std::string>() + " · " +
                          bank[0]["account_number"].as<std::string>();
-  b["payeeName"] = supplier[0]["name"].as<std::string>();
+  b["payeeName"] = payee[0]["name"].as<std::string>();
   b["baseCurrencyCode"] = baseRow[0]["code"].as<std::string>();
   b["foreignTotal"] = "0.000000";
   if (foreign) {
@@ -378,7 +393,7 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
         "AND id=$2 AND is_deleted=false AND source_payload IS NOT NULL",
         who.tenantId, id);
     if (scope.empty())
-      co_return fail("not_found", "Supplier voucher not found.");
+      co_return fail("not_found", "Payment voucher not found.");
     unit = scope[0]["accounting_unit_id"].as<std::string>();
   } else
     unit = b["accountingUnitId"].asString();
@@ -393,8 +408,10 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
     auto rows = co_await db->execSqlCoro(
         selection() + " AND v.id=$2 FOR UPDATE OF v", who.tenantId, id);
     if (rows.empty())
-      co_return fail("not_found", "Supplier voucher not found.");
+      co_return fail("not_found", "Payment voucher not found.");
     current = parse(rows[0]["record"].as<std::string>());
+    if (op == "update" && b["type"] != current["type"])
+      co_return fail("validation_error", "Voucher type cannot be changed.");
     if (op == "get") {
       result.success = true;
       result.result = current;
@@ -523,16 +540,16 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
           "next_number=gl_supplier_voucher_sequences.next_number+1 RETURNING "
           "next_number-1 AS number",
           who.tenantId, unit, who.userId);
-      const std::string number = "SPV-" + seq[0]["number"].as<std::string>();
+      const std::string number = std::string(b["type"] == "employee-payment" ? "EPV-" : "SPV-") + seq[0]["number"].as<std::string>();
       auto saved = co_await db->execSqlCoro(
           R"(INSERT INTO gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,voucher_entry_date,payment_date,mode_of_payment,voucher_type,currency_id,buy_rate,supplier_id,supplier_name,bank_account_id,gross_amount,net_amount,total_withheld,total_vat_withheld,total_retained,base_amount,total_vat_amount,source_payload,calculation,proposed_journal,posting_period_id,idempotency_key,request_hash,created_by_user_id)
- VALUES($1,$2,$3,($4::jsonb->>'entryDate')::date,($4::jsonb->>'paymentDate')::date,$4::jsonb->>'mode','supplier-payment',(SELECT id FROM core_currencies WHERE code=$4::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),($4::jsonb->>'exchangeRate')::numeric,($4::jsonb->>'payeeId')::uuid,$4::jsonb->>'payeeName',($4::jsonb->>'bankAccountId')::uuid,($5::jsonb->>'gross')::numeric,($5::jsonb->>'net')::numeric,($5::jsonb->>'incomeWithholding')::numeric,($5::jsonb->>'vatWithholding')::numeric,($5::jsonb->>'retained')::numeric,($5::jsonb->>'base')::numeric,($5::jsonb->>'vat')::numeric,$4::jsonb,$5::jsonb,$6::jsonb,($4::jsonb->>'periodId')::uuid,$4::jsonb->>'requestId',md5($7::jsonb::text),$8) RETURNING id)",
+ VALUES($1,$2,$3,($4::jsonb->>'entryDate')::date,($4::jsonb->>'paymentDate')::date,$4::jsonb->>'mode',$4::jsonb->>'type',(SELECT id FROM core_currencies WHERE code=$4::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),($4::jsonb->>'exchangeRate')::numeric,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN ($4::jsonb->>'payeeId')::uuid END,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN $4::jsonb->>'payeeName' END,($4::jsonb->>'bankAccountId')::uuid,($5::jsonb->>'gross')::numeric,($5::jsonb->>'net')::numeric,($5::jsonb->>'incomeWithholding')::numeric,($5::jsonb->>'vatWithholding')::numeric,($5::jsonb->>'retained')::numeric,($5::jsonb->>'base')::numeric,($5::jsonb->>'vat')::numeric,$4::jsonb,$5::jsonb,$6::jsonb,($4::jsonb->>'periodId')::uuid,$4::jsonb->>'requestId',md5($7::jsonb::text),$8) RETURNING id)",
           who.tenantId, unit, number, payload, calculation, proposal, signature,
           who.userId);
       id = saved[0]["id"].as<std::string>();
     } else {
       co_await db->execSqlCoro(
-          R"(UPDATE gl_payment_vouchers SET voucher_entry_date=($3::jsonb->>'entryDate')::date,payment_date=($3::jsonb->>'paymentDate')::date,mode_of_payment=$3::jsonb->>'mode',currency_id=(SELECT id FROM core_currencies WHERE code=$3::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),buy_rate=($3::jsonb->>'exchangeRate')::numeric,supplier_id=($3::jsonb->>'payeeId')::uuid,supplier_name=$3::jsonb->>'payeeName',bank_account_id=($3::jsonb->>'bankAccountId')::uuid,gross_amount=($4::jsonb->>'gross')::numeric,net_amount=($4::jsonb->>'net')::numeric,total_withheld=($4::jsonb->>'incomeWithholding')::numeric,total_vat_withheld=($4::jsonb->>'vatWithholding')::numeric,total_retained=($4::jsonb->>'retained')::numeric,base_amount=($4::jsonb->>'base')::numeric,total_vat_amount=($4::jsonb->>'vat')::numeric,source_payload=$3::jsonb,calculation=$4::jsonb,proposed_journal=$5::jsonb,posting_period_id=($3::jsonb->>'periodId')::uuid,version=version+1,last_modified_at=now(),last_modified_by_user_id=$6 WHERE tenant_id=$1 AND id=$2 AND is_deleted=false)",
+          R"(UPDATE gl_payment_vouchers SET voucher_entry_date=($3::jsonb->>'entryDate')::date,payment_date=($3::jsonb->>'paymentDate')::date,mode_of_payment=$3::jsonb->>'mode',currency_id=(SELECT id FROM core_currencies WHERE code=$3::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),buy_rate=($3::jsonb->>'exchangeRate')::numeric,supplier_id=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN ($3::jsonb->>'payeeId')::uuid END,supplier_name=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN $3::jsonb->>'payeeName' END,bank_account_id=($3::jsonb->>'bankAccountId')::uuid,gross_amount=($4::jsonb->>'gross')::numeric,net_amount=($4::jsonb->>'net')::numeric,total_withheld=($4::jsonb->>'incomeWithholding')::numeric,total_vat_withheld=($4::jsonb->>'vatWithholding')::numeric,total_retained=($4::jsonb->>'retained')::numeric,base_amount=($4::jsonb->>'base')::numeric,total_vat_amount=($4::jsonb->>'vat')::numeric,source_payload=$3::jsonb,calculation=$4::jsonb,proposed_journal=$5::jsonb,posting_period_id=($3::jsonb->>'periodId')::uuid,version=version+1,last_modified_at=now(),last_modified_by_user_id=$6 WHERE tenant_id=$1 AND id=$2 AND is_deleted=false)",
           who.tenantId, id, payload, calculation, proposal, who.userId);
       for (auto table :
            {"gl_payment_voucher_lines", "gl_payment_voucher_retentions"})
@@ -545,7 +562,8 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
             who.tenantId, id, who.userId);
     }
     co_await db->execSqlCoro(
-        R"(UPDATE gl_payment_vouchers SET batch_description=$3::jsonb->>'description',bank_account_name=left($3::jsonb->>'bankAccountName',200),cheque_number=$3::jsonb->>'chequeNumber',currency_code=$3::jsonb->>'currencyCode',
+        R"(UPDATE gl_payment_vouchers SET tax_type=$3::jsonb->>'taxType',employee_id=CASE WHEN $3::jsonb->>'type'='employee-payment' THEN ($3::jsonb->>'payeeId')::uuid END,
+ employee_name=CASE WHEN $3::jsonb->>'type'='employee-payment' THEN left($3::jsonb->>'payeeName',200) END,batch_description=$3::jsonb->>'description',bank_account_name=left($3::jsonb->>'bankAccountName',200),cheque_number=$3::jsonb->>'chequeNumber',currency_code=$3::jsonb->>'currencyCode',
  is_multi_currency=($3::jsonb->>'multiCurrency')::boolean,
  has_communication_service_tax=($3::jsonb->'taxes'->'cst'->>'enabled')::boolean,communication_service_tax_rate=($3::jsonb->'taxes'->'cst'->>'rate')::numeric,
  has_covid_tax=($3::jsonb->'taxes'->'covid'->>'enabled')::boolean,covid_tax_rate=($3::jsonb->'taxes'->'covid'->>'rate')::numeric,
@@ -558,8 +576,8 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
         who.tenantId, id, payload, calculation);
     for (auto &l : prepared.source["lines"])
       co_await db->execSqlCoro(
-          R"(INSERT INTO gl_payment_voucher_lines(tenant_id,accounting_unit_id,payment_voucher_id,debit_account_id,debit_account_name,withhold,organization_unit_id,organization_unit_name,amount,foreign_debit_amount,reference_number,cheque_number,description,invoice_number,created_by_user_id)
- VALUES($1,$2,$3,($4::jsonb->>'accountId')::uuid,$4::jsonb->>'accountName',($4::jsonb->>'isWithhold')::boolean,($4::jsonb->>'organizationUnitId')::uuid,$4::jsonb->>'organizationUnitName',($4::jsonb->>'localAmount')::numeric,COALESCE(NULLIF($4::jsonb->>'foreignAmount',''),'0')::numeric,$4::jsonb->>'referenceNumber',$5,$4::jsonb->>'description',$4::jsonb->>'invoiceNumber',$6))",
+          R"(INSERT INTO gl_payment_voucher_lines(tenant_id,accounting_unit_id,payment_voucher_id,debit_account_id,debit_account_name,withhold,organization_unit_id,organization_unit_name,amount,foreign_debit_amount,reference_number,cheque_number,description,invoice_number,has_imprest,created_by_user_id)
+ VALUES($1,$2,$3,($4::jsonb->>'accountId')::uuid,$4::jsonb->>'accountName',($4::jsonb->>'isWithhold')::boolean,($4::jsonb->>'organizationUnitId')::uuid,$4::jsonb->>'organizationUnitName',($4::jsonb->>'localAmount')::numeric,COALESCE(NULLIF($4::jsonb->>'foreignAmount',''),'0')::numeric,$4::jsonb->>'referenceNumber',$5,$4::jsonb->>'description',$4::jsonb->>'invoiceNumber',COALESCE(($4::jsonb->>'isImprest')::boolean,false),$6))",
           who.tenantId, unit, id, json(l), b["chequeNumber"].asString(),
           who.userId);
     for (auto &r : prepared.source["retentions"])
@@ -583,7 +601,7 @@ SupplierVoucherService::execute(std::string op, std::string id,
       op != "preview" && op != "delete" && op != "submit" && op != "approve" &&
       op != "post")
     co_return fail("validation_error",
-                   "Unsupported supplier voucher operation.");
+                   "Unsupported payment voucher operation.");
   try {
     if (op != "list" && op != "create" && op != "preview" && !uuid(id))
       throw std::invalid_argument("Valid voucher ID required.");
@@ -603,6 +621,12 @@ SupplierVoucherService::execute(std::string op, std::string id,
     if (!ready[0]["ready"].as<bool>())
       co_return fail("schema_not_ready",
                      "Apply migration 017_supplier_voucher_posting.sql.");
+    if (body["type"] == "employee-payment") {
+      auto employees = co_await db->execSqlCoro(
+          "SELECT to_regclass('hr_employee_biodata') IS NOT NULL AS ready");
+      if (!employees[0]["ready"].as<bool>())
+        co_return fail("schema_not_ready", "Apply migration 019_employee_biodata.sql.");
+    }
     auto tx = co_await db->newTransactionCoro();
     dto::BaseApiResponse result;
     try {
@@ -616,7 +640,7 @@ SupplierVoucherService::execute(std::string op, std::string id,
       co_return result;
     }
     if (!(co_await utils::CommitTransaction{std::move(tx)}))
-      co_return fail("database_error", "Unable to commit supplier voucher.");
+      co_return fail("database_error", "Unable to commit payment voucher.");
     co_return result;
   } catch (const std::invalid_argument &e) {
     co_return fail("validation_error", e.what());
@@ -624,7 +648,7 @@ SupplierVoucherService::execute(std::string op, std::string id,
     co_return fail("conflict",
                    "Voucher request, journal link or number already exists.");
   } catch (const std::exception &) {
-    co_return fail("database_error", "Supplier voucher service unavailable.");
+    co_return fail("database_error", "Payment voucher service unavailable.");
   }
 }
 } // namespace business_desk::domain_services

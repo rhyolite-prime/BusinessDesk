@@ -84,18 +84,48 @@ Employee lines show independent **Imprest ?** (`isImprest`) and **Withhold?**
 (`isWithhold`) checkboxes, each with a distinct accessible label. New employee
 payloads carry both booleans; other voucher types omit `isImprest`. Older
 employee drafts without `isImprest` interpret their legacy `isWithhold` value as
-Imprest only, starting the new withholding flag unchecked. This adds independent
-form state; it does not implement tax calculation rules or a new imprest
-disbursement/posting ceremony.
+Imprest only, starting the new withholding flag unchecked.
 
-**Existing limitation remains:** the C++ voucher service currently accepts only
-supplier-payment persistence/posting. The employee form still displays that
-limitation and does not pretend that employee drafts can be saved or posted.
-This change connects employee choices and adjusts the form; it does not add the
-employee voucher posting workflow.
+Employee vouchers now use the same authenticated `/api/v1/ledger/vouchers`
+CRUD/preview/submit/approve/post endpoints and transactional service as supplier
+payments. Payees are validated against live `hr_employee_biodata` rows in the
+actor's tenant; names are derived on the server. The database stores employee
+links separately from supplier links and persists `has_imprest` independently
+from `withhold`. Employee retentions are rejected server-side, not just hidden.
 
-Verification: `node --experimental-strip-types test/vouchers/employee_options_test.mjs`
-and the expanded `test/vouchers/lookups_browser_test.mjs` (real Chromium/Nuxt/BFF
-with controlled authenticated upstream contracts). The browser test includes
-supplier regression coverage, employee pagination, no-retention UI/totals,
-Imprest checkbox labeling, and failure without demo fallbacks.
+The supplied `templates/EmployeePaymentVouchers.cshtml` and
+`templates/employee-payment-voucher.js` provide the employee form and journal
+mapping: debit each allocation gross; credit the bank net and the two applicable
+withholding accounts. Withhold-marked rows use inclusive tax extraction; plain
+rows remain untaxed regardless of Imprest. NHIL/GETFund/VAT/CST/COVID and income/
+VAT withholding use the shared fixed-point calculation, additive inclusive
+rates, CST/COVID mutual exclusion, and half-up per-row two-decimal rounding.
+This retains the existing corrected supplier math rather than copying the
+legacy JS omission of CST/COVID from its breakdown. Legacy suggested rates are
+editable starting values, not advice about current statutory rates. The optional
+40-character withholding tax classification also round-trips.
+
+Workflow: save a draft, edit or soft-delete it, submit, have a tenant administrator
+approve, then post. Posting revalidates the live payee, accounts, currencies,
+organizations and period, and calls `JournalService::createAndPost` inside the
+same transaction. Voucher/journal linkage and account balances commit together;
+retries cannot duplicate posting. Posted vouchers are immutable. Employee batch
+numbers have an `EPV-` prefix using the existing tenant/unit voucher sequence
+(shared counter with supplier payments, so each type may have gaps).
+
+Apply existing migrations through **019_employee_biodata.sql** (including 017
+voucher posting and prerequisites). No new application migration is needed:
+`employee_id`, `employee_name`, `tax_type` and line `has_imprest` already exist.
+No migration or seed was applied to an application database during development.
+The legacy JS only stores `hasImprest`; it does not create an imprest advance.
+This implementation likewise preserves the flag without inventing an advance,
+retirement, refund or separate imprest subledger ceremony. Customer-receipt
+persistence remains unsupported.
+
+Verification: pure employee options/flag tests, the shared frontend/C++ voucher
+math parity tests, `test/vouchers/lookups_browser_test.mjs` (real Chromium and
+built Nuxt/BFF with a controlled upstream), and `test/vouchers/run_pg.sh` (real
+PostgreSQL and the actual voucher/journal services with a synchronous coroutine
+transport seam). Coverage includes supplier regression, employee pagination,
+save/edit hydration, independent flags, no retention, withholding, FX, live payee
+scope, approval, transaction rollback, posting retry and immutable posted rows.

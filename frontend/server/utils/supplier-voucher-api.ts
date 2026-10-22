@@ -82,7 +82,7 @@ export async function supplierVoucherRequest(
       statusMessage: codes[code]
         ? String(err?.message || 'Voucher action failed.')
         : code === 'schema_not_ready'
-          ? 'Voucher database upgrade required. Apply migration 017 and its prerequisites.'
+          ? 'Voucher database upgrade required. Apply migrations 017 and 019 and their prerequisites.'
           : 'Voucher service unavailable. Retry with the same request; posting retries cannot duplicate balances.',
       data: { code },
     })
