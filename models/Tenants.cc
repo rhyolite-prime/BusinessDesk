@@ -235,6 +235,8 @@ const std::string Tenants::Cols::_connection_string = "\"connection_string\"";
 
 const std::string Tenants::Cols::_is_active = "\"is_active\"";
 
+const std::string Tenants::Cols::_account_version = "\"account_version\"";
+
 
 const std::string Tenants::primaryKeyName = "id";
 
@@ -351,7 +353,8 @@ const std::vector<typename Tenants::MetaData> Tenants::metaData_={
 {"tenancy_name","std::string","character varying",64,0,0,1},
 {"name","std::string","character varying",128,0,0,1},
 {"connection_string","std::string","character varying",1024,0,0,0},
-{"is_active","bool","boolean",1,0,0,1}
+{"is_active","bool","boolean",1,0,0,1},
+{"account_version","int32_t","integer",4,0,0,1}
 
 };
 const std::string &Tenants::getColumnName(size_t index) noexcept(false)
@@ -1885,11 +1888,18 @@ Tenants::Tenants(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
+        if(!r["account_version"].isNull())
+        {
+
+            accountVersion_=std::make_shared<int32_t>(r["account_version"].as<int32_t>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 108 > r.size())
+        if(offset + 109 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -3525,13 +3535,21 @@ Tenants::Tenants(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
+        index = offset + 108;
+        if(!r[index].isNull())
+        {
+
+            accountVersion_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
     }
 
 }
 
 Tenants::Tenants(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 108)
+    if(pMasqueradingVector.size() != 109)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -5361,6 +5379,15 @@ Tenants::Tenants(const Json::Value &pJson, const std::vector<std::string> &pMasq
         if(!pJson[pMasqueradingVector[107]].isNull())
         {
             isActive_=std::make_shared<bool>(pJson[pMasqueradingVector[107]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[108].empty() && pJson.isMember(pMasqueradingVector[108]))
+    {
+        dirtyFlag_[108] = true;
+        if(!pJson[pMasqueradingVector[108]].isNull())
+        {
+            accountVersion_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[108]].asInt64());
         }
     }
 
@@ -7196,12 +7223,21 @@ Tenants::Tenants(const Json::Value &pJson) noexcept(false)
         }
     }
 
+    if(pJson.isMember("account_version"))
+    {
+        dirtyFlag_[108]=true;
+        if(!pJson["account_version"].isNull())
+        {
+            accountVersion_=std::make_shared<int32_t>((int32_t)pJson["account_version"].asInt64());
+        }
+    }
+
 }
 
 void Tenants::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 108)
+    if(pMasqueradingVector.size() != 109)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -9033,6 +9069,15 @@ void Tenants::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[108].empty() && pJson.isMember(pMasqueradingVector[108]))
+    {
+        dirtyFlag_[108] = true;
+        if(!pJson[pMasqueradingVector[108]].isNull())
+        {
+            accountVersion_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[108]].asInt64());
+        }
+    }
+
 }
 
 void Tenants::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -10861,6 +10906,15 @@ void Tenants::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["is_active"].isNull())
         {
             isActive_=std::make_shared<bool>(pJson["is_active"].asBool());
+        }
+    }
+
+    if(pJson.isMember("account_version"))
+    {
+        dirtyFlag_[108] = true;
+        if(!pJson["account_version"].isNull())
+        {
+            accountVersion_=std::make_shared<int32_t>((int32_t)pJson["account_version"].asInt64());
         }
     }
 
@@ -13292,6 +13346,23 @@ void Tenants::setIsActive(const bool &pIsActive) noexcept
     dirtyFlag_[107] = true;
 }
 
+const int32_t &Tenants::getValueOfAccountVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(accountVersion_)
+        return *accountVersion_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &Tenants::getAccountVersion() const noexcept
+{
+    return accountVersion_;
+}
+void Tenants::setAccountVersion(const int32_t &pAccountVersion) noexcept
+{
+    accountVersion_ = std::make_shared<int32_t>(pAccountVersion);
+    dirtyFlag_[108] = true;
+}
+
 void Tenants::updateId(const uint64_t id)
 {
 }
@@ -13407,7 +13478,8 @@ const std::vector<std::string> &Tenants::insertColumns() noexcept
         "tenancy_name",
         "name",
         "connection_string",
-        "is_active"
+        "is_active",
+        "account_version"
 
     };
     return inCols;
@@ -14712,6 +14784,18 @@ void Tenants::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[108])
+    {
+        if(getAccountVersion())
+        {
+            binder << getValueOfAccountVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> Tenants::updateColumns() const
@@ -15256,6 +15340,11 @@ const std::vector<std::string> Tenants::updateColumns() const
     if(dirtyFlag_[107])
     {
         ret.push_back(getColumnName(107));
+    }
+
+    if(dirtyFlag_[108])
+    {
+        ret.push_back(getColumnName(108));
     }
 
     return ret;
@@ -16560,6 +16649,18 @@ void Tenants::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[108])
+    {
+        if(getAccountVersion())
+        {
+            binder << getValueOfAccountVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value Tenants::toJson() const
 {
@@ -17753,6 +17854,17 @@ Json::Value Tenants::toJson() const
         ret["is_active"]=Json::Value();
     }
 
+    if(getAccountVersion())
+    {
+
+        ret["account_version"]=getValueOfAccountVersion();
+
+    }
+    else
+    {
+        ret["account_version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -17765,7 +17877,7 @@ Json::Value Tenants::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 108)
+    if(pMasqueradingVector.size() == 109)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -19280,6 +19392,20 @@ Json::Value Tenants::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[108].empty())
+        {
+            if(getAccountVersion())
+            {
+
+                ret[pMasqueradingVector[108]]=getValueOfAccountVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[108]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -20472,6 +20598,17 @@ Json::Value Tenants::toMasqueradedJson(
         ret["is_active"]=Json::Value();
     }
 
+    if(getAccountVersion())
+    {
+
+        ret["account_version"]=getValueOfAccountVersion();
+
+    }
+    else
+    {
+        ret["account_version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -21336,13 +21473,19 @@ bool Tenants::validateJsonForCreation(const Json::Value &pJson, std::string &err
         return false;
     }
 
+    if(pJson.isMember("account_version"))
+    {
+        if(!validJsonOfField(108, "account_version", pJson["account_version"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool Tenants::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                  const std::vector<std::string> &pMasqueradingVector,
                                                  std::string &err)
 {
-    if(pMasqueradingVector.size() != 108)
+    if(pMasqueradingVector.size() != 109)
     {
         err = "Bad masquerading vector";
         return false;
@@ -22639,6 +22782,16 @@ bool Tenants::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 
       }
 
+      if(!pMasqueradingVector[108].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[108]))
+          {
+              if(!validJsonOfField(108, pMasqueradingVector[108], pJson[pMasqueradingVector[108]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -23304,13 +23457,19 @@ bool Tenants::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
             return false;
     }
 
+    if(pJson.isMember("account_version"))
+    {
+        if(!validJsonOfField(108, "account_version", pJson["account_version"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool Tenants::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                const std::vector<std::string> &pMasqueradingVector,
                                                std::string &err)
 {
-    if(pMasqueradingVector.size() != 108)
+    if(pMasqueradingVector.size() != 109)
     {
         err = "Bad masquerading vector";
         return false;
@@ -23968,6 +24127,12 @@ bool Tenants::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[107].empty() && pJson.isMember(pMasqueradingVector[107]))
       {
           if(!validJsonOfField(107, pMasqueradingVector[107], pJson[pMasqueradingVector[107]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[108].empty() && pJson.isMember(pMasqueradingVector[108]))
+      {
+          if(!validJsonOfField(108, pMasqueradingVector[108], pJson[pMasqueradingVector[108]], err, false))
               return false;
       }
 
@@ -25853,6 +26018,22 @@ bool Tenants::validJsonOfField(size_t index,
             }
 
             if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 108:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
