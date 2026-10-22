@@ -18,6 +18,8 @@
 
 #include "GlJournalBatches.h"
 
+#include "HrEmployeeBiodata.h"
+
 #include <drogon/utils/Utilities.h>
 
 #include <string>
@@ -8248,6 +8250,94 @@ void GlImprests::getGlJournalBatches(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlJournalBatches(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+HrEmployeeBiodata GlImprests::getTenant(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *tenantId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return HrEmployeeBiodata(r[0]);
+}
+
+void GlImprests::getTenant(const DbClientPtr &clientPtr,
+                           const std::function<void(HrEmployeeBiodata)> &rcb,
+                           const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    *clientPtr << sql
+               << *tenantId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(HrEmployeeBiodata(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+HrEmployeeBiodata GlImprests::getEmployee(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *employeeId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return HrEmployeeBiodata(r[0]);
+}
+
+void GlImprests::getEmployee(const DbClientPtr &clientPtr,
+                             const std::function<void(HrEmployeeBiodata)> &rcb,
+                             const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    *clientPtr << sql
+               << *employeeId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(HrEmployeeBiodata(r[0]));
                     }
                }
                >> ecb;

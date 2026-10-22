@@ -69,6 +69,16 @@ const std::string GlPaymentVoucherLines::Cols::_created_at = "\"created_at\"";
 
 const std::string GlPaymentVoucherLines::Cols::_created_by_user_id = "\"created_by_user_id\"";
 
+const std::string GlPaymentVoucherLines::Cols::_is_deleted = "\"is_deleted\"";
+
+const std::string GlPaymentVoucherLines::Cols::_last_modified_at = "\"last_modified_at\"";
+
+const std::string GlPaymentVoucherLines::Cols::_last_modified_by_user_id = "\"last_modified_by_user_id\"";
+
+const std::string GlPaymentVoucherLines::Cols::_deleted_at = "\"deleted_at\"";
+
+const std::string GlPaymentVoucherLines::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
+
 
 const std::string GlPaymentVoucherLines::primaryKeyName = "id";
 
@@ -100,7 +110,12 @@ const std::vector<typename GlPaymentVoucherLines::MetaData> GlPaymentVoucherLine
 {"has_imprest","bool","boolean",1,0,0,1},
 {"line_type","std::string","character varying",40,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","std::string","uuid",0,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0},
+{"is_deleted","bool","boolean",1,0,0,1},
+{"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
+{"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlPaymentVoucherLines::getColumnName(size_t index) noexcept(false)
@@ -295,11 +310,80 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
 
         }
 
+        if(!r["is_deleted"].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r["is_deleted"].as<bool>());
+
+        }
+
+        if(!r["last_modified_at"].isNull())
+        {
+            auto timeStr = r["last_modified_at"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["last_modified_by_user_id"].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
+
+        }
+
+        if(!r["deleted_at"].isNull())
+        {
+            auto timeStr = r["deleted_at"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["deleted_by_user_id"].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 23 > r.size())
+        if(offset + 28 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -511,13 +595,87 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Row &r, const ssize_t indexOf
 
         }
 
+        index = offset + 23;
+        if(!r[index].isNull())
+        {
+
+            isDeleted_=std::make_shared<bool>(r[index].as<bool>());
+
+        }
+
+        index = offset + 24;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 25;
+        if(!r[index].isNull())
+        {
+
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 26;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 27;
+        if(!r[index].isNull())
+        {
+
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
     }
 
 }
 
 GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 23)
+    if(pMasqueradingVector.size() != 28)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -752,6 +910,89 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson, const std
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[23].empty() && pJson.isMember(pMasqueradingVector[23]))
+    {
+        dirtyFlag_[23] = true;
+        if(!pJson[pMasqueradingVector[23]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[23]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[24].empty() && pJson.isMember(pMasqueradingVector[24]))
+    {
+        dirtyFlag_[24] = true;
+        if(!pJson[pMasqueradingVector[24]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[24]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[25].empty() && pJson.isMember(pMasqueradingVector[25]))
+    {
+        dirtyFlag_[25] = true;
+        if(!pJson[pMasqueradingVector[25]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[26].empty() && pJson.isMember(pMasqueradingVector[26]))
+    {
+        dirtyFlag_[26] = true;
+        if(!pJson[pMasqueradingVector[26]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[26]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[27].empty() && pJson.isMember(pMasqueradingVector[27]))
+    {
+        dirtyFlag_[27] = true;
+        if(!pJson[pMasqueradingVector[27]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
         }
     }
 
@@ -992,12 +1233,95 @@ GlPaymentVoucherLines::GlPaymentVoucherLines(const Json::Value &pJson) noexcept(
         }
     }
 
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[23]=true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("last_modified_at"))
+    {
+        dirtyFlag_[24]=true;
+        if(!pJson["last_modified_at"].isNull())
+        {
+            auto timeStr = pJson["last_modified_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[25]=true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[26]=true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[27]=true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
 }
 
 void GlPaymentVoucherLines::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 23)
+    if(pMasqueradingVector.size() != 28)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1234,6 +1558,89 @@ void GlPaymentVoucherLines::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[23].empty() && pJson.isMember(pMasqueradingVector[23]))
+    {
+        dirtyFlag_[23] = true;
+        if(!pJson[pMasqueradingVector[23]].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[23]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[24].empty() && pJson.isMember(pMasqueradingVector[24]))
+    {
+        dirtyFlag_[24] = true;
+        if(!pJson[pMasqueradingVector[24]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[24]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[25].empty() && pJson.isMember(pMasqueradingVector[25]))
+    {
+        dirtyFlag_[25] = true;
+        if(!pJson[pMasqueradingVector[25]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[25]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[26].empty() && pJson.isMember(pMasqueradingVector[26]))
+    {
+        dirtyFlag_[26] = true;
+        if(!pJson[pMasqueradingVector[26]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[26]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[27].empty() && pJson.isMember(pMasqueradingVector[27]))
+    {
+        dirtyFlag_[27] = true;
+        if(!pJson[pMasqueradingVector[27]].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
+        }
+    }
+
 }
 
 void GlPaymentVoucherLines::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -1467,6 +1874,89 @@ void GlPaymentVoucherLines::updateByJson(const Json::Value &pJson) noexcept(fals
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("is_deleted"))
+    {
+        dirtyFlag_[23] = true;
+        if(!pJson["is_deleted"].isNull())
+        {
+            isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
+        }
+    }
+
+    if(pJson.isMember("last_modified_at"))
+    {
+        dirtyFlag_[24] = true;
+        if(!pJson["last_modified_at"].isNull())
+        {
+            auto timeStr = pJson["last_modified_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        dirtyFlag_[25] = true;
+        if(!pJson["last_modified_by_user_id"].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        dirtyFlag_[26] = true;
+        if(!pJson["deleted_at"].isNull())
+        {
+            auto timeStr = pJson["deleted_at"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                deletedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        dirtyFlag_[27] = true;
+        if(!pJson["deleted_by_user_id"].isNull())
+        {
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -2023,6 +2513,121 @@ void GlPaymentVoucherLines::setCreatedByUserIdToNull() noexcept
     dirtyFlag_[22] = true;
 }
 
+const bool &GlPaymentVoucherLines::getValueOfIsDeleted() const noexcept
+{
+    static const bool defaultValue = bool();
+    if(isDeleted_)
+        return *isDeleted_;
+    return defaultValue;
+}
+const std::shared_ptr<bool> &GlPaymentVoucherLines::getIsDeleted() const noexcept
+{
+    return isDeleted_;
+}
+void GlPaymentVoucherLines::setIsDeleted(const bool &pIsDeleted) noexcept
+{
+    isDeleted_ = std::make_shared<bool>(pIsDeleted);
+    dirtyFlag_[23] = true;
+}
+
+const ::trantor::Date &GlPaymentVoucherLines::getValueOfLastModifiedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(lastModifiedAt_)
+        return *lastModifiedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &GlPaymentVoucherLines::getLastModifiedAt() const noexcept
+{
+    return lastModifiedAt_;
+}
+void GlPaymentVoucherLines::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
+{
+    lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
+    dirtyFlag_[24] = true;
+}
+void GlPaymentVoucherLines::setLastModifiedAtToNull() noexcept
+{
+    lastModifiedAt_.reset();
+    dirtyFlag_[24] = true;
+}
+
+const std::string &GlPaymentVoucherLines::getValueOfLastModifiedByUserId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(lastModifiedByUserId_)
+        return *lastModifiedByUserId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVoucherLines::getLastModifiedByUserId() const noexcept
+{
+    return lastModifiedByUserId_;
+}
+void GlPaymentVoucherLines::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[25] = true;
+}
+void GlPaymentVoucherLines::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
+    dirtyFlag_[25] = true;
+}
+void GlPaymentVoucherLines::setLastModifiedByUserIdToNull() noexcept
+{
+    lastModifiedByUserId_.reset();
+    dirtyFlag_[25] = true;
+}
+
+const ::trantor::Date &GlPaymentVoucherLines::getValueOfDeletedAt() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(deletedAt_)
+        return *deletedAt_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &GlPaymentVoucherLines::getDeletedAt() const noexcept
+{
+    return deletedAt_;
+}
+void GlPaymentVoucherLines::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
+{
+    deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
+    dirtyFlag_[26] = true;
+}
+void GlPaymentVoucherLines::setDeletedAtToNull() noexcept
+{
+    deletedAt_.reset();
+    dirtyFlag_[26] = true;
+}
+
+const std::string &GlPaymentVoucherLines::getValueOfDeletedByUserId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(deletedByUserId_)
+        return *deletedByUserId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVoucherLines::getDeletedByUserId() const noexcept
+{
+    return deletedByUserId_;
+}
+void GlPaymentVoucherLines::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[27] = true;
+}
+void GlPaymentVoucherLines::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
+    dirtyFlag_[27] = true;
+}
+void GlPaymentVoucherLines::setDeletedByUserIdToNull() noexcept
+{
+    deletedByUserId_.reset();
+    dirtyFlag_[27] = true;
+}
+
 void GlPaymentVoucherLines::updateId(const uint64_t id)
 {
 }
@@ -2053,7 +2658,12 @@ const std::vector<std::string> &GlPaymentVoucherLines::insertColumns() noexcept
         "has_imprest",
         "line_type",
         "created_at",
-        "created_by_user_id"
+        "created_by_user_id",
+        "is_deleted",
+        "last_modified_at",
+        "last_modified_by_user_id",
+        "deleted_at",
+        "deleted_by_user_id"
 
     };
     return inCols;
@@ -2338,6 +2948,66 @@ void GlPaymentVoucherLines::outputArgs(drogon::orm::internal::SqlBinder &binder)
         }
     }
 
+    if(dirtyFlag_[23])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[24])
+    {
+        if(getLastModifiedAt())
+        {
+            binder << getValueOfLastModifiedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[25])
+    {
+        if(getLastModifiedByUserId())
+        {
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[26])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[27])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlPaymentVoucherLines::updateColumns() const
@@ -2457,6 +3127,31 @@ const std::vector<std::string> GlPaymentVoucherLines::updateColumns() const
     if(dirtyFlag_[22])
     {
         ret.push_back(getColumnName(22));
+    }
+
+    if(dirtyFlag_[23])
+    {
+        ret.push_back(getColumnName(23));
+    }
+
+    if(dirtyFlag_[24])
+    {
+        ret.push_back(getColumnName(24));
+    }
+
+    if(dirtyFlag_[25])
+    {
+        ret.push_back(getColumnName(25));
+    }
+
+    if(dirtyFlag_[26])
+    {
+        ret.push_back(getColumnName(26));
+    }
+
+    if(dirtyFlag_[27])
+    {
+        ret.push_back(getColumnName(27));
     }
 
     return ret;
@@ -2741,6 +3436,66 @@ void GlPaymentVoucherLines::updateArgs(drogon::orm::internal::SqlBinder &binder)
         }
     }
 
+    if(dirtyFlag_[23])
+    {
+        if(getIsDeleted())
+        {
+            binder << getValueOfIsDeleted();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[24])
+    {
+        if(getLastModifiedAt())
+        {
+            binder << getValueOfLastModifiedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[25])
+    {
+        if(getLastModifiedByUserId())
+        {
+            binder << getValueOfLastModifiedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[26])
+    {
+        if(getDeletedAt())
+        {
+            binder << getValueOfDeletedAt();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[27])
+    {
+        if(getDeletedByUserId())
+        {
+            binder << getValueOfDeletedByUserId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlPaymentVoucherLines::toJson() const
 {
@@ -2999,6 +3754,61 @@ Json::Value GlPaymentVoucherLines::toJson() const
         ret["created_by_user_id"]=Json::Value();
     }
 
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getLastModifiedAt())
+    {
+
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -3011,7 +3821,7 @@ Json::Value GlPaymentVoucherLines::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 23)
+    if(pMasqueradingVector.size() == 28)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -3336,6 +4146,76 @@ Json::Value GlPaymentVoucherLines::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[23].empty())
+        {
+            if(getIsDeleted())
+            {
+
+                ret[pMasqueradingVector[23]]=getValueOfIsDeleted();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[23]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[24].empty())
+        {
+            if(getLastModifiedAt())
+            {
+
+                ret[pMasqueradingVector[24]]=getLastModifiedAt()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[24]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[25].empty())
+        {
+            if(getLastModifiedByUserId())
+            {
+
+                ret[pMasqueradingVector[25]]=getValueOfLastModifiedByUserId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[25]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[26].empty())
+        {
+            if(getDeletedAt())
+            {
+
+                ret[pMasqueradingVector[26]]=getDeletedAt()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[26]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[27].empty())
+        {
+            if(getDeletedByUserId())
+            {
+
+                ret[pMasqueradingVector[27]]=getValueOfDeletedByUserId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[27]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -3593,6 +4473,61 @@ Json::Value GlPaymentVoucherLines::toMasqueradedJson(
         ret["created_by_user_id"]=Json::Value();
     }
 
+    if(getIsDeleted())
+    {
+
+        ret["is_deleted"]=getValueOfIsDeleted();
+
+    }
+    else
+    {
+        ret["is_deleted"]=Json::Value();
+    }
+
+    if(getLastModifiedAt())
+    {
+
+        ret["last_modified_at"]=getLastModifiedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["last_modified_at"]=Json::Value();
+    }
+
+    if(getLastModifiedByUserId())
+    {
+
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
+
+    }
+    else
+    {
+        ret["last_modified_by_user_id"]=Json::Value();
+    }
+
+    if(getDeletedAt())
+    {
+
+        ret["deleted_at"]=getDeletedAt()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["deleted_at"]=Json::Value();
+    }
+
+    if(getDeletedByUserId())
+    {
+
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
+
+    }
+    else
+    {
+        ret["deleted_by_user_id"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -3767,13 +4702,43 @@ bool GlPaymentVoucherLines::validateJsonForCreation(const Json::Value &pJson, st
             return false;
     }
 
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(23, "is_deleted", pJson["is_deleted"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_at"))
+    {
+        if(!validJsonOfField(24, "last_modified_at", pJson["last_modified_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(25, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(26, "deleted_at", pJson["deleted_at"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(27, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlPaymentVoucherLines::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                                const std::vector<std::string> &pMasqueradingVector,
                                                                std::string &err)
 {
-    if(pMasqueradingVector.size() != 23)
+    if(pMasqueradingVector.size() != 28)
     {
         err = "Bad masquerading vector";
         return false;
@@ -4040,6 +5005,56 @@ bool GlPaymentVoucherLines::validateMasqueradedJsonForCreation(const Json::Value
 
       }
 
+      if(!pMasqueradingVector[23].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[23]))
+          {
+              if(!validJsonOfField(23, pMasqueradingVector[23], pJson[pMasqueradingVector[23]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[24].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[24]))
+          {
+              if(!validJsonOfField(24, pMasqueradingVector[24], pJson[pMasqueradingVector[24]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[25].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[25]))
+          {
+              if(!validJsonOfField(25, pMasqueradingVector[25], pJson[pMasqueradingVector[25]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[26].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[26]))
+          {
+              if(!validJsonOfField(26, pMasqueradingVector[26], pJson[pMasqueradingVector[26]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[27].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[27]))
+          {
+              if(!validJsonOfField(27, pMasqueradingVector[27], pJson[pMasqueradingVector[27]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -4195,13 +5210,43 @@ bool GlPaymentVoucherLines::validateJsonForUpdate(const Json::Value &pJson, std:
             return false;
     }
 
+    if(pJson.isMember("is_deleted"))
+    {
+        if(!validJsonOfField(23, "is_deleted", pJson["is_deleted"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_at"))
+    {
+        if(!validJsonOfField(24, "last_modified_at", pJson["last_modified_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("last_modified_by_user_id"))
+    {
+        if(!validJsonOfField(25, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_at"))
+    {
+        if(!validJsonOfField(26, "deleted_at", pJson["deleted_at"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("deleted_by_user_id"))
+    {
+        if(!validJsonOfField(27, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlPaymentVoucherLines::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 23)
+    if(pMasqueradingVector.size() != 28)
     {
         err = "Bad masquerading vector";
         return false;
@@ -4349,6 +5394,36 @@ bool GlPaymentVoucherLines::validateMasqueradedJsonForUpdate(const Json::Value &
       if(!pMasqueradingVector[22].empty() && pJson.isMember(pMasqueradingVector[22]))
       {
           if(!validJsonOfField(22, pMasqueradingVector[22], pJson[pMasqueradingVector[22]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[23].empty() && pJson.isMember(pMasqueradingVector[23]))
+      {
+          if(!validJsonOfField(23, pMasqueradingVector[23], pJson[pMasqueradingVector[23]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[24].empty() && pJson.isMember(pMasqueradingVector[24]))
+      {
+          if(!validJsonOfField(24, pMasqueradingVector[24], pJson[pMasqueradingVector[24]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[25].empty() && pJson.isMember(pMasqueradingVector[25]))
+      {
+          if(!validJsonOfField(25, pMasqueradingVector[25], pJson[pMasqueradingVector[25]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[26].empty() && pJson.isMember(pMasqueradingVector[26]))
+      {
+          if(!validJsonOfField(26, pMasqueradingVector[26], pJson[pMasqueradingVector[26]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[27].empty() && pJson.isMember(pMasqueradingVector[27]))
+      {
+          if(!validJsonOfField(27, pMasqueradingVector[27], pJson[pMasqueradingVector[27]], err, false))
               return false;
       }
 
@@ -4783,6 +5858,82 @@ bool GlPaymentVoucherLines::validJsonOfField(size_t index,
             break;
 
         case 22:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 23:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 24:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 25:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 26:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 27:
 
             if(pJson.isNull())
             {

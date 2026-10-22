@@ -47,9 +47,13 @@ class CoreCurrencies;
 
 class CoreSuppliers;
 
+class GlAccountingPeriods;
+
 class GlBankAccounts;
 
 class GlJournalBatches;
+
+class HrEmployeeBiodata;
 
 
 class GlPaymentVouchers
@@ -121,6 +125,12 @@ class GlPaymentVouchers
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _version;
+        static const std::string _source_payload;
+        static const std::string _calculation;
+        static const std::string _proposed_journal;
+        static const std::string _posting_period_id;
+        static const std::string _request_hash;
 
     };
 
@@ -764,9 +774,67 @@ class GlPaymentVouchers
     void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column version  */
+    ///Get the value of the column version, returns the default value if the column is null
+    const int32_t &getValueOfVersion() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getVersion() const noexcept;
+    ///Set the value of the column version
+    void setVersion(const int32_t &pVersion) noexcept;
+
+    /**  For column source_payload  */
+    ///Get the value of the column source_payload, returns the default value if the column is null
+    const std::string &getValueOfSourcePayload() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getSourcePayload() const noexcept;
+    ///Set the value of the column source_payload
+    void setSourcePayload(const std::string &pSourcePayload) noexcept;
+    void setSourcePayload(std::string &&pSourcePayload) noexcept;
+    void setSourcePayloadToNull() noexcept;
+
+    /**  For column calculation  */
+    ///Get the value of the column calculation, returns the default value if the column is null
+    const std::string &getValueOfCalculation() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getCalculation() const noexcept;
+    ///Set the value of the column calculation
+    void setCalculation(const std::string &pCalculation) noexcept;
+    void setCalculation(std::string &&pCalculation) noexcept;
+    void setCalculationToNull() noexcept;
+
+    /**  For column proposed_journal  */
+    ///Get the value of the column proposed_journal, returns the default value if the column is null
+    const std::string &getValueOfProposedJournal() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getProposedJournal() const noexcept;
+    ///Set the value of the column proposed_journal
+    void setProposedJournal(const std::string &pProposedJournal) noexcept;
+    void setProposedJournal(std::string &&pProposedJournal) noexcept;
+    void setProposedJournalToNull() noexcept;
+
+    /**  For column posting_period_id  */
+    ///Get the value of the column posting_period_id, returns the default value if the column is null
+    const std::string &getValueOfPostingPeriodId() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getPostingPeriodId() const noexcept;
+    ///Set the value of the column posting_period_id
+    void setPostingPeriodId(const std::string &pPostingPeriodId) noexcept;
+    void setPostingPeriodId(std::string &&pPostingPeriodId) noexcept;
+    void setPostingPeriodIdToNull() noexcept;
+
+    /**  For column request_hash  */
+    ///Get the value of the column request_hash, returns the default value if the column is null
+    const std::string &getValueOfRequestHash() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getRequestHash() const noexcept;
+    ///Set the value of the column request_hash
+    void setRequestHash(const std::string &pRequestHash) noexcept;
+    void setRequestHash(std::string &&pRequestHash) noexcept;
+    void setRequestHashToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 64;  }
+
+    static size_t getColumnNumber() noexcept {  return 70;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -802,6 +870,21 @@ class GlPaymentVouchers
     CoreSuppliers getSupplier(const drogon::orm::DbClientPtr &clientPtr) const;
     void getSupplier(const drogon::orm::DbClientPtr &clientPtr,
                      const std::function<void(CoreSuppliers)> &rcb,
+                     const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlAccountingPeriods)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
+
+    HrEmployeeBiodata getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(HrEmployeeBiodata)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    HrEmployeeBiodata getEmployee(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getEmployee(const drogon::orm::DbClientPtr &clientPtr,
+                     const std::function<void(HrEmployeeBiodata)> &rcb,
                      const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
@@ -883,6 +966,12 @@ class GlPaymentVouchers
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
     std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> version_;
+    std::shared_ptr<std::string> sourcePayload_;
+    std::shared_ptr<std::string> calculation_;
+    std::shared_ptr<std::string> proposedJournal_;
+    std::shared_ptr<std::string> postingPeriodId_;
+    std::shared_ptr<std::string> requestHash_;
 
     struct MetaData
     {
@@ -895,7 +984,7 @@ class GlPaymentVouchers
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[64]={ false };
+    bool dirtyFlag_[70]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -1332,6 +1421,43 @@ class GlPaymentVouchers
         if(dirtyFlag_[63])
         {
             sql += "deleted_by_user_id,";
+            ++parametersCount;
+        }
+        sql += "version,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[64])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[65])
+        {
+            sql += "source_payload,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[66])
+        {
+            sql += "calculation,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[67])
+        {
+            sql += "proposed_journal,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[68])
+        {
+            sql += "posting_period_id,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[69])
+        {
+            sql += "request_hash,";
             ++parametersCount;
         }
 
@@ -2008,6 +2134,59 @@ class GlPaymentVouchers
         }
 
         if(dirtyFlag_[63])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[64])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
+        }
+
+        if(dirtyFlag_[65])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[66])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[67])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[68])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[69])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

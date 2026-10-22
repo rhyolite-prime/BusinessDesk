@@ -14,9 +14,13 @@
 
 #include "CoreSuppliers.h"
 
+#include "GlAccountingPeriods.h"
+
 #include "GlBankAccounts.h"
 
 #include "GlJournalBatches.h"
+
+#include "HrEmployeeBiodata.h"
 
 #include <drogon/utils/Utilities.h>
 
@@ -157,6 +161,18 @@ const std::string GlPaymentVouchers::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string GlPaymentVouchers::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string GlPaymentVouchers::Cols::_version = "\"version\"";
+
+const std::string GlPaymentVouchers::Cols::_source_payload = "\"source_payload\"";
+
+const std::string GlPaymentVouchers::Cols::_calculation = "\"calculation\"";
+
+const std::string GlPaymentVouchers::Cols::_proposed_journal = "\"proposed_journal\"";
+
+const std::string GlPaymentVouchers::Cols::_posting_period_id = "\"posting_period_id\"";
+
+const std::string GlPaymentVouchers::Cols::_request_hash = "\"request_hash\"";
+
 
 const std::string GlPaymentVouchers::primaryKeyName = "id";
 
@@ -229,7 +245,13 @@ const std::vector<typename GlPaymentVouchers::MetaData> GlPaymentVouchers::metaD
 {"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","std::string","uuid",0,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"version","int32_t","integer",4,0,0,1},
+{"source_payload","std::string","jsonb",0,0,0,0},
+{"calculation","std::string","jsonb",0,0,0,0},
+{"proposed_journal","std::string","jsonb",0,0,0,0},
+{"posting_period_id","std::string","uuid",0,0,0,0},
+{"request_hash","std::string","text",0,0,0,0}
 
 };
 const std::string &GlPaymentVouchers::getColumnName(size_t index) noexcept(false)
@@ -749,11 +771,53 @@ GlPaymentVouchers::GlPaymentVouchers(const Row &r, const ssize_t indexOffset) no
 
         }
 
+        if(!r["version"].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r["version"].as<int32_t>());
+
+        }
+
+        if(!r["source_payload"].isNull())
+        {
+
+            sourcePayload_=std::make_shared<std::string>(r["source_payload"].as<std::string>());
+
+        }
+
+        if(!r["calculation"].isNull())
+        {
+
+            calculation_=std::make_shared<std::string>(r["calculation"].as<std::string>());
+
+        }
+
+        if(!r["proposed_journal"].isNull())
+        {
+
+            proposedJournal_=std::make_shared<std::string>(r["proposed_journal"].as<std::string>());
+
+        }
+
+        if(!r["posting_period_id"].isNull())
+        {
+
+            postingPeriodId_=std::make_shared<std::string>(r["posting_period_id"].as<std::string>());
+
+        }
+
+        if(!r["request_hash"].isNull())
+        {
+
+            requestHash_=std::make_shared<std::string>(r["request_hash"].as<std::string>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 64 > r.size())
+        if(offset + 70 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -1331,13 +1395,61 @@ GlPaymentVouchers::GlPaymentVouchers(const Row &r, const ssize_t indexOffset) no
 
         }
 
+        index = offset + 64;
+        if(!r[index].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
+        index = offset + 65;
+        if(!r[index].isNull())
+        {
+
+            sourcePayload_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 66;
+        if(!r[index].isNull())
+        {
+
+            calculation_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 67;
+        if(!r[index].isNull())
+        {
+
+            proposedJournal_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 68;
+        if(!r[index].isNull())
+        {
+
+            postingPeriodId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 69;
+        if(!r[index].isNull())
+        {
+
+            requestHash_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
     }
 
 }
 
 GlPaymentVouchers::GlPaymentVouchers(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 64)
+    if(pMasqueradingVector.size() != 70)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1985,6 +2097,60 @@ GlPaymentVouchers::GlPaymentVouchers(const Json::Value &pJson, const std::vector
         if(!pJson[pMasqueradingVector[63]].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[63]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[64].empty() && pJson.isMember(pMasqueradingVector[64]))
+    {
+        dirtyFlag_[64] = true;
+        if(!pJson[pMasqueradingVector[64]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[64]].asInt64());
+        }
+    }
+
+    if(!pMasqueradingVector[65].empty() && pJson.isMember(pMasqueradingVector[65]))
+    {
+        dirtyFlag_[65] = true;
+        if(!pJson[pMasqueradingVector[65]].isNull())
+        {
+            sourcePayload_=std::make_shared<std::string>(pJson[pMasqueradingVector[65]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[66].empty() && pJson.isMember(pMasqueradingVector[66]))
+    {
+        dirtyFlag_[66] = true;
+        if(!pJson[pMasqueradingVector[66]].isNull())
+        {
+            calculation_=std::make_shared<std::string>(pJson[pMasqueradingVector[66]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[67].empty() && pJson.isMember(pMasqueradingVector[67]))
+    {
+        dirtyFlag_[67] = true;
+        if(!pJson[pMasqueradingVector[67]].isNull())
+        {
+            proposedJournal_=std::make_shared<std::string>(pJson[pMasqueradingVector[67]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[68].empty() && pJson.isMember(pMasqueradingVector[68]))
+    {
+        dirtyFlag_[68] = true;
+        if(!pJson[pMasqueradingVector[68]].isNull())
+        {
+            postingPeriodId_=std::make_shared<std::string>(pJson[pMasqueradingVector[68]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[69].empty() && pJson.isMember(pMasqueradingVector[69]))
+    {
+        dirtyFlag_[69] = true;
+        if(!pJson[pMasqueradingVector[69]].isNull())
+        {
+            requestHash_=std::make_shared<std::string>(pJson[pMasqueradingVector[69]].asString());
         }
     }
 
@@ -2638,12 +2804,66 @@ GlPaymentVouchers::GlPaymentVouchers(const Json::Value &pJson) noexcept(false)
         }
     }
 
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[64]=true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
+        }
+    }
+
+    if(pJson.isMember("source_payload"))
+    {
+        dirtyFlag_[65]=true;
+        if(!pJson["source_payload"].isNull())
+        {
+            sourcePayload_=std::make_shared<std::string>(pJson["source_payload"].asString());
+        }
+    }
+
+    if(pJson.isMember("calculation"))
+    {
+        dirtyFlag_[66]=true;
+        if(!pJson["calculation"].isNull())
+        {
+            calculation_=std::make_shared<std::string>(pJson["calculation"].asString());
+        }
+    }
+
+    if(pJson.isMember("proposed_journal"))
+    {
+        dirtyFlag_[67]=true;
+        if(!pJson["proposed_journal"].isNull())
+        {
+            proposedJournal_=std::make_shared<std::string>(pJson["proposed_journal"].asString());
+        }
+    }
+
+    if(pJson.isMember("posting_period_id"))
+    {
+        dirtyFlag_[68]=true;
+        if(!pJson["posting_period_id"].isNull())
+        {
+            postingPeriodId_=std::make_shared<std::string>(pJson["posting_period_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("request_hash"))
+    {
+        dirtyFlag_[69]=true;
+        if(!pJson["request_hash"].isNull())
+        {
+            requestHash_=std::make_shared<std::string>(pJson["request_hash"].asString());
+        }
+    }
+
 }
 
 void GlPaymentVouchers::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 64)
+    if(pMasqueradingVector.size() != 70)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -3293,6 +3513,60 @@ void GlPaymentVouchers::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[64].empty() && pJson.isMember(pMasqueradingVector[64]))
+    {
+        dirtyFlag_[64] = true;
+        if(!pJson[pMasqueradingVector[64]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[64]].asInt64());
+        }
+    }
+
+    if(!pMasqueradingVector[65].empty() && pJson.isMember(pMasqueradingVector[65]))
+    {
+        dirtyFlag_[65] = true;
+        if(!pJson[pMasqueradingVector[65]].isNull())
+        {
+            sourcePayload_=std::make_shared<std::string>(pJson[pMasqueradingVector[65]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[66].empty() && pJson.isMember(pMasqueradingVector[66]))
+    {
+        dirtyFlag_[66] = true;
+        if(!pJson[pMasqueradingVector[66]].isNull())
+        {
+            calculation_=std::make_shared<std::string>(pJson[pMasqueradingVector[66]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[67].empty() && pJson.isMember(pMasqueradingVector[67]))
+    {
+        dirtyFlag_[67] = true;
+        if(!pJson[pMasqueradingVector[67]].isNull())
+        {
+            proposedJournal_=std::make_shared<std::string>(pJson[pMasqueradingVector[67]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[68].empty() && pJson.isMember(pMasqueradingVector[68]))
+    {
+        dirtyFlag_[68] = true;
+        if(!pJson[pMasqueradingVector[68]].isNull())
+        {
+            postingPeriodId_=std::make_shared<std::string>(pJson[pMasqueradingVector[68]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[69].empty() && pJson.isMember(pMasqueradingVector[69]))
+    {
+        dirtyFlag_[69] = true;
+        if(!pJson[pMasqueradingVector[69]].isNull())
+        {
+            requestHash_=std::make_shared<std::string>(pJson[pMasqueradingVector[69]].asString());
+        }
+    }
+
 }
 
 void GlPaymentVouchers::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -3939,6 +4213,60 @@ void GlPaymentVouchers::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[64] = true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
+        }
+    }
+
+    if(pJson.isMember("source_payload"))
+    {
+        dirtyFlag_[65] = true;
+        if(!pJson["source_payload"].isNull())
+        {
+            sourcePayload_=std::make_shared<std::string>(pJson["source_payload"].asString());
+        }
+    }
+
+    if(pJson.isMember("calculation"))
+    {
+        dirtyFlag_[66] = true;
+        if(!pJson["calculation"].isNull())
+        {
+            calculation_=std::make_shared<std::string>(pJson["calculation"].asString());
+        }
+    }
+
+    if(pJson.isMember("proposed_journal"))
+    {
+        dirtyFlag_[67] = true;
+        if(!pJson["proposed_journal"].isNull())
+        {
+            proposedJournal_=std::make_shared<std::string>(pJson["proposed_journal"].asString());
+        }
+    }
+
+    if(pJson.isMember("posting_period_id"))
+    {
+        dirtyFlag_[68] = true;
+        if(!pJson["posting_period_id"].isNull())
+        {
+            postingPeriodId_=std::make_shared<std::string>(pJson["posting_period_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("request_hash"))
+    {
+        dirtyFlag_[69] = true;
+        if(!pJson["request_hash"].isNull())
+        {
+            requestHash_=std::make_shared<std::string>(pJson["request_hash"].asString());
         }
     }
 
@@ -5412,6 +5740,158 @@ void GlPaymentVouchers::setDeletedByUserIdToNull() noexcept
     dirtyFlag_[63] = true;
 }
 
+const int32_t &GlPaymentVouchers::getValueOfVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(version_)
+        return *version_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &GlPaymentVouchers::getVersion() const noexcept
+{
+    return version_;
+}
+void GlPaymentVouchers::setVersion(const int32_t &pVersion) noexcept
+{
+    version_ = std::make_shared<int32_t>(pVersion);
+    dirtyFlag_[64] = true;
+}
+
+const std::string &GlPaymentVouchers::getValueOfSourcePayload() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(sourcePayload_)
+        return *sourcePayload_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVouchers::getSourcePayload() const noexcept
+{
+    return sourcePayload_;
+}
+void GlPaymentVouchers::setSourcePayload(const std::string &pSourcePayload) noexcept
+{
+    sourcePayload_ = std::make_shared<std::string>(pSourcePayload);
+    dirtyFlag_[65] = true;
+}
+void GlPaymentVouchers::setSourcePayload(std::string &&pSourcePayload) noexcept
+{
+    sourcePayload_ = std::make_shared<std::string>(std::move(pSourcePayload));
+    dirtyFlag_[65] = true;
+}
+void GlPaymentVouchers::setSourcePayloadToNull() noexcept
+{
+    sourcePayload_.reset();
+    dirtyFlag_[65] = true;
+}
+
+const std::string &GlPaymentVouchers::getValueOfCalculation() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(calculation_)
+        return *calculation_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVouchers::getCalculation() const noexcept
+{
+    return calculation_;
+}
+void GlPaymentVouchers::setCalculation(const std::string &pCalculation) noexcept
+{
+    calculation_ = std::make_shared<std::string>(pCalculation);
+    dirtyFlag_[66] = true;
+}
+void GlPaymentVouchers::setCalculation(std::string &&pCalculation) noexcept
+{
+    calculation_ = std::make_shared<std::string>(std::move(pCalculation));
+    dirtyFlag_[66] = true;
+}
+void GlPaymentVouchers::setCalculationToNull() noexcept
+{
+    calculation_.reset();
+    dirtyFlag_[66] = true;
+}
+
+const std::string &GlPaymentVouchers::getValueOfProposedJournal() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(proposedJournal_)
+        return *proposedJournal_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVouchers::getProposedJournal() const noexcept
+{
+    return proposedJournal_;
+}
+void GlPaymentVouchers::setProposedJournal(const std::string &pProposedJournal) noexcept
+{
+    proposedJournal_ = std::make_shared<std::string>(pProposedJournal);
+    dirtyFlag_[67] = true;
+}
+void GlPaymentVouchers::setProposedJournal(std::string &&pProposedJournal) noexcept
+{
+    proposedJournal_ = std::make_shared<std::string>(std::move(pProposedJournal));
+    dirtyFlag_[67] = true;
+}
+void GlPaymentVouchers::setProposedJournalToNull() noexcept
+{
+    proposedJournal_.reset();
+    dirtyFlag_[67] = true;
+}
+
+const std::string &GlPaymentVouchers::getValueOfPostingPeriodId() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(postingPeriodId_)
+        return *postingPeriodId_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVouchers::getPostingPeriodId() const noexcept
+{
+    return postingPeriodId_;
+}
+void GlPaymentVouchers::setPostingPeriodId(const std::string &pPostingPeriodId) noexcept
+{
+    postingPeriodId_ = std::make_shared<std::string>(pPostingPeriodId);
+    dirtyFlag_[68] = true;
+}
+void GlPaymentVouchers::setPostingPeriodId(std::string &&pPostingPeriodId) noexcept
+{
+    postingPeriodId_ = std::make_shared<std::string>(std::move(pPostingPeriodId));
+    dirtyFlag_[68] = true;
+}
+void GlPaymentVouchers::setPostingPeriodIdToNull() noexcept
+{
+    postingPeriodId_.reset();
+    dirtyFlag_[68] = true;
+}
+
+const std::string &GlPaymentVouchers::getValueOfRequestHash() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(requestHash_)
+        return *requestHash_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &GlPaymentVouchers::getRequestHash() const noexcept
+{
+    return requestHash_;
+}
+void GlPaymentVouchers::setRequestHash(const std::string &pRequestHash) noexcept
+{
+    requestHash_ = std::make_shared<std::string>(pRequestHash);
+    dirtyFlag_[69] = true;
+}
+void GlPaymentVouchers::setRequestHash(std::string &&pRequestHash) noexcept
+{
+    requestHash_ = std::make_shared<std::string>(std::move(pRequestHash));
+    dirtyFlag_[69] = true;
+}
+void GlPaymentVouchers::setRequestHashToNull() noexcept
+{
+    requestHash_.reset();
+    dirtyFlag_[69] = true;
+}
+
 void GlPaymentVouchers::updateId(const uint64_t id)
 {
 }
@@ -5483,7 +5963,13 @@ const std::vector<std::string> &GlPaymentVouchers::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "version",
+        "source_payload",
+        "calculation",
+        "proposed_journal",
+        "posting_period_id",
+        "request_hash"
 
     };
     return inCols;
@@ -6260,6 +6746,78 @@ void GlPaymentVouchers::outputArgs(drogon::orm::internal::SqlBinder &binder) con
         }
     }
 
+    if(dirtyFlag_[64])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[65])
+    {
+        if(getSourcePayload())
+        {
+            binder << getValueOfSourcePayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[66])
+    {
+        if(getCalculation())
+        {
+            binder << getValueOfCalculation();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[67])
+    {
+        if(getProposedJournal())
+        {
+            binder << getValueOfProposedJournal();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[68])
+    {
+        if(getPostingPeriodId())
+        {
+            binder << getValueOfPostingPeriodId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[69])
+    {
+        if(getRequestHash())
+        {
+            binder << getValueOfRequestHash();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlPaymentVouchers::updateColumns() const
@@ -6584,6 +7142,36 @@ const std::vector<std::string> GlPaymentVouchers::updateColumns() const
     if(dirtyFlag_[63])
     {
         ret.push_back(getColumnName(63));
+    }
+
+    if(dirtyFlag_[64])
+    {
+        ret.push_back(getColumnName(64));
+    }
+
+    if(dirtyFlag_[65])
+    {
+        ret.push_back(getColumnName(65));
+    }
+
+    if(dirtyFlag_[66])
+    {
+        ret.push_back(getColumnName(66));
+    }
+
+    if(dirtyFlag_[67])
+    {
+        ret.push_back(getColumnName(67));
+    }
+
+    if(dirtyFlag_[68])
+    {
+        ret.push_back(getColumnName(68));
+    }
+
+    if(dirtyFlag_[69])
+    {
+        ret.push_back(getColumnName(69));
     }
 
     return ret;
@@ -7360,6 +7948,78 @@ void GlPaymentVouchers::updateArgs(drogon::orm::internal::SqlBinder &binder) con
         }
     }
 
+    if(dirtyFlag_[64])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[65])
+    {
+        if(getSourcePayload())
+        {
+            binder << getValueOfSourcePayload();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[66])
+    {
+        if(getCalculation())
+        {
+            binder << getValueOfCalculation();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[67])
+    {
+        if(getProposedJournal())
+        {
+            binder << getValueOfProposedJournal();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[68])
+    {
+        if(getPostingPeriodId())
+        {
+            binder << getValueOfPostingPeriodId();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[69])
+    {
+        if(getRequestHash())
+        {
+            binder << getValueOfRequestHash();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlPaymentVouchers::toJson() const
 {
@@ -8069,6 +8729,72 @@ Json::Value GlPaymentVouchers::toJson() const
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
+    if(getSourcePayload())
+    {
+
+        ret["source_payload"]=getValueOfSourcePayload();
+
+    }
+    else
+    {
+        ret["source_payload"]=Json::Value();
+    }
+
+    if(getCalculation())
+    {
+
+        ret["calculation"]=getValueOfCalculation();
+
+    }
+    else
+    {
+        ret["calculation"]=Json::Value();
+    }
+
+    if(getProposedJournal())
+    {
+
+        ret["proposed_journal"]=getValueOfProposedJournal();
+
+    }
+    else
+    {
+        ret["proposed_journal"]=Json::Value();
+    }
+
+    if(getPostingPeriodId())
+    {
+
+        ret["posting_period_id"]=getValueOfPostingPeriodId();
+
+    }
+    else
+    {
+        ret["posting_period_id"]=Json::Value();
+    }
+
+    if(getRequestHash())
+    {
+
+        ret["request_hash"]=getValueOfRequestHash();
+
+    }
+    else
+    {
+        ret["request_hash"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -8081,7 +8807,7 @@ Json::Value GlPaymentVouchers::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 64)
+    if(pMasqueradingVector.size() == 70)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -8980,6 +9706,90 @@ Json::Value GlPaymentVouchers::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[64].empty())
+        {
+            if(getVersion())
+            {
+
+                ret[pMasqueradingVector[64]]=getValueOfVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[64]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[65].empty())
+        {
+            if(getSourcePayload())
+            {
+
+                ret[pMasqueradingVector[65]]=getValueOfSourcePayload();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[65]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[66].empty())
+        {
+            if(getCalculation())
+            {
+
+                ret[pMasqueradingVector[66]]=getValueOfCalculation();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[66]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[67].empty())
+        {
+            if(getProposedJournal())
+            {
+
+                ret[pMasqueradingVector[67]]=getValueOfProposedJournal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[67]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[68].empty())
+        {
+            if(getPostingPeriodId())
+            {
+
+                ret[pMasqueradingVector[68]]=getValueOfPostingPeriodId();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[68]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[69].empty())
+        {
+            if(getRequestHash())
+            {
+
+                ret[pMasqueradingVector[69]]=getValueOfRequestHash();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[69]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -9688,6 +10498,72 @@ Json::Value GlPaymentVouchers::toMasqueradedJson(
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
+    if(getSourcePayload())
+    {
+
+        ret["source_payload"]=getValueOfSourcePayload();
+
+    }
+    else
+    {
+        ret["source_payload"]=Json::Value();
+    }
+
+    if(getCalculation())
+    {
+
+        ret["calculation"]=getValueOfCalculation();
+
+    }
+    else
+    {
+        ret["calculation"]=Json::Value();
+    }
+
+    if(getProposedJournal())
+    {
+
+        ret["proposed_journal"]=getValueOfProposedJournal();
+
+    }
+    else
+    {
+        ret["proposed_journal"]=Json::Value();
+    }
+
+    if(getPostingPeriodId())
+    {
+
+        ret["posting_period_id"]=getValueOfPostingPeriodId();
+
+    }
+    else
+    {
+        ret["posting_period_id"]=Json::Value();
+    }
+
+    if(getRequestHash())
+    {
+
+        ret["request_hash"]=getValueOfRequestHash();
+
+    }
+    else
+    {
+        ret["request_hash"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -10114,13 +10990,49 @@ bool GlPaymentVouchers::validateJsonForCreation(const Json::Value &pJson, std::s
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(64, "version", pJson["version"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("source_payload"))
+    {
+        if(!validJsonOfField(65, "source_payload", pJson["source_payload"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("calculation"))
+    {
+        if(!validJsonOfField(66, "calculation", pJson["calculation"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("proposed_journal"))
+    {
+        if(!validJsonOfField(67, "proposed_journal", pJson["proposed_journal"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("posting_period_id"))
+    {
+        if(!validJsonOfField(68, "posting_period_id", pJson["posting_period_id"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("request_hash"))
+    {
+        if(!validJsonOfField(69, "request_hash", pJson["request_hash"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlPaymentVouchers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 64)
+    if(pMasqueradingVector.size() != 70)
     {
         err = "Bad masquerading vector";
         return false;
@@ -10803,6 +11715,66 @@ bool GlPaymentVouchers::validateMasqueradedJsonForCreation(const Json::Value &pJ
 
       }
 
+      if(!pMasqueradingVector[64].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[64]))
+          {
+              if(!validJsonOfField(64, pMasqueradingVector[64], pJson[pMasqueradingVector[64]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[65].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[65]))
+          {
+              if(!validJsonOfField(65, pMasqueradingVector[65], pJson[pMasqueradingVector[65]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[66].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[66]))
+          {
+              if(!validJsonOfField(66, pMasqueradingVector[66], pJson[pMasqueradingVector[66]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[67].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[67]))
+          {
+              if(!validJsonOfField(67, pMasqueradingVector[67], pJson[pMasqueradingVector[67]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[68].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[68]))
+          {
+              if(!validJsonOfField(68, pMasqueradingVector[68], pJson[pMasqueradingVector[68]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[69].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[69]))
+          {
+              if(!validJsonOfField(69, pMasqueradingVector[69], pJson[pMasqueradingVector[69]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -11204,13 +12176,49 @@ bool GlPaymentVouchers::validateJsonForUpdate(const Json::Value &pJson, std::str
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(64, "version", pJson["version"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("source_payload"))
+    {
+        if(!validJsonOfField(65, "source_payload", pJson["source_payload"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("calculation"))
+    {
+        if(!validJsonOfField(66, "calculation", pJson["calculation"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("proposed_journal"))
+    {
+        if(!validJsonOfField(67, "proposed_journal", pJson["proposed_journal"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("posting_period_id"))
+    {
+        if(!validJsonOfField(68, "posting_period_id", pJson["posting_period_id"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("request_hash"))
+    {
+        if(!validJsonOfField(69, "request_hash", pJson["request_hash"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlPaymentVouchers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                          const std::vector<std::string> &pMasqueradingVector,
                                                          std::string &err)
 {
-    if(pMasqueradingVector.size() != 64)
+    if(pMasqueradingVector.size() != 70)
     {
         err = "Bad masquerading vector";
         return false;
@@ -11604,6 +12612,42 @@ bool GlPaymentVouchers::validateMasqueradedJsonForUpdate(const Json::Value &pJso
       if(!pMasqueradingVector[63].empty() && pJson.isMember(pMasqueradingVector[63]))
       {
           if(!validJsonOfField(63, pMasqueradingVector[63], pJson[pMasqueradingVector[63]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[64].empty() && pJson.isMember(pMasqueradingVector[64]))
+      {
+          if(!validJsonOfField(64, pMasqueradingVector[64], pJson[pMasqueradingVector[64]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[65].empty() && pJson.isMember(pMasqueradingVector[65]))
+      {
+          if(!validJsonOfField(65, pMasqueradingVector[65], pJson[pMasqueradingVector[65]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[66].empty() && pJson.isMember(pMasqueradingVector[66]))
+      {
+          if(!validJsonOfField(66, pMasqueradingVector[66], pJson[pMasqueradingVector[66]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[67].empty() && pJson.isMember(pMasqueradingVector[67]))
+      {
+          if(!validJsonOfField(67, pMasqueradingVector[67], pJson[pMasqueradingVector[67]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[68].empty() && pJson.isMember(pMasqueradingVector[68]))
+      {
+          if(!validJsonOfField(68, pMasqueradingVector[68], pJson[pMasqueradingVector[68]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[69].empty() && pJson.isMember(pMasqueradingVector[69]))
+      {
+          if(!validJsonOfField(69, pMasqueradingVector[69], pJson[pMasqueradingVector[69]], err, false))
               return false;
       }
 
@@ -12757,6 +13801,97 @@ bool GlPaymentVouchers::validJsonOfField(size_t index,
 
             break;
 
+        case 64:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 65:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 66:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 67:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 68:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 69:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
         default:
             err="Internal error in the server";
             return false;
@@ -13023,6 +14158,138 @@ void GlPaymentVouchers::getSupplier(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(CoreSuppliers(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccountingPeriods GlPaymentVouchers::getGlAccountingPeriods(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounting_periods where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *postingPeriodId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccountingPeriods(r[0]);
+}
+
+void GlPaymentVouchers::getGlAccountingPeriods(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlAccountingPeriods)> &rcb,
+                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounting_periods where id = $1";
+    *clientPtr << sql
+               << *postingPeriodId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccountingPeriods(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+HrEmployeeBiodata GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *tenantId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return HrEmployeeBiodata(r[0]);
+}
+
+void GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr,
+                                  const std::function<void(HrEmployeeBiodata)> &rcb,
+                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    *clientPtr << sql
+               << *tenantId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(HrEmployeeBiodata(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+HrEmployeeBiodata GlPaymentVouchers::getEmployee(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *employeeId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return HrEmployeeBiodata(r[0]);
+}
+
+void GlPaymentVouchers::getEmployee(const DbClientPtr &clientPtr,
+                                    const std::function<void(HrEmployeeBiodata)> &rcb,
+                                    const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    *clientPtr << sql
+               << *employeeId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(HrEmployeeBiodata(r[0]));
                     }
                }
                >> ecb;
