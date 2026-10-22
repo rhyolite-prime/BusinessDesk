@@ -49,7 +49,7 @@ const std::string GlImportRows::tableName = "\"gl_import_rows\"";
 
 const std::vector<typename GlImportRows::MetaData> GlImportRows::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"import_batch_id","std::string","uuid",0,0,0,1},
 {"row_number","int32_t","integer",4,0,0,1},
@@ -79,7 +79,7 @@ GlImportRows::GlImportRows(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -172,7 +172,7 @@ GlImportRows::GlImportRows(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -275,7 +275,7 @@ GlImportRows::GlImportRows(const Json::Value &pJson, const std::vector<std::stri
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -380,7 +380,7 @@ GlImportRows::GlImportRows(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -490,7 +490,7 @@ void GlImportRows::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -594,7 +594,7 @@ void GlImportRows::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -709,20 +709,25 @@ const typename GlImportRows::PrimaryKeyType & GlImportRows::getPrimaryKey() cons
     return *id_;
 }
 
-const int32_t &GlImportRows::getValueOfTenantId() const noexcept
+const std::string &GlImportRows::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlImportRows::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlImportRows::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlImportRows::setTenantId(const int32_t &pTenantId) noexcept
+void GlImportRows::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlImportRows::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1924,7 +1929,7 @@ bool GlImportRows::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2059,95 +2064,7 @@ bool GlImportRows::validJsonOfField(size_t index,
     return true;
 }
 
-GlImportBatches GlImportRows::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_import_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImportBatches(r[0]);
-}
-
-void GlImportRows::getTenant(const DbClientPtr &clientPtr,
-                             const std::function<void(GlImportBatches)> &rcb,
-                             const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_import_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImportBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImportBatches GlImportRows::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_import_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImportBatches(r[0]);
-}
-
-void GlImportRows::getAccountingUnit(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlImportBatches)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_import_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImportBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImportBatches GlImportRows::getImportBatch(const DbClientPtr &clientPtr) const {
+GlImportBatches GlImportRows::getGlImportBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_import_batches where id = $1";
     Result r(nullptr);
     {
@@ -2167,9 +2084,9 @@ GlImportBatches GlImportRows::getImportBatch(const DbClientPtr &clientPtr) const
     return GlImportBatches(r[0]);
 }
 
-void GlImportRows::getImportBatch(const DbClientPtr &clientPtr,
-                                  const std::function<void(GlImportBatches)> &rcb,
-                                  const ExceptionCallback &ecb) const
+void GlImportRows::getGlImportBatches(const DbClientPtr &clientPtr,
+                                      const std::function<void(GlImportBatches)> &rcb,
+                                      const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_import_batches where id = $1";
     *clientPtr << sql

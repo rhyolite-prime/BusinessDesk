@@ -1,0 +1,14 @@
+BEGIN;
+DELETE FROM core_tenant_reset_registry WHERE table_name IN ('core_suppliers','core_supplier_groups');
+DROP TRIGGER protect_supplier_account_configuration ON gl_accounts;
+DROP TRIGGER protect_supplier_currency ON core_currencies;
+DROP FUNCTION protect_supplier_account_configuration();
+DROP FUNCTION protect_supplier_currency();
+DROP TRIGGER check_voucher_live_supplier ON gl_payment_vouchers;
+DROP FUNCTION check_voucher_live_supplier();
+ALTER TABLE gl_payment_vouchers DROP CONSTRAINT fk_payment_voucher_supplier;
+DROP INDEX ix_supplier_voucher_live;
+DROP TABLE core_suppliers;
+DROP TABLE core_supplier_groups;
+DROP INDEX uq_supplier_gl_account_scope;
+COMMIT;

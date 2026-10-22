@@ -127,11 +127,12 @@ class GlActivityAuditEvents
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -172,11 +173,12 @@ class GlActivityAuditEvents
 
     /**  For column actor_user_id  */
     ///Get the value of the column actor_user_id, returns the default value if the column is null
-    const int64_t &getValueOfActorUserId() const noexcept;
+    const std::string &getValueOfActorUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getActorUserId() const noexcept;
+    const std::shared_ptr<std::string> &getActorUserId() const noexcept;
     ///Set the value of the column actor_user_id
-    void setActorUserId(const int64_t &pActorUserId) noexcept;
+    void setActorUserId(const std::string &pActorUserId) noexcept;
+    void setActorUserId(std::string &&pActorUserId) noexcept;
 
     /**  For column occurred_at  */
     ///Get the value of the column occurred_at, returns the default value if the column is null
@@ -226,15 +228,10 @@ class GlActivityAuditEvents
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlActivityAuditEvents>;
@@ -252,12 +249,12 @@ class GlActivityAuditEvents
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> entityType_;
     std::shared_ptr<std::string> entityId_;
     std::shared_ptr<std::string> action_;
-    std::shared_ptr<int64_t> actorUserId_;
+    std::shared_ptr<std::string> actorUserId_;
     std::shared_ptr<::trantor::Date> occurredAt_;
     std::shared_ptr<std::string> requestId_;
     std::shared_ptr<std::string> beforeData_;

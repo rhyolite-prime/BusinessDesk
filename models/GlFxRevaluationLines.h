@@ -133,11 +133,12 @@ class GlFxRevaluationLines
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -252,35 +253,15 @@ class GlFxRevaluationLines
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlFxRevaluationRuns getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlFxRevaluationRuns)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    GlFxRevaluationRuns getGlFxRevaluationRuns(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlFxRevaluationRuns(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlFxRevaluationRuns)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlFxRevaluationRuns getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlFxRevaluationRuns)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlFxRevaluationRuns getRevaluationRun(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getRevaluationRun(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlFxRevaluationRuns)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccount(const drogon::orm::DbClientPtr &clientPtr,
-                    const std::function<void(GlAccounts)> &rcb,
-                    const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlAccounts)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlFxRevaluationLines>;
@@ -298,7 +279,7 @@ class GlFxRevaluationLines
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> revaluationRunId_;
     std::shared_ptr<std::string> accountId_;

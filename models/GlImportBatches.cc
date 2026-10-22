@@ -55,7 +55,7 @@ const std::string GlImportBatches::tableName = "\"gl_import_batches\"";
 
 const std::vector<typename GlImportBatches::MetaData> GlImportBatches::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"import_type","std::string","character varying",40,0,0,1},
 {"source_file_name","std::string","character varying",255,0,0,1},
@@ -64,7 +64,7 @@ const std::vector<typename GlImportBatches::MetaData> GlImportBatches::metaData_
 {"valid_rows","int32_t","integer",4,0,0,1},
 {"error_rows","int32_t","integer",4,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,1},
+{"created_by_user_id","std::string","uuid",0,0,0,1},
 {"completed_at","::trantor::Date","timestamp with time zone",0,0,0,0}
 
 };
@@ -88,7 +88,7 @@ GlImportBatches::GlImportBatches(const Row &r, const ssize_t indexOffset) noexce
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -168,7 +168,7 @@ GlImportBatches::GlImportBatches(const Row &r, const ssize_t indexOffset) noexce
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -219,7 +219,7 @@ GlImportBatches::GlImportBatches(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -308,7 +308,7 @@ GlImportBatches::GlImportBatches(const Row &r, const ssize_t indexOffset) noexce
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -363,7 +363,7 @@ GlImportBatches::GlImportBatches(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -463,7 +463,7 @@ GlImportBatches::GlImportBatches(const Json::Value &pJson, const std::vector<std
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -514,7 +514,7 @@ GlImportBatches::GlImportBatches(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -614,7 +614,7 @@ GlImportBatches::GlImportBatches(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -670,7 +670,7 @@ void GlImportBatches::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -770,7 +770,7 @@ void GlImportBatches::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -820,7 +820,7 @@ void GlImportBatches::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -920,7 +920,7 @@ void GlImportBatches::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -981,20 +981,25 @@ const typename GlImportBatches::PrimaryKeyType & GlImportBatches::getPrimaryKey(
     return *id_;
 }
 
-const int32_t &GlImportBatches::getValueOfTenantId() const noexcept
+const std::string &GlImportBatches::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlImportBatches::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlImportBatches::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlImportBatches::setTenantId(const int32_t &pTenantId) noexcept
+void GlImportBatches::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlImportBatches::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1154,20 +1159,25 @@ void GlImportBatches::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[9] = true;
 }
 
-const int64_t &GlImportBatches::getValueOfCreatedByUserId() const noexcept
+const std::string &GlImportBatches::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImportBatches::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImportBatches::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlImportBatches::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlImportBatches::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[10] = true;
+}
+void GlImportBatches::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[10] = true;
 }
 
@@ -1699,7 +1709,7 @@ Json::Value GlImportBatches::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1878,7 +1888,7 @@ Json::Value GlImportBatches::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[10]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[10]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2018,7 +2028,7 @@ Json::Value GlImportBatches::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2529,7 +2539,7 @@ bool GlImportBatches::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2697,7 +2707,7 @@ bool GlImportBatches::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2727,51 +2737,7 @@ bool GlImportBatches::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlImportBatches::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlImportBatches::getTenant(const DbClientPtr &clientPtr,
-                                const std::function<void(CoreAccountingUnits)> &rcb,
-                                const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlImportBatches::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlImportBatches::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -2791,9 +2757,9 @@ CoreAccountingUnits GlImportBatches::getAccountingUnit(const DbClientPtr &client
     return CoreAccountingUnits(r[0]);
 }
 
-void GlImportBatches::getAccountingUnit(const DbClientPtr &clientPtr,
-                                        const std::function<void(CoreAccountingUnits)> &rcb,
-                                        const ExceptionCallback &ecb) const
+void GlImportBatches::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                             const std::function<void(CoreAccountingUnits)> &rcb,
+                                             const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

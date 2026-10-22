@@ -53,16 +53,16 @@ const std::string GlImprestCategories::tableName = "\"gl_imprest_categories\"";
 
 const std::vector<typename GlImprestCategories::MetaData> GlImprestCategories::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"name","std::string","character varying",160,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlImprestCategories::getColumnName(size_t index) noexcept(false)
@@ -85,7 +85,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -130,7 +130,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -161,7 +161,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -199,7 +199,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -226,7 +226,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -275,7 +275,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -308,7 +308,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -349,7 +349,7 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -379,7 +379,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::ve
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -434,7 +434,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::ve
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
         }
     }
 
@@ -471,7 +471,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::ve
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[7]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
         }
     }
 
@@ -517,7 +517,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::ve
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -540,7 +540,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -595,7 +595,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[5]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -632,7 +632,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[7]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -678,7 +678,7 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[10]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -706,7 +706,7 @@ void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -761,7 +761,7 @@ void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[5] = true;
         if(!pJson[pMasqueradingVector[5]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[5]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[5]].asString());
         }
     }
 
@@ -798,7 +798,7 @@ void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[7]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
         }
     }
 
@@ -844,7 +844,7 @@ void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -866,7 +866,7 @@ void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -921,7 +921,7 @@ void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[5] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -958,7 +958,7 @@ void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[7] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1004,7 +1004,7 @@ void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1037,20 +1037,25 @@ const typename GlImprestCategories::PrimaryKeyType & GlImprestCategories::getPri
     return *id_;
 }
 
-const int32_t &GlImprestCategories::getValueOfTenantId() const noexcept
+const std::string &GlImprestCategories::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlImprestCategories::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlImprestCategories::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlImprestCategories::setTenantId(const int32_t &pTenantId) noexcept
+void GlImprestCategories::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlImprestCategories::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1115,20 +1120,25 @@ void GlImprestCategories::setCreatedAt(const ::trantor::Date &pCreatedAt) noexce
     dirtyFlag_[4] = true;
 }
 
-const int64_t &GlImprestCategories::getValueOfCreatedByUserId() const noexcept
+const std::string &GlImprestCategories::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestCategories::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestCategories::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlImprestCategories::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlImprestCategories::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[5] = true;
+}
+void GlImprestCategories::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[5] = true;
 }
 void GlImprestCategories::setCreatedByUserIdToNull() noexcept
@@ -1159,20 +1169,25 @@ void GlImprestCategories::setLastModifiedAtToNull() noexcept
     dirtyFlag_[6] = true;
 }
 
-const int64_t &GlImprestCategories::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlImprestCategories::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestCategories::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestCategories::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlImprestCategories::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlImprestCategories::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[7] = true;
+}
+void GlImprestCategories::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[7] = true;
 }
 void GlImprestCategories::setLastModifiedByUserIdToNull() noexcept
@@ -1220,20 +1235,25 @@ void GlImprestCategories::setDeletedAtToNull() noexcept
     dirtyFlag_[9] = true;
 }
 
-const int64_t &GlImprestCategories::getValueOfDeletedByUserId() const noexcept
+const std::string &GlImprestCategories::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestCategories::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestCategories::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlImprestCategories::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlImprestCategories::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[10] = true;
+}
+void GlImprestCategories::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[10] = true;
 }
 void GlImprestCategories::setDeletedByUserIdToNull() noexcept
@@ -1663,7 +1683,7 @@ Json::Value GlImprestCategories::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1685,7 +1705,7 @@ Json::Value GlImprestCategories::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -1718,7 +1738,7 @@ Json::Value GlImprestCategories::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -1816,7 +1836,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[5]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[5]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1844,7 +1864,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[7]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[7]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -1886,7 +1906,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[10]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[10]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -1957,7 +1977,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1979,7 +1999,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2012,7 +2032,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2460,7 +2480,7 @@ bool GlImprestCategories::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2531,7 +2551,7 @@ bool GlImprestCategories::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2561,7 +2581,7 @@ bool GlImprestCategories::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2607,7 +2627,7 @@ bool GlImprestCategories::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2622,51 +2642,7 @@ bool GlImprestCategories::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlImprestCategories::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlImprestCategories::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(CoreAccountingUnits)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlImprestCategories::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlImprestCategories::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -2686,9 +2662,9 @@ CoreAccountingUnits GlImprestCategories::getAccountingUnit(const DbClientPtr &cl
     return CoreAccountingUnits(r[0]);
 }
 
-void GlImprestCategories::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(CoreAccountingUnits)> &rcb,
-                                            const ExceptionCallback &ecb) const
+void GlImprestCategories::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                 const std::function<void(CoreAccountingUnits)> &rcb,
+                                                 const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

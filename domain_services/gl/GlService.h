@@ -5,36 +5,44 @@
 #ifndef BUSINESSDESKAPI_GLSERVICE_H
 #define BUSINESSDESKAPI_GLSERVICE_H
 #include <drogon/drogon.h>
+#include <drogon/orm/CoroMapper.h>
 #include "dto/BaseApiResponse.h"
 #include "dto/BaseGlDto.h"
+#include "utils/AuditUtil.h"
 
-namespace business_desk::services {
+namespace business_desk::domain_services {
 
     class GlService {
-
+    public:
         //account head
         drogon::Task<dto::BaseApiResponse> getAllAccountHeads(int pageNo, int pageSize, const std::string &query);
-        drogon::Task<dto::BaseApiResponse> createAccountHead(const dto::AccountHeadDto &dto);
-        drogon::Task<dto::BaseApiResponse> updateAccountHead(const dto::AccountHeadDto &dto, const std::string &id);
-        drogon::Task<dto::BaseApiResponse> deleteAccountHead(const std::string &id);
+        drogon::Task<dto::BaseApiResponse> createAccountHead(const dto::AccountHeadDto &dto, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> updateAccountHead(const dto::AccountHeadDto &dto, const std::string &id, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> deleteAccountHead(const std::string &id, const utils::AuditIdentity &identity);
 
         //bank account
         drogon::Task<dto::BaseApiResponse> getAllBankAccounts(int pageNo, int pageSize, const std::string &query);
-        drogon::Task<dto::BaseApiResponse> createBankAccount(const dto::BankAccountDto &dto);
-        drogon::Task<dto::BaseApiResponse> updateBankAccount(const dto::BankAccountDto &dto, const std::string &id);
-        drogon::Task<dto::BaseApiResponse> deleteBankAccount(const std::string &id);
+        drogon::Task<dto::BaseApiResponse> createBankAccount(const dto::BankAccountDto &dto, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> updateBankAccount(const dto::BankAccountDto &dto, const std::string &id, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> deleteBankAccount(const std::string &id, const utils::AuditIdentity &identity);
 
         // chart of account control
         drogon::Task<dto::BaseApiResponse> getAllCoaControls(int pageNo, int pageSize, const std::string &query);
-        drogon::Task<dto::BaseApiResponse> createCoaControl(const dto::ChartOfAccountControlDto &dto);
-        drogon::Task<dto::BaseApiResponse> updateCoaControl(const dto::ChartOfAccountControlDto &dto, const std::string &id);
-        drogon::Task<dto::BaseApiResponse> deleteCoaControl(const std::string &id);
+        drogon::Task<dto::BaseApiResponse> createCoaControl(const dto::ChartOfAccountControlDto &dto, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> updateCoaControl(const dto::ChartOfAccountControlDto &dto, const std::string &id, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> deleteCoaControl(const std::string &id, const utils::AuditIdentity &identity);
 
         //chart of account detail
         drogon::Task<dto::BaseApiResponse> getAllCoaDetails(int pageNo, int pageSize, const std::string &query);
-        drogon::Task<dto::BaseApiResponse> createCoaDetail(const dto::ChartOfAccountDetailDto &dto);
-        drogon::Task<dto::BaseApiResponse> updateCoaDetail(const dto::ChartOfAccountDetailDto &dto, const std::string &id);
-        drogon::Task<dto::BaseApiResponse> deleteCoaDetail(const std::string &id);
+        drogon::Task<dto::BaseApiResponse> createCoaDetail(const dto::ChartOfAccountDetailDto &dto, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> updateCoaDetail(const dto::ChartOfAccountDetailDto &dto, const std::string &id, const utils::AuditIdentity &identity);
+        drogon::Task<dto::BaseApiResponse> deleteCoaDetail(const std::string &id, const utils::AuditIdentity &identity);
+
+        //accounting unit
+        drogon::Task<dto::BaseApiResponse> getAllAccountingUnits(int pageNo, int pageSize, const std::string &query, const utils::AuditIdentity &identity = {}, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> createAccountingUnit(const dto::AccountingUnitDto &dto, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> updateAccountingUnit(const dto::AccountingUnitDto &dto, const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
+        drogon::Task<dto::BaseApiResponse> deleteAccountingUnit(const std::string &id, const utils::AuditIdentity &identity, drogon::orm::DbClientPtr dbClient = nullptr);
 
     };
 

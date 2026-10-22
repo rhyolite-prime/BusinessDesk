@@ -1,6 +1,11 @@
-export type LedgerVoucherType = 'supplier-payment' | 'employee-payment' | 'customer-receipt'
-export type LedgerVoucherStatus = 'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Reversed' | 'Voided'
-export type LedgerPaymentMethod = 'Cash' | 'Cheque' | 'Bank transfer' | 'Mobile money'
+import type { VoucherTaxes, VoucherTaxSummary } from './voucher-tax'
+import type { Journal } from './journal-types'
+export type LedgerVoucherType =
+  'supplier-payment' | 'employee-payment' | 'customer-receipt'
+export type LedgerVoucherStatus =
+  'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Reversed' | 'Voided'
+export type LedgerPaymentMethod =
+  'Cash' | 'Cheque' | 'Bank transfer' | 'Mobile money'
 
 export interface VoucherPayee {
   id: string
@@ -35,6 +40,24 @@ export interface LedgerVoucherRetention {
 }
 
 export interface LedgerVoucher {
+  version?: number
+  requestId?: string
+  periodId?: string | null
+  taxes?: VoucherTaxes
+  baseCurrencyCode?: string
+  taxSummary?: VoucherTaxSummary
+  proposedJournal?: Pick<
+    Journal,
+    | 'accountingUnitId'
+    | 'batchDate'
+    | 'description'
+    | 'periodId'
+    | 'isMultiCurrency'
+    | 'lines'
+  >
+  journalId?: string | null
+
+  accountingUnitId?: string
   id: string
   voucherNumber: string
   batchNumber: string
@@ -85,6 +108,12 @@ export interface LedgerVoucherRetentionInput {
 }
 
 export interface CreateLedgerVoucherInput {
+  version?: number
+  requestId?: string
+  periodId?: string | null
+  taxes?: VoucherTaxes
+
+  accountingUnitId?: string
   type: LedgerVoucherType
   payeeId: string
   entryDate: string
@@ -126,7 +155,8 @@ export const voucherTypeMetadata: VoucherTypeMetadata[] = [
     label: 'Supplier payment voucher',
     shortLabel: 'Supplier payment',
     payeeLabel: 'Supplier / payee',
-    description: 'Record a payment to a supplier and allocate it across ledger accounts.',
+    description:
+      'Record a payment to a supplier and allocate it across ledger accounts.',
     prefix: 'SPV',
     accountDirection: 'debit',
     dateLabel: 'Payment date',
@@ -136,7 +166,8 @@ export const voucherTypeMetadata: VoucherTypeMetadata[] = [
     label: 'Employee payment voucher',
     shortLabel: 'Employee payment',
     payeeLabel: 'Employee / payee',
-    description: 'Record staff reimbursements, advances, and other employee payments.',
+    description:
+      'Record staff reimbursements, advances, and other employee payments.',
     prefix: 'EPV',
     accountDirection: 'debit',
     dateLabel: 'Payment date',
@@ -146,7 +177,8 @@ export const voucherTypeMetadata: VoucherTypeMetadata[] = [
     label: 'Customer receipt voucher',
     shortLabel: 'Customer receipt',
     payeeLabel: 'Customer',
-    description: 'Record cash or bank receipts from customers against ledger accounts.',
+    description:
+      'Record cash or bank receipts from customers against ledger accounts.',
     prefix: 'CRV',
     accountDirection: 'credit',
     dateLabel: 'Receipt date',
@@ -155,10 +187,26 @@ export const voucherTypeMetadata: VoucherTypeMetadata[] = [
 
 export const voucherPayees: Record<LedgerVoucherType, VoucherPayee[]> = {
   'supplier-payment': [
-    { id: 'supplier-adom-trading', name: 'Adom Trading Company', code: 'SUP-0001' },
-    { id: 'supplier-bluewave', name: 'Bluewave Office Supplies', code: 'SUP-0002' },
-    { id: 'supplier-golden-coast', name: 'Golden Coast Logistics', code: 'SUP-0003' },
-    { id: 'supplier-kasoa-tech', name: 'Kasoa Technologies Ltd.', code: 'SUP-0004' },
+    {
+      id: 'supplier-adom-trading',
+      name: 'Adom Trading Company',
+      code: 'SUP-0001',
+    },
+    {
+      id: 'supplier-bluewave',
+      name: 'Bluewave Office Supplies',
+      code: 'SUP-0002',
+    },
+    {
+      id: 'supplier-golden-coast',
+      name: 'Golden Coast Logistics',
+      code: 'SUP-0003',
+    },
+    {
+      id: 'supplier-kasoa-tech',
+      name: 'Kasoa Technologies Ltd.',
+      code: 'SUP-0004',
+    },
   ],
   'employee-payment': [
     { id: 'employee-akua-mensah', name: 'Akua Mensah', code: 'EMP-0012' },
@@ -167,22 +215,55 @@ export const voucherPayees: Record<LedgerVoucherType, VoucherPayee[]> = {
     { id: 'employee-kofi-agyeman', name: 'Kofi Agyeman', code: 'EMP-0031' },
   ],
   'customer-receipt': [
-    { id: 'customer-akua-consulting', name: 'Akua Consulting Co.', code: 'CUS-0007' },
-    { id: 'customer-northstar', name: 'Northstar Services Ltd.', code: 'CUS-0011' },
-    { id: 'customer-heritage', name: 'Heritage Property Group', code: 'CUS-0018' },
-    { id: 'customer-kofi-enterprises', name: 'Kofi Enterprises', code: 'CUS-0023' },
+    {
+      id: 'customer-akua-consulting',
+      name: 'Akua Consulting Co.',
+      code: 'CUS-0007',
+    },
+    {
+      id: 'customer-northstar',
+      name: 'Northstar Services Ltd.',
+      code: 'CUS-0011',
+    },
+    {
+      id: 'customer-heritage',
+      name: 'Heritage Property Group',
+      code: 'CUS-0018',
+    },
+    {
+      id: 'customer-kofi-enterprises',
+      name: 'Kofi Enterprises',
+      code: 'CUS-0023',
+    },
   ],
 }
 
-export const voucherPaymentMethods: LedgerPaymentMethod[] = ['Cash', 'Cheque', 'Bank transfer', 'Mobile money']
-export const voucherStatuses: LedgerVoucherStatus[] = ['Draft', 'Pending approval', 'Approved', 'Posted', 'Reversed', 'Voided']
+export const voucherPaymentMethods: LedgerPaymentMethod[] = [
+  'Cash',
+  'Cheque',
+  'Bank transfer',
+  'Mobile money',
+]
+export const voucherStatuses: LedgerVoucherStatus[] = [
+  'Draft',
+  'Pending approval',
+  'Approved',
+  'Posted',
+  'Reversed',
+  'Voided',
+]
 
-export function isLedgerVoucherType(value: unknown): value is LedgerVoucherType {
+export function isLedgerVoucherType(
+  value: unknown,
+): value is LedgerVoucherType {
   return voucherTypeMetadata.some((type) => type.value === value)
 }
 
 export function voucherTypeInfo(type: LedgerVoucherType): VoucherTypeMetadata {
-  return voucherTypeMetadata.find((item) => item.value === type) ?? voucherTypeMetadata[0]!
+  return (
+    voucherTypeMetadata.find((item) => item.value === type) ??
+    voucherTypeMetadata[0]!
+  )
 }
 
 export function payeesForVoucherType(type: LedgerVoucherType): VoucherPayee[] {

@@ -16,7 +16,7 @@ With `LEDGER_API_BASE_URL` unset, the Nuxt server uses in-memory demo data. Thos
 ## PostgreSQL and Drogon API
 
 1. Install PostgreSQL 15+ and Drogon development packages, including the `drogon_ctl` CLI.
-2. Create a local database and app role, apply `database/migrations/001_create_ledger_schema.sql`, and use the rollback script only against a disposable development database.
+2. Create a local database and app role and apply `database/migrations/001_create_ledger_schema.sql`. Apply subsequent feature migrations in order as documented for each feature; rebuilding the app does not migrate an existing database. Budget CRUD requires `011_budgets.sql` after its prerequisites (see `docs/budgets.md`). Use rollback scripts only against a disposable development database.
 3. Copy `config.local.example.json` to the ignored `config.local.json`; replace the sample database credentials. `main.cc` loads a path from its first argument, then `BUSINESSDESK_CONFIG`, then `config.local.json`.
 4. Configure `models/model.json` with the local database connection and run `drogon_ctl create model models` after the schema has been applied. Keep Drogon's generated CRUD controllers disabled; GL routes belong in the single `LedgerController`.
 5. Build and test:
@@ -37,3 +37,20 @@ g++ -std=c++17 -Wall -Wextra -Wpedantic -Werror -I. \
 ```
 
 Never put real credentials in `config.local.example.json`, source control, or the Nuxt public runtime config.
+
+### Tenant preferences and training-data initialization
+
+Migration `015_tenant_preferences.sql` enables `/preferences` and administrator-only
+initialization of reviewed tenant business tables. See [Preferences and reset
+safeguards](preferences.md) before deployment or testing. Backups and a maintenance
+window are required operational precautions: confirmed resets permanently remove
+posted and archived test data while preserving company profile, access/security,
+preferences and reset audit. Never test initialization against a production DB.
+
+### Supplier shared configuration
+
+Migration `016_suppliers.sql` adds tenant-owned supplier groups and supplier
+masters, live-only audited CRUD, posting-account/currency lookups, voucher
+reference safeguards and Preferences reset registration. See
+[Supplier groups and suppliers](suppliers.md) for deployment order, decimal-string
+contracts, balance protection, API routes and disposable integration tests.

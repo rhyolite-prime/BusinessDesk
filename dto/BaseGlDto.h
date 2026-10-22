@@ -7,7 +7,65 @@
 
 #include <json/json.h>
 
+#include <algorithm>
+#include <cctype>
+#include <exception>
+#include <string>
+
+#include "constants/BusinessDeskConsts.h"
+
 namespace business_desk::dto {
+
+    // Normalizes a free-form token for case/space-insensitive comparison.
+    inline std::string normalizeToken(const std::string &value) {
+        std::string normalized;
+        normalized.reserve(value.size());
+        for (char c : value) {
+            if (!std::isspace(static_cast<unsigned char>(c))) {
+                normalized.push_back(static_cast<char>(std::tolower(static_cast<unsigned char>(c))));
+            }
+        }
+        return normalized;
+    }
+
+    // Maps a standard account type name ("Asset", "Assets", ...) or numeric
+    // code ("0".."4") onto the corresponding AccountType code. Returns
+    // AccountType::Unknown (-1) when the value cannot be resolved.
+    inline int32_t parseStandardAccountType(const Json::Value &value) {
+        if (value.isInt()) {
+            return value.asInt();
+        }
+        if (value.isUInt()) {
+            return static_cast<int32_t>(value.asUInt());
+        }
+        if (value.isString()) {
+            std::string normalized = normalizeToken(value.asString());
+            if (normalized.size() > 1 && normalized.back() == 's') {
+                normalized.pop_back();
+            }
+            if (normalized == "asset") {
+                return static_cast<int32_t>(constants::AccountType::Asset);
+            }
+            if (normalized == "liability") {
+                return static_cast<int32_t>(constants::AccountType::Liability);
+            }
+            if (normalized == "equity") {
+                return static_cast<int32_t>(constants::AccountType::Equity);
+            }
+            if (normalized == "revenue") {
+                return static_cast<int32_t>(constants::AccountType::Revenue);
+            }
+            if (normalized == "expense") {
+                return static_cast<int32_t>(constants::AccountType::Expense);
+            }
+            try {
+                return std::stoi(normalized);
+            } catch (const std::exception &) {
+                return static_cast<int32_t>(constants::AccountType::Unknown);
+            }
+        }
+        return static_cast<int32_t>(constants::AccountType::Unknown);
+    }
 
     class AccountHeadDto {
     public:
@@ -31,8 +89,8 @@ namespace business_desk::dto {
     private:
         std::string accountHeadName_;
         std::string parentHeadId_;
-        int32_t accountType_ {0};
-        bool isActive_ {false};
+        int32_t accountType_ {static_cast<int32_t>(constants::AccountType::Asset)};
+        bool isActive_ {true};
 
     };
 
@@ -46,8 +104,8 @@ namespace business_desk::dto {
             parentHeadId_ = json["parentHeadId"].asString();
         }
 
-        if (json.isMember("accountType") && json["accountType"].isString()) {
-            accountType_ = json["accountType"].asInt();
+        if (json.isMember("accountType")) {
+            accountType_ = parseStandardAccountType(json["accountType"]);
         }
 
 
@@ -283,7 +341,7 @@ namespace business_desk::dto {
     private:
         std::string account_name_;
         int account_no_ = 0;
-        int status_ = 0;                       // enum AccountStatus mapped to int
+        int status_ = static_cast<int>(constants::AccountStatus::Active);  // enum AccountStatus mapped to int
         std::string account_control_id_;       // Guid -> std::string
         std::string account_control_name_;
         std::string currency_id_;              // Guid -> std::string
@@ -308,7 +366,18 @@ namespace business_desk::dto {
             if (json["status"].isInt()) {
                 status_ = json["status"].asInt();
             } else if (json["status"].isString()) {
-                status_ = std::stoi(json["status"].asString());
+                const std::string normalizedStatus = normalizeToken(json["status"].asString());
+                if (normalizedStatus == "active") {
+                    status_ = static_cast<int>(constants::AccountStatus::Active);
+                } else if (normalizedStatus == "inactive") {
+                    status_ = static_cast<int>(constants::AccountStatus::Inactive);
+                } else {
+                    try {
+                        status_ = std::stoi(normalizedStatus);
+                    } catch (const std::exception &) {
+                        status_ = static_cast<int>(constants::AccountStatus::Unknown);
+                    }
+                }
             }
         }
 
@@ -354,6 +423,77 @@ namespace business_desk::dto {
         }
 
 
+    }
+
+    class AccountingUnitDto {
+    public:
+
+        AccountingUnitDto() = default;
+
+        void fromJson(const Json::Value& json);
+
+        // Getters
+        [[nodiscard]] const std::string& getCode() const { return code_; }
+        [[nodiscard]] const std::string& getName() const { return name_; }
+        [[nodiscard]] const std::string& getBaseCurrencyId() const { return base_currency_id_; }
+        [[nodiscard]] const std::string& getTimeZone() const { return time_zone_; }
+        [[nodiscard]] int getFiscalYearStartMonth() const { return fiscal_year_start_month_; }
+        [[nodiscard]] bool getIsActive() const { return is_active_; }
+
+        // Setters
+        void setCode(const std::string& value) { code_ = value; }
+        void setName(const std::string& value) { name_ = value; }
+        void setBaseCurrencyId(const std::string& value) { base_currency_id_ = value; }
+        void setTimeZone(const std::string& value) { time_zone_ = value; }
+        void setFiscalYearStartMonth(const int value) { fiscal_year_start_month_ = value; }
+        void setIsActive(const bool value) { is_active_ = value; }
+
+    private:
+        std::string code_;
+        std::string name_;
+        std::string base_currency_id_;
+        std::string time_zone_ {"UTC"};
+        int fiscal_year_start_month_ {1};
+        bool is_active_ {true};
+    };
+
+    inline void AccountingUnitDto::fromJson(const Json::Value& json) {
+        if (json.isMember("code") && json["code"].isString()) {
+            code_ = json["code"].asString();
+        }
+        if (json.isMember("name") && json["name"].isString()) {
+            name_ = json["name"].asString();
+        }
+        if (json.isMember("baseCurrencyId") && json["baseCurrencyId"].isString()) {
+            base_currency_id_ = json["baseCurrencyId"].asString();
+        }
+        if (json.isMember("timeZone") && json["timeZone"].isString()) {
+            time_zone_ = json["timeZone"].asString();
+        }
+        if (json.isMember("fiscalYearStartMonth")) {
+            if (json["fiscalYearStartMonth"].isInt()) {
+                fiscal_year_start_month_ = json["fiscalYearStartMonth"].asInt();
+            } else if (json["fiscalYearStartMonth"].isString()) {
+                try {
+                    fiscal_year_start_month_ = std::stoi(json["fiscalYearStartMonth"].asString());
+                } catch (...) {
+                }
+            }
+        }
+        if (json.isMember("isActive")) {
+            if (json["isActive"].isBool()) {
+                is_active_ = json["isActive"].asBool();
+            } else if (json["isActive"].isString()) {
+                const auto s = json["isActive"].asString();
+                if (s == "true" || s == "1") {
+                    is_active_ = true;
+                } else if (s == "false" || s == "0") {
+                    is_active_ = false;
+                }
+            } else if (json["isActive"].isInt()) {
+                is_active_ = json["isActive"].asInt() != 0;
+            }
+        }
     }
 
 }
