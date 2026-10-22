@@ -1,8 +1,8 @@
+#include "utils/TenantAuthLookup.h"
 #include "PermissionService.h"
 #include "Users.h"
 #include "Roles.h"
 #include "UserGroups.h"
-#include "Tenants.h"
 #include "constants/TenantConstants.h"
 #include <drogon/orm/CoroMapper.h>
 #include <stdexcept>
@@ -13,7 +13,6 @@ using namespace drogon::orm;
 using drogon_model::BusinessDesk::Users;
 using drogon_model::BusinessDesk::UserGroups;
 using drogon_model::BusinessDesk::Roles;
-using drogon_model::BusinessDesk::Tenants;
 
 Criteria liveUser(const std::string &userId) {
     return Criteria(Users::Cols::_id, CompareOperator::EQ, userId) &&
@@ -85,14 +84,11 @@ drogon::Task<RequestAuthorization> authorizeUser(const Users &user, bool enforce
     const auto tenantId = user.getValueOfTenantId();
     if (!tenantId.empty()) {
         try {
-            CoroMapper<Tenants> tenants(drogon::app().getDbClient());
-            auto tenant = co_await tenants.findOne(
-                Criteria(Tenants::Cols::_id, CompareOperator::EQ, tenantId) &&
-                Criteria(Tenants::Cols::_is_active, CompareOperator::EQ, true) &&
-                Criteria(Tenants::Cols::_is_deleted, CompareOperator::EQ, false));
-            if (enforceMfa && tenant.getValueOfRequireTwoFactorAuth() && !secondFactorVerified) co_return result;
-            result.accountId = tenant.getValueOfTenancyName();
-            result.tenantName = tenant.getValueOfName().empty() ? tenant.getValueOfTenancyName() : tenant.getValueOfName();
+            const auto tenant = co_await utils::tenant_auth::findActive(drogon::app().getDbClient(), tenantId);
+            if (!tenant) co_return result;
+            if (enforceMfa && tenant->requireTwoFactorAuth && !secondFactorVerified) co_return result;
+            result.accountId = tenant->accountId;
+            result.tenantName = tenant->name;
         } catch (const UnexpectedRows &) { co_return result; }
     }
     result.permissions = co_await permissionsFor(user);

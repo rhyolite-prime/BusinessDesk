@@ -142,3 +142,37 @@ by this change, and deleted rows are never restored implicitly.
 ```bash
 openssl rand -hex 32
 ```
+
+### Tenant-login 503 after regenerating models
+
+The generated `Tenants` model now includes the billing/account-management
+`account_version` column (migration 018). Loading the entire generated tenant
+model during sign-in or permission resolution couples authentication to that
+unrelated schema change. Authentication now uses `utils/TenantAuthLookup.h` to
+select only `id`, `tenancy_name`, `name`, and `require_two_factor_auth`, while
+requiring `is_active=true` and `is_deleted=false`. The same projection is used
+for password login, post-TOTP token issuance, permission resolution, and the
+protected host tenant. Generated models are preserved, not downgraded.
+
+Rebuild/restart the C++ API after updating. Apply `018_tenant_accounts.sql` to
+its configured database for account-management features; this compatibility
+fix does not migrate a database automatically. For a required-MFA tenant,
+`004_tenant_totp.sql` and a valid, stable `custom_config.TOTP_KEY` are still
+required. Do not disable MFA or regenerate an existing encryption key to work
+around a login failure. Direct login still needs valid `JwtBearer` settings.
+
+An HTTP access-log 503 alone does not identify the failed operation. Backend
+error logs now include a safe stage (`tenant_lookup`, `user_lookup`,
+`password_verification`, `two_factor_challenge`, or `token_and_permissions`)
+and whether the failure was database or configuration/processing related.
+No submitted password, JWT, TOTP secret/key, SQL parameters, connection string
+or raw database exception is written by these diagnostics. Invalid credentials
+remain 401; genuine dependency/configuration failures still fail closed.
+
+Regression tests: `test/auth/run_login_pg.sh` exercises the C++ login and token
+permission path against a real PostgreSQL tenant table without billing columns,
+with the generated-model test path deliberately unavailable. Set
+`LOGIN_TEST_DATABASE_URL` to a disposable database, `JSONCPP_SOURCE_DIR` and
+`OPENSSL_SOURCE_DIR` to the test dependencies, and `LIBPQ_LIB_DIR` to libpq.
+It uses the established synchronous coroutine transport seam, not a deployed
+HTTP backend. The existing user/auth suite also covers MFA and live role checks.

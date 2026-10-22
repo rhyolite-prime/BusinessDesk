@@ -84,11 +84,13 @@ struct TestField {
 struct TestRow { Json::Value value; TestField operator[](const std::string &key) const {return {value[key]};} };
 using TestResult = std::vector<TestRow>;
 struct TestTransaction;
+TestResult tenantAuthRows(const std::vector<Json::Value>& params,bool byAccount);
 struct TestDb {
  Task<std::shared_ptr<TestTransaction>> newTransactionCoro();
  std::function<TestResult(const std::string &,const std::vector<Json::Value> &)> execute;
  template<class... Args> Task<TestResult> execSqlCoro(const std::string &sql,const Args &...args) {
   const std::vector<Json::Value> params{Json::Value(args)...};
+  if(sql.find("/* tenant_auth_lookup */")!=std::string::npos) co_return tenantAuthRows(params,sql.find("tenancy_name=$1")!=std::string::npos);
   if(execute) co_return execute(sql,params);
   co_return TestResult{};
  }
@@ -192,6 +194,18 @@ for model in ['CoreCurrencyRates','GlCashReceipts','GlFxRevaluationRuns','GlImpr
             text+=f'std::shared_ptr<std::string> get{name}() const {{ if (data["{column(name)}"].isNull()) return {{}}; return std::make_shared<std::string>(getValueOf{name}()); }}\n'
     text += '};\n}\n'
     write(model+'.h', text)
+# Authentication reads only stable security fields, not the generated billing model.
+p = out / 'Tenants.h'
+p.write_text(p.read_text()+'''
+namespace drogon {
+inline TestResult tenantAuthRows(const std::vector<Json::Value>& params,bool byAccount) {
+ using M=drogon_model::BusinessDesk::Tenants;using Mapper=orm::CoroMapper<M>;
+ if(Mapper::queriesBeforeFailure==0 || Mapper::failQueries)throw orm::DrogonDbException("private-db-detail");
+ if(Mapper::queriesBeforeFailure>0)--Mapper::queriesBeforeFailure;
+ TestResult rows;for(const auto& m:Mapper::rows){auto v=m.toJson();if(v["is_deleted"]==false && v["is_active"]==true && v[byAccount?"tenancy_name":"id"]==params.at(0))rows.push_back({v});}return rows;
+}
+}
+''')
 # HTTP seam so the production filters can be exercised, not reimplemented.
 p = out / 'drogon/HttpRequest.h'
 s = p.read_text().replace('struct HttpRequest {', 'enum HttpMethod { Get, Post, Put, Delete, Options };\nstruct HttpRequest {')

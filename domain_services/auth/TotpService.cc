@@ -12,7 +12,13 @@ drogon::Task<bool> allow(std::string userId, std::string purpose) {
 }
 drogon::Task<dto::BaseApiResponse> TotpService::begin(std::string userId, std::string tenantId, std::string accountLabel, std::string passwordHash) {
     namespace crypto = utils::totp;
-    crypto::encryptionKey(); // Missing key must never silently disable 2FA.
+    // Missing/invalid configuration must never silently disable required MFA.
+    try {
+        crypto::encryptionKey();
+    } catch (const std::exception &) {
+        LOG_ERROR << "Two-factor authentication unavailable: custom_config.TOTP_KEY must be a stable 64-character hexadecimal key. Do not rotate an existing enrollment key.";
+        throw;
+    }
     dto::BaseApiResponse result;
     if (!(co_await allow(userId,"begin"))) {
         result.error["code"] = constants::ERR_AUTH_INVALID_CREDENTIALS;

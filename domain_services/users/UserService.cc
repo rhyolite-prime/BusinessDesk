@@ -1,3 +1,4 @@
+#include "utils/TenantAuthLookup.h"
 //
 // Created by Emmanuel Addo-Odame on 17/10/2026.
 //
@@ -79,8 +80,10 @@ drogon::Task<dto::BaseApiResponse> issueToken(Users user, bool host,
     const auto key = config["JwtSecurityKey"].asString();
     const auto issuer = config["JwtIssuer"].asString();
     const int lifetime = config.get("JwtExpirationTime", 3600).asInt();
-    if (key.empty() || issuer.empty() || lifetime <= 0)
+    if (key.empty() || issuer.empty() || lifetime <= 0) {
+        LOG_ERROR << "Authentication unavailable: configure custom_config.JwtBearer.JwtSecurityKey, JwtIssuer and a positive JwtExpirationTime.";
         co_return failure(constants::ERR_INTERNAL, "JWT configuration is invalid.");
+    }
     auto permissions = co_await PermissionService::getUserPermissions(user.getValueOfId());
     Json::Value array(Json::arrayValue);
     for (const auto &permission : permissions) array.append(permission);
@@ -633,12 +636,9 @@ drogon::Task<dto::BaseApiResponse> UserService::verifyTenantSecondFactor(std::st
             Criteria(Users::Cols::_is_active, CompareOperator::EQ, true) &&
             Criteria(Users::Cols::_is_locked_out, CompareOperator::EQ, false) &&
             Criteria(Users::Cols::_is_host_admin_user, CompareOperator::EQ, false));
-        using Tenant = drogon_model::BusinessDesk::Tenants;
-        CoroMapper<Tenant> tenants(drogon::app().getDbClient());
-        auto tenant = co_await tenants.findOne(Criteria(Tenant::Cols::_id, CompareOperator::EQ, verified.tenantId) &&
-            Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false) &&
-            Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true));
-        auto result = co_await issueToken(user, false, tenant.getValueOfName(), true);
+        const auto tenant = co_await utils::tenant_auth::findActive(drogon::app().getDbClient(), verified.tenantId);
+        if (!tenant) co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Account is no longer available.");
+        auto result = co_await issueToken(user, false, tenant->name, true);
         result.result["requiresTwoFactorAuth"] = true;
         co_return result;
     } catch (const UnexpectedRows &) {
@@ -653,23 +653,20 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
     if (input.getUsernameOrEmail().empty() || input.getPassword().empty() ||
         (!host && input.getAccountId().empty()) || (host && !input.getAccountId().empty()))
         co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
+    const char* stage = "tenant_lookup";
     try {
         auto db = drogon::app().getDbClient();
         std::string tenantId, tenantName;
         bool requiresTwoFactorAuth = false;
         if (!host) {
-            CoroMapper<drogon_model::BusinessDesk::Tenants> tenants(db);
-            using Tenant = drogon_model::BusinessDesk::Tenants;
-            auto tenant = co_await tenants.findOne(
-                Criteria(Tenant::Cols::_tenancy_name, CompareOperator::EQ, input.getAccountId()) &&
-                Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true) &&
-                Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false));
-            if (tenant.getValueOfId() == constants::kHostTenantId)
+            const auto tenant = co_await utils::tenant_auth::findActive(db, input.getAccountId(), true);
+            if (!tenant || tenant->id == constants::kHostTenantId)
                 co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
-            requiresTwoFactorAuth = tenant.getValueOfRequireTwoFactorAuth();
-            tenantId = tenant.getValueOfId();
-            tenantName = tenant.getValueOfName().empty() ? tenant.getValueOfTenancyName() : tenant.getValueOfName();
+            requiresTwoFactorAuth = tenant->requireTwoFactorAuth;
+            tenantId = tenant->id;
+            tenantName = tenant->name;
         }
+        stage = "user_lookup";
         CoroMapper<Users> mapper(db);
         const auto login = normalize(input.getUsernameOrEmail());
         auto criteria = userScope(tenantId) &&
@@ -683,25 +680,28 @@ drogon::Task<dto::BaseApiResponse> authenticate(const dto::SigninDto &input, boo
         // Keep legacy NULL-tenant host users compatible, but never admit arbitrary
         // tenant users to the host scope.
         if (host && !user.getValueOfTenantId().empty()) {
-            using Tenant = drogon_model::BusinessDesk::Tenants;
-            CoroMapper<Tenant> tenants(db);
-            co_await tenants.findOne(Criteria(Tenant::Cols::_id, CompareOperator::EQ, user.getValueOfTenantId()) &&
-                Criteria(Tenant::Cols::_is_active, CompareOperator::EQ, true) &&
-                Criteria(Tenant::Cols::_is_deleted, CompareOperator::EQ, false));
+            const auto tenant = co_await utils::tenant_auth::findActive(db, user.getValueOfTenantId());
+            if (!tenant) co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
         }
+        stage = "password_verification";
         if (user.getValueOfPasswordHash().empty() ||
             !bcrypt::validatePassword(input.getPassword(), user.getValueOfPasswordHash()))
             co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
-        if (!host && requiresTwoFactorAuth)
+        if (!host && requiresTwoFactorAuth) {
+            stage = "two_factor_challenge";
             co_return co_await TotpService::begin(user.getValueOfId(), tenantId, input.getAccountId()+"/"+user.getValueOfUsername(), user.getValueOfPasswordHash());
+        }
+        stage = "token_and_permissions";
         auto result = co_await issueToken(user, host, tenantName);
         result.result["requiresTwoFactorAuth"] = false;
         co_return result;
     } catch (const UnexpectedRows &) {
         co_return failure(constants::ERR_AUTH_INVALID_CREDENTIALS, "Invalid credentials.");
     } catch (const DrogonDbException &) {
+        LOG_ERROR << "Authentication unavailable: database failure at stage=" << stage;
         co_return failure(constants::ERR_DB_QUERY, "Authentication service unavailable.");
     } catch (const std::exception &) {
+        LOG_ERROR << "Authentication unavailable: configuration/processing failure at stage=" << stage;
         co_return failure(constants::ERR_INTERNAL, "Authentication service unavailable.");
     }
 }
