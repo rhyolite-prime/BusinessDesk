@@ -881,13 +881,29 @@ async function saveDraft() {
       <span class="inline-flex w-fit items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/25 dark:text-violet-300"><span class="h-1.5 w-1.5 rounded-full bg-violet-500" /> Draft</span>
     </section>
 
+    <div class="flex flex-wrap items-end gap-3">
+      <label class="min-w-0 text-xs font-semibold">
+        Accounting unit
+        <select
+          v-model="unitId"
+          aria-label="Accounting unit"
+          :disabled="saving || editing"
+          class="mt-2 block h-10 w-full min-w-0 max-w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+        >
+          <option value="">Select accounting unit</option>
+          <option v-for="unit in units" :key="unit.id" :value="unit.id">
+            {{ unit.code }} · {{ unit.name }}
+          </option>
+        </select>
+      </label>
+    </div>
+
     <div v-if="accountError" class="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200"><span>Voucher configuration could not be loaded: {{ accountError }}</span><button type="button" class="font-semibold underline" @click="refreshAccounts()">Retry</button></div>
     <div v-if="voucherLoadError" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">The requested voucher draft could not be loaded.</div>
     <div v-if="editing && existingVoucher && existingVoucher.status !== 'Draft'" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-xs text-amber-800 dark:border-amber-900/60 dark:bg-amber-950/30 dark:text-amber-200">Only draft vouchers can be edited. This voucher is {{ existingVoucher.status.toLowerCase() }}.</div>
 
     <section class="rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:p-6">
       <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Voucher header</h2><p class="mt-1 text-[11px] text-slate-500">Voucher and batch numbers are assigned when the draft is first saved.</p></div><span class="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-300">{{ typeInfo.prefix }} · General Ledger</span></div>
-      <label class="mt-4 block text-xs font-semibold">Accounting unit<select v-model="unitId" aria-label="Accounting unit" :disabled="saving || editing" class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"><option value="">Select accounting unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{unit.code}} · {{unit.name}}</option></select></label>
       <p v-if="accountsPending" role="status" class="mt-3 text-xs text-slate-500">Loading live voucher configuration…</p>
       <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ typeInfo.payeeLabel }} <span class="text-rose-500">*</span></span><select v-model="form.payeeId" @change="onSupplierChange" :aria-label="typeInfo.payeeLabel" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select {{ typeInfo.payeeLabel.toLowerCase() }}</option><option v-for="payee in payees" :key="payee.id" :value="payee.id">{{ payee.name }} · {{ payee.code }}</option></select></label>
