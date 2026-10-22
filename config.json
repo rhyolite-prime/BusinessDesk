@@ -327,12 +327,12 @@
     //custom_config: custom configuration for users. This object can be get by the app().getCustomConfig() method.
     "custom_config": {
         "JwtBearer": {  
-            "JwtSecurityKey": "BD720_413d9a45-db19-45a3-b7bc-cd35b6451afe",
+            "JwtSecurityKey": "",
             "JwtIssuer": "BD720",
             "JwtAudience": "BD720_Users",
             "JwtExpirationTime": 3600
         },
-        "TOTP_KEY": "569ad3b423c46b2662e447d2df86aa0b6cfc50e84c67c0eeca44b0496c40a45c",
+        "TOTP_KEY": "",
         "QuartzSchedulerApi": {
             "BaseUrl": "https://scheduler.richcreationsdevelopment.com",
             "CallBackUrl": "https://erp-api.rhyoliteprime.com/api/v1/run-scheduled-activity"

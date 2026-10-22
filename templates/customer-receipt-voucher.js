@@ -6,9 +6,9 @@ let vue = new Vue({
     data: {
 
         isLoading: false,
-        isShimmerLoading: true,
+        isShimmerLoading: false,
         emptyGuid: '00000000-0000-0000-0000-000000000000',
-        employeeList: [],
+        customerList: [],
         accountsList: [],
         bankList: [],
         currencyList: [],
@@ -16,13 +16,8 @@ let vue = new Vue({
         taxType: '',
         transactionId: 1,
         hasGetFundLevy: false,
-        hasVat: false,
-        hasVatWithhold: false,
-        hasNationalHealthInsuranceLevy: false,
-        nationalHealthInsuranceLevyRate: 0.00,
         hasCommunicationServiceTax: false,
         communicationServiceTaxRate: 0.00,
-        vatRate: 0.00,
         getFundLevyRate: 0.00,
         paymentList: [],
         journalEntryList: [],
@@ -30,71 +25,55 @@ let vue = new Vue({
         costCenterHierachyList: [],
         costCenterList: [],
         voucherList: [],
-        totalVatAmount: 0.00,
-        totalWithHeldAmount: 0.00,
-        totalVatWithHeldAmount: 0.00,
+        voucherEntryDate: '',
         totalRetentionCredit: 0.00,
         totalCredit: 0.00,
         totalDebit: 0.00,
         totalNetAmount: 0.00,
-        amountWithoutTaxes: 0.00,
-        withHoldingRate: 0.00,
-        vatWithHoldingAccountId: '',
-        withHoldingAccountId: '',
+        creditAccountId: '',
         bankAccountId: '',
-        voucherEntryDate: moment().format("YYYY-MM-DD"),
-        paymentDate: moment().format("YYYY-MM-DD"),
-        batchNo: '',
+        chequeDate: moment().format("DD-MMM-YYYY"),
+        receiptDate: moment().format("DD-MMM-YYYY"),
+        batchNumber: '',
         modePayment: 'Cash',
         retentionsList: [],
         hasCovidTax: false,
+        isRecordCreated: false,
         covidTaxRate: 0.00,
         withHoldingVatPercentage: 7.00,
-        employeeId: '',
+        customerId: '',
         bankId: '',
         currencyId: '',
-        hasWithHolding: false,
         voucherId: '',
-        isEditMode: false,
+        hasWithHolding: false,
         chequeNo: '',
+        batchNo: '',
         isMultiCurrency: false,
         currencyRate: null,
-        isRecordCreated: false,
-        voucherBatchSystemNumber: {},
-        defaultRates: {
-            nationalHealthInsuranceLevyRate: 2.50,
-            communicationServiceTaxRate: 5.00,
-            vatRate: 15.00,
-            getFundLevyRate: 2.50,
-            withHoldingVatPercentage: 7.00,
-            covidTaxRate: 1.00
-        },
+        isEditMode: false,
         proposedJournalHeaderId: '',
         proposedJournalDetailIdList: []
-
     },
 
     validations() {
 
         return {
 
-            employeeId: {
+            customerId: {
                 required
             },
+
             voucherEntryDate: {
                 required
             },
 
+            
             bankAccountId: {
                 required,
             },
             currencyId: {
                 required,
             },
-            paymentDate: {
-                required,
-            }
-
         }
 
     },
@@ -107,16 +86,17 @@ let vue = new Vue({
             return this.isRecordCreated ? 'Create New' : 'Save';
         }
     },
-
+    
     methods: {
 
-        initPaymentVoucher() {
+        initReceiptVoucher() {
 
             this.isShimmerLoading = true;
-
-            return axios.get('/LedgerDataEntry/InitSupplierPvEntry').then(response => {
+            
+            axios.get('/LedgerDataEntry/InitSupplierPvEntry').then(response => {
 
                 response.data.accounts.forEach((v) => {
+
                     v.accountIdentifier = `${v.accountNo} - ${v.accountName}`;
                 });
 
@@ -124,11 +104,10 @@ let vue = new Vue({
 
                 this.costCenterHierachyList = this.parseCostCenterHierachy(response.data.costCenters);
 
-                this.voucherBatchSystemNumber = response.data.voucherBatchSystemNumber;
-
                 this.batchNo = `${response.data.voucherBatchSystemNumber.prefix}${response.data.voucherBatchSystemNumber.lastNo}${response.data.voucherBatchSystemNumber.suffix}`;
 
-                const defaultBankId = response.data.defaultGlNumbers.accountPayablesBankAccountId;
+                const defaultBankId = response.data.defaultGlNumbers.accountsReceivableBankAccountId;
+                
                 this.bankAccountId = defaultBankId;
 
                 let accountInfo = this.accountsList.find(a => a.id === defaultBankId);
@@ -139,11 +118,12 @@ let vue = new Vue({
 
             }).catch(err => {
 
+                console.log(err)
                 this.toastHandler('error', 'Voucher initialization failed.');
 
             }).finally(() => {
+
                 this.isShimmerLoading = false;
-                abp.ui.clearBusy('body');
 
                 const mainContent = document.getElementById('main-content');
                 if (mainContent) {
@@ -223,8 +203,7 @@ let vue = new Vue({
                     r.totalAmount = r.totalAmount || 0;
                     if (!r.id) r.id = this.uuid();
                 });
-
-                this.reComputeVoucherSummary();
+ 
 
             }).catch(err => {
                 this.toastHandler('error', 'Unable to load voucher details.');
@@ -234,31 +213,25 @@ let vue = new Vue({
             });
         },
 
-        getEmployees() {
+        getCustomers() {
 
-            return axios.get('/PayrollDataEntry/GetEmployees').then(response => {
+            axios.get('/SharedResource/GetCustomers').then(response => {
 
-                response.data.forEach(v => {
-                    v.employeeName = v.otherName === '' || null
-                        ? `${v.lastName} ${v.firstName} - ${v.employeeIdentifier}`
-                        : `${v.lastName} ${v.firstName} ${v.otherName} - ${v.employeeIdentifier}`;
-                });
-
-                this.employeeList = response.data;
-
+                this.customerList = response.data;
+ 
             }).catch(err => {
 
-                this.toastHandler('error', 'Unable to retrieve employees');
+                this.toastHandler('error', 'Unable to retrieve suppliers');
 
             });
         },
 
         getBanks() {
 
-            return axios.get('/SharedResource/GetBanks').then(response => {
+            axios.get('/SharedResource/GetBanks').then(response => {
 
                 this.bankList = response.data;
-
+ 
             }).catch(err => {
 
                 this.toastHandler('error', 'Unable to retrieve banks.');
@@ -268,10 +241,10 @@ let vue = new Vue({
 
         getCurrencies() {
 
-            return axios.get('/SharedResource/GetCurrencys').then(response => {
+            axios.get('/SharedResource/GetCurrencys').then(response => {
 
                 this.currencyList = response.data;
-
+  
             }).catch(err => {
 
                 this.toastHandler('error', 'Unable to retrieve currencies');
@@ -317,19 +290,19 @@ let vue = new Vue({
 
             let payload = {};
 
-            let employeeInfo = this.employeeList.find(a => a.id === this.employeeId);
+            let customerInfo = this.customerList.find(a => a.id === this.customerId);
             let bankAccountInfo = this.accountsList.find(a => a.id === this.bankAccountId);
             let withHoldingAccountInfo = this.accountsList.find(a => a.id === this.withHoldingAccountId);
             let vatWithHoldingAccountInfo = this.accountsList.find(a => a.id === this.vatWithHoldingAccountId);
             let bankInfo = this.bankList.find(a => a.id === this.bankId);
             let currencyInfo = this.currencyList.find(a => a.id === this.currencyId);
 
-            payload.employeeId = this.employeeId;
-            payload.employeeName = employeeInfo.employeeName;
             payload.supplierId = this.emptyGuid;
             payload.supplierName = '';
-            payload.customerId = this.emptyGuid;
-            payload.customerName = '';
+            payload.customerId = this.customerId;
+            payload.customerName = customerInfo.name;
+            payload.employeeId = this.emptyGuid;
+            payload.employeeName = '';
             payload.voucherEntryDate = this.voucherEntryDate;
             payload.batchNo = this.batchNo;
             payload.chequeNo = this.chequeNo;
@@ -354,7 +327,7 @@ let vue = new Vue({
             payload.bankName = !bankInfo ? '' : bankInfo.name;
 
             payload.hasWithHolding = this.hasWithHolding;
-            payload.withHoldingRate = parseFloat(this.withHoldingRate);
+            payload.withHoldingRate = 0;
 
             payload.withHoldingAccountId = !this.withHoldingAccountId ? this.emptyGuid : this.withHoldingAccountId;
             payload.withHoldingAccountName = !withHoldingAccountInfo ? '' : withHoldingAccountInfo.accountIdentifier;
@@ -379,15 +352,18 @@ let vue = new Vue({
             payload.grossAmount = parseFloat(this.totalDebit);
             payload.netAmount = parseFloat(this.totalNetAmount);
             payload.totalRetained = parseFloat(this.totalRetentionCredit);
-            payload.totalWithheld = parseFloat(this.totalWithHeldAmount);
-            payload.totalVatWithheld = parseFloat(this.totalVatWithHeldAmount);
-            payload.totalVatAmount = parseFloat(this.totalVatAmount);
-            payload.baseAmount = parseFloat(this.amountWithoutTaxes);
+            payload.totalWithheld = 0;
+            payload.totalVatWithheld = 0;
+            payload.totalVatAmount = 0;
+            payload.baseAmount = 0;
             payload.isPayment = true;
             payload.isMultiCurrency = this.isMultiCurrency;
             payload.proposedJournalHeaderId = this.proposedJournalHeaderId;
             payload.proposedJournalDetailIdList = this.proposedJournalDetailIdList;
-            payload.id = this.voucherId;
+
+            if(this.isEditMode){
+                payload.id = this.voucherId;
+            } 
 
             this.voucherList.forEach((v) => {
 
@@ -433,7 +409,7 @@ let vue = new Vue({
                     this.isRecordCreated = true;
                 }
 
-                this.toastHandler('', `Employee Payment voucher ${this.isEditMode ? 'updated' : 'saved'}.`);
+                this.toastHandler('', `Supplier Payment voucher ${this.isEditMode ? 'updated' : 'saved'}.`);
 
                 this.saveJournal();
 
@@ -441,7 +417,7 @@ let vue = new Vue({
 
                 this.isLoading = false;
 
-                this.toastHandler('error', `Unable to ${this.isEditMode ? 'update' : 'create'} employee payment voucher.`);
+                this.toastHandler('error', `Unable to ${this.isEditMode ? 'update' : 'create'} supplier payment voucher.`);
 
             });
 
@@ -458,7 +434,7 @@ let vue = new Vue({
                 .then(response => {
                     this.toastHandler('success', 'Voucher posted successfully.');
                     setTimeout(() => {
-                        window.location.href = '/LedgerDataEntry/EmployeePaymentVouchersList';
+                        window.location.href = '/LedgerDataEntry/CustomerReceiptVouchersList';
                     }, 2000);
                 }).catch(err => {
                     this.isLoading = false;
@@ -480,7 +456,7 @@ let vue = new Vue({
             axios.get('/LedgerDataEntry/DelVoucher?id=' + this.voucherId).then(response => {
                 this.toastHandler('success', 'Voucher deleted successfully.');
                 setTimeout(() => {
-                    window.location.href = '/LedgerDataEntry/EmployeePaymentVouchersList';
+                    window.location.href = '/LedgerDataEntry/CustomerReceiptVouchersList';
                 }, 2000);
             }).catch(err => {
                 this.isLoading = false;
@@ -493,8 +469,6 @@ let vue = new Vue({
 
             const currencyInfo = this.currencyList.find(x => x.id === this.currencyId);
             const bankAccountInfo = this.accountsList.find(x => x.id === this.bankAccountId);
-            const withHoldingAccountInfo = this.accountsList.find(x => x.id === this.withHoldingAccountId);
-            const vatWithHoldingAccountInfo = this.accountsList.find(x => x.id === this.vatWithHoldingAccountId);
 
             const commonFields = (accountId, accountInfo, ouId) => {
                 const ouInfo = this.costCenterHierachyList.find(x => x.id === ouId);
@@ -517,64 +491,43 @@ let vue = new Vue({
                 };
             };
 
-            // ── DEBIT lines: one per voucher row ──
-            this.voucherList.forEach(v => {
-                const debitAccountInfo = this.accountsList.find(x => x.id === v.accountId);
-                const debitAmount = parseFloat(v.localDebitAmount || v.debitAmount || 0);
-                const description = `Voucher (#${this.batchNo}) Cheque No.: ${this.chequeNo || 'N/A'} - ${v.description || ''}`.trim();
+            // Receipt vouchers always produce exactly 2 journal rows:
+            //   Row 1 – DEBIT  : Bank / Cash GL account (money received into the bank)
+            //   Row 2 – CREDIT : AR / Customer GL account (reduces the receivable balance)
 
-                journalLines.push({
-                    ...commonFields(v.accountId, debitAccountInfo, v.ouId),
-                    invoiceNo: v.invoiceNo,
-                    referenceNumber: v.referenceNo || this.batchNo,
-                    description: description,
-                    debitAmount: debitAmount,
-                    creditAmount: 0,
-                });
+            // Sum directly from voucherList — this.totalDebit is not kept live
+            // in this file (no reComputeVoucherSummary), so reading it would always be 0.
+            const totalAmount = this.voucherList.reduce(
+                (sum, v) => sum + parseFloat(v.localDebitAmount || v.debitAmount || 0), 0
+            );
+            const firstOuId = this.voucherList.length ? this.voucherList[0].ouId : null;
+            const firstRef   = this.voucherList.length ? (this.voucherList[0].referenceNo || this.batchNo) : this.batchNo;
+            const baseDesc   = this.chequeNo
+                ? `Voucher (#${this.batchNo}) Cheque No.: ${this.chequeNo}`
+                : `Voucher (#${this.batchNo})`;
+
+            // ── Row 1: DEBIT → Bank / Cash GL ──
+            journalLines.push({
+                ...commonFields(this.bankAccountId, bankAccountInfo, firstOuId),
+                invoiceNo: '',
+                referenceNumber: firstRef,
+                description: baseDesc,
+                debitAmount: totalAmount,
+                creditAmount: 0,
             });
 
-            const firstOuId = this.voucherList.length ? this.voucherList[0].ouId : null;
+            // ── Row 2: CREDIT → AR / Customer GL (first voucher row's account) ──
+            const arAccountId = this.voucherList.length ? this.voucherList[0].accountId : null;
+            const arAccountInfo = arAccountId ? this.accountsList.find(x => x.id === arAccountId) : null;
 
-            // ── CREDIT line 1: Net Amount → Bank G/L ──
-            const netAmount = parseFloat(this.totalNetAmount || 0);
-            if (netAmount !== 0) {
-                journalLines.push({
-                    ...commonFields(this.bankAccountId, bankAccountInfo, firstOuId),
-                    invoiceNo: '',
-                    referenceNumber: this.voucherList[0].referenceNo || this.batchNo,
-                    description: this.chequeNo ? `Voucher (#${this.batchNo}) Cheque No.: ${this.chequeNo}` : `Voucher (#${this.batchNo})`,
-                    debitAmount: 0,
-                    creditAmount: netAmount,
-                });
-            }
-
-            // ── CREDIT line 2: VAT Withheld Amount → VAT/Withhold Account ──
-            const vatWithHeldAmount = parseFloat(this.totalVatWithHeldAmount || 0);
-            if (vatWithHeldAmount > 0 && this.vatWithHoldingAccountId) {
-
-                journalLines.push({
-                    ...commonFields(this.vatWithHoldingAccountId, vatWithHoldingAccountInfo, firstOuId),
-                    invoiceNo: '',
-                    referenceNumber: this.voucherList[0].referenceNo || this.batchNo,
-                    description: `${parseFloat(this.withHoldingVatPercentage || 0)}% withholding VAT`,
-                    debitAmount: 0,
-                    creditAmount: vatWithHeldAmount,
-                });
-            }
-
-            // ── CREDIT line 3: WithHeld Amount → WithHolding Credit G/L Account ──
-            const withHeldAmount = parseFloat(this.totalWithHeldAmount || 0);
-            if (withHeldAmount > 0 && this.withHoldingAccountId) {
-
-                journalLines.push({
-                    ...commonFields(this.withHoldingAccountId, withHoldingAccountInfo, firstOuId),
-                    invoiceNo: '',
-                    referenceNumber: this.voucherList[0].referenceNo || this.batchNo,
-                    description: `${parseFloat(this.withHoldingRate || 0)}% Withholding Tax`,
-                    debitAmount: 0,
-                    creditAmount: withHeldAmount,
-                });
-            }
+            journalLines.push({
+                ...commonFields(arAccountId, arAccountInfo, firstOuId),
+                invoiceNo: this.voucherList.length ? this.voucherList[0].invoiceNo : '',
+                referenceNumber: firstRef,
+                description: baseDesc,
+                debitAmount: 0,
+                creditAmount: totalAmount,
+            });
 
             this.journalEntryList = journalLines;
         },
@@ -583,15 +536,17 @@ let vue = new Vue({
 
             this.rebuildJournalEntryList();
 
-            const vatWithHeldAmount = parseFloat(this.totalVatWithHeldAmount || 0);
-            const withHeldAmount = parseFloat(this.totalWithHeldAmount || 0);
+            // Same live-sum approach as rebuildJournalEntryList
+            const totalAmount = this.voucherList.reduce(
+                (sum, v) => sum + parseFloat(v.localDebitAmount || v.debitAmount || 0), 0
+            );
 
             let payload = {};
             payload.batchNumber = this.batchNo;
             payload.batchDate = this.voucherEntryDate;
             payload.isTemporary = true;
-            payload.totalCredit = this.totalNetAmount + vatWithHeldAmount + withHeldAmount;
-            payload.totalDebit = this.totalDebit;
+            payload.totalCredit = totalAmount;
+            payload.totalDebit = totalAmount;
             payload.id = this.voucherId;
             payload.journalDetails = this.journalEntryList;
 
@@ -625,7 +580,8 @@ let vue = new Vue({
         },
 
         previewVoucher() {
-            window.open('/LedgerDataEntry/PaymentVoucherPreview?id=' + this.voucherId, '_blank');
+            
+            window.open('/LedgerDataEntry/ReceiptVoucherPreview?id=' + this.voucherId, '_blank');
         },
 
         createNewVoucher() {
@@ -642,7 +598,7 @@ let vue = new Vue({
         resetForm() {
             // Reset all form data
             this.voucherId = '';
-            this.employeeId = '';
+            this.supplierId = '';
             this.bankId = '';
             this.currencyId = '';
             this.voucherEntryDate = moment().format("YYYY-MM-DD");
@@ -694,7 +650,7 @@ let vue = new Vue({
             // Clear validation state
             this.$v.$reset();
         },
-
+        
         addVoucherRow() {
             this.voucherList.push({
                 id: this.uuid(),
@@ -705,222 +661,13 @@ let vue = new Vue({
                 description: '',
                 localDebitAmount: 0,
                 foreignDebitAmount: 0,
-                ouId: '',
-                hasImprest: false,
+                ouId: '',       
             });
-            this.reComputeVoucherSummary();
+            
         },
 
-        removeVoucherRow(index) {
-            this.voucherList.splice(index, 1);
-            this.reComputeVoucherSummary();
-        },
+        roundNumber(number){
 
-        onWithHoldChange() {
-            this.hasWithHolding = this.voucherList.some(v => v.withHold);
-            this.reComputeVoucherSummary();
-        },
-
-        addRetentionRow() {
-            this.retentionsList.push({
-                id: this.uuid(),
-                description: '',
-                accountId: '',
-                amount: 0,
-                IsPercentage: false,
-                totalAmount: 0
-            });
-            this.reComputeVoucherSummary();
-        },
-
-        removeRetentionRow(index) {
-            this.retentionsList.splice(index, 1);
-            this.reComputeVoucherSummary();
-        },
-
-        onRetentionAmountChange(row) {
-            let amount = parseFloat(row.amount || 0);
-            if (row.IsPercentage) {
-                row.totalAmount = amount;
-            } else {
-                row.totalAmount = (amount / 100) * this.totalDebit;
-            }
-            this.reComputeVoucherSummary();
-        },
-
-        calculateVoucherBreakdown(amount, withHold) {
-
-            /*
-             * Returns a pure per-row breakdown.
-             * totalRetentionCredit is a batch-level deduction and must NOT be
-             * subtracted here — reComputeVoucherSummary applies it once after
-             * all rows have been summed.
-             *
-             * withHold (boolean): when true the row's gross amount is treated as
-             * tax-inclusive and withholding/VAT-withhold deductions apply.
-             * When false the row is a plain payment with no withholding at all.
-             * In both cases the same global withHoldingRate is used — individual
-             * rows cannot carry different rates.
-             */
-
-            const grossAmount = parseFloat(amount || 0);
-
-            const nhilRate = parseFloat(
-                this.nationalHealthInsuranceLevyRate || 0
-            );
-
-            const getflRate = parseFloat(
-                this.getFundLevyRate || 0
-            );
-
-            const vatRate = parseFloat(
-                this.vatRate || 0
-            );
-
-            const withholdingRate = parseFloat(
-                this.withHoldingRate || 0
-            );
-
-            const withHoldingVatRate = parseFloat(
-                this.withHoldingVatPercentage || 0
-            );
-
-            let baseAmount = grossAmount;
-
-            let nhilAmount = 0;
-            let getflAmount = 0;
-            let vatAmount = 0;
-            let withHeldAmount = 0;
-            let vatWithHeldAmount = 0;
-
-            /*
-            ===================================================
-            ONLY reverse-calculate taxes when withholding applies
-            ===================================================
-            */
-            if (withHold) {
-
-                const totalRate =
-                    nhilRate +
-                    getflRate +
-                    vatRate;
-
-                // reverse extract base amount from the tax-inclusive gross
-                baseAmount = totalRate > 0
-                    ? grossAmount / (1 + totalRate / 100)
-                    : grossAmount;
-
-                // tax components on base
-                nhilAmount = this.hasNationalHealthInsuranceLevy ? (nhilRate / 100) * baseAmount : 0;
-
-                getflAmount = this.hasGetFundLevy ? (getflRate / 100) * baseAmount : 0;
-
-                vatAmount = this.hasVat ? (vatRate / 100) * baseAmount : 0;
-
-                // withholding deducted from base
-                withHeldAmount = (withholdingRate / 100) * baseAmount;
-
-                vatWithHeldAmount = this.hasVatWithhold ? (withHoldingVatRate / 100) * baseAmount : 0;
-
-            }
-
-            /*
-            ===================================================
-            NORMAL transactions (no withholding for this row)
-            ===================================================
-            */
-            else {
-                baseAmount = grossAmount;
-            }
-
-            // netAmount = what the employee actually receives for this row
-            const netAmount = grossAmount - withHeldAmount - vatWithHeldAmount;
-
-            const amountWithoutTaxes = withHold
-                ? grossAmount - nhilAmount - getflAmount - vatAmount
-                : 0;
-
-            return {
-
-                grossAmount:        this.roundNumber(grossAmount),
-
-                baseAmount:         this.roundNumber(baseAmount),
-
-                nhilAmount:         this.roundNumber(nhilAmount),
-
-                getflAmount:        this.roundNumber(getflAmount),
-
-                vatAmount:          this.roundNumber(vatAmount),
-
-                withHeldAmount:     this.roundNumber(withHeldAmount),
-
-                vatWithHeldAmount:  this.roundNumber(vatWithHeldAmount),
-
-                netAmount:          this.roundNumber(netAmount),
-
-                amountWithoutTaxes: this.roundNumber(amountWithoutTaxes),
-
-            };
-
-        },
-
-        reComputeVoucherSummary() {
-
-            /*
-             * Reset every running total to zero before iterating so the function
-             * is safe to call multiple times.
-             */
-            this.totalVatAmount         = 0;
-            this.totalWithHeldAmount    = 0;
-            this.totalVatWithHeldAmount = 0;
-            this.totalNetAmount         = 0;
-            this.totalCredit            = 0;
-            this.totalDebit             = 0;
-            this.amountWithoutTaxes     = 0;
-
-            this.voucherList.forEach((transaction) => {
-
-                const debitAmount = parseFloat(
-                    transaction.localDebitAmount ||
-                    transaction.debitAmount ||
-                    0
-                );
-
-                this.totalDebit += debitAmount;
-
-                const breakdown = this.calculateVoucherBreakdown(
-                    debitAmount,
-                    transaction.withHold
-                );
-
-                this.totalVatAmount         += breakdown.vatAmount;
-                this.totalWithHeldAmount    += breakdown.withHeldAmount;
-                this.totalVatWithHeldAmount += breakdown.vatWithHeldAmount || 0;
-                this.totalNetAmount         += breakdown.netAmount;
-                this.amountWithoutTaxes     += breakdown.amountWithoutTaxes;
-
-            });
-
-            /*
-             * totalRetentionCredit is a batch-level deduction.
-             */
-            this.totalRetentionCredit = this.retentionsList.reduce((sum, r) => sum + parseFloat(r.totalAmount || 0), 0);
-            this.totalNetAmount      -= parseFloat(this.totalRetentionCredit || 0);
-            this.amountWithoutTaxes  -= parseFloat(this.totalRetentionCredit || 0);
-
-            // round final totals
-            this.totalDebit             = this.roundNumber(this.totalDebit);
-            this.totalCredit            = this.roundNumber(this.totalCredit);
-            this.totalVatAmount         = this.roundNumber(this.totalVatAmount);
-            this.totalWithHeldAmount    = this.roundNumber(this.totalWithHeldAmount);
-            this.totalVatWithHeldAmount = this.roundNumber(this.totalVatWithHeldAmount);
-            this.totalNetAmount         = this.roundNumber(this.totalNetAmount);
-            this.amountWithoutTaxes     = this.roundNumber(this.amountWithoutTaxes);
-            this.totalRetentionCredit   = this.roundNumber(this.totalRetentionCredit);
-
-        },
-
-        roundNumber(number) {
             return Math.round(number * 100) / 100;
         },
 
@@ -987,6 +734,7 @@ let vue = new Vue({
 
         toastHandler(type, message = 'An unexpected error occurred.') {
 
+            //display alert with 
             toastr.options = {
                 closeButton: true,
                 progressBar: true,
@@ -1011,16 +759,7 @@ let vue = new Vue({
         },
 
     },
-
     watch: {
-
-        withHoldingRate(val) {
-
-            if (val) {
-                this.reComputeVoucherSummary();
-            }
-
-        },
 
         bankAccountId(val) {
 
@@ -1041,132 +780,17 @@ let vue = new Vue({
                 this.isMultiCurrency = false;
             }
         },
-
-        hasGetFundLevy(val) {
-
-            if (val) {
-                this.getFundLevyRate = this.defaultRates.getFundLevyRate;
-            }
-            else {
-                this.getFundLevyRate = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-
-        },
-
-        hasVat(val) {
-
-            if (val) {
-                this.vatRate = this.defaultRates.vatRate;
-            }
-            else {
-                this.vatRate = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-
-        },
-
-        hasVatWithhold(val) {
-
-            if (val) {
-                this.withHoldingVatPercentage = this.defaultRates.withHoldingVatPercentage;
-            }
-            else {
-                this.withHoldingVatPercentage = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-
-        },
-
-        hasNationalHealthInsuranceLevy(val) {
-
-            if (val) {
-                this.nationalHealthInsuranceLevyRate = this.defaultRates.nationalHealthInsuranceLevyRate;
-            }
-            else {
-                this.nationalHealthInsuranceLevyRate = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-        },
-
-        hasCommunicationServiceTax(val) {
-
-            if (val) {
-
-                if (this.hasCovidTax) {
-
-                    this.toastHandler('warning', 'CST & Covid Taxes cannot be used at the same.');
-                    this.hasCommunicationServiceTax = false;
-
-                    const checkboxRef = this.$refs.hasCommunicationServiceTax;
-
-                    if (checkboxRef) {
-                        checkboxRef.checked = !checkboxRef.checked;
-                        checkboxRef.dispatchEvent(new Event('change'));
-                    }
-                    return;
-                }
-
-                this.communicationServiceTaxRate = this.defaultRates.communicationServiceTaxRate;
-
-            }
-            else {
-                this.communicationServiceTaxRate = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-        },
-
-        hasCovidTax(val) {
-
-            if (val) {
-
-                if (this.hasCommunicationServiceTax) {
-
-                    this.toastHandler('warning', 'CST & Covid Taxes cannot be used at the same.');
-                    this.hasCovidTax = false;
-
-                    const checkboxRef = this.$refs.hasCovidTax;
-
-                    if (checkboxRef) {
-                        checkboxRef.checked = !checkboxRef.checked;
-                        checkboxRef.dispatchEvent(new Event('change'));
-                    }
-                    return;
-                }
-
-                this.covidTaxRate = this.defaultRates.covidTaxRate;
-            }
-            else {
-                this.covidTaxRate = 0.00;
-            }
-
-            this.reComputeVoucherSummary();
-        },
-
+        
     },
-
+    
     async created() {
 
-        if (typeof voucherId !== 'undefined' && voucherId !== '' && voucherId !== this.emptyGuid) {
-            this.voucherId = voucherId;
-            this.isEditMode = true;
-        }
-
-        this.withHoldingVatPercentage = withHoldingVatPercentage;
-
-        // Load all reference lists first, then load voucher details.
-        // This order is critical: the lists must be populated BEFORE IDs
-        // are set so native <select> v-model can match the correct option.
+         
         await Promise.all([
             this.getBanks(),
-            this.getEmployees(),
+            this.getCustomers(),
             this.getCurrencies(),
-            this.initPaymentVoucher(),
+            this.initReceiptVoucher()
         ]);
 
         if (this.isEditMode) {
