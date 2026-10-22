@@ -9,4 +9,5 @@ try {
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/017_supplier_voucher_posting' + suffix, import.meta.url), 'utf8'))
   await db.query(readFileSync(new URL('../../database/migrations/019_employee_biodata.sql', import.meta.url), 'utf8'))
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/020_customer_receipts' + suffix, import.meta.url), 'utf8'))
+  await db.query(readFileSync(new URL('../../database/migrations/021_customer_legacy_fields.sql', import.meta.url), 'utf8'))
 } finally { await db.end() }

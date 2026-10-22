@@ -204,3 +204,7 @@ failure without stale/demo choices and customer catalog CRUD. PostgreSQL tests
 run the actual services with a synchronous coroutine transport seam, not a fully
 linked Drogon HTTP application. The new controller and both affected services
 also pass native syntax checking with real Drogon/Trantor/JsonCpp headers.
+
+The additive legacy `Customer` field extension is documented in
+[`customer-schema.md`](customer-schema.md); apply migration 021 for that schema
+extension. It does not change the minimal receipt lookup or customer form.
