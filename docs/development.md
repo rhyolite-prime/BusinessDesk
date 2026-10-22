@@ -18,7 +18,7 @@ With `LEDGER_API_BASE_URL` unset, the Nuxt server uses in-memory demo data. Thos
 1. Install PostgreSQL 15+ and Drogon development packages, including the `drogon_ctl` CLI.
 2. Create a local database and app role and apply `database/migrations/001_create_ledger_schema.sql`. Apply subsequent feature migrations in order as documented for each feature; rebuilding the app does not migrate an existing database. Budget CRUD requires `011_budgets.sql` after its prerequisites (see `docs/budgets.md`). Use rollback scripts only against a disposable development database.
 3. Copy `config.local.example.json` to the ignored `config.local.json`; replace the sample database credentials. `main.cc` loads a path from its first argument, then `BUSINESSDESK_CONFIG`, then `config.local.json`.
-4. Configure `models/model.json` with the local database connection and run `drogon_ctl create model models` after the schema has been applied. Keep Drogon's generated CRUD controllers disabled; GL routes belong in the single `LedgerController`.
+4. Configure `models/model.json` with the local database connection and run `drogon_ctl create model models` after the schema has been applied, then **run `python3 scripts/fix_generated_composite_relationships.py`** before building. This repairs Drogon's per-column inference for the tenant-scoped voucher/imprest composite foreign keys (see `docs/generated-model-relationships.md`). Keep Drogon's generated CRUD controllers disabled; GL routes belong in the single `LedgerController`.
 5. Build and test:
 
 ```sh

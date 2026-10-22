@@ -14075,56 +14075,15 @@ void GlPaymentVouchers::getGlJournalBatches(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreSuppliers GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_suppliers where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreSuppliers(r[0]);
-}
-
-void GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr,
-                                  const std::function<void(CoreSuppliers)> &rcb,
-                                  const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_suppliers where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreSuppliers(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
 CoreSuppliers GlPaymentVouchers::getSupplier(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_suppliers where id = $1";
+    if (!tenantId_ || !supplierId_)
+        throw UnexpectedRows("Relationship is not set");
+
+    static const std::string sql = "select * from core_suppliers where tenant_id = $1 and id = $2 and is_deleted = false";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *supplierId_ << Mode::Blocking >>
+        binder << *tenantId_ << *supplierId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -14143,9 +14102,15 @@ void GlPaymentVouchers::getSupplier(const DbClientPtr &clientPtr,
                                     const std::function<void(CoreSuppliers)> &rcb,
                                     const ExceptionCallback &ecb) const
 {
-    static const std::string sql = "select * from core_suppliers where id = $1";
+    if (!tenantId_ || !supplierId_)
+    {
+        ecb(UnexpectedRows("Relationship is not set"));
+        return;
+    }
+
+    static const std::string sql = "select * from core_suppliers where tenant_id = $1 and id = $2 and is_deleted = false";
     *clientPtr << sql
-               << *supplierId_
+               << *tenantId_ << *supplierId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {
@@ -14207,56 +14172,15 @@ void GlPaymentVouchers::getGlAccountingPeriods(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-HrEmployeeBiodata GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from hr_employee_biodata where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return HrEmployeeBiodata(r[0]);
-}
-
-void GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr,
-                                  const std::function<void(HrEmployeeBiodata)> &rcb,
-                                  const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from hr_employee_biodata where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(HrEmployeeBiodata(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
 HrEmployeeBiodata GlPaymentVouchers::getEmployee(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    if (!tenantId_ || !employeeId_)
+        throw UnexpectedRows("Relationship is not set");
+
+    static const std::string sql = "select * from hr_employee_biodata where tenant_id = $1 and id = $2 and is_deleted = false";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *employeeId_ << Mode::Blocking >>
+        binder << *tenantId_ << *employeeId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -14275,9 +14199,15 @@ void GlPaymentVouchers::getEmployee(const DbClientPtr &clientPtr,
                                     const std::function<void(HrEmployeeBiodata)> &rcb,
                                     const ExceptionCallback &ecb) const
 {
-    static const std::string sql = "select * from hr_employee_biodata where id = $1";
+    if (!tenantId_ || !employeeId_)
+    {
+        ecb(UnexpectedRows("Relationship is not set"));
+        return;
+    }
+
+    static const std::string sql = "select * from hr_employee_biodata where tenant_id = $1 and id = $2 and is_deleted = false";
     *clientPtr << sql
-               << *employeeId_
+               << *tenantId_ << *employeeId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {

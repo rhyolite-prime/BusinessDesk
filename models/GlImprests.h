@@ -547,10 +547,6 @@ class GlImprests
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
 
-    HrEmployeeBiodata getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(HrEmployeeBiodata)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
 
     HrEmployeeBiodata getEmployee(const drogon::orm::DbClientPtr &clientPtr) const;
     void getEmployee(const drogon::orm::DbClientPtr &clientPtr,
