@@ -51,8 +51,6 @@ class GlImprestCategories;
 
 class GlJournalBatches;
 
-class HrEmployeeBiodata;
-
 
 class GlImprests
 {
@@ -546,12 +544,6 @@ class GlImprests
     void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
-
-
-    HrEmployeeBiodata getEmployee(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getEmployee(const drogon::orm::DbClientPtr &clientPtr,
-                     const std::function<void(HrEmployeeBiodata)> &rcb,
-                     const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImprests>;

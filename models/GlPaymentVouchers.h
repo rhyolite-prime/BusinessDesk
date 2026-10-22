@@ -45,15 +45,11 @@ class CoreAccountingUnits;
 
 class CoreCurrencies;
 
-class CoreSuppliers;
-
 class GlAccountingPeriods;
 
 class GlBankAccounts;
 
 class GlJournalBatches;
-
-class HrEmployeeBiodata;
 
 
 class GlPaymentVouchers
@@ -862,22 +858,10 @@ class GlPaymentVouchers
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
 
-
-    CoreSuppliers getSupplier(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getSupplier(const drogon::orm::DbClientPtr &clientPtr,
-                     const std::function<void(CoreSuppliers)> &rcb,
-                     const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
                                 const std::function<void(GlAccountingPeriods)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
-
-
-    HrEmployeeBiodata getEmployee(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getEmployee(const drogon::orm::DbClientPtr &clientPtr,
-                     const std::function<void(HrEmployeeBiodata)> &rcb,
-                     const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlPaymentVouchers>;
