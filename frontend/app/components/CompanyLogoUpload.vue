@@ -1,10 +1,11 @@
 <script setup lang="ts">
-const defaultAvatar = `${useRuntimeConfig().app.baseURL}images/default-company-avatar.svg`
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{
   'update:modelValue': [value: string]
   pending: [value: boolean]
 }>()
+const previewFailed = ref(false)
+const logoSource = computed(() => props.modelValue.trim())
 const error = ref(''),
   loading = ref(false),
   input = ref<HTMLInputElement>()
@@ -16,7 +17,10 @@ function reset() {
   emit('pending', false)
   if (input.value) input.value.value = ''
 }
-watch(() => props.modelValue, reset)
+watch(() => props.modelValue, () => {
+  previewFailed.value = false
+  reset()
+})
 watch(
   () => props.disabled,
   (value) => {
@@ -78,7 +82,7 @@ async function select(event: Event) {
 }
 </script>
 <template>
-  <div class="sm:col-span-2">
+  <div class="min-w-0">
     <label
       class="block text-xs font-semibold text-slate-600 dark:text-slate-300"
       >Company logo
@@ -96,14 +100,32 @@ async function select(event: Event) {
       upload your selection.
     </p>
     <div class="mt-3 flex items-center gap-4">
+      <svg
+        v-if="!logoSource || previewFailed"
+        role="img"
+        aria-label="Default company avatar"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 160 96"
+        width="160"
+        height="96"
+        fill="none"
+        class="h-24 w-40 shrink-0 rounded-lg border border-slate-200 bg-white p-2 dark:border-slate-700"
+      >
+        <rect width="160" height="96" rx="8" fill="#F1F5F9" />
+        <circle cx="80" cy="48" r="35" fill="#E2E8F0" />
+        <circle cx="80" cy="36" r="12" fill="#64748B" />
+        <path d="M57 72c0-13 10-22 23-22s23 9 23 22" fill="#64748B" />
+      </svg>
       <img
-        :src="modelValue || defaultAvatar"
-        :alt="modelValue ? 'Company logo preview' : 'Default company avatar'"
+        v-else
+        :src="logoSource"
+        alt="Company logo preview"
         referrerpolicy="no-referrer"
-        class="h-24 w-40 rounded-lg border border-slate-200 bg-white object-contain p-2 dark:border-slate-700"
+        class="h-24 w-40 shrink-0 rounded-lg border border-slate-200 bg-white object-contain p-2 dark:border-slate-700"
+        @error="previewFailed = true"
       />
       <button
-        v-if="modelValue && !disabled"
+        v-if="logoSource && !disabled"
         type="button"
         :disabled="loading"
         class="text-xs font-semibold text-rose-600"

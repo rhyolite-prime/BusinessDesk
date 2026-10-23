@@ -5,7 +5,7 @@ import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
 import { emptyCompanyProfile } from '../../frontend/app/features/ledger/company-profile-fields.ts'
 const uuid=n=>`91000000-0000-4000-8000-${String(n).padStart(12,'0')}`
-let checks=0,profile={...emptyCompanyProfile(),id:uuid(1),companyName:'Example Company',countryName:'Ghana',defaultCurrencyId:uuid(3),hasEmailPassword:false}
+let missingProfile=false,checks=0,profile={...emptyCompanyProfile(),id:uuid(1),companyName:'Example Company',countryName:'Ghana',defaultCurrencyId:uuid(3),hasEmailPassword:false}
 const seen=[],check=(value,label)=>{assert.ok(value,label);checks++}
 const upstream=http.createServer(async(req,res)=>{
  let raw='';for await(const c of req)raw+=c
@@ -16,7 +16,7 @@ const upstream=http.createServer(async(req,res)=>{
  seen.push({path,method:req.method,body,token:req.headers.authorization})
  if(path==='/api/v1/shared/currencies')return send(200,{data:[{id:uuid(3),name:'Ghana cedi',code:'GHS',isActive:true}],totalPages:1})
  if(path==='/api/v1/shared/company-profile'){
-  if(req.method==='GET')return send(200,profile)
+  if(req.method==='GET')return missingProfile?send(404,null,{code:'not_found'}):send(200,profile)
   if(req.method==='PUT'){profile={...profile,...body};return send(200,profile)}
  }
  return send(404,null,{code:'not_found'})
@@ -35,10 +35,11 @@ try {
  try {
   const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(30000)
   await page.goto(base+'/ledger/shared-config/company-profile',{waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor()
-  await page.getByAltText('Default company avatar').waitFor();check(await page.getByAltText('Default company avatar').evaluate(el=>el.complete&&el.naturalWidth>0),'default avatar image loads for a profile with no logo');
+  await page.getByRole('img',{name:'Default company avatar',exact:true}).waitFor();check(await page.getByRole('img',{name:'Default company avatar',exact:true}).evaluate(el=>el.tagName.toLowerCase()==='svg'&&el.getBoundingClientRect().height>0),'default avatar image loads for a profile with no logo');
   check(await page.getByLabel('Country ID',{exact:true}).count()===0&&await page.getByLabel('Company logo URL',{exact:true}).count()===0,'legacy country ID and logo URL inputs are hidden')
   await page.getByRole('button',{name:'Edit profile',exact:true}).click()
   const file=page.getByLabel('Company logo',{exact:true})
+  const currencyBox=await page.getByLabel('Default currency').locator('..').boundingBox(),logoBox=await file.locator('..').boundingBox();check(currencyBox&&logoBox&&Math.abs(currencyBox.y-logoBox.y)<3&&logoBox.x>currencyBox.x,'company logo and default currency share the desktop row')
   const png=await page.evaluate(()=>{const c=document.createElement('canvas');c.width=100;c.height=100;const x=c.getContext('2d');for(let i=0;i<100;i++)for(let j=0;j<100;j++){x.fillStyle=`rgb(${i*2},${j*2},${(i*j)%255})`;x.fillRect(i,j,1,1)}return c.toDataURL('image/png')})
   await file.setInputFiles({name:'logo.png',mimeType:'image/png',buffer:Buffer.from(png.split(',')[1],'base64')});await page.getByAltText('Company logo preview').waitFor()
   check(await page.getByAltText('Company logo preview').evaluate(el=>el.complete&&el.naturalWidth===100),'chosen image is decoded and previewed')
@@ -51,7 +52,11 @@ try {
   await file.setInputFiles({name:'large.png',mimeType:'image/png',buffer:Buffer.alloc(262145)});check(await page.getByRole('alert').filter({hasText:'256 KB'}).count()>0,'oversized images rejected')
   await file.setInputFiles({name:'fake.png',mimeType:'image/png',buffer:Buffer.from('not an image')});await page.getByRole('alert').filter({hasText:'not a readable image'}).waitFor();check(await page.getByAltText('Company logo preview').getAttribute('src')===png,'invalid image contents rejected')
   await page.getByRole('button',{name:'Remove logo',exact:true}).click();await page.getByRole('button',{name:'Cancel',exact:true}).click();check(await page.getByAltText('Company logo preview').getAttribute('src')===png,'cancel restores saved logo')
-  await page.getByRole('button',{name:'Edit profile',exact:true}).click();await page.getByRole('button',{name:'Remove logo',exact:true}).click();await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor();check(profile.companyLogoUrl===''&&await page.getByAltText('Company logo preview').count()===0&&await page.getByAltText('Default company avatar').count()===1,'logo removal persists and restores the default avatar');await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor();check(await page.getByAltText('Default company avatar').evaluate(el=>el.complete&&el.naturalWidth>0)&&profile.companyLogoUrl==='','default avatar survives reload without being stored as the uploaded logo')
+  await page.getByRole('button',{name:'Edit profile',exact:true}).click();await page.getByRole('button',{name:'Remove logo',exact:true}).click();await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor();check(profile.companyLogoUrl===''&&await page.getByAltText('Company logo preview').count()===0&&await page.getByRole('img',{name:'Default company avatar',exact:true}).count()===1,'logo removal persists and restores the default avatar');await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor();check(await page.getByRole('img',{name:'Default company avatar',exact:true}).evaluate(el=>el.tagName.toLowerCase()==='svg'&&el.getBoundingClientRect().height>0)&&profile.companyLogoUrl==='','default avatar survives reload without being stored as the uploaded logo')
+  for(const value of [null,'   ','/images/no-such-company-logo.png']) {
+    profile.companyLogoUrl=value;await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor();await page.getByRole('img',{name:'Default company avatar',exact:true}).waitFor();check(await page.getByRole('img',{name:'Default company avatar',exact:true}).isVisible(),'null, blank and failed logos render the inline default avatar')
+  }
+  missingProfile=true;await page.reload({waitUntil:'domcontentloaded'});await page.getByRole('button',{name:'Create company profile',exact:true}).waitFor();check(await page.getByRole('img',{name:'Default company avatar',exact:true}).isVisible(),'account without a company profile sees the default avatar in the creation form')
   check(!errors.length,'no browser runtime errors');check(seen.every(r=>r.token==='Bearer tenant-token'),'profile/image payloads use authenticated transport')
  } finally {await browser.close()}
  console.log(`${checks} company logo HTTP/browser checks passed`)
