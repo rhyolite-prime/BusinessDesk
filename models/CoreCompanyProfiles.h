@@ -60,7 +60,6 @@ class CoreCompanyProfiles
         static const std::string _city_name;
         static const std::string _phone_no;
         static const std::string _address;
-        static const std::string _country;
         static const std::string _company_tin;
         static const std::string _email;
         static const std::string _first_month_of_fiscal_year;
@@ -216,16 +215,6 @@ class CoreCompanyProfiles
     ///Set the value of the column address
     void setAddress(const std::string &pAddress) noexcept;
     void setAddress(std::string &&pAddress) noexcept;
-
-    /**  For column country  */
-    ///Get the value of the column country, returns the default value if the column is null
-    const std::string &getValueOfCountry() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getCountry() const noexcept;
-    ///Set the value of the column country
-    void setCountry(const std::string &pCountry) noexcept;
-    void setCountry(std::string &&pCountry) noexcept;
-    void setCountryToNull() noexcept;
 
     /**  For column company_tin  */
     ///Get the value of the column company_tin, returns the default value if the column is null
@@ -549,7 +538,7 @@ class CoreCompanyProfiles
 
 
 
-    static size_t getColumnNumber() noexcept {  return 45;  }
+    static size_t getColumnNumber() noexcept {  return 44;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -604,7 +593,6 @@ class CoreCompanyProfiles
     std::shared_ptr<std::string> cityName_;
     std::shared_ptr<std::string> phoneNo_;
     std::shared_ptr<std::string> address_;
-    std::shared_ptr<std::string> country_;
     std::shared_ptr<std::string> companyTin_;
     std::shared_ptr<std::string> email_;
     std::shared_ptr<int32_t> firstMonthOfFiscalYear_;
@@ -654,7 +642,7 @@ class CoreCompanyProfiles
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[45]={ false };
+    bool dirtyFlag_[44]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -726,154 +714,148 @@ class CoreCompanyProfiles
         {
             needSelection=true;
         }
-
-        if(dirtyFlag_[7])
-        {
-            sql += "country,";
-            ++parametersCount;
-        }
         sql += "company_tin,";
         ++parametersCount;
 
-        if(!dirtyFlag_[8])
+        if(!dirtyFlag_[7])
         {
             needSelection=true;
         }
         sql += "email,";
         ++parametersCount;
 
-        if(!dirtyFlag_[9])
+        if(!dirtyFlag_[8])
         {
             needSelection=true;
         }
         sql += "first_month_of_fiscal_year,";
         ++parametersCount;
 
-        if(!dirtyFlag_[10])
+        if(!dirtyFlag_[9])
         {
             needSelection=true;
         }
         sql += "vat_no,";
         ++parametersCount;
 
-        if(!dirtyFlag_[11])
+        if(!dirtyFlag_[10])
         {
             needSelection=true;
         }
         sql += "employer_social_security_no,";
         ++parametersCount;
 
-        if(!dirtyFlag_[12])
+        if(!dirtyFlag_[11])
         {
             needSelection=true;
         }
         sql += "pay_social_security_fund,";
         ++parametersCount;
 
-        if(!dirtyFlag_[13])
+        if(!dirtyFlag_[12])
         {
             needSelection=true;
         }
         sql += "social_security_fund_employee_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[14])
+        if(!dirtyFlag_[13])
         {
             needSelection=true;
         }
         sql += "social_security_fund_employer_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[15])
+        if(!dirtyFlag_[14])
         {
             needSelection=true;
         }
         sql += "pay_provident_fund,";
         ++parametersCount;
 
-        if(!dirtyFlag_[16])
+        if(!dirtyFlag_[15])
         {
             needSelection=true;
         }
         sql += "provident_fund_employee_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[17])
+        if(!dirtyFlag_[16])
         {
             needSelection=true;
         }
         sql += "provident_fund_employer_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[18])
+        if(!dirtyFlag_[17])
         {
             needSelection=true;
         }
         sql += "provident_fund_treat_as_social_security_fund,";
         ++parametersCount;
 
-        if(!dirtyFlag_[19])
+        if(!dirtyFlag_[18])
         {
             needSelection=true;
         }
         sql += "provident_fund_tax_employer_portion,";
         ++parametersCount;
 
-        if(!dirtyFlag_[20])
+        if(!dirtyFlag_[19])
         {
             needSelection=true;
         }
         sql += "pay_second_provident_or_others,";
         ++parametersCount;
 
-        if(!dirtyFlag_[21])
+        if(!dirtyFlag_[20])
         {
             needSelection=true;
         }
         sql += "second_provident_employee_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[22])
+        if(!dirtyFlag_[21])
         {
             needSelection=true;
         }
         sql += "second_provident_employer_rate,";
         ++parametersCount;
 
-        if(!dirtyFlag_[23])
+        if(!dirtyFlag_[22])
         {
             needSelection=true;
         }
         sql += "treat_second_provident_as_ssf,";
         ++parametersCount;
 
-        if(!dirtyFlag_[24])
+        if(!dirtyFlag_[23])
         {
             needSelection=true;
         }
         sql += "second_provident_tax_employer_portion,";
         ++parametersCount;
 
-        if(!dirtyFlag_[25])
+        if(!dirtyFlag_[24])
         {
             needSelection=true;
         }
         sql += "overtime_percentage_on_basic_salary,";
         ++parametersCount;
 
-        if(!dirtyFlag_[26])
+        if(!dirtyFlag_[25])
         {
             needSelection=true;
         }
         sql += "overtime_percentage_on_daily_wage,";
         ++parametersCount;
 
-        if(!dirtyFlag_[27])
+        if(!dirtyFlag_[26])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[28])
+        if(dirtyFlag_[27])
         {
             sql += "default_currency_id,";
             ++parametersCount;
@@ -881,61 +863,61 @@ class CoreCompanyProfiles
         sql += "mail_host_name,";
         ++parametersCount;
 
-        if(!dirtyFlag_[29])
+        if(!dirtyFlag_[28])
         {
             needSelection=true;
         }
         sql += "is_ssl_enabled,";
         ++parametersCount;
 
-        if(!dirtyFlag_[30])
+        if(!dirtyFlag_[29])
         {
             needSelection=true;
         }
         sql += "port_number,";
         ++parametersCount;
 
-        if(!dirtyFlag_[31])
+        if(!dirtyFlag_[30])
         {
             needSelection=true;
         }
         sql += "primary_email_address,";
         ++parametersCount;
 
-        if(!dirtyFlag_[32])
+        if(!dirtyFlag_[31])
         {
             needSelection=true;
         }
         sql += "is_tax_levies_inclusive,";
         ++parametersCount;
 
-        if(!dirtyFlag_[33])
+        if(!dirtyFlag_[32])
         {
             needSelection=true;
         }
         sql += "approve_invoice_before_payment,";
         ++parametersCount;
 
-        if(!dirtyFlag_[34])
+        if(!dirtyFlag_[33])
         {
             needSelection=true;
         }
         sql += "company_logo_url,";
         ++parametersCount;
 
-        if(!dirtyFlag_[35])
+        if(!dirtyFlag_[34])
         {
             needSelection=true;
         }
         sql += "enforce_ou,";
         ++parametersCount;
 
-        if(!dirtyFlag_[36])
+        if(!dirtyFlag_[35])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[37])
+        if(dirtyFlag_[36])
         {
             sql += "email_password_encrypted,";
             ++parametersCount;
@@ -943,24 +925,24 @@ class CoreCompanyProfiles
         sql += "created_at,";
         ++parametersCount;
 
-        if(!dirtyFlag_[38])
+        if(!dirtyFlag_[37])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[39])
+        if(dirtyFlag_[38])
         {
             sql += "created_by_user_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[40])
+        if(dirtyFlag_[39])
         {
             sql += "last_modified_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[41])
+        if(dirtyFlag_[40])
         {
             sql += "last_modified_by_user_id,";
             ++parametersCount;
@@ -968,18 +950,18 @@ class CoreCompanyProfiles
         sql += "is_deleted,";
         ++parametersCount;
 
-        if(!dirtyFlag_[42])
+        if(!dirtyFlag_[41])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[43])
+        if(dirtyFlag_[42])
         {
             sql += "deleted_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[44])
+        if(dirtyFlag_[43])
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
@@ -1090,6 +1072,11 @@ class CoreCompanyProfiles
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[8])
@@ -1347,17 +1334,17 @@ class CoreCompanyProfiles
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[28])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[29])
@@ -1459,11 +1446,6 @@ class CoreCompanyProfiles
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[37])
         {
 
@@ -1472,17 +1454,17 @@ class CoreCompanyProfiles
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[38])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[39])
@@ -1509,6 +1491,11 @@ class CoreCompanyProfiles
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[42])
         {
 
@@ -1517,20 +1504,7 @@ class CoreCompanyProfiles
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[43])
-        {
-
-            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
-
-        }
-
-        if(dirtyFlag_[44])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

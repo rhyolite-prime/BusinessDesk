@@ -43,6 +43,8 @@ const std::string GlImprestCategories::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string GlImprestCategories::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string GlImprestCategories::Cols::_version = "\"version\"";
+
 
 const std::string GlImprestCategories::primaryKeyName = "id";
 
@@ -62,7 +64,8 @@ const std::vector<typename GlImprestCategories::MetaData> GlImprestCategories::m
 {"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","std::string","uuid",0,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"version","int32_t","integer",4,0,0,1}
 
 };
 const std::string &GlImprestCategories::getColumnName(size_t index) noexcept(false)
@@ -203,11 +206,18 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
 
         }
 
+        if(!r["version"].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r["version"].as<int32_t>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 11 > r.size())
+        if(offset + 12 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -353,13 +363,21 @@ GlImprestCategories::GlImprestCategories(const Row &r, const ssize_t indexOffset
 
         }
 
+        index = offset + 11;
+        if(!r[index].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
     }
 
 }
 
 GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 12)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -518,6 +536,15 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson, const std::ve
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[11]].asInt64());
         }
     }
 
@@ -682,12 +709,21 @@ GlImprestCategories::GlImprestCategories(const Json::Value &pJson) noexcept(fals
         }
     }
 
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[11]=true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
+        }
+    }
+
 }
 
 void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 12)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -848,6 +884,15 @@ void GlImprestCategories::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson[pMasqueradingVector[11]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[11]].asInt64());
+        }
+    }
+
 }
 
 void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -1005,6 +1050,15 @@ void GlImprestCategories::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[11] = true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
         }
     }
 
@@ -1262,6 +1316,23 @@ void GlImprestCategories::setDeletedByUserIdToNull() noexcept
     dirtyFlag_[10] = true;
 }
 
+const int32_t &GlImprestCategories::getValueOfVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(version_)
+        return *version_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &GlImprestCategories::getVersion() const noexcept
+{
+    return version_;
+}
+void GlImprestCategories::setVersion(const int32_t &pVersion) noexcept
+{
+    version_ = std::make_shared<int32_t>(pVersion);
+    dirtyFlag_[11] = true;
+}
+
 void GlImprestCategories::updateId(const uint64_t id)
 {
 }
@@ -1280,7 +1351,8 @@ const std::vector<std::string> &GlImprestCategories::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "version"
 
     };
     return inCols;
@@ -1421,6 +1493,18 @@ void GlImprestCategories::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[11])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlImprestCategories::updateColumns() const
@@ -1480,6 +1564,11 @@ const std::vector<std::string> GlImprestCategories::updateColumns() const
     if(dirtyFlag_[10])
     {
         ret.push_back(getColumnName(10));
+    }
+
+    if(dirtyFlag_[11])
+    {
+        ret.push_back(getColumnName(11));
     }
 
     return ret;
@@ -1620,6 +1709,18 @@ void GlImprestCategories::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[11])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlImprestCategories::toJson() const
 {
@@ -1746,6 +1847,17 @@ Json::Value GlImprestCategories::toJson() const
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -1758,7 +1870,7 @@ Json::Value GlImprestCategories::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 11)
+    if(pMasqueradingVector.size() == 12)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -1915,6 +2027,20 @@ Json::Value GlImprestCategories::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[11].empty())
+        {
+            if(getVersion())
+            {
+
+                ret[pMasqueradingVector[11]]=getValueOfVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[11]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -2040,6 +2166,17 @@ Json::Value GlImprestCategories::toMasqueradedJson(
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -2130,13 +2267,19 @@ bool GlImprestCategories::validateJsonForCreation(const Json::Value &pJson, std:
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(11, "version", pJson["version"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlImprestCategories::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 12)
     {
         err = "Bad masquerading vector";
         return false;
@@ -2271,6 +2414,16 @@ bool GlImprestCategories::validateMasqueradedJsonForCreation(const Json::Value &
 
       }
 
+      if(!pMasqueradingVector[11].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[11]))
+          {
+              if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -2354,13 +2507,19 @@ bool GlImprestCategories::validateJsonForUpdate(const Json::Value &pJson, std::s
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(11, "version", pJson["version"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlImprestCategories::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 11)
+    if(pMasqueradingVector.size() != 12)
     {
         err = "Bad masquerading vector";
         return false;
@@ -2436,6 +2595,12 @@ bool GlImprestCategories::validateMasqueradedJsonForUpdate(const Json::Value &pJ
       if(!pMasqueradingVector[10].empty() && pJson.isMember(pMasqueradingVector[10]))
       {
           if(!validJsonOfField(10, pMasqueradingVector[10], pJson[pMasqueradingVector[10]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[11].empty() && pJson.isMember(pMasqueradingVector[11]))
+      {
+          if(!validJsonOfField(11, pMasqueradingVector[11], pJson[pMasqueradingVector[11]], err, false))
               return false;
       }
 
@@ -2628,6 +2793,22 @@ bool GlImprestCategories::validJsonOfField(size_t index,
             }
 
             if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 11:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

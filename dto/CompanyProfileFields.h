@@ -2,13 +2,12 @@
 #include <array>
 namespace business_desk::dto::company_profile {
 struct Field { const char* name; const char* column; const char* sqlType; char kind; int limit; };
-inline constexpr std::array<Field,35> fields{{
+inline constexpr std::array<Field,34> fields{{
  {"companyName","company_name","varchar(200)",'s',200},
  {"countryName","country_name","varchar(100)",'s',100},
  {"cityName","city_name","varchar(160)",'s',160},
  {"phoneNo","phone_no","varchar(50)",'s',50},
  {"address","address","varchar(1000)",'s',1000},
- {"country","country","uuid",'u',0},
  {"companyTin","company_tin","varchar(100)",'s',100},
  {"email","email","varchar(254)",'s',254},
  {"firstMonthOfFiscalYear","first_month_of_fiscal_year","integer",'i',12},

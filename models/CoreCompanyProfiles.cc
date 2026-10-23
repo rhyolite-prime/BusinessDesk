@@ -39,8 +39,6 @@ const std::string CoreCompanyProfiles::Cols::_phone_no = "\"phone_no\"";
 
 const std::string CoreCompanyProfiles::Cols::_address = "\"address\"";
 
-const std::string CoreCompanyProfiles::Cols::_country = "\"country\"";
-
 const std::string CoreCompanyProfiles::Cols::_company_tin = "\"company_tin\"";
 
 const std::string CoreCompanyProfiles::Cols::_email = "\"email\"";
@@ -131,7 +129,6 @@ const std::vector<typename CoreCompanyProfiles::MetaData> CoreCompanyProfiles::m
 {"city_name","std::string","character varying",160,0,0,1},
 {"phone_no","std::string","character varying",50,0,0,1},
 {"address","std::string","character varying",1000,0,0,1},
-{"country","std::string","uuid",0,0,0,0},
 {"company_tin","std::string","character varying",100,0,0,1},
 {"email","std::string","character varying",254,0,0,1},
 {"first_month_of_fiscal_year","int32_t","integer",4,0,0,1},
@@ -159,7 +156,7 @@ const std::vector<typename CoreCompanyProfiles::MetaData> CoreCompanyProfiles::m
 {"primary_email_address","std::string","character varying",254,0,0,1},
 {"is_tax_levies_inclusive","bool","boolean",1,0,0,1},
 {"approve_invoice_before_payment","bool","boolean",1,0,0,1},
-{"company_logo_url","std::string","character varying",2048,0,0,1},
+{"company_logo_url","std::string","text",0,0,0,1},
 {"enforce_ou","bool","boolean",1,0,0,1},
 {"email_password_encrypted","std::string","text",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
@@ -227,13 +224,6 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         {
 
             address_=std::make_shared<std::string>(r["address"].as<std::string>());
-
-        }
-
-        if(!r["country"].isNull())
-        {
-
-            country_=std::make_shared<std::string>(r["country"].as<std::string>());
 
         }
 
@@ -551,7 +541,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 45 > r.size())
+        if(offset + 44 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -618,7 +608,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            country_=std::make_shared<std::string>(r[index].as<std::string>());
+            companyTin_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -626,7 +616,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            companyTin_=std::make_shared<std::string>(r[index].as<std::string>());
+            email_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -634,7 +624,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            email_=std::make_shared<std::string>(r[index].as<std::string>());
+            firstMonthOfFiscalYear_=std::make_shared<int32_t>(r[index].as<int32_t>());
 
         }
 
@@ -642,7 +632,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            firstMonthOfFiscalYear_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            vatNo_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -650,7 +640,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            vatNo_=std::make_shared<std::string>(r[index].as<std::string>());
+            employerSocialSecurityNo_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -658,7 +648,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            employerSocialSecurityNo_=std::make_shared<std::string>(r[index].as<std::string>());
+            paySocialSecurityFund_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -666,7 +656,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            paySocialSecurityFund_=std::make_shared<bool>(r[index].as<bool>());
+            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -674,7 +664,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            socialSecurityFundEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -682,7 +672,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            socialSecurityFundEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            payProvidentFund_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -690,7 +680,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            payProvidentFund_=std::make_shared<bool>(r[index].as<bool>());
+            providentFundEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -698,7 +688,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            providentFundEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            providentFundEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -706,7 +696,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            providentFundEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -714,7 +704,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(r[index].as<bool>());
+            providentFundTaxEmployerPortion_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -722,7 +712,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            providentFundTaxEmployerPortion_=std::make_shared<bool>(r[index].as<bool>());
+            paySecondProvidentOrOthers_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -730,7 +720,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            paySecondProvidentOrOthers_=std::make_shared<bool>(r[index].as<bool>());
+            secondProvidentEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -738,7 +728,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            secondProvidentEmployeeRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            secondProvidentEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -746,7 +736,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            secondProvidentEmployerRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            treatSecondProvidentAsSsf_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -754,7 +744,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            treatSecondProvidentAsSsf_=std::make_shared<bool>(r[index].as<bool>());
+            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -762,7 +752,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(r[index].as<bool>());
+            overtimePercentageOnBasicSalary_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -770,7 +760,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            overtimePercentageOnBasicSalary_=std::make_shared<bool>(r[index].as<bool>());
+            overtimePercentageOnDailyWage_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -778,7 +768,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            overtimePercentageOnDailyWage_=std::make_shared<bool>(r[index].as<bool>());
+            defaultCurrencyId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -786,7 +776,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            defaultCurrencyId_=std::make_shared<std::string>(r[index].as<std::string>());
+            mailHostName_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -794,7 +784,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            mailHostName_=std::make_shared<std::string>(r[index].as<std::string>());
+            isSslEnabled_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -802,7 +792,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            isSslEnabled_=std::make_shared<bool>(r[index].as<bool>());
+            portNumber_=std::make_shared<int32_t>(r[index].as<int32_t>());
 
         }
 
@@ -810,7 +800,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            portNumber_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            primaryEmailAddress_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -818,7 +808,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            primaryEmailAddress_=std::make_shared<std::string>(r[index].as<std::string>());
+            isTaxLeviesInclusive_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -826,7 +816,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            isTaxLeviesInclusive_=std::make_shared<bool>(r[index].as<bool>());
+            approveInvoiceBeforePayment_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -834,7 +824,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            approveInvoiceBeforePayment_=std::make_shared<bool>(r[index].as<bool>());
+            companyLogoUrl_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -842,7 +832,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            companyLogoUrl_=std::make_shared<std::string>(r[index].as<std::string>());
+            enforceOu_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -850,19 +840,11 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            enforceOu_=std::make_shared<bool>(r[index].as<bool>());
-
-        }
-
-        index = offset + 37;
-        if(!r[index].isNull())
-        {
-
             emailPasswordEncrypted_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
-        index = offset + 38;
+        index = offset + 37;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -887,7 +869,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
             }
         }
 
-        index = offset + 39;
+        index = offset + 38;
         if(!r[index].isNull())
         {
 
@@ -895,7 +877,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
         }
 
-        index = offset + 40;
+        index = offset + 39;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -920,7 +902,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
             }
         }
 
-        index = offset + 41;
+        index = offset + 40;
         if(!r[index].isNull())
         {
 
@@ -928,7 +910,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
         }
 
-        index = offset + 42;
+        index = offset + 41;
         if(!r[index].isNull())
         {
 
@@ -936,7 +918,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
         }
 
-        index = offset + 43;
+        index = offset + 42;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -961,7 +943,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
             }
         }
 
-        index = offset + 44;
+        index = offset + 43;
         if(!r[index].isNull())
         {
 
@@ -975,7 +957,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
 CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 45)
+    if(pMasqueradingVector.size() != 44)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1049,7 +1031,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            country_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+            companyTin_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
         }
     }
 
@@ -1058,7 +1040,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            companyTin_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            email_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -1067,7 +1049,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            email_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+            firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[9]].asInt64());
         }
     }
 
@@ -1076,7 +1058,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[10]].asInt64());
+            vatNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -1085,7 +1067,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            vatNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+            employerSocialSecurityNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -1094,7 +1076,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            employerSocialSecurityNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
+            paySocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[12]].asBool());
         }
     }
 
@@ -1103,7 +1085,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            paySocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[13]].asBool());
+            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -1112,7 +1094,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
+            socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1121,7 +1103,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
+            payProvidentFund_=std::make_shared<bool>(pJson[pMasqueradingVector[15]].asBool());
         }
     }
 
@@ -1130,7 +1112,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            payProvidentFund_=std::make_shared<bool>(pJson[pMasqueradingVector[16]].asBool());
+            providentFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -1139,7 +1121,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            providentFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
+            providentFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -1148,7 +1130,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            providentFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
+            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
         }
     }
 
@@ -1157,7 +1139,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
+            providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
         }
     }
 
@@ -1166,7 +1148,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
+            paySecondProvidentOrOthers_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -1175,7 +1157,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            paySecondProvidentOrOthers_=std::make_shared<bool>(pJson[pMasqueradingVector[21]].asBool());
+            secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
         }
     }
 
@@ -1184,7 +1166,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
+            secondProvidentEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -1193,7 +1175,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            secondProvidentEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson[pMasqueradingVector[23]].asBool());
         }
     }
 
@@ -1202,7 +1184,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson[pMasqueradingVector[24]].asBool());
+            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[24]].asBool());
         }
     }
 
@@ -1211,7 +1193,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[25] = true;
         if(!pJson[pMasqueradingVector[25]].isNull())
         {
-            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[25]].asBool());
+            overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson[pMasqueradingVector[25]].asBool());
         }
     }
 
@@ -1220,7 +1202,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson[pMasqueradingVector[26]].asBool());
+            overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson[pMasqueradingVector[26]].asBool());
         }
     }
 
@@ -1229,7 +1211,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson[pMasqueradingVector[27]].asBool());
+            defaultCurrencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
         }
     }
 
@@ -1238,7 +1220,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[28] = true;
         if(!pJson[pMasqueradingVector[28]].isNull())
         {
-            defaultCurrencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
+            mailHostName_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
         }
     }
 
@@ -1247,7 +1229,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[29] = true;
         if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            mailHostName_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
+            isSslEnabled_=std::make_shared<bool>(pJson[pMasqueradingVector[29]].asBool());
         }
     }
 
@@ -1256,7 +1238,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[30] = true;
         if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            isSslEnabled_=std::make_shared<bool>(pJson[pMasqueradingVector[30]].asBool());
+            portNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[30]].asInt64());
         }
     }
 
@@ -1265,7 +1247,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[31] = true;
         if(!pJson[pMasqueradingVector[31]].isNull())
         {
-            portNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[31]].asInt64());
+            primaryEmailAddress_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
         }
     }
 
@@ -1274,7 +1256,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            primaryEmailAddress_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
+            isTaxLeviesInclusive_=std::make_shared<bool>(pJson[pMasqueradingVector[32]].asBool());
         }
     }
 
@@ -1283,7 +1265,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            isTaxLeviesInclusive_=std::make_shared<bool>(pJson[pMasqueradingVector[33]].asBool());
+            approveInvoiceBeforePayment_=std::make_shared<bool>(pJson[pMasqueradingVector[33]].asBool());
         }
     }
 
@@ -1292,7 +1274,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[34] = true;
         if(!pJson[pMasqueradingVector[34]].isNull())
         {
-            approveInvoiceBeforePayment_=std::make_shared<bool>(pJson[pMasqueradingVector[34]].asBool());
+            companyLogoUrl_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
         }
     }
 
@@ -1301,7 +1283,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            companyLogoUrl_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
+            enforceOu_=std::make_shared<bool>(pJson[pMasqueradingVector[35]].asBool());
         }
     }
 
@@ -1310,7 +1292,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[36] = true;
         if(!pJson[pMasqueradingVector[36]].isNull())
         {
-            enforceOu_=std::make_shared<bool>(pJson[pMasqueradingVector[36]].asBool());
+            emailPasswordEncrypted_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
         }
     }
 
@@ -1319,16 +1301,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            emailPasswordEncrypted_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
-    {
-        dirtyFlag_[38] = true;
-        if(!pJson[pMasqueradingVector[38]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[38]].asString();
+            auto timeStr = pJson[pMasqueradingVector[37]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1351,21 +1324,21 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         }
     }
 
+    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
+    {
+        dirtyFlag_[38] = true;
+        if(!pJson[pMasqueradingVector[38]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[38]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
     {
         dirtyFlag_[39] = true;
         if(!pJson[pMasqueradingVector[39]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
-    {
-        dirtyFlag_[40] = true;
-        if(!pJson[pMasqueradingVector[40]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[40]].asString();
+            auto timeStr = pJson[pMasqueradingVector[39]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1388,12 +1361,21 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         }
     }
 
+    if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
+    {
+        dirtyFlag_[40] = true;
+        if(!pJson[pMasqueradingVector[40]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[40]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[41].empty() && pJson.isMember(pMasqueradingVector[41]))
     {
         dirtyFlag_[41] = true;
         if(!pJson[pMasqueradingVector[41]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[41]].asString());
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[41]].asBool());
         }
     }
 
@@ -1402,16 +1384,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         dirtyFlag_[42] = true;
         if(!pJson[pMasqueradingVector[42]].isNull())
         {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[42]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[43].empty() && pJson.isMember(pMasqueradingVector[43]))
-    {
-        dirtyFlag_[43] = true;
-        if(!pJson[pMasqueradingVector[43]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[43]].asString();
+            auto timeStr = pJson[pMasqueradingVector[42]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1434,12 +1407,12 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         }
     }
 
-    if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
+    if(!pMasqueradingVector[43].empty() && pJson.isMember(pMasqueradingVector[43]))
     {
-        dirtyFlag_[44] = true;
-        if(!pJson[pMasqueradingVector[44]].isNull())
+        dirtyFlag_[43] = true;
+        if(!pJson[pMasqueradingVector[43]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[44]].asString());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[43]].asString());
         }
     }
 
@@ -1511,18 +1484,9 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
         }
     }
 
-    if(pJson.isMember("country"))
-    {
-        dirtyFlag_[7]=true;
-        if(!pJson["country"].isNull())
-        {
-            country_=std::make_shared<std::string>(pJson["country"].asString());
-        }
-    }
-
     if(pJson.isMember("company_tin"))
     {
-        dirtyFlag_[8]=true;
+        dirtyFlag_[7]=true;
         if(!pJson["company_tin"].isNull())
         {
             companyTin_=std::make_shared<std::string>(pJson["company_tin"].asString());
@@ -1531,7 +1495,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("email"))
     {
-        dirtyFlag_[9]=true;
+        dirtyFlag_[8]=true;
         if(!pJson["email"].isNull())
         {
             email_=std::make_shared<std::string>(pJson["email"].asString());
@@ -1540,7 +1504,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("first_month_of_fiscal_year"))
     {
-        dirtyFlag_[10]=true;
+        dirtyFlag_[9]=true;
         if(!pJson["first_month_of_fiscal_year"].isNull())
         {
             firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson["first_month_of_fiscal_year"].asInt64());
@@ -1549,7 +1513,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("vat_no"))
     {
-        dirtyFlag_[11]=true;
+        dirtyFlag_[10]=true;
         if(!pJson["vat_no"].isNull())
         {
             vatNo_=std::make_shared<std::string>(pJson["vat_no"].asString());
@@ -1558,7 +1522,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("employer_social_security_no"))
     {
-        dirtyFlag_[12]=true;
+        dirtyFlag_[11]=true;
         if(!pJson["employer_social_security_no"].isNull())
         {
             employerSocialSecurityNo_=std::make_shared<std::string>(pJson["employer_social_security_no"].asString());
@@ -1567,7 +1531,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("pay_social_security_fund"))
     {
-        dirtyFlag_[13]=true;
+        dirtyFlag_[12]=true;
         if(!pJson["pay_social_security_fund"].isNull())
         {
             paySocialSecurityFund_=std::make_shared<bool>(pJson["pay_social_security_fund"].asBool());
@@ -1576,7 +1540,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("social_security_fund_employee_rate"))
     {
-        dirtyFlag_[14]=true;
+        dirtyFlag_[13]=true;
         if(!pJson["social_security_fund_employee_rate"].isNull())
         {
             socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson["social_security_fund_employee_rate"].asString());
@@ -1585,7 +1549,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("social_security_fund_employer_rate"))
     {
-        dirtyFlag_[15]=true;
+        dirtyFlag_[14]=true;
         if(!pJson["social_security_fund_employer_rate"].isNull())
         {
             socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson["social_security_fund_employer_rate"].asString());
@@ -1594,7 +1558,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("pay_provident_fund"))
     {
-        dirtyFlag_[16]=true;
+        dirtyFlag_[15]=true;
         if(!pJson["pay_provident_fund"].isNull())
         {
             payProvidentFund_=std::make_shared<bool>(pJson["pay_provident_fund"].asBool());
@@ -1603,7 +1567,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("provident_fund_employee_rate"))
     {
-        dirtyFlag_[17]=true;
+        dirtyFlag_[16]=true;
         if(!pJson["provident_fund_employee_rate"].isNull())
         {
             providentFundEmployeeRate_=std::make_shared<std::string>(pJson["provident_fund_employee_rate"].asString());
@@ -1612,7 +1576,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("provident_fund_employer_rate"))
     {
-        dirtyFlag_[18]=true;
+        dirtyFlag_[17]=true;
         if(!pJson["provident_fund_employer_rate"].isNull())
         {
             providentFundEmployerRate_=std::make_shared<std::string>(pJson["provident_fund_employer_rate"].asString());
@@ -1621,7 +1585,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("provident_fund_treat_as_social_security_fund"))
     {
-        dirtyFlag_[19]=true;
+        dirtyFlag_[18]=true;
         if(!pJson["provident_fund_treat_as_social_security_fund"].isNull())
         {
             providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson["provident_fund_treat_as_social_security_fund"].asBool());
@@ -1630,7 +1594,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("provident_fund_tax_employer_portion"))
     {
-        dirtyFlag_[20]=true;
+        dirtyFlag_[19]=true;
         if(!pJson["provident_fund_tax_employer_portion"].isNull())
         {
             providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson["provident_fund_tax_employer_portion"].asBool());
@@ -1639,7 +1603,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("pay_second_provident_or_others"))
     {
-        dirtyFlag_[21]=true;
+        dirtyFlag_[20]=true;
         if(!pJson["pay_second_provident_or_others"].isNull())
         {
             paySecondProvidentOrOthers_=std::make_shared<bool>(pJson["pay_second_provident_or_others"].asBool());
@@ -1648,7 +1612,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("second_provident_employee_rate"))
     {
-        dirtyFlag_[22]=true;
+        dirtyFlag_[21]=true;
         if(!pJson["second_provident_employee_rate"].isNull())
         {
             secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson["second_provident_employee_rate"].asString());
@@ -1657,7 +1621,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("second_provident_employer_rate"))
     {
-        dirtyFlag_[23]=true;
+        dirtyFlag_[22]=true;
         if(!pJson["second_provident_employer_rate"].isNull())
         {
             secondProvidentEmployerRate_=std::make_shared<std::string>(pJson["second_provident_employer_rate"].asString());
@@ -1666,7 +1630,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("treat_second_provident_as_ssf"))
     {
-        dirtyFlag_[24]=true;
+        dirtyFlag_[23]=true;
         if(!pJson["treat_second_provident_as_ssf"].isNull())
         {
             treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson["treat_second_provident_as_ssf"].asBool());
@@ -1675,7 +1639,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("second_provident_tax_employer_portion"))
     {
-        dirtyFlag_[25]=true;
+        dirtyFlag_[24]=true;
         if(!pJson["second_provident_tax_employer_portion"].isNull())
         {
             secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson["second_provident_tax_employer_portion"].asBool());
@@ -1684,7 +1648,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("overtime_percentage_on_basic_salary"))
     {
-        dirtyFlag_[26]=true;
+        dirtyFlag_[25]=true;
         if(!pJson["overtime_percentage_on_basic_salary"].isNull())
         {
             overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson["overtime_percentage_on_basic_salary"].asBool());
@@ -1693,7 +1657,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("overtime_percentage_on_daily_wage"))
     {
-        dirtyFlag_[27]=true;
+        dirtyFlag_[26]=true;
         if(!pJson["overtime_percentage_on_daily_wage"].isNull())
         {
             overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson["overtime_percentage_on_daily_wage"].asBool());
@@ -1702,7 +1666,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("default_currency_id"))
     {
-        dirtyFlag_[28]=true;
+        dirtyFlag_[27]=true;
         if(!pJson["default_currency_id"].isNull())
         {
             defaultCurrencyId_=std::make_shared<std::string>(pJson["default_currency_id"].asString());
@@ -1711,7 +1675,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("mail_host_name"))
     {
-        dirtyFlag_[29]=true;
+        dirtyFlag_[28]=true;
         if(!pJson["mail_host_name"].isNull())
         {
             mailHostName_=std::make_shared<std::string>(pJson["mail_host_name"].asString());
@@ -1720,7 +1684,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("is_ssl_enabled"))
     {
-        dirtyFlag_[30]=true;
+        dirtyFlag_[29]=true;
         if(!pJson["is_ssl_enabled"].isNull())
         {
             isSslEnabled_=std::make_shared<bool>(pJson["is_ssl_enabled"].asBool());
@@ -1729,7 +1693,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("port_number"))
     {
-        dirtyFlag_[31]=true;
+        dirtyFlag_[30]=true;
         if(!pJson["port_number"].isNull())
         {
             portNumber_=std::make_shared<int32_t>((int32_t)pJson["port_number"].asInt64());
@@ -1738,7 +1702,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("primary_email_address"))
     {
-        dirtyFlag_[32]=true;
+        dirtyFlag_[31]=true;
         if(!pJson["primary_email_address"].isNull())
         {
             primaryEmailAddress_=std::make_shared<std::string>(pJson["primary_email_address"].asString());
@@ -1747,7 +1711,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("is_tax_levies_inclusive"))
     {
-        dirtyFlag_[33]=true;
+        dirtyFlag_[32]=true;
         if(!pJson["is_tax_levies_inclusive"].isNull())
         {
             isTaxLeviesInclusive_=std::make_shared<bool>(pJson["is_tax_levies_inclusive"].asBool());
@@ -1756,7 +1720,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("approve_invoice_before_payment"))
     {
-        dirtyFlag_[34]=true;
+        dirtyFlag_[33]=true;
         if(!pJson["approve_invoice_before_payment"].isNull())
         {
             approveInvoiceBeforePayment_=std::make_shared<bool>(pJson["approve_invoice_before_payment"].asBool());
@@ -1765,7 +1729,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("company_logo_url"))
     {
-        dirtyFlag_[35]=true;
+        dirtyFlag_[34]=true;
         if(!pJson["company_logo_url"].isNull())
         {
             companyLogoUrl_=std::make_shared<std::string>(pJson["company_logo_url"].asString());
@@ -1774,7 +1738,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("enforce_ou"))
     {
-        dirtyFlag_[36]=true;
+        dirtyFlag_[35]=true;
         if(!pJson["enforce_ou"].isNull())
         {
             enforceOu_=std::make_shared<bool>(pJson["enforce_ou"].asBool());
@@ -1783,7 +1747,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("email_password_encrypted"))
     {
-        dirtyFlag_[37]=true;
+        dirtyFlag_[36]=true;
         if(!pJson["email_password_encrypted"].isNull())
         {
             emailPasswordEncrypted_=std::make_shared<std::string>(pJson["email_password_encrypted"].asString());
@@ -1792,7 +1756,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[38]=true;
+        dirtyFlag_[37]=true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -1820,7 +1784,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[39]=true;
+        dirtyFlag_[38]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -1829,7 +1793,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[40]=true;
+        dirtyFlag_[39]=true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -1857,7 +1821,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[41]=true;
+        dirtyFlag_[40]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -1866,7 +1830,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[42]=true;
+        dirtyFlag_[41]=true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -1875,7 +1839,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[43]=true;
+        dirtyFlag_[42]=true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -1903,7 +1867,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[44]=true;
+        dirtyFlag_[43]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -1915,7 +1879,7 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
 void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 45)
+    if(pMasqueradingVector.size() != 44)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1988,7 +1952,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[7] = true;
         if(!pJson[pMasqueradingVector[7]].isNull())
         {
-            country_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
+            companyTin_=std::make_shared<std::string>(pJson[pMasqueradingVector[7]].asString());
         }
     }
 
@@ -1997,7 +1961,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            companyTin_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
+            email_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -2006,7 +1970,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            email_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
+            firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[9]].asInt64());
         }
     }
 
@@ -2015,7 +1979,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[10]].asInt64());
+            vatNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -2024,7 +1988,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            vatNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
+            employerSocialSecurityNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -2033,7 +1997,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            employerSocialSecurityNo_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
+            paySocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[12]].asBool());
         }
     }
 
@@ -2042,7 +2006,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            paySocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[13]].asBool());
+            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -2051,7 +2015,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
+            socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -2060,7 +2024,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
+            payProvidentFund_=std::make_shared<bool>(pJson[pMasqueradingVector[15]].asBool());
         }
     }
 
@@ -2069,7 +2033,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            payProvidentFund_=std::make_shared<bool>(pJson[pMasqueradingVector[16]].asBool());
+            providentFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -2078,7 +2042,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            providentFundEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
+            providentFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -2087,7 +2051,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            providentFundEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
+            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[18]].asBool());
         }
     }
 
@@ -2096,7 +2060,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
+            providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[19]].asBool());
         }
     }
 
@@ -2105,7 +2069,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
+            paySecondProvidentOrOthers_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -2114,7 +2078,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            paySecondProvidentOrOthers_=std::make_shared<bool>(pJson[pMasqueradingVector[21]].asBool());
+            secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
         }
     }
 
@@ -2123,7 +2087,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
+            secondProvidentEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -2132,7 +2096,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            secondProvidentEmployerRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson[pMasqueradingVector[23]].asBool());
         }
     }
 
@@ -2141,7 +2105,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson[pMasqueradingVector[24]].asBool());
+            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[24]].asBool());
         }
     }
 
@@ -2150,7 +2114,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[25] = true;
         if(!pJson[pMasqueradingVector[25]].isNull())
         {
-            secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson[pMasqueradingVector[25]].asBool());
+            overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson[pMasqueradingVector[25]].asBool());
         }
     }
 
@@ -2159,7 +2123,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson[pMasqueradingVector[26]].asBool());
+            overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson[pMasqueradingVector[26]].asBool());
         }
     }
 
@@ -2168,7 +2132,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson[pMasqueradingVector[27]].asBool());
+            defaultCurrencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[27]].asString());
         }
     }
 
@@ -2177,7 +2141,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[28] = true;
         if(!pJson[pMasqueradingVector[28]].isNull())
         {
-            defaultCurrencyId_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
+            mailHostName_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
         }
     }
 
@@ -2186,7 +2150,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[29] = true;
         if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            mailHostName_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
+            isSslEnabled_=std::make_shared<bool>(pJson[pMasqueradingVector[29]].asBool());
         }
     }
 
@@ -2195,7 +2159,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[30] = true;
         if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            isSslEnabled_=std::make_shared<bool>(pJson[pMasqueradingVector[30]].asBool());
+            portNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[30]].asInt64());
         }
     }
 
@@ -2204,7 +2168,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[31] = true;
         if(!pJson[pMasqueradingVector[31]].isNull())
         {
-            portNumber_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[31]].asInt64());
+            primaryEmailAddress_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
         }
     }
 
@@ -2213,7 +2177,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            primaryEmailAddress_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
+            isTaxLeviesInclusive_=std::make_shared<bool>(pJson[pMasqueradingVector[32]].asBool());
         }
     }
 
@@ -2222,7 +2186,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            isTaxLeviesInclusive_=std::make_shared<bool>(pJson[pMasqueradingVector[33]].asBool());
+            approveInvoiceBeforePayment_=std::make_shared<bool>(pJson[pMasqueradingVector[33]].asBool());
         }
     }
 
@@ -2231,7 +2195,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[34] = true;
         if(!pJson[pMasqueradingVector[34]].isNull())
         {
-            approveInvoiceBeforePayment_=std::make_shared<bool>(pJson[pMasqueradingVector[34]].asBool());
+            companyLogoUrl_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
         }
     }
 
@@ -2240,7 +2204,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            companyLogoUrl_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
+            enforceOu_=std::make_shared<bool>(pJson[pMasqueradingVector[35]].asBool());
         }
     }
 
@@ -2249,7 +2213,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[36] = true;
         if(!pJson[pMasqueradingVector[36]].isNull())
         {
-            enforceOu_=std::make_shared<bool>(pJson[pMasqueradingVector[36]].asBool());
+            emailPasswordEncrypted_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
         }
     }
 
@@ -2258,16 +2222,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            emailPasswordEncrypted_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
-    {
-        dirtyFlag_[38] = true;
-        if(!pJson[pMasqueradingVector[38]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[38]].asString();
+            auto timeStr = pJson[pMasqueradingVector[37]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2290,21 +2245,21 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
+    {
+        dirtyFlag_[38] = true;
+        if(!pJson[pMasqueradingVector[38]].isNull())
+        {
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[38]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
     {
         dirtyFlag_[39] = true;
         if(!pJson[pMasqueradingVector[39]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
-    {
-        dirtyFlag_[40] = true;
-        if(!pJson[pMasqueradingVector[40]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[40]].asString();
+            auto timeStr = pJson[pMasqueradingVector[39]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2327,12 +2282,21 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[40].empty() && pJson.isMember(pMasqueradingVector[40]))
+    {
+        dirtyFlag_[40] = true;
+        if(!pJson[pMasqueradingVector[40]].isNull())
+        {
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[40]].asString());
+        }
+    }
+
     if(!pMasqueradingVector[41].empty() && pJson.isMember(pMasqueradingVector[41]))
     {
         dirtyFlag_[41] = true;
         if(!pJson[pMasqueradingVector[41]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[41]].asString());
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[41]].asBool());
         }
     }
 
@@ -2341,16 +2305,7 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[42] = true;
         if(!pJson[pMasqueradingVector[42]].isNull())
         {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[42]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[43].empty() && pJson.isMember(pMasqueradingVector[43]))
-    {
-        dirtyFlag_[43] = true;
-        if(!pJson[pMasqueradingVector[43]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[43]].asString();
+            auto timeStr = pJson[pMasqueradingVector[42]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -2373,12 +2328,12 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
-    if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
+    if(!pMasqueradingVector[43].empty() && pJson.isMember(pMasqueradingVector[43]))
     {
-        dirtyFlag_[44] = true;
-        if(!pJson[pMasqueradingVector[44]].isNull())
+        dirtyFlag_[43] = true;
+        if(!pJson[pMasqueradingVector[43]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[44]].asString());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[43]].asString());
         }
     }
 
@@ -2449,18 +2404,9 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("country"))
-    {
-        dirtyFlag_[7] = true;
-        if(!pJson["country"].isNull())
-        {
-            country_=std::make_shared<std::string>(pJson["country"].asString());
-        }
-    }
-
     if(pJson.isMember("company_tin"))
     {
-        dirtyFlag_[8] = true;
+        dirtyFlag_[7] = true;
         if(!pJson["company_tin"].isNull())
         {
             companyTin_=std::make_shared<std::string>(pJson["company_tin"].asString());
@@ -2469,7 +2415,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("email"))
     {
-        dirtyFlag_[9] = true;
+        dirtyFlag_[8] = true;
         if(!pJson["email"].isNull())
         {
             email_=std::make_shared<std::string>(pJson["email"].asString());
@@ -2478,7 +2424,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("first_month_of_fiscal_year"))
     {
-        dirtyFlag_[10] = true;
+        dirtyFlag_[9] = true;
         if(!pJson["first_month_of_fiscal_year"].isNull())
         {
             firstMonthOfFiscalYear_=std::make_shared<int32_t>((int32_t)pJson["first_month_of_fiscal_year"].asInt64());
@@ -2487,7 +2433,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("vat_no"))
     {
-        dirtyFlag_[11] = true;
+        dirtyFlag_[10] = true;
         if(!pJson["vat_no"].isNull())
         {
             vatNo_=std::make_shared<std::string>(pJson["vat_no"].asString());
@@ -2496,7 +2442,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("employer_social_security_no"))
     {
-        dirtyFlag_[12] = true;
+        dirtyFlag_[11] = true;
         if(!pJson["employer_social_security_no"].isNull())
         {
             employerSocialSecurityNo_=std::make_shared<std::string>(pJson["employer_social_security_no"].asString());
@@ -2505,7 +2451,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("pay_social_security_fund"))
     {
-        dirtyFlag_[13] = true;
+        dirtyFlag_[12] = true;
         if(!pJson["pay_social_security_fund"].isNull())
         {
             paySocialSecurityFund_=std::make_shared<bool>(pJson["pay_social_security_fund"].asBool());
@@ -2514,7 +2460,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("social_security_fund_employee_rate"))
     {
-        dirtyFlag_[14] = true;
+        dirtyFlag_[13] = true;
         if(!pJson["social_security_fund_employee_rate"].isNull())
         {
             socialSecurityFundEmployeeRate_=std::make_shared<std::string>(pJson["social_security_fund_employee_rate"].asString());
@@ -2523,7 +2469,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("social_security_fund_employer_rate"))
     {
-        dirtyFlag_[15] = true;
+        dirtyFlag_[14] = true;
         if(!pJson["social_security_fund_employer_rate"].isNull())
         {
             socialSecurityFundEmployerRate_=std::make_shared<std::string>(pJson["social_security_fund_employer_rate"].asString());
@@ -2532,7 +2478,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("pay_provident_fund"))
     {
-        dirtyFlag_[16] = true;
+        dirtyFlag_[15] = true;
         if(!pJson["pay_provident_fund"].isNull())
         {
             payProvidentFund_=std::make_shared<bool>(pJson["pay_provident_fund"].asBool());
@@ -2541,7 +2487,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("provident_fund_employee_rate"))
     {
-        dirtyFlag_[17] = true;
+        dirtyFlag_[16] = true;
         if(!pJson["provident_fund_employee_rate"].isNull())
         {
             providentFundEmployeeRate_=std::make_shared<std::string>(pJson["provident_fund_employee_rate"].asString());
@@ -2550,7 +2496,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("provident_fund_employer_rate"))
     {
-        dirtyFlag_[18] = true;
+        dirtyFlag_[17] = true;
         if(!pJson["provident_fund_employer_rate"].isNull())
         {
             providentFundEmployerRate_=std::make_shared<std::string>(pJson["provident_fund_employer_rate"].asString());
@@ -2559,7 +2505,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("provident_fund_treat_as_social_security_fund"))
     {
-        dirtyFlag_[19] = true;
+        dirtyFlag_[18] = true;
         if(!pJson["provident_fund_treat_as_social_security_fund"].isNull())
         {
             providentFundTreatAsSocialSecurityFund_=std::make_shared<bool>(pJson["provident_fund_treat_as_social_security_fund"].asBool());
@@ -2568,7 +2514,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("provident_fund_tax_employer_portion"))
     {
-        dirtyFlag_[20] = true;
+        dirtyFlag_[19] = true;
         if(!pJson["provident_fund_tax_employer_portion"].isNull())
         {
             providentFundTaxEmployerPortion_=std::make_shared<bool>(pJson["provident_fund_tax_employer_portion"].asBool());
@@ -2577,7 +2523,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("pay_second_provident_or_others"))
     {
-        dirtyFlag_[21] = true;
+        dirtyFlag_[20] = true;
         if(!pJson["pay_second_provident_or_others"].isNull())
         {
             paySecondProvidentOrOthers_=std::make_shared<bool>(pJson["pay_second_provident_or_others"].asBool());
@@ -2586,7 +2532,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("second_provident_employee_rate"))
     {
-        dirtyFlag_[22] = true;
+        dirtyFlag_[21] = true;
         if(!pJson["second_provident_employee_rate"].isNull())
         {
             secondProvidentEmployeeRate_=std::make_shared<std::string>(pJson["second_provident_employee_rate"].asString());
@@ -2595,7 +2541,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("second_provident_employer_rate"))
     {
-        dirtyFlag_[23] = true;
+        dirtyFlag_[22] = true;
         if(!pJson["second_provident_employer_rate"].isNull())
         {
             secondProvidentEmployerRate_=std::make_shared<std::string>(pJson["second_provident_employer_rate"].asString());
@@ -2604,7 +2550,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("treat_second_provident_as_ssf"))
     {
-        dirtyFlag_[24] = true;
+        dirtyFlag_[23] = true;
         if(!pJson["treat_second_provident_as_ssf"].isNull())
         {
             treatSecondProvidentAsSsf_=std::make_shared<bool>(pJson["treat_second_provident_as_ssf"].asBool());
@@ -2613,7 +2559,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("second_provident_tax_employer_portion"))
     {
-        dirtyFlag_[25] = true;
+        dirtyFlag_[24] = true;
         if(!pJson["second_provident_tax_employer_portion"].isNull())
         {
             secondProvidentTaxEmployerPortion_=std::make_shared<bool>(pJson["second_provident_tax_employer_portion"].asBool());
@@ -2622,7 +2568,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("overtime_percentage_on_basic_salary"))
     {
-        dirtyFlag_[26] = true;
+        dirtyFlag_[25] = true;
         if(!pJson["overtime_percentage_on_basic_salary"].isNull())
         {
             overtimePercentageOnBasicSalary_=std::make_shared<bool>(pJson["overtime_percentage_on_basic_salary"].asBool());
@@ -2631,7 +2577,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("overtime_percentage_on_daily_wage"))
     {
-        dirtyFlag_[27] = true;
+        dirtyFlag_[26] = true;
         if(!pJson["overtime_percentage_on_daily_wage"].isNull())
         {
             overtimePercentageOnDailyWage_=std::make_shared<bool>(pJson["overtime_percentage_on_daily_wage"].asBool());
@@ -2640,7 +2586,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("default_currency_id"))
     {
-        dirtyFlag_[28] = true;
+        dirtyFlag_[27] = true;
         if(!pJson["default_currency_id"].isNull())
         {
             defaultCurrencyId_=std::make_shared<std::string>(pJson["default_currency_id"].asString());
@@ -2649,7 +2595,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("mail_host_name"))
     {
-        dirtyFlag_[29] = true;
+        dirtyFlag_[28] = true;
         if(!pJson["mail_host_name"].isNull())
         {
             mailHostName_=std::make_shared<std::string>(pJson["mail_host_name"].asString());
@@ -2658,7 +2604,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_ssl_enabled"))
     {
-        dirtyFlag_[30] = true;
+        dirtyFlag_[29] = true;
         if(!pJson["is_ssl_enabled"].isNull())
         {
             isSslEnabled_=std::make_shared<bool>(pJson["is_ssl_enabled"].asBool());
@@ -2667,7 +2613,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("port_number"))
     {
-        dirtyFlag_[31] = true;
+        dirtyFlag_[30] = true;
         if(!pJson["port_number"].isNull())
         {
             portNumber_=std::make_shared<int32_t>((int32_t)pJson["port_number"].asInt64());
@@ -2676,7 +2622,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("primary_email_address"))
     {
-        dirtyFlag_[32] = true;
+        dirtyFlag_[31] = true;
         if(!pJson["primary_email_address"].isNull())
         {
             primaryEmailAddress_=std::make_shared<std::string>(pJson["primary_email_address"].asString());
@@ -2685,7 +2631,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_tax_levies_inclusive"))
     {
-        dirtyFlag_[33] = true;
+        dirtyFlag_[32] = true;
         if(!pJson["is_tax_levies_inclusive"].isNull())
         {
             isTaxLeviesInclusive_=std::make_shared<bool>(pJson["is_tax_levies_inclusive"].asBool());
@@ -2694,7 +2640,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("approve_invoice_before_payment"))
     {
-        dirtyFlag_[34] = true;
+        dirtyFlag_[33] = true;
         if(!pJson["approve_invoice_before_payment"].isNull())
         {
             approveInvoiceBeforePayment_=std::make_shared<bool>(pJson["approve_invoice_before_payment"].asBool());
@@ -2703,7 +2649,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("company_logo_url"))
     {
-        dirtyFlag_[35] = true;
+        dirtyFlag_[34] = true;
         if(!pJson["company_logo_url"].isNull())
         {
             companyLogoUrl_=std::make_shared<std::string>(pJson["company_logo_url"].asString());
@@ -2712,7 +2658,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("enforce_ou"))
     {
-        dirtyFlag_[36] = true;
+        dirtyFlag_[35] = true;
         if(!pJson["enforce_ou"].isNull())
         {
             enforceOu_=std::make_shared<bool>(pJson["enforce_ou"].asBool());
@@ -2721,7 +2667,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("email_password_encrypted"))
     {
-        dirtyFlag_[37] = true;
+        dirtyFlag_[36] = true;
         if(!pJson["email_password_encrypted"].isNull())
         {
             emailPasswordEncrypted_=std::make_shared<std::string>(pJson["email_password_encrypted"].asString());
@@ -2730,7 +2676,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[38] = true;
+        dirtyFlag_[37] = true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -2758,7 +2704,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[39] = true;
+        dirtyFlag_[38] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -2767,7 +2713,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[40] = true;
+        dirtyFlag_[39] = true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -2795,7 +2741,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[41] = true;
+        dirtyFlag_[40] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -2804,7 +2750,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[42] = true;
+        dirtyFlag_[41] = true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -2813,7 +2759,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[43] = true;
+        dirtyFlag_[42] = true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -2841,7 +2787,7 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[44] = true;
+        dirtyFlag_[43] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -3009,33 +2955,6 @@ void CoreCompanyProfiles::setAddress(std::string &&pAddress) noexcept
     dirtyFlag_[6] = true;
 }
 
-const std::string &CoreCompanyProfiles::getValueOfCountry() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(country_)
-        return *country_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &CoreCompanyProfiles::getCountry() const noexcept
-{
-    return country_;
-}
-void CoreCompanyProfiles::setCountry(const std::string &pCountry) noexcept
-{
-    country_ = std::make_shared<std::string>(pCountry);
-    dirtyFlag_[7] = true;
-}
-void CoreCompanyProfiles::setCountry(std::string &&pCountry) noexcept
-{
-    country_ = std::make_shared<std::string>(std::move(pCountry));
-    dirtyFlag_[7] = true;
-}
-void CoreCompanyProfiles::setCountryToNull() noexcept
-{
-    country_.reset();
-    dirtyFlag_[7] = true;
-}
-
 const std::string &CoreCompanyProfiles::getValueOfCompanyTin() const noexcept
 {
     static const std::string defaultValue = std::string();
@@ -3050,12 +2969,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getCompanyTin() const n
 void CoreCompanyProfiles::setCompanyTin(const std::string &pCompanyTin) noexcept
 {
     companyTin_ = std::make_shared<std::string>(pCompanyTin);
-    dirtyFlag_[8] = true;
+    dirtyFlag_[7] = true;
 }
 void CoreCompanyProfiles::setCompanyTin(std::string &&pCompanyTin) noexcept
 {
     companyTin_ = std::make_shared<std::string>(std::move(pCompanyTin));
-    dirtyFlag_[8] = true;
+    dirtyFlag_[7] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfEmail() const noexcept
@@ -3072,12 +2991,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getEmail() const noexce
 void CoreCompanyProfiles::setEmail(const std::string &pEmail) noexcept
 {
     email_ = std::make_shared<std::string>(pEmail);
-    dirtyFlag_[9] = true;
+    dirtyFlag_[8] = true;
 }
 void CoreCompanyProfiles::setEmail(std::string &&pEmail) noexcept
 {
     email_ = std::make_shared<std::string>(std::move(pEmail));
-    dirtyFlag_[9] = true;
+    dirtyFlag_[8] = true;
 }
 
 const int32_t &CoreCompanyProfiles::getValueOfFirstMonthOfFiscalYear() const noexcept
@@ -3094,7 +3013,7 @@ const std::shared_ptr<int32_t> &CoreCompanyProfiles::getFirstMonthOfFiscalYear()
 void CoreCompanyProfiles::setFirstMonthOfFiscalYear(const int32_t &pFirstMonthOfFiscalYear) noexcept
 {
     firstMonthOfFiscalYear_ = std::make_shared<int32_t>(pFirstMonthOfFiscalYear);
-    dirtyFlag_[10] = true;
+    dirtyFlag_[9] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfVatNo() const noexcept
@@ -3111,12 +3030,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getVatNo() const noexce
 void CoreCompanyProfiles::setVatNo(const std::string &pVatNo) noexcept
 {
     vatNo_ = std::make_shared<std::string>(pVatNo);
-    dirtyFlag_[11] = true;
+    dirtyFlag_[10] = true;
 }
 void CoreCompanyProfiles::setVatNo(std::string &&pVatNo) noexcept
 {
     vatNo_ = std::make_shared<std::string>(std::move(pVatNo));
-    dirtyFlag_[11] = true;
+    dirtyFlag_[10] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfEmployerSocialSecurityNo() const noexcept
@@ -3133,12 +3052,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getEmployerSocialSecuri
 void CoreCompanyProfiles::setEmployerSocialSecurityNo(const std::string &pEmployerSocialSecurityNo) noexcept
 {
     employerSocialSecurityNo_ = std::make_shared<std::string>(pEmployerSocialSecurityNo);
-    dirtyFlag_[12] = true;
+    dirtyFlag_[11] = true;
 }
 void CoreCompanyProfiles::setEmployerSocialSecurityNo(std::string &&pEmployerSocialSecurityNo) noexcept
 {
     employerSocialSecurityNo_ = std::make_shared<std::string>(std::move(pEmployerSocialSecurityNo));
-    dirtyFlag_[12] = true;
+    dirtyFlag_[11] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfPaySocialSecurityFund() const noexcept
@@ -3155,7 +3074,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getPaySocialSecurityFund() con
 void CoreCompanyProfiles::setPaySocialSecurityFund(const bool &pPaySocialSecurityFund) noexcept
 {
     paySocialSecurityFund_ = std::make_shared<bool>(pPaySocialSecurityFund);
-    dirtyFlag_[13] = true;
+    dirtyFlag_[12] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfSocialSecurityFundEmployeeRate() const noexcept
@@ -3172,12 +3091,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getSocialSecurityFundEm
 void CoreCompanyProfiles::setSocialSecurityFundEmployeeRate(const std::string &pSocialSecurityFundEmployeeRate) noexcept
 {
     socialSecurityFundEmployeeRate_ = std::make_shared<std::string>(pSocialSecurityFundEmployeeRate);
-    dirtyFlag_[14] = true;
+    dirtyFlag_[13] = true;
 }
 void CoreCompanyProfiles::setSocialSecurityFundEmployeeRate(std::string &&pSocialSecurityFundEmployeeRate) noexcept
 {
     socialSecurityFundEmployeeRate_ = std::make_shared<std::string>(std::move(pSocialSecurityFundEmployeeRate));
-    dirtyFlag_[14] = true;
+    dirtyFlag_[13] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfSocialSecurityFundEmployerRate() const noexcept
@@ -3194,12 +3113,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getSocialSecurityFundEm
 void CoreCompanyProfiles::setSocialSecurityFundEmployerRate(const std::string &pSocialSecurityFundEmployerRate) noexcept
 {
     socialSecurityFundEmployerRate_ = std::make_shared<std::string>(pSocialSecurityFundEmployerRate);
-    dirtyFlag_[15] = true;
+    dirtyFlag_[14] = true;
 }
 void CoreCompanyProfiles::setSocialSecurityFundEmployerRate(std::string &&pSocialSecurityFundEmployerRate) noexcept
 {
     socialSecurityFundEmployerRate_ = std::make_shared<std::string>(std::move(pSocialSecurityFundEmployerRate));
-    dirtyFlag_[15] = true;
+    dirtyFlag_[14] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfPayProvidentFund() const noexcept
@@ -3216,7 +3135,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getPayProvidentFund() const no
 void CoreCompanyProfiles::setPayProvidentFund(const bool &pPayProvidentFund) noexcept
 {
     payProvidentFund_ = std::make_shared<bool>(pPayProvidentFund);
-    dirtyFlag_[16] = true;
+    dirtyFlag_[15] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfProvidentFundEmployeeRate() const noexcept
@@ -3233,12 +3152,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getProvidentFundEmploye
 void CoreCompanyProfiles::setProvidentFundEmployeeRate(const std::string &pProvidentFundEmployeeRate) noexcept
 {
     providentFundEmployeeRate_ = std::make_shared<std::string>(pProvidentFundEmployeeRate);
-    dirtyFlag_[17] = true;
+    dirtyFlag_[16] = true;
 }
 void CoreCompanyProfiles::setProvidentFundEmployeeRate(std::string &&pProvidentFundEmployeeRate) noexcept
 {
     providentFundEmployeeRate_ = std::make_shared<std::string>(std::move(pProvidentFundEmployeeRate));
-    dirtyFlag_[17] = true;
+    dirtyFlag_[16] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfProvidentFundEmployerRate() const noexcept
@@ -3255,12 +3174,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getProvidentFundEmploye
 void CoreCompanyProfiles::setProvidentFundEmployerRate(const std::string &pProvidentFundEmployerRate) noexcept
 {
     providentFundEmployerRate_ = std::make_shared<std::string>(pProvidentFundEmployerRate);
-    dirtyFlag_[18] = true;
+    dirtyFlag_[17] = true;
 }
 void CoreCompanyProfiles::setProvidentFundEmployerRate(std::string &&pProvidentFundEmployerRate) noexcept
 {
     providentFundEmployerRate_ = std::make_shared<std::string>(std::move(pProvidentFundEmployerRate));
-    dirtyFlag_[18] = true;
+    dirtyFlag_[17] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfProvidentFundTreatAsSocialSecurityFund() const noexcept
@@ -3277,7 +3196,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getProvidentFundTreatAsSocialS
 void CoreCompanyProfiles::setProvidentFundTreatAsSocialSecurityFund(const bool &pProvidentFundTreatAsSocialSecurityFund) noexcept
 {
     providentFundTreatAsSocialSecurityFund_ = std::make_shared<bool>(pProvidentFundTreatAsSocialSecurityFund);
-    dirtyFlag_[19] = true;
+    dirtyFlag_[18] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfProvidentFundTaxEmployerPortion() const noexcept
@@ -3294,7 +3213,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getProvidentFundTaxEmployerPor
 void CoreCompanyProfiles::setProvidentFundTaxEmployerPortion(const bool &pProvidentFundTaxEmployerPortion) noexcept
 {
     providentFundTaxEmployerPortion_ = std::make_shared<bool>(pProvidentFundTaxEmployerPortion);
-    dirtyFlag_[20] = true;
+    dirtyFlag_[19] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfPaySecondProvidentOrOthers() const noexcept
@@ -3311,7 +3230,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getPaySecondProvidentOrOthers(
 void CoreCompanyProfiles::setPaySecondProvidentOrOthers(const bool &pPaySecondProvidentOrOthers) noexcept
 {
     paySecondProvidentOrOthers_ = std::make_shared<bool>(pPaySecondProvidentOrOthers);
-    dirtyFlag_[21] = true;
+    dirtyFlag_[20] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfSecondProvidentEmployeeRate() const noexcept
@@ -3328,12 +3247,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getSecondProvidentEmplo
 void CoreCompanyProfiles::setSecondProvidentEmployeeRate(const std::string &pSecondProvidentEmployeeRate) noexcept
 {
     secondProvidentEmployeeRate_ = std::make_shared<std::string>(pSecondProvidentEmployeeRate);
-    dirtyFlag_[22] = true;
+    dirtyFlag_[21] = true;
 }
 void CoreCompanyProfiles::setSecondProvidentEmployeeRate(std::string &&pSecondProvidentEmployeeRate) noexcept
 {
     secondProvidentEmployeeRate_ = std::make_shared<std::string>(std::move(pSecondProvidentEmployeeRate));
-    dirtyFlag_[22] = true;
+    dirtyFlag_[21] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfSecondProvidentEmployerRate() const noexcept
@@ -3350,12 +3269,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getSecondProvidentEmplo
 void CoreCompanyProfiles::setSecondProvidentEmployerRate(const std::string &pSecondProvidentEmployerRate) noexcept
 {
     secondProvidentEmployerRate_ = std::make_shared<std::string>(pSecondProvidentEmployerRate);
-    dirtyFlag_[23] = true;
+    dirtyFlag_[22] = true;
 }
 void CoreCompanyProfiles::setSecondProvidentEmployerRate(std::string &&pSecondProvidentEmployerRate) noexcept
 {
     secondProvidentEmployerRate_ = std::make_shared<std::string>(std::move(pSecondProvidentEmployerRate));
-    dirtyFlag_[23] = true;
+    dirtyFlag_[22] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfTreatSecondProvidentAsSsf() const noexcept
@@ -3372,7 +3291,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getTreatSecondProvidentAsSsf()
 void CoreCompanyProfiles::setTreatSecondProvidentAsSsf(const bool &pTreatSecondProvidentAsSsf) noexcept
 {
     treatSecondProvidentAsSsf_ = std::make_shared<bool>(pTreatSecondProvidentAsSsf);
-    dirtyFlag_[24] = true;
+    dirtyFlag_[23] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfSecondProvidentTaxEmployerPortion() const noexcept
@@ -3389,7 +3308,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getSecondProvidentTaxEmployerP
 void CoreCompanyProfiles::setSecondProvidentTaxEmployerPortion(const bool &pSecondProvidentTaxEmployerPortion) noexcept
 {
     secondProvidentTaxEmployerPortion_ = std::make_shared<bool>(pSecondProvidentTaxEmployerPortion);
-    dirtyFlag_[25] = true;
+    dirtyFlag_[24] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfOvertimePercentageOnBasicSalary() const noexcept
@@ -3406,7 +3325,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getOvertimePercentageOnBasicSa
 void CoreCompanyProfiles::setOvertimePercentageOnBasicSalary(const bool &pOvertimePercentageOnBasicSalary) noexcept
 {
     overtimePercentageOnBasicSalary_ = std::make_shared<bool>(pOvertimePercentageOnBasicSalary);
-    dirtyFlag_[26] = true;
+    dirtyFlag_[25] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfOvertimePercentageOnDailyWage() const noexcept
@@ -3423,7 +3342,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getOvertimePercentageOnDailyWa
 void CoreCompanyProfiles::setOvertimePercentageOnDailyWage(const bool &pOvertimePercentageOnDailyWage) noexcept
 {
     overtimePercentageOnDailyWage_ = std::make_shared<bool>(pOvertimePercentageOnDailyWage);
-    dirtyFlag_[27] = true;
+    dirtyFlag_[26] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfDefaultCurrencyId() const noexcept
@@ -3440,17 +3359,17 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getDefaultCurrencyId() 
 void CoreCompanyProfiles::setDefaultCurrencyId(const std::string &pDefaultCurrencyId) noexcept
 {
     defaultCurrencyId_ = std::make_shared<std::string>(pDefaultCurrencyId);
-    dirtyFlag_[28] = true;
+    dirtyFlag_[27] = true;
 }
 void CoreCompanyProfiles::setDefaultCurrencyId(std::string &&pDefaultCurrencyId) noexcept
 {
     defaultCurrencyId_ = std::make_shared<std::string>(std::move(pDefaultCurrencyId));
-    dirtyFlag_[28] = true;
+    dirtyFlag_[27] = true;
 }
 void CoreCompanyProfiles::setDefaultCurrencyIdToNull() noexcept
 {
     defaultCurrencyId_.reset();
-    dirtyFlag_[28] = true;
+    dirtyFlag_[27] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfMailHostName() const noexcept
@@ -3467,12 +3386,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getMailHostName() const
 void CoreCompanyProfiles::setMailHostName(const std::string &pMailHostName) noexcept
 {
     mailHostName_ = std::make_shared<std::string>(pMailHostName);
-    dirtyFlag_[29] = true;
+    dirtyFlag_[28] = true;
 }
 void CoreCompanyProfiles::setMailHostName(std::string &&pMailHostName) noexcept
 {
     mailHostName_ = std::make_shared<std::string>(std::move(pMailHostName));
-    dirtyFlag_[29] = true;
+    dirtyFlag_[28] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfIsSslEnabled() const noexcept
@@ -3489,7 +3408,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getIsSslEnabled() const noexce
 void CoreCompanyProfiles::setIsSslEnabled(const bool &pIsSslEnabled) noexcept
 {
     isSslEnabled_ = std::make_shared<bool>(pIsSslEnabled);
-    dirtyFlag_[30] = true;
+    dirtyFlag_[29] = true;
 }
 
 const int32_t &CoreCompanyProfiles::getValueOfPortNumber() const noexcept
@@ -3506,7 +3425,7 @@ const std::shared_ptr<int32_t> &CoreCompanyProfiles::getPortNumber() const noexc
 void CoreCompanyProfiles::setPortNumber(const int32_t &pPortNumber) noexcept
 {
     portNumber_ = std::make_shared<int32_t>(pPortNumber);
-    dirtyFlag_[31] = true;
+    dirtyFlag_[30] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfPrimaryEmailAddress() const noexcept
@@ -3523,12 +3442,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getPrimaryEmailAddress(
 void CoreCompanyProfiles::setPrimaryEmailAddress(const std::string &pPrimaryEmailAddress) noexcept
 {
     primaryEmailAddress_ = std::make_shared<std::string>(pPrimaryEmailAddress);
-    dirtyFlag_[32] = true;
+    dirtyFlag_[31] = true;
 }
 void CoreCompanyProfiles::setPrimaryEmailAddress(std::string &&pPrimaryEmailAddress) noexcept
 {
     primaryEmailAddress_ = std::make_shared<std::string>(std::move(pPrimaryEmailAddress));
-    dirtyFlag_[32] = true;
+    dirtyFlag_[31] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfIsTaxLeviesInclusive() const noexcept
@@ -3545,7 +3464,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getIsTaxLeviesInclusive() cons
 void CoreCompanyProfiles::setIsTaxLeviesInclusive(const bool &pIsTaxLeviesInclusive) noexcept
 {
     isTaxLeviesInclusive_ = std::make_shared<bool>(pIsTaxLeviesInclusive);
-    dirtyFlag_[33] = true;
+    dirtyFlag_[32] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfApproveInvoiceBeforePayment() const noexcept
@@ -3562,7 +3481,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getApproveInvoiceBeforePayment
 void CoreCompanyProfiles::setApproveInvoiceBeforePayment(const bool &pApproveInvoiceBeforePayment) noexcept
 {
     approveInvoiceBeforePayment_ = std::make_shared<bool>(pApproveInvoiceBeforePayment);
-    dirtyFlag_[34] = true;
+    dirtyFlag_[33] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfCompanyLogoUrl() const noexcept
@@ -3579,12 +3498,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getCompanyLogoUrl() con
 void CoreCompanyProfiles::setCompanyLogoUrl(const std::string &pCompanyLogoUrl) noexcept
 {
     companyLogoUrl_ = std::make_shared<std::string>(pCompanyLogoUrl);
-    dirtyFlag_[35] = true;
+    dirtyFlag_[34] = true;
 }
 void CoreCompanyProfiles::setCompanyLogoUrl(std::string &&pCompanyLogoUrl) noexcept
 {
     companyLogoUrl_ = std::make_shared<std::string>(std::move(pCompanyLogoUrl));
-    dirtyFlag_[35] = true;
+    dirtyFlag_[34] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfEnforceOu() const noexcept
@@ -3601,7 +3520,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getEnforceOu() const noexcept
 void CoreCompanyProfiles::setEnforceOu(const bool &pEnforceOu) noexcept
 {
     enforceOu_ = std::make_shared<bool>(pEnforceOu);
-    dirtyFlag_[36] = true;
+    dirtyFlag_[35] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfEmailPasswordEncrypted() const noexcept
@@ -3618,17 +3537,17 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getEmailPasswordEncrypt
 void CoreCompanyProfiles::setEmailPasswordEncrypted(const std::string &pEmailPasswordEncrypted) noexcept
 {
     emailPasswordEncrypted_ = std::make_shared<std::string>(pEmailPasswordEncrypted);
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 void CoreCompanyProfiles::setEmailPasswordEncrypted(std::string &&pEmailPasswordEncrypted) noexcept
 {
     emailPasswordEncrypted_ = std::make_shared<std::string>(std::move(pEmailPasswordEncrypted));
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 void CoreCompanyProfiles::setEmailPasswordEncryptedToNull() noexcept
 {
     emailPasswordEncrypted_.reset();
-    dirtyFlag_[37] = true;
+    dirtyFlag_[36] = true;
 }
 
 const ::trantor::Date &CoreCompanyProfiles::getValueOfCreatedAt() const noexcept
@@ -3645,7 +3564,7 @@ const std::shared_ptr<::trantor::Date> &CoreCompanyProfiles::getCreatedAt() cons
 void CoreCompanyProfiles::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
 {
     createdAt_ = std::make_shared<::trantor::Date>(pCreatedAt);
-    dirtyFlag_[38] = true;
+    dirtyFlag_[37] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfCreatedByUserId() const noexcept
@@ -3662,12 +3581,12 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getCreatedByUserId() co
 void CoreCompanyProfiles::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
-    dirtyFlag_[39] = true;
+    dirtyFlag_[38] = true;
 }
 void CoreCompanyProfiles::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
-    dirtyFlag_[39] = true;
+    dirtyFlag_[38] = true;
 }
 
 const ::trantor::Date &CoreCompanyProfiles::getValueOfLastModifiedAt() const noexcept
@@ -3684,12 +3603,12 @@ const std::shared_ptr<::trantor::Date> &CoreCompanyProfiles::getLastModifiedAt()
 void CoreCompanyProfiles::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
 {
     lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
-    dirtyFlag_[40] = true;
+    dirtyFlag_[39] = true;
 }
 void CoreCompanyProfiles::setLastModifiedAtToNull() noexcept
 {
     lastModifiedAt_.reset();
-    dirtyFlag_[40] = true;
+    dirtyFlag_[39] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfLastModifiedByUserId() const noexcept
@@ -3706,17 +3625,17 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getLastModifiedByUserId
 void CoreCompanyProfiles::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
-    dirtyFlag_[41] = true;
+    dirtyFlag_[40] = true;
 }
 void CoreCompanyProfiles::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
-    dirtyFlag_[41] = true;
+    dirtyFlag_[40] = true;
 }
 void CoreCompanyProfiles::setLastModifiedByUserIdToNull() noexcept
 {
     lastModifiedByUserId_.reset();
-    dirtyFlag_[41] = true;
+    dirtyFlag_[40] = true;
 }
 
 const bool &CoreCompanyProfiles::getValueOfIsDeleted() const noexcept
@@ -3733,7 +3652,7 @@ const std::shared_ptr<bool> &CoreCompanyProfiles::getIsDeleted() const noexcept
 void CoreCompanyProfiles::setIsDeleted(const bool &pIsDeleted) noexcept
 {
     isDeleted_ = std::make_shared<bool>(pIsDeleted);
-    dirtyFlag_[42] = true;
+    dirtyFlag_[41] = true;
 }
 
 const ::trantor::Date &CoreCompanyProfiles::getValueOfDeletedAt() const noexcept
@@ -3750,12 +3669,12 @@ const std::shared_ptr<::trantor::Date> &CoreCompanyProfiles::getDeletedAt() cons
 void CoreCompanyProfiles::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
 {
     deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
-    dirtyFlag_[43] = true;
+    dirtyFlag_[42] = true;
 }
 void CoreCompanyProfiles::setDeletedAtToNull() noexcept
 {
     deletedAt_.reset();
-    dirtyFlag_[43] = true;
+    dirtyFlag_[42] = true;
 }
 
 const std::string &CoreCompanyProfiles::getValueOfDeletedByUserId() const noexcept
@@ -3772,17 +3691,17 @@ const std::shared_ptr<std::string> &CoreCompanyProfiles::getDeletedByUserId() co
 void CoreCompanyProfiles::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
-    dirtyFlag_[44] = true;
+    dirtyFlag_[43] = true;
 }
 void CoreCompanyProfiles::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
-    dirtyFlag_[44] = true;
+    dirtyFlag_[43] = true;
 }
 void CoreCompanyProfiles::setDeletedByUserIdToNull() noexcept
 {
     deletedByUserId_.reset();
-    dirtyFlag_[44] = true;
+    dirtyFlag_[43] = true;
 }
 
 void CoreCompanyProfiles::updateId(const uint64_t id)
@@ -3800,7 +3719,6 @@ const std::vector<std::string> &CoreCompanyProfiles::insertColumns() noexcept
         "city_name",
         "phone_no",
         "address",
-        "country",
         "company_tin",
         "email",
         "first_month_of_fiscal_year",
@@ -3932,18 +3850,6 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
 
     if(dirtyFlag_[7])
     {
-        if(getCountry())
-        {
-            binder << getValueOfCountry();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[8])
-    {
         if(getCompanyTin())
         {
             binder << getValueOfCompanyTin();
@@ -3954,7 +3860,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[9])
+    if(dirtyFlag_[8])
     {
         if(getEmail())
         {
@@ -3966,7 +3872,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[10])
+    if(dirtyFlag_[9])
     {
         if(getFirstMonthOfFiscalYear())
         {
@@ -3978,7 +3884,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[11])
+    if(dirtyFlag_[10])
     {
         if(getVatNo())
         {
@@ -3990,7 +3896,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[12])
+    if(dirtyFlag_[11])
     {
         if(getEmployerSocialSecurityNo())
         {
@@ -4002,7 +3908,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[13])
+    if(dirtyFlag_[12])
     {
         if(getPaySocialSecurityFund())
         {
@@ -4014,7 +3920,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[14])
+    if(dirtyFlag_[13])
     {
         if(getSocialSecurityFundEmployeeRate())
         {
@@ -4026,7 +3932,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[15])
+    if(dirtyFlag_[14])
     {
         if(getSocialSecurityFundEmployerRate())
         {
@@ -4038,7 +3944,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[16])
+    if(dirtyFlag_[15])
     {
         if(getPayProvidentFund())
         {
@@ -4050,7 +3956,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[17])
+    if(dirtyFlag_[16])
     {
         if(getProvidentFundEmployeeRate())
         {
@@ -4062,7 +3968,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[18])
+    if(dirtyFlag_[17])
     {
         if(getProvidentFundEmployerRate())
         {
@@ -4074,7 +3980,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[19])
+    if(dirtyFlag_[18])
     {
         if(getProvidentFundTreatAsSocialSecurityFund())
         {
@@ -4086,7 +3992,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[20])
+    if(dirtyFlag_[19])
     {
         if(getProvidentFundTaxEmployerPortion())
         {
@@ -4098,7 +4004,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[20])
     {
         if(getPaySecondProvidentOrOthers())
         {
@@ -4110,7 +4016,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[21])
     {
         if(getSecondProvidentEmployeeRate())
         {
@@ -4122,7 +4028,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[22])
     {
         if(getSecondProvidentEmployerRate())
         {
@@ -4134,7 +4040,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[23])
     {
         if(getTreatSecondProvidentAsSsf())
         {
@@ -4146,7 +4052,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[24])
     {
         if(getSecondProvidentTaxEmployerPortion())
         {
@@ -4158,7 +4064,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[25])
     {
         if(getOvertimePercentageOnBasicSalary())
         {
@@ -4170,7 +4076,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[26])
     {
         if(getOvertimePercentageOnDailyWage())
         {
@@ -4182,7 +4088,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[27])
     {
         if(getDefaultCurrencyId())
         {
@@ -4194,7 +4100,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[28])
     {
         if(getMailHostName())
         {
@@ -4206,7 +4112,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[29])
     {
         if(getIsSslEnabled())
         {
@@ -4218,7 +4124,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[30])
     {
         if(getPortNumber())
         {
@@ -4230,7 +4136,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[31])
     {
         if(getPrimaryEmailAddress())
         {
@@ -4242,7 +4148,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[33])
+    if(dirtyFlag_[32])
     {
         if(getIsTaxLeviesInclusive())
         {
@@ -4254,7 +4160,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[34])
+    if(dirtyFlag_[33])
     {
         if(getApproveInvoiceBeforePayment())
         {
@@ -4266,7 +4172,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[34])
     {
         if(getCompanyLogoUrl())
         {
@@ -4278,7 +4184,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[35])
     {
         if(getEnforceOu())
         {
@@ -4290,7 +4196,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[36])
     {
         if(getEmailPasswordEncrypted())
         {
@@ -4302,7 +4208,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[37])
     {
         if(getCreatedAt())
         {
@@ -4314,7 +4220,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[38])
     {
         if(getCreatedByUserId())
         {
@@ -4326,7 +4232,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[40])
+    if(dirtyFlag_[39])
     {
         if(getLastModifiedAt())
         {
@@ -4338,7 +4244,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[41])
+    if(dirtyFlag_[40])
     {
         if(getLastModifiedByUserId())
         {
@@ -4350,7 +4256,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[42])
+    if(dirtyFlag_[41])
     {
         if(getIsDeleted())
         {
@@ -4362,7 +4268,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[43])
+    if(dirtyFlag_[42])
     {
         if(getDeletedAt())
         {
@@ -4374,7 +4280,7 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[44])
+    if(dirtyFlag_[43])
     {
         if(getDeletedByUserId())
         {
@@ -4612,11 +4518,6 @@ const std::vector<std::string> CoreCompanyProfiles::updateColumns() const
         ret.push_back(getColumnName(43));
     }
 
-    if(dirtyFlag_[44])
-    {
-        ret.push_back(getColumnName(44));
-    }
-
     return ret;
 }
 
@@ -4709,18 +4610,6 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
 
     if(dirtyFlag_[7])
     {
-        if(getCountry())
-        {
-            binder << getValueOfCountry();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[8])
-    {
         if(getCompanyTin())
         {
             binder << getValueOfCompanyTin();
@@ -4731,7 +4620,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[9])
+    if(dirtyFlag_[8])
     {
         if(getEmail())
         {
@@ -4743,7 +4632,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[10])
+    if(dirtyFlag_[9])
     {
         if(getFirstMonthOfFiscalYear())
         {
@@ -4755,7 +4644,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[11])
+    if(dirtyFlag_[10])
     {
         if(getVatNo())
         {
@@ -4767,7 +4656,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[12])
+    if(dirtyFlag_[11])
     {
         if(getEmployerSocialSecurityNo())
         {
@@ -4779,7 +4668,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[13])
+    if(dirtyFlag_[12])
     {
         if(getPaySocialSecurityFund())
         {
@@ -4791,7 +4680,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[14])
+    if(dirtyFlag_[13])
     {
         if(getSocialSecurityFundEmployeeRate())
         {
@@ -4803,7 +4692,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[15])
+    if(dirtyFlag_[14])
     {
         if(getSocialSecurityFundEmployerRate())
         {
@@ -4815,7 +4704,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[16])
+    if(dirtyFlag_[15])
     {
         if(getPayProvidentFund())
         {
@@ -4827,7 +4716,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[17])
+    if(dirtyFlag_[16])
     {
         if(getProvidentFundEmployeeRate())
         {
@@ -4839,7 +4728,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[18])
+    if(dirtyFlag_[17])
     {
         if(getProvidentFundEmployerRate())
         {
@@ -4851,7 +4740,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[19])
+    if(dirtyFlag_[18])
     {
         if(getProvidentFundTreatAsSocialSecurityFund())
         {
@@ -4863,7 +4752,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[20])
+    if(dirtyFlag_[19])
     {
         if(getProvidentFundTaxEmployerPortion())
         {
@@ -4875,7 +4764,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[20])
     {
         if(getPaySecondProvidentOrOthers())
         {
@@ -4887,7 +4776,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[21])
     {
         if(getSecondProvidentEmployeeRate())
         {
@@ -4899,7 +4788,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[22])
     {
         if(getSecondProvidentEmployerRate())
         {
@@ -4911,7 +4800,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[23])
     {
         if(getTreatSecondProvidentAsSsf())
         {
@@ -4923,7 +4812,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[24])
     {
         if(getSecondProvidentTaxEmployerPortion())
         {
@@ -4935,7 +4824,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[25])
     {
         if(getOvertimePercentageOnBasicSalary())
         {
@@ -4947,7 +4836,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[26])
     {
         if(getOvertimePercentageOnDailyWage())
         {
@@ -4959,7 +4848,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[27])
     {
         if(getDefaultCurrencyId())
         {
@@ -4971,7 +4860,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[28])
     {
         if(getMailHostName())
         {
@@ -4983,7 +4872,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[29])
     {
         if(getIsSslEnabled())
         {
@@ -4995,7 +4884,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[30])
     {
         if(getPortNumber())
         {
@@ -5007,7 +4896,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[31])
     {
         if(getPrimaryEmailAddress())
         {
@@ -5019,7 +4908,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[33])
+    if(dirtyFlag_[32])
     {
         if(getIsTaxLeviesInclusive())
         {
@@ -5031,7 +4920,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[34])
+    if(dirtyFlag_[33])
     {
         if(getApproveInvoiceBeforePayment())
         {
@@ -5043,7 +4932,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[34])
     {
         if(getCompanyLogoUrl())
         {
@@ -5055,7 +4944,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[35])
     {
         if(getEnforceOu())
         {
@@ -5067,7 +4956,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[36])
     {
         if(getEmailPasswordEncrypted())
         {
@@ -5079,7 +4968,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[37])
     {
         if(getCreatedAt())
         {
@@ -5091,7 +4980,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[38])
     {
         if(getCreatedByUserId())
         {
@@ -5103,7 +4992,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[40])
+    if(dirtyFlag_[39])
     {
         if(getLastModifiedAt())
         {
@@ -5115,7 +5004,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[41])
+    if(dirtyFlag_[40])
     {
         if(getLastModifiedByUserId())
         {
@@ -5127,7 +5016,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[42])
+    if(dirtyFlag_[41])
     {
         if(getIsDeleted())
         {
@@ -5139,7 +5028,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[43])
+    if(dirtyFlag_[42])
     {
         if(getDeletedAt())
         {
@@ -5151,7 +5040,7 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
-    if(dirtyFlag_[44])
+    if(dirtyFlag_[43])
     {
         if(getDeletedByUserId())
         {
@@ -5243,17 +5132,6 @@ Json::Value CoreCompanyProfiles::toJson() const
     else
     {
         ret["address"]=Json::Value();
-    }
-
-    if(getCountry())
-    {
-
-        ret["country"]=getValueOfCountry();
-
-    }
-    else
-    {
-        ret["country"]=Json::Value();
     }
 
     if(getCompanyTin())
@@ -5675,7 +5553,7 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 45)
+    if(pMasqueradingVector.size() == 44)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -5778,10 +5656,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[7].empty())
         {
-            if(getCountry())
+            if(getCompanyTin())
             {
 
-                ret[pMasqueradingVector[7]]=getValueOfCountry();
+                ret[pMasqueradingVector[7]]=getValueOfCompanyTin();
 
             }
             else
@@ -5792,10 +5670,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[8].empty())
         {
-            if(getCompanyTin())
+            if(getEmail())
             {
 
-                ret[pMasqueradingVector[8]]=getValueOfCompanyTin();
+                ret[pMasqueradingVector[8]]=getValueOfEmail();
 
             }
             else
@@ -5806,10 +5684,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[9].empty())
         {
-            if(getEmail())
+            if(getFirstMonthOfFiscalYear())
             {
 
-                ret[pMasqueradingVector[9]]=getValueOfEmail();
+                ret[pMasqueradingVector[9]]=getValueOfFirstMonthOfFiscalYear();
 
             }
             else
@@ -5820,10 +5698,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[10].empty())
         {
-            if(getFirstMonthOfFiscalYear())
+            if(getVatNo())
             {
 
-                ret[pMasqueradingVector[10]]=getValueOfFirstMonthOfFiscalYear();
+                ret[pMasqueradingVector[10]]=getValueOfVatNo();
 
             }
             else
@@ -5834,10 +5712,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[11].empty())
         {
-            if(getVatNo())
+            if(getEmployerSocialSecurityNo())
             {
 
-                ret[pMasqueradingVector[11]]=getValueOfVatNo();
+                ret[pMasqueradingVector[11]]=getValueOfEmployerSocialSecurityNo();
 
             }
             else
@@ -5848,10 +5726,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[12].empty())
         {
-            if(getEmployerSocialSecurityNo())
+            if(getPaySocialSecurityFund())
             {
 
-                ret[pMasqueradingVector[12]]=getValueOfEmployerSocialSecurityNo();
+                ret[pMasqueradingVector[12]]=getValueOfPaySocialSecurityFund();
 
             }
             else
@@ -5862,10 +5740,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[13].empty())
         {
-            if(getPaySocialSecurityFund())
+            if(getSocialSecurityFundEmployeeRate())
             {
 
-                ret[pMasqueradingVector[13]]=getValueOfPaySocialSecurityFund();
+                ret[pMasqueradingVector[13]]=getValueOfSocialSecurityFundEmployeeRate();
 
             }
             else
@@ -5876,10 +5754,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[14].empty())
         {
-            if(getSocialSecurityFundEmployeeRate())
+            if(getSocialSecurityFundEmployerRate())
             {
 
-                ret[pMasqueradingVector[14]]=getValueOfSocialSecurityFundEmployeeRate();
+                ret[pMasqueradingVector[14]]=getValueOfSocialSecurityFundEmployerRate();
 
             }
             else
@@ -5890,10 +5768,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[15].empty())
         {
-            if(getSocialSecurityFundEmployerRate())
+            if(getPayProvidentFund())
             {
 
-                ret[pMasqueradingVector[15]]=getValueOfSocialSecurityFundEmployerRate();
+                ret[pMasqueradingVector[15]]=getValueOfPayProvidentFund();
 
             }
             else
@@ -5904,10 +5782,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[16].empty())
         {
-            if(getPayProvidentFund())
+            if(getProvidentFundEmployeeRate())
             {
 
-                ret[pMasqueradingVector[16]]=getValueOfPayProvidentFund();
+                ret[pMasqueradingVector[16]]=getValueOfProvidentFundEmployeeRate();
 
             }
             else
@@ -5918,10 +5796,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[17].empty())
         {
-            if(getProvidentFundEmployeeRate())
+            if(getProvidentFundEmployerRate())
             {
 
-                ret[pMasqueradingVector[17]]=getValueOfProvidentFundEmployeeRate();
+                ret[pMasqueradingVector[17]]=getValueOfProvidentFundEmployerRate();
 
             }
             else
@@ -5932,10 +5810,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[18].empty())
         {
-            if(getProvidentFundEmployerRate())
+            if(getProvidentFundTreatAsSocialSecurityFund())
             {
 
-                ret[pMasqueradingVector[18]]=getValueOfProvidentFundEmployerRate();
+                ret[pMasqueradingVector[18]]=getValueOfProvidentFundTreatAsSocialSecurityFund();
 
             }
             else
@@ -5946,10 +5824,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[19].empty())
         {
-            if(getProvidentFundTreatAsSocialSecurityFund())
+            if(getProvidentFundTaxEmployerPortion())
             {
 
-                ret[pMasqueradingVector[19]]=getValueOfProvidentFundTreatAsSocialSecurityFund();
+                ret[pMasqueradingVector[19]]=getValueOfProvidentFundTaxEmployerPortion();
 
             }
             else
@@ -5960,10 +5838,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[20].empty())
         {
-            if(getProvidentFundTaxEmployerPortion())
+            if(getPaySecondProvidentOrOthers())
             {
 
-                ret[pMasqueradingVector[20]]=getValueOfProvidentFundTaxEmployerPortion();
+                ret[pMasqueradingVector[20]]=getValueOfPaySecondProvidentOrOthers();
 
             }
             else
@@ -5974,10 +5852,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[21].empty())
         {
-            if(getPaySecondProvidentOrOthers())
+            if(getSecondProvidentEmployeeRate())
             {
 
-                ret[pMasqueradingVector[21]]=getValueOfPaySecondProvidentOrOthers();
+                ret[pMasqueradingVector[21]]=getValueOfSecondProvidentEmployeeRate();
 
             }
             else
@@ -5988,10 +5866,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[22].empty())
         {
-            if(getSecondProvidentEmployeeRate())
+            if(getSecondProvidentEmployerRate())
             {
 
-                ret[pMasqueradingVector[22]]=getValueOfSecondProvidentEmployeeRate();
+                ret[pMasqueradingVector[22]]=getValueOfSecondProvidentEmployerRate();
 
             }
             else
@@ -6002,10 +5880,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[23].empty())
         {
-            if(getSecondProvidentEmployerRate())
+            if(getTreatSecondProvidentAsSsf())
             {
 
-                ret[pMasqueradingVector[23]]=getValueOfSecondProvidentEmployerRate();
+                ret[pMasqueradingVector[23]]=getValueOfTreatSecondProvidentAsSsf();
 
             }
             else
@@ -6016,10 +5894,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[24].empty())
         {
-            if(getTreatSecondProvidentAsSsf())
+            if(getSecondProvidentTaxEmployerPortion())
             {
 
-                ret[pMasqueradingVector[24]]=getValueOfTreatSecondProvidentAsSsf();
+                ret[pMasqueradingVector[24]]=getValueOfSecondProvidentTaxEmployerPortion();
 
             }
             else
@@ -6030,10 +5908,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[25].empty())
         {
-            if(getSecondProvidentTaxEmployerPortion())
+            if(getOvertimePercentageOnBasicSalary())
             {
 
-                ret[pMasqueradingVector[25]]=getValueOfSecondProvidentTaxEmployerPortion();
+                ret[pMasqueradingVector[25]]=getValueOfOvertimePercentageOnBasicSalary();
 
             }
             else
@@ -6044,10 +5922,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[26].empty())
         {
-            if(getOvertimePercentageOnBasicSalary())
+            if(getOvertimePercentageOnDailyWage())
             {
 
-                ret[pMasqueradingVector[26]]=getValueOfOvertimePercentageOnBasicSalary();
+                ret[pMasqueradingVector[26]]=getValueOfOvertimePercentageOnDailyWage();
 
             }
             else
@@ -6058,10 +5936,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[27].empty())
         {
-            if(getOvertimePercentageOnDailyWage())
+            if(getDefaultCurrencyId())
             {
 
-                ret[pMasqueradingVector[27]]=getValueOfOvertimePercentageOnDailyWage();
+                ret[pMasqueradingVector[27]]=getValueOfDefaultCurrencyId();
 
             }
             else
@@ -6072,10 +5950,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[28].empty())
         {
-            if(getDefaultCurrencyId())
+            if(getMailHostName())
             {
 
-                ret[pMasqueradingVector[28]]=getValueOfDefaultCurrencyId();
+                ret[pMasqueradingVector[28]]=getValueOfMailHostName();
 
             }
             else
@@ -6086,10 +5964,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[29].empty())
         {
-            if(getMailHostName())
+            if(getIsSslEnabled())
             {
 
-                ret[pMasqueradingVector[29]]=getValueOfMailHostName();
+                ret[pMasqueradingVector[29]]=getValueOfIsSslEnabled();
 
             }
             else
@@ -6100,10 +5978,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[30].empty())
         {
-            if(getIsSslEnabled())
+            if(getPortNumber())
             {
 
-                ret[pMasqueradingVector[30]]=getValueOfIsSslEnabled();
+                ret[pMasqueradingVector[30]]=getValueOfPortNumber();
 
             }
             else
@@ -6114,10 +5992,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[31].empty())
         {
-            if(getPortNumber())
+            if(getPrimaryEmailAddress())
             {
 
-                ret[pMasqueradingVector[31]]=getValueOfPortNumber();
+                ret[pMasqueradingVector[31]]=getValueOfPrimaryEmailAddress();
 
             }
             else
@@ -6128,10 +6006,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[32].empty())
         {
-            if(getPrimaryEmailAddress())
+            if(getIsTaxLeviesInclusive())
             {
 
-                ret[pMasqueradingVector[32]]=getValueOfPrimaryEmailAddress();
+                ret[pMasqueradingVector[32]]=getValueOfIsTaxLeviesInclusive();
 
             }
             else
@@ -6142,10 +6020,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[33].empty())
         {
-            if(getIsTaxLeviesInclusive())
+            if(getApproveInvoiceBeforePayment())
             {
 
-                ret[pMasqueradingVector[33]]=getValueOfIsTaxLeviesInclusive();
+                ret[pMasqueradingVector[33]]=getValueOfApproveInvoiceBeforePayment();
 
             }
             else
@@ -6156,10 +6034,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[34].empty())
         {
-            if(getApproveInvoiceBeforePayment())
+            if(getCompanyLogoUrl())
             {
 
-                ret[pMasqueradingVector[34]]=getValueOfApproveInvoiceBeforePayment();
+                ret[pMasqueradingVector[34]]=getValueOfCompanyLogoUrl();
 
             }
             else
@@ -6170,10 +6048,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[35].empty())
         {
-            if(getCompanyLogoUrl())
+            if(getEnforceOu())
             {
 
-                ret[pMasqueradingVector[35]]=getValueOfCompanyLogoUrl();
+                ret[pMasqueradingVector[35]]=getValueOfEnforceOu();
 
             }
             else
@@ -6184,10 +6062,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[36].empty())
         {
-            if(getEnforceOu())
+            if(getEmailPasswordEncrypted())
             {
 
-                ret[pMasqueradingVector[36]]=getValueOfEnforceOu();
+                ret[pMasqueradingVector[36]]=getValueOfEmailPasswordEncrypted();
 
             }
             else
@@ -6198,10 +6076,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[37].empty())
         {
-            if(getEmailPasswordEncrypted())
+            if(getCreatedAt())
             {
 
-                ret[pMasqueradingVector[37]]=getValueOfEmailPasswordEncrypted();
+                ret[pMasqueradingVector[37]]=getCreatedAt()->toDbStringLocal();
 
             }
             else
@@ -6212,10 +6090,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[38].empty())
         {
-            if(getCreatedAt())
+            if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[38]]=getCreatedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[38]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -6226,10 +6104,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[39].empty())
         {
-            if(getCreatedByUserId())
+            if(getLastModifiedAt())
             {
 
-                ret[pMasqueradingVector[39]]=getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[39]]=getLastModifiedAt()->toDbStringLocal();
 
             }
             else
@@ -6240,10 +6118,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[40].empty())
         {
-            if(getLastModifiedAt())
+            if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[40]]=getLastModifiedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[40]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -6254,10 +6132,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[41].empty())
         {
-            if(getLastModifiedByUserId())
+            if(getIsDeleted())
             {
 
-                ret[pMasqueradingVector[41]]=getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[41]]=getValueOfIsDeleted();
 
             }
             else
@@ -6268,10 +6146,10 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[42].empty())
         {
-            if(getIsDeleted())
+            if(getDeletedAt())
             {
 
-                ret[pMasqueradingVector[42]]=getValueOfIsDeleted();
+                ret[pMasqueradingVector[42]]=getDeletedAt()->toDbStringLocal();
 
             }
             else
@@ -6282,29 +6160,15 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
 
         if(!pMasqueradingVector[43].empty())
         {
-            if(getDeletedAt())
+            if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[43]]=getDeletedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[43]]=getValueOfDeletedByUserId();
 
             }
             else
             {
                 ret[pMasqueradingVector[43]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[44].empty())
-        {
-            if(getDeletedByUserId())
-            {
-
-                ret[pMasqueradingVector[44]]=getValueOfDeletedByUserId();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[44]]=Json::Value();
             }
         }
 
@@ -6387,17 +6251,6 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
     else
     {
         ret["address"]=Json::Value();
-    }
-
-    if(getCountry())
-    {
-
-        ret["country"]=getValueOfCountry();
-
-    }
-    else
-    {
-        ret["country"]=Json::Value();
     }
 
     if(getCompanyTin())
@@ -6861,201 +6714,195 @@ bool CoreCompanyProfiles::validateJsonForCreation(const Json::Value &pJson, std:
             return false;
     }
 
-    if(pJson.isMember("country"))
-    {
-        if(!validJsonOfField(7, "country", pJson["country"], err, true))
-            return false;
-    }
-
     if(pJson.isMember("company_tin"))
     {
-        if(!validJsonOfField(8, "company_tin", pJson["company_tin"], err, true))
+        if(!validJsonOfField(7, "company_tin", pJson["company_tin"], err, true))
             return false;
     }
 
     if(pJson.isMember("email"))
     {
-        if(!validJsonOfField(9, "email", pJson["email"], err, true))
+        if(!validJsonOfField(8, "email", pJson["email"], err, true))
             return false;
     }
 
     if(pJson.isMember("first_month_of_fiscal_year"))
     {
-        if(!validJsonOfField(10, "first_month_of_fiscal_year", pJson["first_month_of_fiscal_year"], err, true))
+        if(!validJsonOfField(9, "first_month_of_fiscal_year", pJson["first_month_of_fiscal_year"], err, true))
             return false;
     }
 
     if(pJson.isMember("vat_no"))
     {
-        if(!validJsonOfField(11, "vat_no", pJson["vat_no"], err, true))
+        if(!validJsonOfField(10, "vat_no", pJson["vat_no"], err, true))
             return false;
     }
 
     if(pJson.isMember("employer_social_security_no"))
     {
-        if(!validJsonOfField(12, "employer_social_security_no", pJson["employer_social_security_no"], err, true))
+        if(!validJsonOfField(11, "employer_social_security_no", pJson["employer_social_security_no"], err, true))
             return false;
     }
 
     if(pJson.isMember("pay_social_security_fund"))
     {
-        if(!validJsonOfField(13, "pay_social_security_fund", pJson["pay_social_security_fund"], err, true))
+        if(!validJsonOfField(12, "pay_social_security_fund", pJson["pay_social_security_fund"], err, true))
             return false;
     }
 
     if(pJson.isMember("social_security_fund_employee_rate"))
     {
-        if(!validJsonOfField(14, "social_security_fund_employee_rate", pJson["social_security_fund_employee_rate"], err, true))
+        if(!validJsonOfField(13, "social_security_fund_employee_rate", pJson["social_security_fund_employee_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("social_security_fund_employer_rate"))
     {
-        if(!validJsonOfField(15, "social_security_fund_employer_rate", pJson["social_security_fund_employer_rate"], err, true))
+        if(!validJsonOfField(14, "social_security_fund_employer_rate", pJson["social_security_fund_employer_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("pay_provident_fund"))
     {
-        if(!validJsonOfField(16, "pay_provident_fund", pJson["pay_provident_fund"], err, true))
+        if(!validJsonOfField(15, "pay_provident_fund", pJson["pay_provident_fund"], err, true))
             return false;
     }
 
     if(pJson.isMember("provident_fund_employee_rate"))
     {
-        if(!validJsonOfField(17, "provident_fund_employee_rate", pJson["provident_fund_employee_rate"], err, true))
+        if(!validJsonOfField(16, "provident_fund_employee_rate", pJson["provident_fund_employee_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("provident_fund_employer_rate"))
     {
-        if(!validJsonOfField(18, "provident_fund_employer_rate", pJson["provident_fund_employer_rate"], err, true))
+        if(!validJsonOfField(17, "provident_fund_employer_rate", pJson["provident_fund_employer_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("provident_fund_treat_as_social_security_fund"))
     {
-        if(!validJsonOfField(19, "provident_fund_treat_as_social_security_fund", pJson["provident_fund_treat_as_social_security_fund"], err, true))
+        if(!validJsonOfField(18, "provident_fund_treat_as_social_security_fund", pJson["provident_fund_treat_as_social_security_fund"], err, true))
             return false;
     }
 
     if(pJson.isMember("provident_fund_tax_employer_portion"))
     {
-        if(!validJsonOfField(20, "provident_fund_tax_employer_portion", pJson["provident_fund_tax_employer_portion"], err, true))
+        if(!validJsonOfField(19, "provident_fund_tax_employer_portion", pJson["provident_fund_tax_employer_portion"], err, true))
             return false;
     }
 
     if(pJson.isMember("pay_second_provident_or_others"))
     {
-        if(!validJsonOfField(21, "pay_second_provident_or_others", pJson["pay_second_provident_or_others"], err, true))
+        if(!validJsonOfField(20, "pay_second_provident_or_others", pJson["pay_second_provident_or_others"], err, true))
             return false;
     }
 
     if(pJson.isMember("second_provident_employee_rate"))
     {
-        if(!validJsonOfField(22, "second_provident_employee_rate", pJson["second_provident_employee_rate"], err, true))
+        if(!validJsonOfField(21, "second_provident_employee_rate", pJson["second_provident_employee_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("second_provident_employer_rate"))
     {
-        if(!validJsonOfField(23, "second_provident_employer_rate", pJson["second_provident_employer_rate"], err, true))
+        if(!validJsonOfField(22, "second_provident_employer_rate", pJson["second_provident_employer_rate"], err, true))
             return false;
     }
 
     if(pJson.isMember("treat_second_provident_as_ssf"))
     {
-        if(!validJsonOfField(24, "treat_second_provident_as_ssf", pJson["treat_second_provident_as_ssf"], err, true))
+        if(!validJsonOfField(23, "treat_second_provident_as_ssf", pJson["treat_second_provident_as_ssf"], err, true))
             return false;
     }
 
     if(pJson.isMember("second_provident_tax_employer_portion"))
     {
-        if(!validJsonOfField(25, "second_provident_tax_employer_portion", pJson["second_provident_tax_employer_portion"], err, true))
+        if(!validJsonOfField(24, "second_provident_tax_employer_portion", pJson["second_provident_tax_employer_portion"], err, true))
             return false;
     }
 
     if(pJson.isMember("overtime_percentage_on_basic_salary"))
     {
-        if(!validJsonOfField(26, "overtime_percentage_on_basic_salary", pJson["overtime_percentage_on_basic_salary"], err, true))
+        if(!validJsonOfField(25, "overtime_percentage_on_basic_salary", pJson["overtime_percentage_on_basic_salary"], err, true))
             return false;
     }
 
     if(pJson.isMember("overtime_percentage_on_daily_wage"))
     {
-        if(!validJsonOfField(27, "overtime_percentage_on_daily_wage", pJson["overtime_percentage_on_daily_wage"], err, true))
+        if(!validJsonOfField(26, "overtime_percentage_on_daily_wage", pJson["overtime_percentage_on_daily_wage"], err, true))
             return false;
     }
 
     if(pJson.isMember("default_currency_id"))
     {
-        if(!validJsonOfField(28, "default_currency_id", pJson["default_currency_id"], err, true))
+        if(!validJsonOfField(27, "default_currency_id", pJson["default_currency_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("mail_host_name"))
     {
-        if(!validJsonOfField(29, "mail_host_name", pJson["mail_host_name"], err, true))
+        if(!validJsonOfField(28, "mail_host_name", pJson["mail_host_name"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_ssl_enabled"))
     {
-        if(!validJsonOfField(30, "is_ssl_enabled", pJson["is_ssl_enabled"], err, true))
+        if(!validJsonOfField(29, "is_ssl_enabled", pJson["is_ssl_enabled"], err, true))
             return false;
     }
 
     if(pJson.isMember("port_number"))
     {
-        if(!validJsonOfField(31, "port_number", pJson["port_number"], err, true))
+        if(!validJsonOfField(30, "port_number", pJson["port_number"], err, true))
             return false;
     }
 
     if(pJson.isMember("primary_email_address"))
     {
-        if(!validJsonOfField(32, "primary_email_address", pJson["primary_email_address"], err, true))
+        if(!validJsonOfField(31, "primary_email_address", pJson["primary_email_address"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_tax_levies_inclusive"))
     {
-        if(!validJsonOfField(33, "is_tax_levies_inclusive", pJson["is_tax_levies_inclusive"], err, true))
+        if(!validJsonOfField(32, "is_tax_levies_inclusive", pJson["is_tax_levies_inclusive"], err, true))
             return false;
     }
 
     if(pJson.isMember("approve_invoice_before_payment"))
     {
-        if(!validJsonOfField(34, "approve_invoice_before_payment", pJson["approve_invoice_before_payment"], err, true))
+        if(!validJsonOfField(33, "approve_invoice_before_payment", pJson["approve_invoice_before_payment"], err, true))
             return false;
     }
 
     if(pJson.isMember("company_logo_url"))
     {
-        if(!validJsonOfField(35, "company_logo_url", pJson["company_logo_url"], err, true))
+        if(!validJsonOfField(34, "company_logo_url", pJson["company_logo_url"], err, true))
             return false;
     }
 
     if(pJson.isMember("enforce_ou"))
     {
-        if(!validJsonOfField(36, "enforce_ou", pJson["enforce_ou"], err, true))
+        if(!validJsonOfField(35, "enforce_ou", pJson["enforce_ou"], err, true))
             return false;
     }
 
     if(pJson.isMember("email_password_encrypted"))
     {
-        if(!validJsonOfField(37, "email_password_encrypted", pJson["email_password_encrypted"], err, true))
+        if(!validJsonOfField(36, "email_password_encrypted", pJson["email_password_encrypted"], err, true))
             return false;
     }
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(38, "created_at", pJson["created_at"], err, true))
+        if(!validJsonOfField(37, "created_at", pJson["created_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(39, "created_by_user_id", pJson["created_by_user_id"], err, true))
+        if(!validJsonOfField(38, "created_by_user_id", pJson["created_by_user_id"], err, true))
             return false;
     }
 
@@ -7067,31 +6914,31 @@ bool CoreCompanyProfiles::validateJsonForCreation(const Json::Value &pJson, std:
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(40, "last_modified_at", pJson["last_modified_at"], err, true))
+        if(!validJsonOfField(39, "last_modified_at", pJson["last_modified_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(41, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+        if(!validJsonOfField(40, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(42, "is_deleted", pJson["is_deleted"], err, true))
+        if(!validJsonOfField(41, "is_deleted", pJson["is_deleted"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(43, "deleted_at", pJson["deleted_at"], err, true))
+        if(!validJsonOfField(42, "deleted_at", pJson["deleted_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(44, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
+        if(!validJsonOfField(43, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
             return false;
     }
 
@@ -7101,7 +6948,7 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 45)
+    if(pMasqueradingVector.size() != 44)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7502,6 +7349,12 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &
                   return false;
           }
 
+        else
+        {
+            err="The " + pMasqueradingVector[38] + " column cannot be null";
+            return false;
+        }
+
       }
 
       if(!pMasqueradingVector[39].empty())
@@ -7511,12 +7364,6 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &
               if(!validJsonOfField(39, pMasqueradingVector[39], pJson[pMasqueradingVector[39]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[39] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -7555,16 +7402,6 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &
           if(pJson.isMember(pMasqueradingVector[43]))
           {
               if(!validJsonOfField(43, pMasqueradingVector[43], pJson[pMasqueradingVector[43]], err, true))
-                  return false;
-          }
-
-      }
-
-      if(!pMasqueradingVector[44].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[44]))
-          {
-              if(!validJsonOfField(44, pMasqueradingVector[44], pJson[pMasqueradingVector[44]], err, true))
                   return false;
           }
 
@@ -7629,231 +7466,225 @@ bool CoreCompanyProfiles::validateJsonForUpdate(const Json::Value &pJson, std::s
             return false;
     }
 
-    if(pJson.isMember("country"))
-    {
-        if(!validJsonOfField(7, "country", pJson["country"], err, false))
-            return false;
-    }
-
     if(pJson.isMember("company_tin"))
     {
-        if(!validJsonOfField(8, "company_tin", pJson["company_tin"], err, false))
+        if(!validJsonOfField(7, "company_tin", pJson["company_tin"], err, false))
             return false;
     }
 
     if(pJson.isMember("email"))
     {
-        if(!validJsonOfField(9, "email", pJson["email"], err, false))
+        if(!validJsonOfField(8, "email", pJson["email"], err, false))
             return false;
     }
 
     if(pJson.isMember("first_month_of_fiscal_year"))
     {
-        if(!validJsonOfField(10, "first_month_of_fiscal_year", pJson["first_month_of_fiscal_year"], err, false))
+        if(!validJsonOfField(9, "first_month_of_fiscal_year", pJson["first_month_of_fiscal_year"], err, false))
             return false;
     }
 
     if(pJson.isMember("vat_no"))
     {
-        if(!validJsonOfField(11, "vat_no", pJson["vat_no"], err, false))
+        if(!validJsonOfField(10, "vat_no", pJson["vat_no"], err, false))
             return false;
     }
 
     if(pJson.isMember("employer_social_security_no"))
     {
-        if(!validJsonOfField(12, "employer_social_security_no", pJson["employer_social_security_no"], err, false))
+        if(!validJsonOfField(11, "employer_social_security_no", pJson["employer_social_security_no"], err, false))
             return false;
     }
 
     if(pJson.isMember("pay_social_security_fund"))
     {
-        if(!validJsonOfField(13, "pay_social_security_fund", pJson["pay_social_security_fund"], err, false))
+        if(!validJsonOfField(12, "pay_social_security_fund", pJson["pay_social_security_fund"], err, false))
             return false;
     }
 
     if(pJson.isMember("social_security_fund_employee_rate"))
     {
-        if(!validJsonOfField(14, "social_security_fund_employee_rate", pJson["social_security_fund_employee_rate"], err, false))
+        if(!validJsonOfField(13, "social_security_fund_employee_rate", pJson["social_security_fund_employee_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("social_security_fund_employer_rate"))
     {
-        if(!validJsonOfField(15, "social_security_fund_employer_rate", pJson["social_security_fund_employer_rate"], err, false))
+        if(!validJsonOfField(14, "social_security_fund_employer_rate", pJson["social_security_fund_employer_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("pay_provident_fund"))
     {
-        if(!validJsonOfField(16, "pay_provident_fund", pJson["pay_provident_fund"], err, false))
+        if(!validJsonOfField(15, "pay_provident_fund", pJson["pay_provident_fund"], err, false))
             return false;
     }
 
     if(pJson.isMember("provident_fund_employee_rate"))
     {
-        if(!validJsonOfField(17, "provident_fund_employee_rate", pJson["provident_fund_employee_rate"], err, false))
+        if(!validJsonOfField(16, "provident_fund_employee_rate", pJson["provident_fund_employee_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("provident_fund_employer_rate"))
     {
-        if(!validJsonOfField(18, "provident_fund_employer_rate", pJson["provident_fund_employer_rate"], err, false))
+        if(!validJsonOfField(17, "provident_fund_employer_rate", pJson["provident_fund_employer_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("provident_fund_treat_as_social_security_fund"))
     {
-        if(!validJsonOfField(19, "provident_fund_treat_as_social_security_fund", pJson["provident_fund_treat_as_social_security_fund"], err, false))
+        if(!validJsonOfField(18, "provident_fund_treat_as_social_security_fund", pJson["provident_fund_treat_as_social_security_fund"], err, false))
             return false;
     }
 
     if(pJson.isMember("provident_fund_tax_employer_portion"))
     {
-        if(!validJsonOfField(20, "provident_fund_tax_employer_portion", pJson["provident_fund_tax_employer_portion"], err, false))
+        if(!validJsonOfField(19, "provident_fund_tax_employer_portion", pJson["provident_fund_tax_employer_portion"], err, false))
             return false;
     }
 
     if(pJson.isMember("pay_second_provident_or_others"))
     {
-        if(!validJsonOfField(21, "pay_second_provident_or_others", pJson["pay_second_provident_or_others"], err, false))
+        if(!validJsonOfField(20, "pay_second_provident_or_others", pJson["pay_second_provident_or_others"], err, false))
             return false;
     }
 
     if(pJson.isMember("second_provident_employee_rate"))
     {
-        if(!validJsonOfField(22, "second_provident_employee_rate", pJson["second_provident_employee_rate"], err, false))
+        if(!validJsonOfField(21, "second_provident_employee_rate", pJson["second_provident_employee_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("second_provident_employer_rate"))
     {
-        if(!validJsonOfField(23, "second_provident_employer_rate", pJson["second_provident_employer_rate"], err, false))
+        if(!validJsonOfField(22, "second_provident_employer_rate", pJson["second_provident_employer_rate"], err, false))
             return false;
     }
 
     if(pJson.isMember("treat_second_provident_as_ssf"))
     {
-        if(!validJsonOfField(24, "treat_second_provident_as_ssf", pJson["treat_second_provident_as_ssf"], err, false))
+        if(!validJsonOfField(23, "treat_second_provident_as_ssf", pJson["treat_second_provident_as_ssf"], err, false))
             return false;
     }
 
     if(pJson.isMember("second_provident_tax_employer_portion"))
     {
-        if(!validJsonOfField(25, "second_provident_tax_employer_portion", pJson["second_provident_tax_employer_portion"], err, false))
+        if(!validJsonOfField(24, "second_provident_tax_employer_portion", pJson["second_provident_tax_employer_portion"], err, false))
             return false;
     }
 
     if(pJson.isMember("overtime_percentage_on_basic_salary"))
     {
-        if(!validJsonOfField(26, "overtime_percentage_on_basic_salary", pJson["overtime_percentage_on_basic_salary"], err, false))
+        if(!validJsonOfField(25, "overtime_percentage_on_basic_salary", pJson["overtime_percentage_on_basic_salary"], err, false))
             return false;
     }
 
     if(pJson.isMember("overtime_percentage_on_daily_wage"))
     {
-        if(!validJsonOfField(27, "overtime_percentage_on_daily_wage", pJson["overtime_percentage_on_daily_wage"], err, false))
+        if(!validJsonOfField(26, "overtime_percentage_on_daily_wage", pJson["overtime_percentage_on_daily_wage"], err, false))
             return false;
     }
 
     if(pJson.isMember("default_currency_id"))
     {
-        if(!validJsonOfField(28, "default_currency_id", pJson["default_currency_id"], err, false))
+        if(!validJsonOfField(27, "default_currency_id", pJson["default_currency_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("mail_host_name"))
     {
-        if(!validJsonOfField(29, "mail_host_name", pJson["mail_host_name"], err, false))
+        if(!validJsonOfField(28, "mail_host_name", pJson["mail_host_name"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_ssl_enabled"))
     {
-        if(!validJsonOfField(30, "is_ssl_enabled", pJson["is_ssl_enabled"], err, false))
+        if(!validJsonOfField(29, "is_ssl_enabled", pJson["is_ssl_enabled"], err, false))
             return false;
     }
 
     if(pJson.isMember("port_number"))
     {
-        if(!validJsonOfField(31, "port_number", pJson["port_number"], err, false))
+        if(!validJsonOfField(30, "port_number", pJson["port_number"], err, false))
             return false;
     }
 
     if(pJson.isMember("primary_email_address"))
     {
-        if(!validJsonOfField(32, "primary_email_address", pJson["primary_email_address"], err, false))
+        if(!validJsonOfField(31, "primary_email_address", pJson["primary_email_address"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_tax_levies_inclusive"))
     {
-        if(!validJsonOfField(33, "is_tax_levies_inclusive", pJson["is_tax_levies_inclusive"], err, false))
+        if(!validJsonOfField(32, "is_tax_levies_inclusive", pJson["is_tax_levies_inclusive"], err, false))
             return false;
     }
 
     if(pJson.isMember("approve_invoice_before_payment"))
     {
-        if(!validJsonOfField(34, "approve_invoice_before_payment", pJson["approve_invoice_before_payment"], err, false))
+        if(!validJsonOfField(33, "approve_invoice_before_payment", pJson["approve_invoice_before_payment"], err, false))
             return false;
     }
 
     if(pJson.isMember("company_logo_url"))
     {
-        if(!validJsonOfField(35, "company_logo_url", pJson["company_logo_url"], err, false))
+        if(!validJsonOfField(34, "company_logo_url", pJson["company_logo_url"], err, false))
             return false;
     }
 
     if(pJson.isMember("enforce_ou"))
     {
-        if(!validJsonOfField(36, "enforce_ou", pJson["enforce_ou"], err, false))
+        if(!validJsonOfField(35, "enforce_ou", pJson["enforce_ou"], err, false))
             return false;
     }
 
     if(pJson.isMember("email_password_encrypted"))
     {
-        if(!validJsonOfField(37, "email_password_encrypted", pJson["email_password_encrypted"], err, false))
+        if(!validJsonOfField(36, "email_password_encrypted", pJson["email_password_encrypted"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(38, "created_at", pJson["created_at"], err, false))
+        if(!validJsonOfField(37, "created_at", pJson["created_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(39, "created_by_user_id", pJson["created_by_user_id"], err, false))
+        if(!validJsonOfField(38, "created_by_user_id", pJson["created_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(40, "last_modified_at", pJson["last_modified_at"], err, false))
+        if(!validJsonOfField(39, "last_modified_at", pJson["last_modified_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(41, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+        if(!validJsonOfField(40, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(42, "is_deleted", pJson["is_deleted"], err, false))
+        if(!validJsonOfField(41, "is_deleted", pJson["is_deleted"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(43, "deleted_at", pJson["deleted_at"], err, false))
+        if(!validJsonOfField(42, "deleted_at", pJson["deleted_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(44, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
+        if(!validJsonOfField(43, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
             return false;
     }
 
@@ -7863,7 +7694,7 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForUpdate(const Json::Value &pJ
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 45)
+    if(pMasqueradingVector.size() != 44)
     {
         err = "Bad masquerading vector";
         return false;
@@ -8140,12 +7971,6 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForUpdate(const Json::Value &pJ
               return false;
       }
 
-      if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
-      {
-          if(!validJsonOfField(44, pMasqueradingVector[44], pJson[pMasqueradingVector[44]], err, false))
-              return false;
-      }
-
     }
     catch(const Json::LogicError &e)
     {
@@ -8319,21 +8144,6 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 8:
-
-            if(pJson.isNull())
-            {
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
@@ -8354,7 +8164,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 9:
+        case 8:
 
             if(pJson.isNull())
             {
@@ -8378,7 +8188,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 10:
+        case 9:
 
             if(pJson.isNull())
             {
@@ -8389,6 +8199,30 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
             if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 10:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 100)
+            {
+                err="String length exceeds limit for the " +
+                    fieldName +
+                    " field (the maximum value is 100)";
                 return false;
             }
 
@@ -8426,17 +8260,9 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 100)
-            {
-                err="String length exceeds limit for the " +
-                    fieldName +
-                    " field (the maximum value is 100)";
                 return false;
             }
 
@@ -8450,7 +8276,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8482,7 +8308,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8498,7 +8324,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8530,7 +8356,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8578,7 +8404,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8610,7 +8436,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8670,22 +8496,6 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
-            }
-
-            if(!pJson.isBool())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 28:
-
-            if(pJson.isNull())
-            {
                 return true;
             }
 
@@ -8697,7 +8507,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 29:
+        case 28:
 
             if(pJson.isNull())
             {
@@ -8721,7 +8531,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 30:
+        case 29:
 
             if(pJson.isNull())
             {
@@ -8737,7 +8547,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 31:
+        case 30:
 
             if(pJson.isNull())
             {
@@ -8753,7 +8563,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 32:
+        case 31:
 
             if(pJson.isNull())
             {
@@ -8772,6 +8582,22 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 err="String length exceeds limit for the " +
                     fieldName +
                     " field (the maximum value is 254)";
+                return false;
+            }
+
+            break;
+
+        case 32:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
                 return false;
             }
 
@@ -8801,7 +8627,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8817,17 +8643,9 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 2048)
-            {
-                err="String length exceeds limit for the " +
-                    fieldName +
-                    " field (the maximum value is 2048)";
                 return false;
             }
 
@@ -8837,11 +8655,10 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -8853,7 +8670,8 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
 
             if(!pJson.isString())
@@ -8884,8 +8702,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -8915,21 +8732,6 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 42:
-
-            if(pJson.isNull())
-            {
                 err="The " + fieldName + " column cannot be null";
                 return false;
             }
@@ -8942,7 +8744,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 43:
+        case 42:
 
             if(pJson.isNull())
             {
@@ -8957,7 +8759,7 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
 
             break;
 
-        case 44:
+        case 43:
 
             if(pJson.isNull())
             {

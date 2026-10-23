@@ -35,13 +35,6 @@ export const companyProfileFields = [
     "group": "company"
   },
   {
-    "key": "country",
-    "label": "Country ID",
-    "kind": "u",
-    "max": 0,
-    "group": "company"
-  },
-  {
     "key": "companyTin",
     "label": "Company TIN",
     "kind": "s",
