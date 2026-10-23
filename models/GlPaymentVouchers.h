@@ -45,6 +45,8 @@ class CoreAccountingUnits;
 
 class CoreCurrencies;
 
+class CoreCustomers;
+
 class GlAccountingPeriods;
 
 class GlBankAccounts;
@@ -862,6 +864,16 @@ class GlPaymentVouchers
     void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
                                 const std::function<void(GlAccountingPeriods)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCustomers getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(CoreCustomers)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCustomers getCustomer(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCustomer(const drogon::orm::DbClientPtr &clientPtr,
+                     const std::function<void(CoreCustomers)> &rcb,
+                     const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlPaymentVouchers>;

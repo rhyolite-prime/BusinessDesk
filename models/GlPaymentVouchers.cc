@@ -12,6 +12,8 @@
 
 #include "CoreCurrencies.h"
 
+#include "CoreCustomers.h"
+
 #include "GlAccountingPeriods.h"
 
 #include "GlBankAccounts.h"
@@ -14110,6 +14112,94 @@ void GlPaymentVouchers::getGlAccountingPeriods(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlAccountingPeriods(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCustomers GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_customers where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *tenantId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCustomers(r[0]);
+}
+
+void GlPaymentVouchers::getTenant(const DbClientPtr &clientPtr,
+                                  const std::function<void(CoreCustomers)> &rcb,
+                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_customers where id = $1";
+    *clientPtr << sql
+               << *tenantId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCustomers(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCustomers GlPaymentVouchers::getCustomer(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_customers where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *customerId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCustomers(r[0]);
+}
+
+void GlPaymentVouchers::getCustomer(const DbClientPtr &clientPtr,
+                                    const std::function<void(CoreCustomers)> &rcb,
+                                    const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_customers where id = $1";
+    *clientPtr << sql
+               << *customerId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCustomers(r[0]));
                     }
                }
                >> ecb;
