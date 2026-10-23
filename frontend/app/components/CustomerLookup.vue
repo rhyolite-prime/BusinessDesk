@@ -22,7 +22,6 @@ const emit = defineEmits<{
 }>()
 const request = useRequestFetch(),
   options = ref<Option[]>([]),
-  search = ref(''),
   page = ref(1),
   pages = ref(0),
   loading = ref(false),
@@ -69,7 +68,6 @@ async function load(reset = false) {
         query: {
           kind: props.kind,
           accountingUnitId: props.unitId,
-          query: search.value,
           pageNo: page.value,
           pageSize: 20,
         },
@@ -92,7 +90,6 @@ watch(
   () => props.unitId,
   () => {
     options.value = []
-    search.value = ''
     void load(true)
   },
 )
@@ -122,23 +119,8 @@ onUnmounted(() => {
         {{ o.label }}
       </option>
     </select>
-    <div class="flex items-center gap-1">
-      <input
-        v-model="search"
-        :aria-label="`Search ${label}`"
-        :disabled="disabled || loading"
-        maxlength="200"
-        placeholder="Search choices…"
-        class="h-8 min-w-0 flex-1 rounded-md border border-slate-200 bg-transparent px-2 text-xs dark:border-slate-700"
-        @keydown.enter.prevent="load(true)"
-      /><button
-        type="button"
-        :disabled="disabled || loading"
-        class="rounded px-2 py-1 text-[11px] font-semibold text-brand-700 disabled:opacity-40 dark:text-brand-300"
-        @click="load(true)"
-      >
-        Find</button
-      ><button
+    <div v-if="pages > 1" class="flex items-center gap-1">
+      <button
         type="button"
         :disabled="disabled || loading || page <= 1"
         aria-label="Previous choices"
