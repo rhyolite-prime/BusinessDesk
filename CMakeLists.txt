@@ -29,6 +29,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/tenants/TenantAccountService.cc
         domain_services/gl/BudgetService.cc
         domain_services/gl/BankAccountService.cc
+        domain_services/gl/ImprestCategoryService.cc
         domain_services/gl/DefaultGlNumberService.cc
         domain_services/shared/CompanyProfileService.cc
         domain_services/shared/CostCenterService.cc

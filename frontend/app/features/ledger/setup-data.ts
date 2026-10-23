@@ -1,3 +1,4 @@
+import { useImprestCategories } from './useImprestCategories'
 import { useBankAccounts } from './useBankAccounts'
 import { useDefaultGlNumbers } from './useDefaultGlNumbers'
 export type StandardAccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense'
@@ -148,13 +149,6 @@ const accountControlSeed: LedgerAccountControl[] = [
   { id: ledgerSetupIds.fxControl, accountGroupId: ledgerSetupIds.expenses, parentAccountHeaderId: null, accountHeaderName: 'Foreign exchange loss', minAccount: 5100, maxAccount: 5199, isActive: true },
 ]
 
-const imprestCategorySeed: LedgerImprestCategory[] = [
-  { id: 'imprest-category-travel', name: 'Travel advance' },
-  { id: 'imprest-category-field', name: 'Field operations' },
-  { id: 'imprest-category-training', name: 'Training expenses' },
-  { id: 'imprest-category-emergency', name: 'Emergency support' },
-]
-
 const pettyCashRecipientSeed: LedgerPettyCashRecipient[] = [
   { id: 'petty-cash-recipient-ama', recipient: 'Ama Owusu', phoneNo: '+233 24 555 0101', email: 'ama.owusu@example.com' },
   { id: 'petty-cash-recipient-kwame', recipient: 'Kwame Osei', phoneNo: '+233 20 555 0202', email: 'kwame.osei@example.com' },
@@ -170,7 +164,7 @@ export function useLedgerSetup() {
   const accountHeads = useState<LedgerAccountHead[]>('ledger-setup-account-heads', () => accountHeadSeed.map((head) => ({ ...head })))
   const accountControls = useState<LedgerAccountControl[]>('ledger-setup-account-controls', () => accountControlSeed.map((control) => ({ ...control })))
   const { bankAccounts } = useBankAccounts()
-  const imprestCategories = useState<LedgerImprestCategory[]>('ledger-setup-imprest-categories', () => imprestCategorySeed.map((category) => ({ ...category })))
+  const { categories: imprestCategories } = useImprestCategories()
   const pettyCashRecipients = useState<LedgerPettyCashRecipient[]>('ledger-setup-petty-cash-recipients', () => pettyCashRecipientSeed.map((recipient) => ({ ...recipient })))
 
   function accountHeadPath(id: string | null | undefined) {
@@ -233,20 +227,6 @@ export function useLedgerSetup() {
     return true
   }
 
-  function saveImprestCategory(input: Omit<LedgerImprestCategory, 'id'> & { id?: string }) {
-    const id = input.id || makeId('imprest-category')
-    const category = { id, name: input.name.trim() }
-    const index = imprestCategories.value.findIndex((item) => item.id === id)
-    if (index >= 0) imprestCategories.value[index] = category
-    else imprestCategories.value.unshift(category)
-    return category
-  }
-
-  function removeImprestCategory(id: string) {
-    imprestCategories.value = imprestCategories.value.filter((category) => category.id !== id)
-    return true
-  }
-
   function savePettyCashRecipient(input: Omit<LedgerPettyCashRecipient, 'id'> & { id?: string }) {
     const id = input.id || makeId('petty-cash-recipient')
     const recipient = {
@@ -278,8 +258,6 @@ export function useLedgerSetup() {
     removeAccountHead,
     saveAccountControl,
     removeAccountControl,
-    saveImprestCategory,
-    removeImprestCategory,
     savePettyCashRecipient,
     removePettyCashRecipient,
   }
