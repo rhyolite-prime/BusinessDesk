@@ -14,7 +14,7 @@ const upstream=http.createServer(async(req,res)=>{
  if(path==='/api/v1/auth/me')return req.headers.authorization==='Bearer tenant-token'?send(200,{userId:uuid(999),username:'admin',accountId:'acme'}):send(401,null)
  if(req.headers.authorization!=='Bearer tenant-token')return send(401,null,{code:'unauthorized'})
  seen.push({path,method:req.method,token:req.headers.authorization,body:b})
- if(path==='/api/v1/ledger/account-head-units')return send(200,{data:[{id:unit,name:'Head office'}]})
+ if(path==='/api/v1/ledger/account-head-units')return send(200,[{id:unit,name:'Head office',code:'HQ'}])
  if(path==='/api/v1/ledger/default-gl-numbers'||path==='/api/v1/ledger/bank-accounts')return send(200,{data:[]})
  const base='/api/v1/ledger/imprest-categories'
  if(!path.startsWith(base))return send(404,null)
@@ -47,7 +47,7 @@ async function call(path,method='GET',body,cookie='',origin=base){const response
  const context=await browser.newContext({viewport:{width:1440,height:1000}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(30000)
  await page.goto(base+'/ledger/imprest-categories',{waitUntil:'domcontentloaded'});await page.getByRole('heading',{name:'Imprest Categories',exact:true}).waitFor()
  check(await page.getByRole('button',{name:'Add category',exact:true}).isDisabled(),'unit required before create')
- await page.getByLabel('Accounting unit',{exact:true}).selectOption(unit);await page.getByRole('button',{name:'Add category',exact:true}).click();const modal=page.getByRole('dialog')
+ await page.getByLabel('Accounting unit',{exact:true}).getByRole('option',{name:'Head office',exact:true}).waitFor({state:'attached'});check(await page.getByLabel('Accounting unit',{exact:true}).getByRole('option').count()===2,'accounting-unit array populates the dropdown');await page.getByLabel('Accounting unit',{exact:true}).selectOption(unit);await page.getByRole('button',{name:'Add category',exact:true}).click();const modal=page.getByRole('dialog')
  await modal.getByLabel('Category name').fill(' Travel ');await modal.getByRole('button',{name:'Create category',exact:true}).click();await modal.waitFor({state:'hidden'});check(rows[0].name==='Travel'&&rows[0].accountingUnitId===unit,'create persisted with selected unit')
  await page.reload({waitUntil:'domcontentloaded'});await page.getByLabel('Accounting unit',{exact:true}).selectOption(unit);await page.getByRole('button',{name:'Edit Travel',exact:true}).click();check(await modal.getByLabel('Category name').inputValue()==='Travel','detail survives page reload')
  await modal.getByLabel('Category name').fill('Operations');await modal.getByRole('button',{name:'Save changes',exact:true}).click();await modal.waitFor({state:'hidden'});check(rows[0].name==='Operations'&&rows[0].version===2,'versioned update persisted')

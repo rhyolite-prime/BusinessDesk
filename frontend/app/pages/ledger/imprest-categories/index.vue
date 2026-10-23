@@ -46,10 +46,10 @@ let alive = true,
 async function loadUnits() {
   const gen = ++unitsGeneration
   try {
-    const r = await request<{ data: { id: string; name: string }[] }>(
+    const r = await request<{ id: string; name: string }[]>(
       '/api/ledger/account-head-units',
     )
-    if (alive && gen === unitsGeneration) units.value = r.data
+    if (alive && gen === unitsGeneration) units.value = r
   } catch {
     if (alive && gen === unitsGeneration)
       error.value = 'Unable to load accounting units.'
