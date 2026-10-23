@@ -82,7 +82,7 @@ export async function customerRequest(
       statusMessage: codes[code]
         ? String(err?.message || 'Customer action failed.')
         : code === 'schema_not_ready'
-          ? 'Customer database upgrade required. Apply migrations through 022 and their prerequisites.'
+          ? 'Customer database upgrade required. Apply migrations through 023 and their prerequisites.'
           : 'Customer service unavailable. Reload before retrying customer changes.',
       data: { code },
     })

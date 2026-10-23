@@ -98,7 +98,7 @@ export async function supplierRequest(
       statusCode: messages[status] ? status : 503,
       statusMessage:
         code === 'schema_not_ready'
-          ? 'Apply migration 016_suppliers.sql to enable supplier configuration.'
+          ? 'Apply migrations through 023_drop_customer_supplier_rates.sql to enable supplier configuration.'
           : messages[status] || 'Supplier service unavailable. Please retry.',
     })
   }

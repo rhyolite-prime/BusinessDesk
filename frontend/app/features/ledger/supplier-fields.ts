@@ -23,16 +23,6 @@ export const supplierTextFields = [
 ] as const
 export const supplierDecimalFields = [
   {
-    key: 'buyingRate',
-    label: 'Buying rate',
-    pattern: '(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?',
-  },
-  {
-    key: 'sellingRate',
-    label: 'Selling rate',
-    pattern: '(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?',
-  },
-  {
     key: 'creditLimit',
     label: 'Credit limit',
     pattern: '(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?',
@@ -80,8 +70,6 @@ export function blankSupplier() {
     supplierGroupId: '',
     statusId: 'active',
     currencyId: '',
-    buyingRate: '1',
-    sellingRate: '1',
     creditLimit: '0',
     creditAccountId: '',
     debitAccountId: '',

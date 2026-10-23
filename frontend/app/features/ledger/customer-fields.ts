@@ -47,8 +47,6 @@ export function blankCustomer() {
     statusId: '',
     customerGroupId: '',
     currencyId: '',
-    buyingRate: '1',
-    sellingRate: '1',
     creditLimit: '0',
     accountingUnitId: '',
     receivableAccountId: '',

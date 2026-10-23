@@ -31,7 +31,7 @@ Under **General Ledger → Shared config**:
   confirm soft deletion of groups.
 - `/ledger/shared-config/suppliers`: search name/account number/email, paginate,
   view complete details, create/edit contacts, tax information, status, currency,
-  rates, credit limit and four GL defaults; confirm soft deletion.
+  credit limit and four GL defaults; confirm soft deletion.
 
 Both use the existing `PageHeader`, `BaseButton`, `FormField`, `TextInput` and
 `Pagination` design system and shared color tokens. Dialogs support focus
@@ -53,7 +53,7 @@ The backend rechecks live tenant/user status, including lockout and deletion.
   case-insensitively unique per tenant. A group with any live suppliers cannot
   be deleted. Deleting a group never silently deletes its suppliers.
 - Supplier: `accountNumber` (80 bytes), `name` (200), group, status, currency,
-  all four account IDs, rates, credit limit and `isResident` are required.
+  all four account IDs, credit limit and `isResident` are required.
 - Optional strings default to empty: email/contact email (254), phone/contact
   phone (50), address (1,000), contact person/tax office (160), TIN/VAT number
   (80). Emails are validated when supplied. Embedded NUL and unknown fields are
@@ -68,12 +68,11 @@ The backend rechecks live tenant/user status, including lockout and deletion.
 - Relationship names/codes (`supplierGroupName`, account names, currency
   name/code, status name) are derived by scoped joins, not writable snapshots.
   Renaming a group or account therefore does not leave stale supplier labels.
-- `buyingRate` / `sellingRate` are positive **decimal strings**, up to 10 integer
-  and 10 fractional digits, stored as `numeric(20,10)`. `creditLimit` is a
-  non-negative decimal string with up to 14 integer and 6 fractional digits,
-  stored as `numeric(20,6)`. JSON numbers/exponents are rejected to prevent
-  floating-point precision loss. Values are returned as exact decimal strings.
-  Rates are manual defaults, not automatically fetched currency quotes.
+- Directory buying/selling rates were removed by migration 023; these fields are
+  neither displayed nor accepted by CRUD. Currency catalog and voucher FX remain unchanged.
+- `creditLimit` remains a nonnegative exact decimal string (up to 14 integer
+  and 6 fractional digits), stored as `numeric(20,6)`. JSON numbers and exponent
+  notation are rejected to prevent precision loss.
 - `balance` is `numeric(20,6)`, **read-only**, initially zero; ordinary supplier
   edits never rewrite it. No new AP invoice/posting subsystem or editable opening
   balance is implied by this master-data CRUD feature.
@@ -135,8 +134,6 @@ Example creation (substitute real tenant-owned group/accounts and a global curre
   "debitAccountId": "<debit GL UUID>",
   "irsAccountId": "<IRS GL UUID>",
   "currencyId": "<global currency UUID>",
-  "buyingRate": "1.0000000000",
-  "sellingRate": "1.0000000000",
   "creditLimit": "50000.000000",
   "isResident": true,
   "email": "accounts@example.com",
@@ -204,3 +201,6 @@ Supplier and supplier-group deletes from the UI now send `{ version }`; supplied
 versions are checked to reject stale deletion. Legacy bodyless supplier DELETE
 calls remain supported. See [customer-crud.md](customer-crud.md) for the shared
 directory/modal CRUD behavior and customer-group extension.
+
+Apply `023_drop_customer_supplier_rates.sql` after 022 when upgrading. Its rollback
+restores rate columns with default 1, not the dropped values; back up first.

@@ -14,6 +14,7 @@ const migrate = suffix => db.query(readFileSync(new URL('../../database/migratio
 await db.connect()
 try {
   await db.query('SET search_path TO suppliers_test')
+  await db.query(readFileSync(new URL('../../database/migrations/023_drop_customer_supplier_rates.down.sql', import.meta.url), 'utf8'))
   await db.query(readFileSync(new URL('../../database/migrations/022_customer_groups.down.sql', import.meta.url), 'utf8'))
   // Start from pre-021 to exercise a real existing row, not only an empty table.
   await migrate('.down.sql')

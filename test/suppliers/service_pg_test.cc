@@ -232,8 +232,6 @@ int main() {
   b["vatAccountId"] = vat;
   b["irsAccountId"] = irs;
   b["currencyId"] = currency;
-  b["buyingRate"] = "1.2345678901";
-  b["sellingRate"] = "1.4567890123";
   b["creditLimit"] = "99999999999999.123456";
   b["isResident"] = true;
   b["email"] = "supplier@example.test";
@@ -254,7 +252,7 @@ int main() {
   for (auto key : {"phoneNo", "address", "contactPerson", "contactPersonPhone",
                    "contactPersonEmail", "vatNumber", "tinNumber", "taxOffice",
                    "vatAccountId", "debitAccountId", "irsAccountId",
-                   "currencyId", "sellingRate"})
+                   "currencyId"})
     check(created.result[key] == b[key], "expanded supplier field round trips");
   auto id = created.result["id"].asString();
   check(lockObserved,
@@ -262,9 +260,11 @@ int main() {
   check(created.result["name"] == "Accra Supplies" &&
             created.result["accountNumber"] == "SUP-001",
         "supplier identity normalized");
-  check(created.result["buyingRate"] == "1.2345678901" &&
-            created.result["creditLimit"] == "99999999999999.123456",
+  check(created.result["creditLimit"] == "99999999999999.123456",
         "financial decimals preserved exactly as strings");
+  check(!created.result.isMember("buyingRate") &&
+            !created.result.isMember("sellingRate"),
+        "supplier API omits removed rates");
   check(created.result["balance"] == "0.000000",
         "new supplier balance is server controlled zero");
   check(created.result["supplierGroupName"] == "Domestic vendors" &&
@@ -285,7 +285,7 @@ int main() {
     check(call("create", false, "", bad).error["code"] == "validation_error",
           "reject balance, scope, audit and derived fields");
   }
-  for (auto key : {"buyingRate", "sellingRate", "creditLimit"}) {
+  for (auto key : {"creditLimit"}) {
     auto bad = b;
     bad[key] = 1.234;
     check(!call("create", false, "", bad).success,
@@ -296,7 +296,7 @@ int main() {
   }
   auto bad = b;
   bad["buyingRate"] = "0.0000000000";
-  check(!call("create", false, "", bad).success, "zero exchange rate rejected");
+  check(!call("create", false, "", bad).success, "removed buying rate field rejected");
   bad = b;
   bad["creditLimit"] = "-1";
   check(!call("create", false, "", bad).success,
@@ -304,7 +304,7 @@ int main() {
   bad = b;
   bad["sellingRate"] = "1.12345678901";
   check(!call("create", false, "", bad).success,
-        "excess decimal precision rejected");
+        "removed selling rate field rejected");
   bad = b;
   bad["email"] = "invalid@";
   check(!call("create", false, "", bad).success, "invalid email rejected");

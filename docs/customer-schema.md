@@ -18,7 +18,7 @@ The legacy C# properties map to snake_case PostgreSQL columns:
 | VatAccountName, CreditAccountName, IrsAccountName | Matching `*_account_name varchar(200)` snapshot columns |
 | Email, PhoneNo, Address | `email varchar(254)`, `phone_no varchar(50)`, `address varchar(1000)` |
 | CurrencyId, CurrencyName, CurrencyCode | Existing `currency_id` FK; new `currency_name varchar(200)`, `currency_code varchar(3)` snapshots |
-| BuyingRate, SellingRate | `buying_rate numeric(20,10)`, `selling_rate numeric(20,10)`; positive, default 1 |
+| BuyingRate, SellingRate | Added by 021; removed from both customer and supplier tables by migration 023 |
 | CreditLimit | `credit_limit numeric(20,6)`; nonnegative, default 0 |
 | ContactPerson, ContactPersonPhone, ContactPersonEmail | `contact_person varchar(160)`, `contact_person_phone varchar(50)`, `contact_person_email varchar(254)` |
 | TenantId | Existing `tenant_id uuid`, **not** the old ABP integer tenant key |

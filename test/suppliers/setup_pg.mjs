@@ -12,5 +12,6 @@ try{
   await db.query(readFileSync(new URL('../../database/migrations/'+name+'.sql',import.meta.url),'utf8'))
  await db.query(readFileSync(new URL('../../database/migrations/016_suppliers.down.sql',import.meta.url),'utf8'))
  await db.query(readFileSync(new URL('../../database/migrations/016_suppliers.sql',import.meta.url),'utf8'))
+  for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/023_drop_customer_supplier_rates' + suffix, import.meta.url), 'utf8'))
  console.log('Supplier migrations applied to disposable PostgreSQL schema')
 }finally{await db.end()}

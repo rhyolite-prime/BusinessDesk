@@ -159,10 +159,10 @@ int main() {
       "core_suppliers(id,tenant_id,account_number,supplier_group_id,status,vat_"
       "account_id,credit_account_id,debit_account_id,tin_number,name,email,"
       "phone_no,address,contact_person,contact_person_phone,contact_person_"
-      "email,vat_number,currency_id,buying_rate,selling_rate,credit_limit,irs_"
+      "email,vat_number,currency_id,credit_limit,irs_"
       "account_id,is_resident,tax_office,created_by_user_id) "
       "VALUES($1,$2,'SUP1',$3,'active',$4,$4,$4,'','Supplier','','','','','',''"
-      ",'',$5,1,1,0,$4,true,'',$6)",
+      ",'',$5,0,$4,true,'',$6)",
       {supplier, tenant, sg, account, currency, actor});
   sql("INSERT INTO "
       "gl_bank_accounts(id,tenant_id,accounting_unit_id,account_id,bank_name,"
@@ -811,8 +811,6 @@ int main() {
   full["vatAccountId"] = tax;
   full["creditAccountId"] = bank;
   full["irsAccountId"] = tax;
-  full["buyingRate"] = "12.1234567890";
-  full["sellingRate"] = "13.9876543210";
   full["creditLimit"] = "99999999999999.123456";
   auto complete = customerCall("create", "", full);
   if (!complete.success)
@@ -838,7 +836,16 @@ int main() {
     check(!customerCall("create", "", badFull).success,
           "customer audit balance and derived labels cannot be forged");
   }
-  for (auto key : {"buyingRate", "sellingRate", "creditLimit"}) {
+  check(!complete.result.isMember("buyingRate") &&
+            !complete.result.isMember("sellingRate"),
+        "customer API omits removed rates");
+  for (auto key : {"buyingRate", "sellingRate"}) {
+    auto retired = full;
+    retired[key] = "1.2345678901";
+    check(!customerCall("create", "", retired).success,
+          "customer API rejects removed rate fields");
+  }
+  for (auto key : {"creditLimit"}) {
     auto badFull = full;
     badFull[key] = 1.2;
     check(!customerCall("create", "", badFull).success,
@@ -880,7 +887,7 @@ int main() {
   partial["contactPerson"] = "Efua";
   auto partialSaved = customerCall("update", fullId, partial);
   check(partialSaved.success &&
-            partialSaved.result["buyingRate"] == full["buyingRate"] &&
+            partialSaved.result["creditLimit"] == full["creditLimit"] &&
             partialSaved.result["contactPerson"] == "Efua",
         "customer omitted extended fields remain unchanged on update");
   Json::Value fd;

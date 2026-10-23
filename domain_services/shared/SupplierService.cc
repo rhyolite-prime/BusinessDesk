@@ -29,8 +29,6 @@ const Field fields[] = {{"accountNumber", "account_number", "text"},
                         {"contactPersonEmail", "contact_person_email", "text"},
                         {"vatNumber", "vat_number", "text"},
                         {"currencyId", "currency_id", "uuid"},
-                        {"buyingRate", "buying_rate", "numeric"},
-                        {"sellingRate", "selling_rate", "numeric"},
                         {"creditLimit", "credit_limit", "numeric"},
                         {"irsAccountId", "irs_account_id", "uuid"},
                         {"isResident", "is_resident", "boolean"},
@@ -105,12 +103,8 @@ bool validate(Json::Value &b, bool group, bool update) {
       continue;
     }
     if (cast == "numeric") {
-      const std::regex re(key == "creditLimit"
-                              ? R"(^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$)"
-                              : R"(^(0|[1-9][0-9]{0,9})(\.[0-9]{1,10})?$)");
-      if (!std::regex_match(s, re) ||
-          (key != "creditLimit" &&
-           s.find_first_not_of("0.") == std::string::npos))
+      const std::regex re(R"(^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$)");
+      if (!std::regex_match(s, re))
         return false;
       continue;
     }
@@ -142,7 +136,6 @@ const std::string supplierSelect =
     "phoneNo',s.phone_no,'address',s.address,'contactPerson',s.contact_person,'"
     "contactPersonPhone',s.contact_person_phone,'contactPersonEmail',s.contact_"
     "person_email,'vatNumber',s.vat_number,'currencyId',s.currency_id::text,'"
-    "buyingRate',s.buying_rate::text,'sellingRate',s.selling_rate::text,'"
     "creditLimit',s.credit_limit::text,'irsAccountId',s.irs_account_id::text,'"
     "isResident',s.is_resident,'taxOffice',s.tax_office,'supplierGroupName',"
     "coalesce(g.name,''),'statusName',CASE s.status WHEN 'active' THEN "
@@ -473,9 +466,14 @@ SupplierService::execute(std::string op, bool group, std::string id,
     auto db = drogon::app().getDbClient();
     auto ready = co_await db->execSqlCoro(
         "SELECT to_regclass('core_suppliers') IS NOT NULL AND "
-        "to_regclass('core_supplier_groups') IS NOT NULL AS ready");
+        "to_regclass('core_supplier_groups') IS NOT NULL AND NOT EXISTS("
+        "SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('core_suppliers') "
+        "AND attname IN ('buying_rate','selling_rate') "
+        "AND NOT attisdropped) AS ready");
     if (!ready[0]["ready"].as<bool>())
-      co_return fail("schema_not_ready", "Apply migration 016_suppliers.sql.");
+      co_return fail("schema_not_ready",
+                     "Apply migrations through "
+                     "023_drop_customer_supplier_rates.sql.");
     if (op == "get" || op == "list" || op == "options")
       co_return co_await run(db, op, group, id, body, page, size, query, kind,
                              unit, who);

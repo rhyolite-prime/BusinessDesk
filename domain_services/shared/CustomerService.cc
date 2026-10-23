@@ -31,8 +31,6 @@ const Field fields[] = {
     {"email", "email", "text"},
     {"phoneNo", "phone_no", "text"},
     {"address", "address", "text"},
-    {"buyingRate", "buying_rate", "numeric"},
-    {"sellingRate", "selling_rate", "numeric"},
     {"creditLimit", "credit_limit", "numeric"},
     {"irsAccountId", "irs_account_id", "uuid"},
     {"contactPerson", "contact_person", "text"},
@@ -93,15 +91,11 @@ void validate(Json::Value &b, bool group) {
         throw std::invalid_argument("Active flag must be boolean.");
     } else if (cast == "numeric") {
       if (b[key].isNull())
-        b[key] = key == "creditLimit" ? "0" : "1";
+        b[key] = "0";
       const std::string s = b[key].isString() ? b[key].asString() : "";
-      const std::regex re(key == "creditLimit"
-                              ? R"(^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$)"
-                              : R"(^(0|[1-9][0-9]{0,9})(\.[0-9]{1,10})?$)");
-      if (!std::regex_match(s, re) ||
-          (key != "creditLimit" && s.find_first_not_of("0.") == s.npos))
-        throw std::invalid_argument("Use exact decimal strings, positive rates "
-                                    "and nonnegative credit limits.");
+      const std::regex re(R"(^(0|[1-9][0-9]{0,13})(\.[0-9]{1,6})?$)");
+      if (!std::regex_match(s, re))
+        throw std::invalid_argument("Use a nonnegative exact decimal credit limit.");
     } else {
       size_t max = key == "name"                                     ? 200
                    : key == "address"                                ? 1000
@@ -460,11 +454,13 @@ CustomerService::execute(std::string op, std::string id, Json::Value body,
     auto ready = co_await db->execSqlCoro(
         "SELECT to_regclass('core_customer_groups') IS NOT NULL AND "
         "EXISTS(SELECT 1 FROM pg_attribute WHERE "
-        "attrelid=to_regclass('core_customers') AND attname='buying_rate' AND "
-        "NOT attisdropped) AS ready");
+        "attrelid=to_regclass('core_customers') AND attname='credit_limit' AND "
+        "NOT attisdropped) AND NOT EXISTS(SELECT 1 FROM pg_attribute WHERE "
+        "attrelid=to_regclass('core_customers') AND "
+        "attname IN ('buying_rate','selling_rate') AND NOT attisdropped) AS ready");
     if (!ready[0]["ready"].as<bool>())
       co_return fail("schema_not_ready",
-                     "Apply migrations through 022_customer_groups.sql.");
+                     "Apply migrations through 023_drop_customer_supplier_rates.sql.");
     auto tx = co_await db->newTransactionCoro();
     dto::BaseApiResponse r;
     try {

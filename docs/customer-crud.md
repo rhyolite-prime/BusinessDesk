@@ -30,7 +30,7 @@ identity changes. Customer editing fetches full details, not a stale list snapsh
 
 Customer fields: account number/name, optional live customer group, status
 text and optional legacy status UUID, explicit active flag, all contact/address/
-TIN/VAT fields, currency, exact-string buying/selling rates and credit limit,
+TIN/VAT fields, currency, and exact-string credit limit,
 receivable GL and optional separate credit/VAT/IRS GLs. Select receivable GL first
 to establish the active accounting unit; changing unit clears optional GLs.
 Receivable GL must be manual-postable, non-control and base-currency. Optional GLs
@@ -38,7 +38,7 @@ must be live and in that unit. Status UUID remains metadata because no status
 master was supplied; it does not derive receipt eligibility (`isActive`).
 
 Suppliers retain all database-backed contact/tax/residency/group/status/currency/
-rate/credit-limit and posting-default fields. Supplier credit GL is an AP liability
+credit-limit and posting-default fields. Supplier credit GL is an AP liability
 and sets the posting unit; other GLs must use that unit. Supplier status is the
 existing `active/on_hold/inactive` code exposed as `statusId`, **not** a new UUID.
 Customer credit GL is independent of the receivable GL used by receipt vouchers.
@@ -47,8 +47,7 @@ Balance is read-only in both forms and rejected in mutation bodies. Identity,
 tenant/audit ownership, relationship names, currency names/codes and customer
 snapshot labels are server-owned. Customer snapshots refresh from validated live
 references on save. Exact decimals never pass through JavaScript Number in input
-or payload. Buying/selling rates are positive strings (up to 10 fractional digits)
-and credit limit is nonnegative (up to 6); malformed email, UUID, oversized text,
+or payload. Credit limit is nonnegative (up to 6 fractional digits); malformed email, UUID, oversized text,
 exponents, numeric JSON money and extra properties are rejected. Customer optional
 UUIDs normalize empty strings to null. Omitted legacy fields on customer updates
 are retained, avoiding erasure by older minimal-catalog clients.
@@ -96,7 +95,10 @@ writes. Errors are bounded application errors, not raw database messages.
 
 ## Verification
 
-- Real PostgreSQL: 022 up/down/up; expanded customer fields, group CRUD, snapshots,
+- `test/customers/rates_schema_pg_test.mjs`: populated-row rate removal,
+  preservation of all other directory fields and currency records, rollback
+  defaults, and safe reapplication (also runs the historical 021 schema suite).
+- Real PostgreSQL: 022/023 up/down/up; expanded customer fields, group CRUD, snapshots,
   scopes, exact decimals, readonly/audit rejection, stale versions, linked-row
   protection, failed commits, soft deletion, lookup search and reset dependency.
 - Existing supplier native PostgreSQL suite extended with all contact/tax fields
@@ -108,3 +110,16 @@ writes. Errors are bounded application errors, not raw database messages.
   actual SQL/domain services with a synchronous coroutine transport seam; they are
   not a fully linked Drogon HTTP application. Affected controllers/services also
   pass syntax checks with real Drogon/Trantor/JsonCpp headers.
+
+## Directory rate removal (migration 023)
+
+Apply `023_drop_customer_supplier_rates.sql` after 022 before deploying the updated
+application. It drops `buying_rate` and `selling_rate` from both `core_customers`
+and `core_suppliers`; forms and CRUD payloads no longer include these fields.
+Requests attempting to write them are rejected as unknown fields. Credit limits,
+customer/supplier currency selection, the shared currency-rate catalog and voucher
+exchange rates are unchanged. This is destructive: back up any old directory rate
+values first. The down migration restores columns with defaults of 1, not their
+previous values. Generated ORM snapshots are preserved (the running directory and
+voucher services use SQL, not these snapshots); regenerate them with the project's
+Drogon generator against the migrated database before introducing ORM callers.
