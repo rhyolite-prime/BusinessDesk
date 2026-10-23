@@ -1,4 +1,5 @@
 <script setup lang="ts">
+const defaultAvatar = `${useRuntimeConfig().app.baseURL}images/default-company-avatar.svg`
 const props = defineProps<{ modelValue: string; disabled?: boolean }>()
 const emit = defineEmits<{
   'update:modelValue': [value: string]
@@ -94,15 +95,15 @@ async function select(event: Event) {
       PNG or JPEG, up to 256 KB and 4096 × 4096 pixels. Save the profile to
       upload your selection.
     </p>
-    <div v-if="modelValue" class="mt-3 flex items-center gap-4">
+    <div class="mt-3 flex items-center gap-4">
       <img
-        :src="modelValue"
-        alt="Company logo preview"
+        :src="modelValue || defaultAvatar"
+        :alt="modelValue ? 'Company logo preview' : 'Default company avatar'"
         referrerpolicy="no-referrer"
         class="h-24 w-40 rounded-lg border border-slate-200 bg-white object-contain p-2 dark:border-slate-700"
       />
       <button
-        v-if="!disabled"
+        v-if="modelValue && !disabled"
         type="button"
         :disabled="loading"
         class="text-xs font-semibold text-rose-600"

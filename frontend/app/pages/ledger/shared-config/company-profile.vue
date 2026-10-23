@@ -79,7 +79,7 @@ onUnmounted(() => { version++; currencyVersion++ })
       <section v-for="section in sections" :key="section.id" class="rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#15201e]">
         <header class="border-b border-slate-100 px-5 py-4 dark:border-slate-800"><h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ section.title }}</h2><p class="mt-1 text-xs text-slate-400">{{ section.description }}</p></header>
         <fieldset :disabled="disabled" class="grid gap-5 p-5 sm:grid-cols-2">
-          <template v-for="field in companyProfileFields.filter(f => f.group === section.id && f.key !== 'country' && f.key !== 'companyLogoUrl')" :key="field.key">
+          <template v-for="field in companyProfileFields.filter(f => f.group === section.id && f.key !== 'companyLogoUrl')" :key="field.key">
             <label v-if="field.kind === 'b'" class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-300"><input v-model="form[field.key]" type="checkbox" class="h-4 w-4 accent-brand-700" />{{ field.label }}</label>
             <label v-else class="block text-xs font-semibold text-slate-600 dark:text-slate-300" :class="field.key === 'address' ? 'sm:col-span-2' : ''">{{ field.label }}<span v-if="field.key === 'companyName'" class="text-rose-500"> *</span>
               <select v-if="field.key === 'firstMonthOfFiscalYear'" v-model.number="form.firstMonthOfFiscalYear" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option v-for="(month, index) in months" :key="month" :value="index + 1">{{ month }}</option></select>
