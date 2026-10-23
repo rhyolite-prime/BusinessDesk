@@ -10,7 +10,7 @@ export const customerAccountFields = [
     key: 'receivableAccountId',
     name: 'receivableAccountName',
     label: 'Receivable G/L',
-    kind: 'receivables',
+    kind: 'accounts',
   },
   {
     key: 'creditAccountId',

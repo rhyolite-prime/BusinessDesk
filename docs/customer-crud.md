@@ -123,3 +123,14 @@ values first. The down migration restores columns with defaults of 1, not their
 previous values. Generated ORM snapshots are preserved (the running directory and
 voucher services use SQL, not these snapshots); regenerate them with the project's
 Drogon generator against the migrated database before introducing ORM callers.
+
+## GL posting-default dropdowns
+
+Every customer and supplier posting-default field uses the general `accounts`
+lookup, whose records come from `gl_accounts` (account ID, accounting unit,
+account number and account name), not groups, headers or sample defaults. The
+primary receivable/credit dropdown no longer uses a category-filtered lookup.
+Only live, active accounts in the current tenant and active units are listed.
+The primary selection determines the unit for the other fields; changing that
+unit clears dependent defaults. Existing save-time receipt eligibility, supplier
+AP-liability and same-unit validations are retained.

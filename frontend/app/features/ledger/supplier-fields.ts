@@ -33,7 +33,7 @@ export const supplierAccountFields = [
     key: 'creditAccountId',
     name: 'creditAccountName',
     label: 'Credit GL account (AP liability)',
-    kind: 'credits',
+    kind: 'accounts',
   },
   {
     key: 'debitAccountId',

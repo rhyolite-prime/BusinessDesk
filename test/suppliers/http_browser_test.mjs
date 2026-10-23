@@ -13,7 +13,7 @@ const enrich=b=>({...b,supplierGroupName:groups.find(g=>g.id===b.supplierGroupId
 const upstream=http.createServer(async(req,res)=>{
  let raw='';for await(const c of req)raw+=c
  const b=raw?JSON.parse(raw):null,url=new URL(req.url,'http://fixture'),path=url.pathname
- seen.push({path,method:req.method,body:b,token:req.headers.authorization})
+ seen.push({path,kind:url.searchParams.get('kind'),method:req.method,body:b,token:req.headers.authorization})
  const send=(status,result,error)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify({success:status<300,result,error}))}
  if(path==='/api/v1/auth/tenant-login')return send(200,{token:'tenant-token',requiresTwoFactorAuth:false,expiresIn:3600})
  if(path==='/api/v1/auth/me')return req.headers.authorization==='Bearer tenant-token'?send(200,{userId:uuid(999),username:'admin',accountId:'acme'}):send(401,null)
@@ -74,6 +74,8 @@ try{
   await modal.getByLabel('Name',{exact:false}).fill('Accra Supplies');await modal.getByLabel('Account number').fill('SUP-001');await modal.getByLabel('Email',{exact:true}).fill('supplier@example.test');await modal.getByLabel('Supplier group',{exact:true}).selectOption(groups[0].id);await modal.getByLabel('Currency',{exact:true}).selectOption(currency)
   await modal.getByLabel('Credit GL account (AP liability)',{exact:true}).selectOption(credit);await modal.getByLabel('Debit GL account',{exact:true}).selectOption(debit);await modal.getByLabel('VAT GL account',{exact:true}).selectOption(vat);await modal.getByLabel('IRS GL account',{exact:true}).selectOption(irs);await modal.getByLabel('Credit limit').fill('98765.123456')
   check(await modal.getByLabel('Buying rate').count()===0&&await modal.getByLabel('Selling rate').count()===0,'currency rate fields are absent from the modal');
+  check(await modal.getByLabel('Credit GL account (AP liability)',{exact:true}).locator('option').count()>2,'primary posting dropdown lists actual GL accounts, not only a category-filtered subset');
+  check(seen.some(r=>r.kind==='accounts')&&!seen.some(r=>r.kind==='credits'||r.kind==='receivables'),'all posting-default lookups request GL account records');
   check(await modal.getByLabel('Balance',{exact:false}).getAttribute('readonly')!==null,'balance is visibly read-only')
   await modal.getByRole('button',{name:'Save changes',exact:true}).click();await modal.waitFor({state:'hidden'});check(suppliers.length===1&&!('buyingRate' in suppliers[0])&&!('sellingRate' in suppliers[0])&&suppliers[0].creditLimit==='98765.123456'&&!('balance' in suppliers[0]),'supplier form submits exact decimals and no editable balance or derived fields')
   await page.getByRole('button',{name:'View Accra Supplies',exact:true}).click();check(await modal.getByLabel('Account number').inputValue()==='SUP-001'&&await modal.getByLabel('Account number').isDisabled()&&await modal.getByRole('button',{name:'Save changes',exact:true}).count()===0,'supplier details show persisted values in read-only mode');await modal.getByRole('button',{name:'Close',exact:true}).click();await modal.waitFor({state:'hidden'})

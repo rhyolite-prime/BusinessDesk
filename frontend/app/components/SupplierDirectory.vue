@@ -519,13 +519,13 @@ onUnmounted(() => {
                   :label="field.label"
                   :kind="field.kind"
                   :selected-label="detail?.[field.name] || ''"
-                  :unit-id="field.kind === 'credits' ? '' : unit"
+                  :unit-id="field.key === 'creditAccountId' ? '' : unit"
                   :disabled="
                     busy ||
                     readOnly ||
-                    (field.kind !== 'credits' && !form.creditAccountId)
+                    (field.key !== 'creditAccountId' && !form.creditAccountId)
                   "
-                  @selected="field.kind === 'credits' && chooseCredit($event)"
+                  @selected="field.key === 'creditAccountId' && chooseCredit($event)"
                 />
               </div>
             </section>

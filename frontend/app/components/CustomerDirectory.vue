@@ -510,16 +510,16 @@ onUnmounted(() => {
                   v-model="form[field.key]"
                   :label="field.label"
                   :kind="field.kind"
-                  :required="field.kind === 'receivables'"
+                  :required="field.key === 'receivableAccountId'"
                   :selected-label="detail?.[field.name] || ''"
-                  :unit-id="field.kind === 'receivables' ? '' : unit"
+                  :unit-id="field.key === 'receivableAccountId' ? '' : unit"
                   :disabled="
                     busy ||
                     readOnly ||
-                    (field.kind !== 'receivables' && !form.receivableAccountId)
+                    (field.key !== 'receivableAccountId' && !form.receivableAccountId)
                   "
                   @selected="
-                    field.kind === 'receivables' && chooseReceivable($event)
+                    field.key === 'receivableAccountId' && chooseReceivable($event)
                   "
                 />
               </div>

@@ -13,7 +13,7 @@ const enrich=b=>({...b,customerGroupName:groups.find(g=>g.id===b.customerGroupId
 const upstream=http.createServer(async(req,res)=>{
  let raw='';for await(const c of req)raw+=c
  const b=raw?JSON.parse(raw):null,url=new URL(req.url,'http://fixture'),path=url.pathname
- seen.push({path,method:req.method,body:b,token:req.headers.authorization})
+ seen.push({path,kind:url.searchParams.get('kind'),method:req.method,body:b,token:req.headers.authorization})
  const send=(status,result,error)=>{res.writeHead(status,{'content-type':'application/json'});res.end(JSON.stringify({success:status<300,result,error}))}
  if(path==='/api/v1/auth/tenant-login')return send(200,{token:'tenant-token',requiresTwoFactorAuth:false,expiresIn:3600})
  if(path==='/api/v1/auth/me')return req.headers.authorization==='Bearer tenant-token'?send(200,{userId:uuid(999),username:'admin',accountId:'acme'}):send(401,null)
@@ -82,6 +82,8 @@ try{
 
   await modal.getByLabel('Legacy status UUID (optional)',{exact:true}).fill(uuid(500))
   check(await modal.getByLabel('Buying rate').count()===0&&await modal.getByLabel('Selling rate').count()===0,'currency rate fields are absent from the modal');
+  check(await modal.getByLabel('Receivable G/L',{exact:true}).locator('option').count()>2,'primary posting dropdown lists actual GL accounts, not only a category-filtered subset');
+  check(seen.some(r=>r.kind==='accounts')&&!seen.some(r=>r.kind==='credits'||r.kind==='receivables'),'all posting-default lookups request GL account records');
   check(await modal.getByLabel('Balance',{exact:false}).getAttribute('readonly')!==null,'balance is visibly read-only')
   await modal.getByRole('button',{name:'Save changes',exact:true}).click();await modal.waitFor({state:'hidden'});check(customers.length===1&&!('buyingRate' in customers[0])&&!('sellingRate' in customers[0])&&customers[0].creditLimit==='98765.123456'&&!('balance' in customers[0])&&customers[0].accountingUnitId===unit&&customers[0].receivableAccountId===credit,'customer form submits exact decimals and no editable balance or derived fields')
   check(customers[0].phoneNo==='+233201234567'&&customers[0].vatNumber==='VAT-001'&&customers[0].tinNumber==='TIN-001'&&customers[0].statusId===uuid(500),'customer modal sends expanded fields as exact strings and UUID metadata')
