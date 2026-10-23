@@ -63,10 +63,6 @@ const std::string CoreSuppliers::Cols::_vat_number = "\"vat_number\"";
 
 const std::string CoreSuppliers::Cols::_currency_id = "\"currency_id\"";
 
-const std::string CoreSuppliers::Cols::_buying_rate = "\"buying_rate\"";
-
-const std::string CoreSuppliers::Cols::_selling_rate = "\"selling_rate\"";
-
 const std::string CoreSuppliers::Cols::_credit_limit = "\"credit_limit\"";
 
 const std::string CoreSuppliers::Cols::_irs_account_id = "\"irs_account_id\"";
@@ -120,8 +116,6 @@ const std::vector<typename CoreSuppliers::MetaData> CoreSuppliers::metaData_={
 {"contact_person_email","std::string","character varying",254,0,0,1},
 {"vat_number","std::string","character varying",80,0,0,1},
 {"currency_id","std::string","uuid",0,0,0,1},
-{"buying_rate","std::string","numeric",0,0,0,1},
-{"selling_rate","std::string","numeric",0,0,0,1},
 {"credit_limit","std::string","numeric",0,0,0,1},
 {"irs_account_id","std::string","uuid",0,0,0,1},
 {"is_resident","bool","boolean",1,0,0,1},
@@ -273,20 +267,6 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        if(!r["buying_rate"].isNull())
-        {
-
-            buyingRate_=std::make_shared<std::string>(r["buying_rate"].as<std::string>());
-
-        }
-
-        if(!r["selling_rate"].isNull())
-        {
-
-            sellingRate_=std::make_shared<std::string>(r["selling_rate"].as<std::string>());
-
-        }
-
         if(!r["credit_limit"].isNull())
         {
 
@@ -433,7 +413,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 33 > r.size())
+        if(offset + 31 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -588,7 +568,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            buyingRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            creditLimit_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -596,7 +576,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            sellingRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            irsAccountId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -604,7 +584,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            creditLimit_=std::make_shared<std::string>(r[index].as<std::string>());
+            isResident_=std::make_shared<bool>(r[index].as<bool>());
 
         }
 
@@ -612,7 +592,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            irsAccountId_=std::make_shared<std::string>(r[index].as<std::string>());
+            taxOffice_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -620,27 +600,11 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            isResident_=std::make_shared<bool>(r[index].as<bool>());
-
-        }
-
-        index = offset + 23;
-        if(!r[index].isNull())
-        {
-
-            taxOffice_=std::make_shared<std::string>(r[index].as<std::string>());
-
-        }
-
-        index = offset + 24;
-        if(!r[index].isNull())
-        {
-
             balance_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
-        index = offset + 25;
+        index = offset + 23;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -665,7 +629,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 26;
+        index = offset + 24;
         if(!r[index].isNull())
         {
 
@@ -673,7 +637,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 27;
+        index = offset + 25;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -698,7 +662,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 28;
+        index = offset + 26;
         if(!r[index].isNull())
         {
 
@@ -706,7 +670,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 29;
+        index = offset + 27;
         if(!r[index].isNull())
         {
 
@@ -714,7 +678,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 30;
+        index = offset + 28;
         if(!r[index].isNull())
         {
             auto timeStr = r[index].as<std::string>();
@@ -739,7 +703,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
             }
         }
 
-        index = offset + 31;
+        index = offset + 29;
         if(!r[index].isNull())
         {
 
@@ -747,7 +711,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        index = offset + 32;
+        index = offset + 30;
         if(!r[index].isNull())
         {
 
@@ -761,7 +725,7 @@ CoreSuppliers::CoreSuppliers(const Row &r, const ssize_t indexOffset) noexcept
 
 CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 33)
+    if(pMasqueradingVector.size() != 31)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -934,7 +898,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            buyingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
+            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -943,7 +907,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            sellingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
+            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -952,7 +916,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[20]].asString());
+            isResident_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -961,7 +925,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
+            taxOffice_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
         }
     }
 
@@ -970,7 +934,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            isResident_=std::make_shared<bool>(pJson[pMasqueradingVector[22]].asBool());
+            balance_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -979,7 +943,26 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            taxOffice_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            auto timeStr = pJson[pMasqueradingVector[23]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                createdAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
         }
     }
 
@@ -988,7 +971,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            balance_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
         }
     }
 
@@ -1015,7 +998,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                createdAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
         }
     }
@@ -1025,7 +1008,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
         }
     }
 
@@ -1034,26 +1017,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            auto timeStr = pJson[pMasqueradingVector[27]].asString();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            stm.tm_isdst = -1;
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
-            }
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[27]].asBool());
         }
     }
 
@@ -1062,25 +1026,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[28] = true;
         if(!pJson[pMasqueradingVector[28]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[29].empty() && pJson.isMember(pMasqueradingVector[29]))
-    {
-        dirtyFlag_[29] = true;
-        if(!pJson[pMasqueradingVector[29]].isNull())
-        {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[29]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
-    {
-        dirtyFlag_[30] = true;
-        if(!pJson[pMasqueradingVector[30]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[30]].asString();
+            auto timeStr = pJson[pMasqueradingVector[28]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1103,21 +1049,21 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson, const std::vector<std::st
         }
     }
 
-    if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
+    if(!pMasqueradingVector[29].empty() && pJson.isMember(pMasqueradingVector[29]))
     {
-        dirtyFlag_[31] = true;
-        if(!pJson[pMasqueradingVector[31]].isNull())
+        dirtyFlag_[29] = true;
+        if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
         }
     }
 
-    if(!pMasqueradingVector[32].empty() && pJson.isMember(pMasqueradingVector[32]))
+    if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
     {
-        dirtyFlag_[32] = true;
-        if(!pJson[pMasqueradingVector[32]].isNull())
+        dirtyFlag_[30] = true;
+        if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[32]].asInt64());
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[30]].asInt64());
         }
     }
 
@@ -1288,27 +1234,9 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        dirtyFlag_[18]=true;
-        if(!pJson["buying_rate"].isNull())
-        {
-            buyingRate_=std::make_shared<std::string>(pJson["buying_rate"].asString());
-        }
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        dirtyFlag_[19]=true;
-        if(!pJson["selling_rate"].isNull())
-        {
-            sellingRate_=std::make_shared<std::string>(pJson["selling_rate"].asString());
-        }
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        dirtyFlag_[20]=true;
+        dirtyFlag_[18]=true;
         if(!pJson["credit_limit"].isNull())
         {
             creditLimit_=std::make_shared<std::string>(pJson["credit_limit"].asString());
@@ -1317,7 +1245,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_id"))
     {
-        dirtyFlag_[21]=true;
+        dirtyFlag_[19]=true;
         if(!pJson["irs_account_id"].isNull())
         {
             irsAccountId_=std::make_shared<std::string>(pJson["irs_account_id"].asString());
@@ -1326,7 +1254,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_resident"))
     {
-        dirtyFlag_[22]=true;
+        dirtyFlag_[20]=true;
         if(!pJson["is_resident"].isNull())
         {
             isResident_=std::make_shared<bool>(pJson["is_resident"].asBool());
@@ -1335,7 +1263,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("tax_office"))
     {
-        dirtyFlag_[23]=true;
+        dirtyFlag_[21]=true;
         if(!pJson["tax_office"].isNull())
         {
             taxOffice_=std::make_shared<std::string>(pJson["tax_office"].asString());
@@ -1344,7 +1272,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("balance"))
     {
-        dirtyFlag_[24]=true;
+        dirtyFlag_[22]=true;
         if(!pJson["balance"].isNull())
         {
             balance_=std::make_shared<std::string>(pJson["balance"].asString());
@@ -1353,7 +1281,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[25]=true;
+        dirtyFlag_[23]=true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -1381,7 +1309,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[26]=true;
+        dirtyFlag_[24]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -1390,7 +1318,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[27]=true;
+        dirtyFlag_[25]=true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -1418,7 +1346,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[28]=true;
+        dirtyFlag_[26]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -1427,7 +1355,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[29]=true;
+        dirtyFlag_[27]=true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -1436,7 +1364,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[30]=true;
+        dirtyFlag_[28]=true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -1464,7 +1392,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[31]=true;
+        dirtyFlag_[29]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -1473,7 +1401,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("version"))
     {
-        dirtyFlag_[32]=true;
+        dirtyFlag_[30]=true;
         if(!pJson["version"].isNull())
         {
             version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
@@ -1485,7 +1413,7 @@ CoreSuppliers::CoreSuppliers(const Json::Value &pJson) noexcept(false)
 void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 33)
+    if(pMasqueradingVector.size() != 31)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1657,7 +1585,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            buyingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
+            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -1666,7 +1594,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            sellingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
+            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -1675,7 +1603,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[20] = true;
         if(!pJson[pMasqueradingVector[20]].isNull())
         {
-            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[20]].asString());
+            isResident_=std::make_shared<bool>(pJson[pMasqueradingVector[20]].asBool());
         }
     }
 
@@ -1684,7 +1612,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[21] = true;
         if(!pJson[pMasqueradingVector[21]].isNull())
         {
-            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
+            taxOffice_=std::make_shared<std::string>(pJson[pMasqueradingVector[21]].asString());
         }
     }
 
@@ -1693,7 +1621,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            isResident_=std::make_shared<bool>(pJson[pMasqueradingVector[22]].asBool());
+            balance_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -1702,7 +1630,26 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[23] = true;
         if(!pJson[pMasqueradingVector[23]].isNull())
         {
-            taxOffice_=std::make_shared<std::string>(pJson[pMasqueradingVector[23]].asString());
+            auto timeStr = pJson[pMasqueradingVector[23]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                createdAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
         }
     }
 
@@ -1711,7 +1658,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[24] = true;
         if(!pJson[pMasqueradingVector[24]].isNull())
         {
-            balance_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[24]].asString());
         }
     }
 
@@ -1738,7 +1685,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
                     }
                     decimalNum = (size_t)atol(decimals.c_str());
                 }
-                createdAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
             }
         }
     }
@@ -1748,7 +1695,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[26] = true;
         if(!pJson[pMasqueradingVector[26]].isNull())
         {
-            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[26]].asString());
         }
     }
 
@@ -1757,26 +1704,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[27] = true;
         if(!pJson[pMasqueradingVector[27]].isNull())
         {
-            auto timeStr = pJson[pMasqueradingVector[27]].asString();
-            struct tm stm;
-            memset(&stm,0,sizeof(stm));
-            stm.tm_isdst = -1;
-            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
-            time_t t = mktime(&stm);
-            size_t decimalNum = 0;
-            if(p)
-            {
-                if(*p=='.')
-                {
-                    std::string decimals(p+1,&timeStr[timeStr.length()]);
-                    while(decimals.length()<6)
-                    {
-                        decimals += "0";
-                    }
-                    decimalNum = (size_t)atol(decimals.c_str());
-                }
-                lastModifiedAt_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
-            }
+            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[27]].asBool());
         }
     }
 
@@ -1785,25 +1713,7 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[28] = true;
         if(!pJson[pMasqueradingVector[28]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[28]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[29].empty() && pJson.isMember(pMasqueradingVector[29]))
-    {
-        dirtyFlag_[29] = true;
-        if(!pJson[pMasqueradingVector[29]].isNull())
-        {
-            isDeleted_=std::make_shared<bool>(pJson[pMasqueradingVector[29]].asBool());
-        }
-    }
-
-    if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
-    {
-        dirtyFlag_[30] = true;
-        if(!pJson[pMasqueradingVector[30]].isNull())
-        {
-            auto timeStr = pJson[pMasqueradingVector[30]].asString();
+            auto timeStr = pJson[pMasqueradingVector[28]].asString();
             struct tm stm;
             memset(&stm,0,sizeof(stm));
             stm.tm_isdst = -1;
@@ -1826,21 +1736,21 @@ void CoreSuppliers::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
-    if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
+    if(!pMasqueradingVector[29].empty() && pJson.isMember(pMasqueradingVector[29]))
     {
-        dirtyFlag_[31] = true;
-        if(!pJson[pMasqueradingVector[31]].isNull())
+        dirtyFlag_[29] = true;
+        if(!pJson[pMasqueradingVector[29]].isNull())
         {
-            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[31]].asString());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[29]].asString());
         }
     }
 
-    if(!pMasqueradingVector[32].empty() && pJson.isMember(pMasqueradingVector[32]))
+    if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
     {
-        dirtyFlag_[32] = true;
-        if(!pJson[pMasqueradingVector[32]].isNull())
+        dirtyFlag_[30] = true;
+        if(!pJson[pMasqueradingVector[30]].isNull())
         {
-            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[32]].asInt64());
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[30]].asInt64());
         }
     }
 
@@ -2010,27 +1920,9 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        dirtyFlag_[18] = true;
-        if(!pJson["buying_rate"].isNull())
-        {
-            buyingRate_=std::make_shared<std::string>(pJson["buying_rate"].asString());
-        }
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        dirtyFlag_[19] = true;
-        if(!pJson["selling_rate"].isNull())
-        {
-            sellingRate_=std::make_shared<std::string>(pJson["selling_rate"].asString());
-        }
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        dirtyFlag_[20] = true;
+        dirtyFlag_[18] = true;
         if(!pJson["credit_limit"].isNull())
         {
             creditLimit_=std::make_shared<std::string>(pJson["credit_limit"].asString());
@@ -2039,7 +1931,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_id"))
     {
-        dirtyFlag_[21] = true;
+        dirtyFlag_[19] = true;
         if(!pJson["irs_account_id"].isNull())
         {
             irsAccountId_=std::make_shared<std::string>(pJson["irs_account_id"].asString());
@@ -2048,7 +1940,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_resident"))
     {
-        dirtyFlag_[22] = true;
+        dirtyFlag_[20] = true;
         if(!pJson["is_resident"].isNull())
         {
             isResident_=std::make_shared<bool>(pJson["is_resident"].asBool());
@@ -2057,7 +1949,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("tax_office"))
     {
-        dirtyFlag_[23] = true;
+        dirtyFlag_[21] = true;
         if(!pJson["tax_office"].isNull())
         {
             taxOffice_=std::make_shared<std::string>(pJson["tax_office"].asString());
@@ -2066,7 +1958,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("balance"))
     {
-        dirtyFlag_[24] = true;
+        dirtyFlag_[22] = true;
         if(!pJson["balance"].isNull())
         {
             balance_=std::make_shared<std::string>(pJson["balance"].asString());
@@ -2075,7 +1967,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_at"))
     {
-        dirtyFlag_[25] = true;
+        dirtyFlag_[23] = true;
         if(!pJson["created_at"].isNull())
         {
             auto timeStr = pJson["created_at"].asString();
@@ -2103,7 +1995,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("created_by_user_id"))
     {
-        dirtyFlag_[26] = true;
+        dirtyFlag_[24] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
             createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
@@ -2112,7 +2004,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_at"))
     {
-        dirtyFlag_[27] = true;
+        dirtyFlag_[25] = true;
         if(!pJson["last_modified_at"].isNull())
         {
             auto timeStr = pJson["last_modified_at"].asString();
@@ -2140,7 +2032,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        dirtyFlag_[28] = true;
+        dirtyFlag_[26] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
             lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
@@ -2149,7 +2041,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("is_deleted"))
     {
-        dirtyFlag_[29] = true;
+        dirtyFlag_[27] = true;
         if(!pJson["is_deleted"].isNull())
         {
             isDeleted_=std::make_shared<bool>(pJson["is_deleted"].asBool());
@@ -2158,7 +2050,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_at"))
     {
-        dirtyFlag_[30] = true;
+        dirtyFlag_[28] = true;
         if(!pJson["deleted_at"].isNull())
         {
             auto timeStr = pJson["deleted_at"].asString();
@@ -2186,7 +2078,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        dirtyFlag_[31] = true;
+        dirtyFlag_[29] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
@@ -2195,7 +2087,7 @@ void CoreSuppliers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("version"))
     {
-        dirtyFlag_[32] = true;
+        dirtyFlag_[30] = true;
         if(!pJson["version"].isNull())
         {
             version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
@@ -2605,50 +2497,6 @@ void CoreSuppliers::setCurrencyId(std::string &&pCurrencyId) noexcept
     dirtyFlag_[17] = true;
 }
 
-const std::string &CoreSuppliers::getValueOfBuyingRate() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(buyingRate_)
-        return *buyingRate_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &CoreSuppliers::getBuyingRate() const noexcept
-{
-    return buyingRate_;
-}
-void CoreSuppliers::setBuyingRate(const std::string &pBuyingRate) noexcept
-{
-    buyingRate_ = std::make_shared<std::string>(pBuyingRate);
-    dirtyFlag_[18] = true;
-}
-void CoreSuppliers::setBuyingRate(std::string &&pBuyingRate) noexcept
-{
-    buyingRate_ = std::make_shared<std::string>(std::move(pBuyingRate));
-    dirtyFlag_[18] = true;
-}
-
-const std::string &CoreSuppliers::getValueOfSellingRate() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(sellingRate_)
-        return *sellingRate_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &CoreSuppliers::getSellingRate() const noexcept
-{
-    return sellingRate_;
-}
-void CoreSuppliers::setSellingRate(const std::string &pSellingRate) noexcept
-{
-    sellingRate_ = std::make_shared<std::string>(pSellingRate);
-    dirtyFlag_[19] = true;
-}
-void CoreSuppliers::setSellingRate(std::string &&pSellingRate) noexcept
-{
-    sellingRate_ = std::make_shared<std::string>(std::move(pSellingRate));
-    dirtyFlag_[19] = true;
-}
-
 const std::string &CoreSuppliers::getValueOfCreditLimit() const noexcept
 {
     static const std::string defaultValue = std::string();
@@ -2663,12 +2511,12 @@ const std::shared_ptr<std::string> &CoreSuppliers::getCreditLimit() const noexce
 void CoreSuppliers::setCreditLimit(const std::string &pCreditLimit) noexcept
 {
     creditLimit_ = std::make_shared<std::string>(pCreditLimit);
-    dirtyFlag_[20] = true;
+    dirtyFlag_[18] = true;
 }
 void CoreSuppliers::setCreditLimit(std::string &&pCreditLimit) noexcept
 {
     creditLimit_ = std::make_shared<std::string>(std::move(pCreditLimit));
-    dirtyFlag_[20] = true;
+    dirtyFlag_[18] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfIrsAccountId() const noexcept
@@ -2685,12 +2533,12 @@ const std::shared_ptr<std::string> &CoreSuppliers::getIrsAccountId() const noexc
 void CoreSuppliers::setIrsAccountId(const std::string &pIrsAccountId) noexcept
 {
     irsAccountId_ = std::make_shared<std::string>(pIrsAccountId);
-    dirtyFlag_[21] = true;
+    dirtyFlag_[19] = true;
 }
 void CoreSuppliers::setIrsAccountId(std::string &&pIrsAccountId) noexcept
 {
     irsAccountId_ = std::make_shared<std::string>(std::move(pIrsAccountId));
-    dirtyFlag_[21] = true;
+    dirtyFlag_[19] = true;
 }
 
 const bool &CoreSuppliers::getValueOfIsResident() const noexcept
@@ -2707,7 +2555,7 @@ const std::shared_ptr<bool> &CoreSuppliers::getIsResident() const noexcept
 void CoreSuppliers::setIsResident(const bool &pIsResident) noexcept
 {
     isResident_ = std::make_shared<bool>(pIsResident);
-    dirtyFlag_[22] = true;
+    dirtyFlag_[20] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfTaxOffice() const noexcept
@@ -2724,12 +2572,12 @@ const std::shared_ptr<std::string> &CoreSuppliers::getTaxOffice() const noexcept
 void CoreSuppliers::setTaxOffice(const std::string &pTaxOffice) noexcept
 {
     taxOffice_ = std::make_shared<std::string>(pTaxOffice);
-    dirtyFlag_[23] = true;
+    dirtyFlag_[21] = true;
 }
 void CoreSuppliers::setTaxOffice(std::string &&pTaxOffice) noexcept
 {
     taxOffice_ = std::make_shared<std::string>(std::move(pTaxOffice));
-    dirtyFlag_[23] = true;
+    dirtyFlag_[21] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfBalance() const noexcept
@@ -2746,12 +2594,12 @@ const std::shared_ptr<std::string> &CoreSuppliers::getBalance() const noexcept
 void CoreSuppliers::setBalance(const std::string &pBalance) noexcept
 {
     balance_ = std::make_shared<std::string>(pBalance);
-    dirtyFlag_[24] = true;
+    dirtyFlag_[22] = true;
 }
 void CoreSuppliers::setBalance(std::string &&pBalance) noexcept
 {
     balance_ = std::make_shared<std::string>(std::move(pBalance));
-    dirtyFlag_[24] = true;
+    dirtyFlag_[22] = true;
 }
 
 const ::trantor::Date &CoreSuppliers::getValueOfCreatedAt() const noexcept
@@ -2768,7 +2616,7 @@ const std::shared_ptr<::trantor::Date> &CoreSuppliers::getCreatedAt() const noex
 void CoreSuppliers::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
 {
     createdAt_ = std::make_shared<::trantor::Date>(pCreatedAt);
-    dirtyFlag_[25] = true;
+    dirtyFlag_[23] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfCreatedByUserId() const noexcept
@@ -2785,12 +2633,12 @@ const std::shared_ptr<std::string> &CoreSuppliers::getCreatedByUserId() const no
 void CoreSuppliers::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
-    dirtyFlag_[26] = true;
+    dirtyFlag_[24] = true;
 }
 void CoreSuppliers::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
 {
     createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
-    dirtyFlag_[26] = true;
+    dirtyFlag_[24] = true;
 }
 
 const ::trantor::Date &CoreSuppliers::getValueOfLastModifiedAt() const noexcept
@@ -2807,12 +2655,12 @@ const std::shared_ptr<::trantor::Date> &CoreSuppliers::getLastModifiedAt() const
 void CoreSuppliers::setLastModifiedAt(const ::trantor::Date &pLastModifiedAt) noexcept
 {
     lastModifiedAt_ = std::make_shared<::trantor::Date>(pLastModifiedAt);
-    dirtyFlag_[27] = true;
+    dirtyFlag_[25] = true;
 }
 void CoreSuppliers::setLastModifiedAtToNull() noexcept
 {
     lastModifiedAt_.reset();
-    dirtyFlag_[27] = true;
+    dirtyFlag_[25] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfLastModifiedByUserId() const noexcept
@@ -2829,17 +2677,17 @@ const std::shared_ptr<std::string> &CoreSuppliers::getLastModifiedByUserId() con
 void CoreSuppliers::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
-    dirtyFlag_[28] = true;
+    dirtyFlag_[26] = true;
 }
 void CoreSuppliers::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
 {
     lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
-    dirtyFlag_[28] = true;
+    dirtyFlag_[26] = true;
 }
 void CoreSuppliers::setLastModifiedByUserIdToNull() noexcept
 {
     lastModifiedByUserId_.reset();
-    dirtyFlag_[28] = true;
+    dirtyFlag_[26] = true;
 }
 
 const bool &CoreSuppliers::getValueOfIsDeleted() const noexcept
@@ -2856,7 +2704,7 @@ const std::shared_ptr<bool> &CoreSuppliers::getIsDeleted() const noexcept
 void CoreSuppliers::setIsDeleted(const bool &pIsDeleted) noexcept
 {
     isDeleted_ = std::make_shared<bool>(pIsDeleted);
-    dirtyFlag_[29] = true;
+    dirtyFlag_[27] = true;
 }
 
 const ::trantor::Date &CoreSuppliers::getValueOfDeletedAt() const noexcept
@@ -2873,12 +2721,12 @@ const std::shared_ptr<::trantor::Date> &CoreSuppliers::getDeletedAt() const noex
 void CoreSuppliers::setDeletedAt(const ::trantor::Date &pDeletedAt) noexcept
 {
     deletedAt_ = std::make_shared<::trantor::Date>(pDeletedAt);
-    dirtyFlag_[30] = true;
+    dirtyFlag_[28] = true;
 }
 void CoreSuppliers::setDeletedAtToNull() noexcept
 {
     deletedAt_.reset();
-    dirtyFlag_[30] = true;
+    dirtyFlag_[28] = true;
 }
 
 const std::string &CoreSuppliers::getValueOfDeletedByUserId() const noexcept
@@ -2895,17 +2743,17 @@ const std::shared_ptr<std::string> &CoreSuppliers::getDeletedByUserId() const no
 void CoreSuppliers::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
-    dirtyFlag_[31] = true;
+    dirtyFlag_[29] = true;
 }
 void CoreSuppliers::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
 {
     deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
-    dirtyFlag_[31] = true;
+    dirtyFlag_[29] = true;
 }
 void CoreSuppliers::setDeletedByUserIdToNull() noexcept
 {
     deletedByUserId_.reset();
-    dirtyFlag_[31] = true;
+    dirtyFlag_[29] = true;
 }
 
 const int32_t &CoreSuppliers::getValueOfVersion() const noexcept
@@ -2922,7 +2770,7 @@ const std::shared_ptr<int32_t> &CoreSuppliers::getVersion() const noexcept
 void CoreSuppliers::setVersion(const int32_t &pVersion) noexcept
 {
     version_ = std::make_shared<int32_t>(pVersion);
-    dirtyFlag_[32] = true;
+    dirtyFlag_[30] = true;
 }
 
 void CoreSuppliers::updateId(const uint64_t id)
@@ -2951,8 +2799,6 @@ const std::vector<std::string> &CoreSuppliers::insertColumns() noexcept
         "contact_person_email",
         "vat_number",
         "currency_id",
-        "buying_rate",
-        "selling_rate",
         "credit_limit",
         "irs_account_id",
         "is_resident",
@@ -3192,30 +3038,6 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[18])
     {
-        if(getBuyingRate())
-        {
-            binder << getValueOfBuyingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[19])
-    {
-        if(getSellingRate())
-        {
-            binder << getValueOfSellingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[20])
-    {
         if(getCreditLimit())
         {
             binder << getValueOfCreditLimit();
@@ -3226,7 +3048,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[19])
     {
         if(getIrsAccountId())
         {
@@ -3238,7 +3060,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[20])
     {
         if(getIsResident())
         {
@@ -3250,7 +3072,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[21])
     {
         if(getTaxOffice())
         {
@@ -3262,7 +3084,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[22])
     {
         if(getBalance())
         {
@@ -3274,7 +3096,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[23])
     {
         if(getCreatedAt())
         {
@@ -3286,7 +3108,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[24])
     {
         if(getCreatedByUserId())
         {
@@ -3298,7 +3120,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[25])
     {
         if(getLastModifiedAt())
         {
@@ -3310,7 +3132,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[26])
     {
         if(getLastModifiedByUserId())
         {
@@ -3322,7 +3144,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[27])
     {
         if(getIsDeleted())
         {
@@ -3334,7 +3156,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[28])
     {
         if(getDeletedAt())
         {
@@ -3346,7 +3168,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[29])
     {
         if(getDeletedByUserId())
         {
@@ -3358,7 +3180,7 @@ void CoreSuppliers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[30])
     {
         if(getVersion())
         {
@@ -3529,16 +3351,6 @@ const std::vector<std::string> CoreSuppliers::updateColumns() const
     if(dirtyFlag_[30])
     {
         ret.push_back(getColumnName(30));
-    }
-
-    if(dirtyFlag_[31])
-    {
-        ret.push_back(getColumnName(31));
-    }
-
-    if(dirtyFlag_[32])
-    {
-        ret.push_back(getColumnName(32));
     }
 
     return ret;
@@ -3765,30 +3577,6 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[18])
     {
-        if(getBuyingRate())
-        {
-            binder << getValueOfBuyingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[19])
-    {
-        if(getSellingRate())
-        {
-            binder << getValueOfSellingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[20])
-    {
         if(getCreditLimit())
         {
             binder << getValueOfCreditLimit();
@@ -3799,7 +3587,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[21])
+    if(dirtyFlag_[19])
     {
         if(getIrsAccountId())
         {
@@ -3811,7 +3599,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[22])
+    if(dirtyFlag_[20])
     {
         if(getIsResident())
         {
@@ -3823,7 +3611,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[23])
+    if(dirtyFlag_[21])
     {
         if(getTaxOffice())
         {
@@ -3835,7 +3623,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[24])
+    if(dirtyFlag_[22])
     {
         if(getBalance())
         {
@@ -3847,7 +3635,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[25])
+    if(dirtyFlag_[23])
     {
         if(getCreatedAt())
         {
@@ -3859,7 +3647,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[26])
+    if(dirtyFlag_[24])
     {
         if(getCreatedByUserId())
         {
@@ -3871,7 +3659,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[27])
+    if(dirtyFlag_[25])
     {
         if(getLastModifiedAt())
         {
@@ -3883,7 +3671,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[28])
+    if(dirtyFlag_[26])
     {
         if(getLastModifiedByUserId())
         {
@@ -3895,7 +3683,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[29])
+    if(dirtyFlag_[27])
     {
         if(getIsDeleted())
         {
@@ -3907,7 +3695,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[30])
+    if(dirtyFlag_[28])
     {
         if(getDeletedAt())
         {
@@ -3919,7 +3707,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[31])
+    if(dirtyFlag_[29])
     {
         if(getDeletedByUserId())
         {
@@ -3931,7 +3719,7 @@ void CoreSuppliers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[32])
+    if(dirtyFlag_[30])
     {
         if(getVersion())
         {
@@ -4146,28 +3934,6 @@ Json::Value CoreSuppliers::toJson() const
         ret["currency_id"]=Json::Value();
     }
 
-    if(getBuyingRate())
-    {
-
-        ret["buying_rate"]=getValueOfBuyingRate();
-
-    }
-    else
-    {
-        ret["buying_rate"]=Json::Value();
-    }
-
-    if(getSellingRate())
-    {
-
-        ret["selling_rate"]=getValueOfSellingRate();
-
-    }
-    else
-    {
-        ret["selling_rate"]=Json::Value();
-    }
-
     if(getCreditLimit())
     {
 
@@ -4323,7 +4089,7 @@ Json::Value CoreSuppliers::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 33)
+    if(pMasqueradingVector.size() == 31)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -4580,10 +4346,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[18].empty())
         {
-            if(getBuyingRate())
+            if(getCreditLimit())
             {
 
-                ret[pMasqueradingVector[18]]=getValueOfBuyingRate();
+                ret[pMasqueradingVector[18]]=getValueOfCreditLimit();
 
             }
             else
@@ -4594,10 +4360,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[19].empty())
         {
-            if(getSellingRate())
+            if(getIrsAccountId())
             {
 
-                ret[pMasqueradingVector[19]]=getValueOfSellingRate();
+                ret[pMasqueradingVector[19]]=getValueOfIrsAccountId();
 
             }
             else
@@ -4608,10 +4374,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[20].empty())
         {
-            if(getCreditLimit())
+            if(getIsResident())
             {
 
-                ret[pMasqueradingVector[20]]=getValueOfCreditLimit();
+                ret[pMasqueradingVector[20]]=getValueOfIsResident();
 
             }
             else
@@ -4622,10 +4388,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[21].empty())
         {
-            if(getIrsAccountId())
+            if(getTaxOffice())
             {
 
-                ret[pMasqueradingVector[21]]=getValueOfIrsAccountId();
+                ret[pMasqueradingVector[21]]=getValueOfTaxOffice();
 
             }
             else
@@ -4636,10 +4402,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[22].empty())
         {
-            if(getIsResident())
+            if(getBalance())
             {
 
-                ret[pMasqueradingVector[22]]=getValueOfIsResident();
+                ret[pMasqueradingVector[22]]=getValueOfBalance();
 
             }
             else
@@ -4650,10 +4416,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[23].empty())
         {
-            if(getTaxOffice())
+            if(getCreatedAt())
             {
 
-                ret[pMasqueradingVector[23]]=getValueOfTaxOffice();
+                ret[pMasqueradingVector[23]]=getCreatedAt()->toDbStringLocal();
 
             }
             else
@@ -4664,10 +4430,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[24].empty())
         {
-            if(getBalance())
+            if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[24]]=getValueOfBalance();
+                ret[pMasqueradingVector[24]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -4678,10 +4444,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[25].empty())
         {
-            if(getCreatedAt())
+            if(getLastModifiedAt())
             {
 
-                ret[pMasqueradingVector[25]]=getCreatedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[25]]=getLastModifiedAt()->toDbStringLocal();
 
             }
             else
@@ -4692,10 +4458,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[26].empty())
         {
-            if(getCreatedByUserId())
+            if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[26]]=getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[26]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -4706,10 +4472,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[27].empty())
         {
-            if(getLastModifiedAt())
+            if(getIsDeleted())
             {
 
-                ret[pMasqueradingVector[27]]=getLastModifiedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[27]]=getValueOfIsDeleted();
 
             }
             else
@@ -4720,10 +4486,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[28].empty())
         {
-            if(getLastModifiedByUserId())
+            if(getDeletedAt())
             {
 
-                ret[pMasqueradingVector[28]]=getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[28]]=getDeletedAt()->toDbStringLocal();
 
             }
             else
@@ -4734,10 +4500,10 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[29].empty())
         {
-            if(getIsDeleted())
+            if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[29]]=getValueOfIsDeleted();
+                ret[pMasqueradingVector[29]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -4748,43 +4514,15 @@ Json::Value CoreSuppliers::toMasqueradedJson(
 
         if(!pMasqueradingVector[30].empty())
         {
-            if(getDeletedAt())
+            if(getVersion())
             {
 
-                ret[pMasqueradingVector[30]]=getDeletedAt()->toDbStringLocal();
+                ret[pMasqueradingVector[30]]=getValueOfVersion();
 
             }
             else
             {
                 ret[pMasqueradingVector[30]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[31].empty())
-        {
-            if(getDeletedByUserId())
-            {
-
-                ret[pMasqueradingVector[31]]=getValueOfDeletedByUserId();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[31]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[32].empty())
-        {
-            if(getVersion())
-            {
-
-                ret[pMasqueradingVector[32]]=getValueOfVersion();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[32]]=Json::Value();
             }
         }
 
@@ -4988,28 +4726,6 @@ Json::Value CoreSuppliers::toMasqueradedJson(
     else
     {
         ret["currency_id"]=Json::Value();
-    }
-
-    if(getBuyingRate())
-    {
-
-        ret["buying_rate"]=getValueOfBuyingRate();
-
-    }
-    else
-    {
-        ret["buying_rate"]=Json::Value();
-    }
-
-    if(getSellingRate())
-    {
-
-        ret["selling_rate"]=getValueOfSellingRate();
-
-    }
-    else
-    {
-        ret["selling_rate"]=Json::Value();
     }
 
     if(getCreditLimit())
@@ -5371,33 +5087,9 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
         return false;
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        if(!validJsonOfField(18, "buying_rate", pJson["buying_rate"], err, true))
-            return false;
-    }
-
-    else
-    {
-        err="The buying_rate column cannot be null";
-        return false;
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        if(!validJsonOfField(19, "selling_rate", pJson["selling_rate"], err, true))
-            return false;
-    }
-
-    else
-    {
-        err="The selling_rate column cannot be null";
-        return false;
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        if(!validJsonOfField(20, "credit_limit", pJson["credit_limit"], err, true))
+        if(!validJsonOfField(18, "credit_limit", pJson["credit_limit"], err, true))
             return false;
     }
 
@@ -5409,7 +5101,7 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
 
     if(pJson.isMember("irs_account_id"))
     {
-        if(!validJsonOfField(21, "irs_account_id", pJson["irs_account_id"], err, true))
+        if(!validJsonOfField(19, "irs_account_id", pJson["irs_account_id"], err, true))
             return false;
     }
 
@@ -5421,7 +5113,7 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
 
     if(pJson.isMember("is_resident"))
     {
-        if(!validJsonOfField(22, "is_resident", pJson["is_resident"], err, true))
+        if(!validJsonOfField(20, "is_resident", pJson["is_resident"], err, true))
             return false;
     }
 
@@ -5433,7 +5125,7 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
 
     if(pJson.isMember("tax_office"))
     {
-        if(!validJsonOfField(23, "tax_office", pJson["tax_office"], err, true))
+        if(!validJsonOfField(21, "tax_office", pJson["tax_office"], err, true))
             return false;
     }
 
@@ -5445,19 +5137,19 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
 
     if(pJson.isMember("balance"))
     {
-        if(!validJsonOfField(24, "balance", pJson["balance"], err, true))
+        if(!validJsonOfField(22, "balance", pJson["balance"], err, true))
             return false;
     }
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(25, "created_at", pJson["created_at"], err, true))
+        if(!validJsonOfField(23, "created_at", pJson["created_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(26, "created_by_user_id", pJson["created_by_user_id"], err, true))
+        if(!validJsonOfField(24, "created_by_user_id", pJson["created_by_user_id"], err, true))
             return false;
     }
 
@@ -5469,37 +5161,37 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(27, "last_modified_at", pJson["last_modified_at"], err, true))
+        if(!validJsonOfField(25, "last_modified_at", pJson["last_modified_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(28, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
+        if(!validJsonOfField(26, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(29, "is_deleted", pJson["is_deleted"], err, true))
+        if(!validJsonOfField(27, "is_deleted", pJson["is_deleted"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(30, "deleted_at", pJson["deleted_at"], err, true))
+        if(!validJsonOfField(28, "deleted_at", pJson["deleted_at"], err, true))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(31, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
+        if(!validJsonOfField(29, "deleted_by_user_id", pJson["deleted_by_user_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("version"))
     {
-        if(!validJsonOfField(32, "version", pJson["version"], err, true))
+        if(!validJsonOfField(30, "version", pJson["version"], err, true))
             return false;
     }
 
@@ -5509,7 +5201,7 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                        const std::vector<std::string> &pMasqueradingVector,
                                                        std::string &err)
 {
-    if(pMasqueradingVector.size() != 33)
+    if(pMasqueradingVector.size() != 31)
     {
         err = "Bad masquerading vector";
         return false;
@@ -5870,12 +5562,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[22] + " column cannot be null";
-            return false;
-        }
-
       }
 
       if(!pMasqueradingVector[23].empty())
@@ -5886,12 +5572,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[23] + " column cannot be null";
-            return false;
-        }
-
       }
 
       if(!pMasqueradingVector[24].empty())
@@ -5901,6 +5581,12 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(24, pMasqueradingVector[24], pJson[pMasqueradingVector[24]], err, true))
                   return false;
           }
+
+        else
+        {
+            err="The " + pMasqueradingVector[24] + " column cannot be null";
+            return false;
+        }
 
       }
 
@@ -5921,12 +5607,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(26, pMasqueradingVector[26], pJson[pMasqueradingVector[26]], err, true))
                   return false;
           }
-
-        else
-        {
-            err="The " + pMasqueradingVector[26] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -5965,26 +5645,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
           if(pJson.isMember(pMasqueradingVector[30]))
           {
               if(!validJsonOfField(30, pMasqueradingVector[30], pJson[pMasqueradingVector[30]], err, true))
-                  return false;
-          }
-
-      }
-
-      if(!pMasqueradingVector[31].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[31]))
-          {
-              if(!validJsonOfField(31, pMasqueradingVector[31], pJson[pMasqueradingVector[31]], err, true))
-                  return false;
-          }
-
-      }
-
-      if(!pMasqueradingVector[32].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[32]))
-          {
-              if(!validJsonOfField(32, pMasqueradingVector[32], pJson[pMasqueradingVector[32]], err, true))
                   return false;
           }
 
@@ -6115,93 +5775,81 @@ bool CoreSuppliers::validateJsonForUpdate(const Json::Value &pJson, std::string 
             return false;
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        if(!validJsonOfField(18, "buying_rate", pJson["buying_rate"], err, false))
-            return false;
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        if(!validJsonOfField(19, "selling_rate", pJson["selling_rate"], err, false))
-            return false;
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        if(!validJsonOfField(20, "credit_limit", pJson["credit_limit"], err, false))
+        if(!validJsonOfField(18, "credit_limit", pJson["credit_limit"], err, false))
             return false;
     }
 
     if(pJson.isMember("irs_account_id"))
     {
-        if(!validJsonOfField(21, "irs_account_id", pJson["irs_account_id"], err, false))
+        if(!validJsonOfField(19, "irs_account_id", pJson["irs_account_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_resident"))
     {
-        if(!validJsonOfField(22, "is_resident", pJson["is_resident"], err, false))
+        if(!validJsonOfField(20, "is_resident", pJson["is_resident"], err, false))
             return false;
     }
 
     if(pJson.isMember("tax_office"))
     {
-        if(!validJsonOfField(23, "tax_office", pJson["tax_office"], err, false))
+        if(!validJsonOfField(21, "tax_office", pJson["tax_office"], err, false))
             return false;
     }
 
     if(pJson.isMember("balance"))
     {
-        if(!validJsonOfField(24, "balance", pJson["balance"], err, false))
+        if(!validJsonOfField(22, "balance", pJson["balance"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_at"))
     {
-        if(!validJsonOfField(25, "created_at", pJson["created_at"], err, false))
+        if(!validJsonOfField(23, "created_at", pJson["created_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("created_by_user_id"))
     {
-        if(!validJsonOfField(26, "created_by_user_id", pJson["created_by_user_id"], err, false))
+        if(!validJsonOfField(24, "created_by_user_id", pJson["created_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_at"))
     {
-        if(!validJsonOfField(27, "last_modified_at", pJson["last_modified_at"], err, false))
+        if(!validJsonOfField(25, "last_modified_at", pJson["last_modified_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("last_modified_by_user_id"))
     {
-        if(!validJsonOfField(28, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
+        if(!validJsonOfField(26, "last_modified_by_user_id", pJson["last_modified_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("is_deleted"))
     {
-        if(!validJsonOfField(29, "is_deleted", pJson["is_deleted"], err, false))
+        if(!validJsonOfField(27, "is_deleted", pJson["is_deleted"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_at"))
     {
-        if(!validJsonOfField(30, "deleted_at", pJson["deleted_at"], err, false))
+        if(!validJsonOfField(28, "deleted_at", pJson["deleted_at"], err, false))
             return false;
     }
 
     if(pJson.isMember("deleted_by_user_id"))
     {
-        if(!validJsonOfField(31, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
+        if(!validJsonOfField(29, "deleted_by_user_id", pJson["deleted_by_user_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("version"))
     {
-        if(!validJsonOfField(32, "version", pJson["version"], err, false))
+        if(!validJsonOfField(30, "version", pJson["version"], err, false))
             return false;
     }
 
@@ -6211,7 +5859,7 @@ bool CoreSuppliers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                      const std::vector<std::string> &pMasqueradingVector,
                                                      std::string &err)
 {
-    if(pMasqueradingVector.size() != 33)
+    if(pMasqueradingVector.size() != 31)
     {
         err = "Bad masquerading vector";
         return false;
@@ -6407,18 +6055,6 @@ bool CoreSuppliers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[30].empty() && pJson.isMember(pMasqueradingVector[30]))
       {
           if(!validJsonOfField(30, pMasqueradingVector[30], pJson[pMasqueradingVector[30]], err, false))
-              return false;
-      }
-
-      if(!pMasqueradingVector[31].empty() && pJson.isMember(pMasqueradingVector[31]))
-      {
-          if(!validJsonOfField(31, pMasqueradingVector[31], pJson[pMasqueradingVector[31]], err, false))
-              return false;
-      }
-
-      if(!pMasqueradingVector[32].empty() && pJson.isMember(pMasqueradingVector[32]))
-      {
-          if(!validJsonOfField(32, pMasqueradingVector[32], pJson[pMasqueradingVector[32]], err, false))
               return false;
       }
 
@@ -6855,7 +6491,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -6877,6 +6513,14 @@ bool CoreSuppliers::validJsonOfField(size_t index,
                 return false;
             }
 
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 160)
+            {
+                err="String length exceeds limit for the " +
+                    fieldName +
+                    " field (the maximum value is 160)";
+                return false;
+            }
+
             break;
 
         case 22:
@@ -6887,7 +6531,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -6906,14 +6550,6 @@ bool CoreSuppliers::validJsonOfField(size_t index,
             if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 160)
-            {
-                err="String length exceeds limit for the " +
-                    fieldName +
-                    " field (the maximum value is 160)";
                 return false;
             }
 
@@ -6939,8 +6575,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -6955,8 +6590,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -6971,10 +6605,11 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                return true;
+                err="The " + fieldName + " column cannot be null";
+                return false;
             }
 
-            if(!pJson.isString())
+            if(!pJson.isBool())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -7001,11 +6636,10 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
-            if(!pJson.isBool())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -7014,36 +6648,6 @@ bool CoreSuppliers::validJsonOfField(size_t index,
             break;
 
         case 30:
-
-            if(pJson.isNull())
-            {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 31:
-
-            if(pJson.isNull())
-            {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 32:
 
             if(pJson.isNull())
             {

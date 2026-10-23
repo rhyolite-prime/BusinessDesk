@@ -10,6 +10,8 @@
 
 #include "CoreCurrencies.h"
 
+#include "CoreCustomerGroups.h"
+
 #include "Tenants.h"
 
 #include "Users.h"
@@ -89,10 +91,6 @@ const std::string CoreCustomers::Cols::_currency_name = "\"currency_name\"";
 
 const std::string CoreCustomers::Cols::_currency_code = "\"currency_code\"";
 
-const std::string CoreCustomers::Cols::_buying_rate = "\"buying_rate\"";
-
-const std::string CoreCustomers::Cols::_selling_rate = "\"selling_rate\"";
-
 const std::string CoreCustomers::Cols::_credit_limit = "\"credit_limit\"";
 
 const std::string CoreCustomers::Cols::_irs_account_id = "\"irs_account_id\"";
@@ -146,8 +144,6 @@ const std::vector<typename CoreCustomers::MetaData> CoreCustomers::metaData_={
 {"address","std::string","character varying",1000,0,0,1},
 {"currency_name","std::string","character varying",200,0,0,1},
 {"currency_code","std::string","character varying",3,0,0,1},
-{"buying_rate","std::string","numeric",0,0,0,1},
-{"selling_rate","std::string","numeric",0,0,0,1},
 {"credit_limit","std::string","numeric",0,0,0,1},
 {"irs_account_id","std::string","uuid",0,0,0,0},
 {"irs_account_name","std::string","character varying",200,0,0,1},
@@ -441,20 +437,6 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
-        if(!r["buying_rate"].isNull())
-        {
-
-            buyingRate_=std::make_shared<std::string>(r["buying_rate"].as<std::string>());
-
-        }
-
-        if(!r["selling_rate"].isNull())
-        {
-
-            sellingRate_=std::make_shared<std::string>(r["selling_rate"].as<std::string>());
-
-        }
-
         if(!r["credit_limit"].isNull())
         {
 
@@ -501,7 +483,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 40 > r.size())
+        if(offset + 38 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -819,7 +801,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            buyingRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            creditLimit_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -827,7 +809,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            sellingRate_=std::make_shared<std::string>(r[index].as<std::string>());
+            irsAccountId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -835,7 +817,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            creditLimit_=std::make_shared<std::string>(r[index].as<std::string>());
+            irsAccountName_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -843,7 +825,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            irsAccountId_=std::make_shared<std::string>(r[index].as<std::string>());
+            contactPerson_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -851,27 +833,11 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            irsAccountName_=std::make_shared<std::string>(r[index].as<std::string>());
-
-        }
-
-        index = offset + 37;
-        if(!r[index].isNull())
-        {
-
-            contactPerson_=std::make_shared<std::string>(r[index].as<std::string>());
-
-        }
-
-        index = offset + 38;
-        if(!r[index].isNull())
-        {
-
             contactPersonPhone_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
-        index = offset + 39;
+        index = offset + 37;
         if(!r[index].isNull())
         {
 
@@ -885,7 +851,7 @@ CoreCustomers::CoreCustomers(const Row &r, const ssize_t indexOffset) noexcept
 
 CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 40)
+    if(pMasqueradingVector.size() != 38)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1241,7 +1207,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            buyingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
+            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
         }
     }
 
@@ -1250,7 +1216,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            sellingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
+            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
         }
     }
 
@@ -1259,7 +1225,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[34] = true;
         if(!pJson[pMasqueradingVector[34]].isNull())
         {
-            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
+            irsAccountName_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
         }
     }
 
@@ -1268,7 +1234,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
+            contactPerson_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
         }
     }
 
@@ -1277,7 +1243,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[36] = true;
         if(!pJson[pMasqueradingVector[36]].isNull())
         {
-            irsAccountName_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
+            contactPersonPhone_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
         }
     }
 
@@ -1286,25 +1252,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson, const std::vector<std::st
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            contactPerson_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
-    {
-        dirtyFlag_[38] = true;
-        if(!pJson[pMasqueradingVector[38]].isNull())
-        {
-            contactPersonPhone_=std::make_shared<std::string>(pJson[pMasqueradingVector[38]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
-    {
-        dirtyFlag_[39] = true;
-        if(!pJson[pMasqueradingVector[39]].isNull())
-        {
-            contactPersonEmail_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
+            contactPersonEmail_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
         }
     }
 
@@ -1658,27 +1606,9 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        dirtyFlag_[32]=true;
-        if(!pJson["buying_rate"].isNull())
-        {
-            buyingRate_=std::make_shared<std::string>(pJson["buying_rate"].asString());
-        }
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        dirtyFlag_[33]=true;
-        if(!pJson["selling_rate"].isNull())
-        {
-            sellingRate_=std::make_shared<std::string>(pJson["selling_rate"].asString());
-        }
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        dirtyFlag_[34]=true;
+        dirtyFlag_[32]=true;
         if(!pJson["credit_limit"].isNull())
         {
             creditLimit_=std::make_shared<std::string>(pJson["credit_limit"].asString());
@@ -1687,7 +1617,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_id"))
     {
-        dirtyFlag_[35]=true;
+        dirtyFlag_[33]=true;
         if(!pJson["irs_account_id"].isNull())
         {
             irsAccountId_=std::make_shared<std::string>(pJson["irs_account_id"].asString());
@@ -1696,7 +1626,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_name"))
     {
-        dirtyFlag_[36]=true;
+        dirtyFlag_[34]=true;
         if(!pJson["irs_account_name"].isNull())
         {
             irsAccountName_=std::make_shared<std::string>(pJson["irs_account_name"].asString());
@@ -1705,7 +1635,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person"))
     {
-        dirtyFlag_[37]=true;
+        dirtyFlag_[35]=true;
         if(!pJson["contact_person"].isNull())
         {
             contactPerson_=std::make_shared<std::string>(pJson["contact_person"].asString());
@@ -1714,7 +1644,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person_phone"))
     {
-        dirtyFlag_[38]=true;
+        dirtyFlag_[36]=true;
         if(!pJson["contact_person_phone"].isNull())
         {
             contactPersonPhone_=std::make_shared<std::string>(pJson["contact_person_phone"].asString());
@@ -1723,7 +1653,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person_email"))
     {
-        dirtyFlag_[39]=true;
+        dirtyFlag_[37]=true;
         if(!pJson["contact_person_email"].isNull())
         {
             contactPersonEmail_=std::make_shared<std::string>(pJson["contact_person_email"].asString());
@@ -1735,7 +1665,7 @@ CoreCustomers::CoreCustomers(const Json::Value &pJson) noexcept(false)
 void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 40)
+    if(pMasqueradingVector.size() != 38)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -2090,7 +2020,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[32] = true;
         if(!pJson[pMasqueradingVector[32]].isNull())
         {
-            buyingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
+            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[32]].asString());
         }
     }
 
@@ -2099,7 +2029,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[33] = true;
         if(!pJson[pMasqueradingVector[33]].isNull())
         {
-            sellingRate_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
+            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[33]].asString());
         }
     }
 
@@ -2108,7 +2038,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[34] = true;
         if(!pJson[pMasqueradingVector[34]].isNull())
         {
-            creditLimit_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
+            irsAccountName_=std::make_shared<std::string>(pJson[pMasqueradingVector[34]].asString());
         }
     }
 
@@ -2117,7 +2047,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[35] = true;
         if(!pJson[pMasqueradingVector[35]].isNull())
         {
-            irsAccountId_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
+            contactPerson_=std::make_shared<std::string>(pJson[pMasqueradingVector[35]].asString());
         }
     }
 
@@ -2126,7 +2056,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[36] = true;
         if(!pJson[pMasqueradingVector[36]].isNull())
         {
-            irsAccountName_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
+            contactPersonPhone_=std::make_shared<std::string>(pJson[pMasqueradingVector[36]].asString());
         }
     }
 
@@ -2135,25 +2065,7 @@ void CoreCustomers::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[37] = true;
         if(!pJson[pMasqueradingVector[37]].isNull())
         {
-            contactPerson_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
-    {
-        dirtyFlag_[38] = true;
-        if(!pJson[pMasqueradingVector[38]].isNull())
-        {
-            contactPersonPhone_=std::make_shared<std::string>(pJson[pMasqueradingVector[38]].asString());
-        }
-    }
-
-    if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
-    {
-        dirtyFlag_[39] = true;
-        if(!pJson[pMasqueradingVector[39]].isNull())
-        {
-            contactPersonEmail_=std::make_shared<std::string>(pJson[pMasqueradingVector[39]].asString());
+            contactPersonEmail_=std::make_shared<std::string>(pJson[pMasqueradingVector[37]].asString());
         }
     }
 
@@ -2506,27 +2418,9 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
         }
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        dirtyFlag_[32] = true;
-        if(!pJson["buying_rate"].isNull())
-        {
-            buyingRate_=std::make_shared<std::string>(pJson["buying_rate"].asString());
-        }
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        dirtyFlag_[33] = true;
-        if(!pJson["selling_rate"].isNull())
-        {
-            sellingRate_=std::make_shared<std::string>(pJson["selling_rate"].asString());
-        }
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        dirtyFlag_[34] = true;
+        dirtyFlag_[32] = true;
         if(!pJson["credit_limit"].isNull())
         {
             creditLimit_=std::make_shared<std::string>(pJson["credit_limit"].asString());
@@ -2535,7 +2429,7 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_id"))
     {
-        dirtyFlag_[35] = true;
+        dirtyFlag_[33] = true;
         if(!pJson["irs_account_id"].isNull())
         {
             irsAccountId_=std::make_shared<std::string>(pJson["irs_account_id"].asString());
@@ -2544,7 +2438,7 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("irs_account_name"))
     {
-        dirtyFlag_[36] = true;
+        dirtyFlag_[34] = true;
         if(!pJson["irs_account_name"].isNull())
         {
             irsAccountName_=std::make_shared<std::string>(pJson["irs_account_name"].asString());
@@ -2553,7 +2447,7 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person"))
     {
-        dirtyFlag_[37] = true;
+        dirtyFlag_[35] = true;
         if(!pJson["contact_person"].isNull())
         {
             contactPerson_=std::make_shared<std::string>(pJson["contact_person"].asString());
@@ -2562,7 +2456,7 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person_phone"))
     {
-        dirtyFlag_[38] = true;
+        dirtyFlag_[36] = true;
         if(!pJson["contact_person_phone"].isNull())
         {
             contactPersonPhone_=std::make_shared<std::string>(pJson["contact_person_phone"].asString());
@@ -2571,7 +2465,7 @@ void CoreCustomers::updateByJson(const Json::Value &pJson) noexcept(false)
 
     if(pJson.isMember("contact_person_email"))
     {
-        dirtyFlag_[39] = true;
+        dirtyFlag_[37] = true;
         if(!pJson["contact_person_email"].isNull())
         {
             contactPersonEmail_=std::make_shared<std::string>(pJson["contact_person_email"].asString());
@@ -3299,50 +3193,6 @@ void CoreCustomers::setCurrencyCode(std::string &&pCurrencyCode) noexcept
     dirtyFlag_[31] = true;
 }
 
-const std::string &CoreCustomers::getValueOfBuyingRate() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(buyingRate_)
-        return *buyingRate_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &CoreCustomers::getBuyingRate() const noexcept
-{
-    return buyingRate_;
-}
-void CoreCustomers::setBuyingRate(const std::string &pBuyingRate) noexcept
-{
-    buyingRate_ = std::make_shared<std::string>(pBuyingRate);
-    dirtyFlag_[32] = true;
-}
-void CoreCustomers::setBuyingRate(std::string &&pBuyingRate) noexcept
-{
-    buyingRate_ = std::make_shared<std::string>(std::move(pBuyingRate));
-    dirtyFlag_[32] = true;
-}
-
-const std::string &CoreCustomers::getValueOfSellingRate() const noexcept
-{
-    static const std::string defaultValue = std::string();
-    if(sellingRate_)
-        return *sellingRate_;
-    return defaultValue;
-}
-const std::shared_ptr<std::string> &CoreCustomers::getSellingRate() const noexcept
-{
-    return sellingRate_;
-}
-void CoreCustomers::setSellingRate(const std::string &pSellingRate) noexcept
-{
-    sellingRate_ = std::make_shared<std::string>(pSellingRate);
-    dirtyFlag_[33] = true;
-}
-void CoreCustomers::setSellingRate(std::string &&pSellingRate) noexcept
-{
-    sellingRate_ = std::make_shared<std::string>(std::move(pSellingRate));
-    dirtyFlag_[33] = true;
-}
-
 const std::string &CoreCustomers::getValueOfCreditLimit() const noexcept
 {
     static const std::string defaultValue = std::string();
@@ -3357,12 +3207,12 @@ const std::shared_ptr<std::string> &CoreCustomers::getCreditLimit() const noexce
 void CoreCustomers::setCreditLimit(const std::string &pCreditLimit) noexcept
 {
     creditLimit_ = std::make_shared<std::string>(pCreditLimit);
-    dirtyFlag_[34] = true;
+    dirtyFlag_[32] = true;
 }
 void CoreCustomers::setCreditLimit(std::string &&pCreditLimit) noexcept
 {
     creditLimit_ = std::make_shared<std::string>(std::move(pCreditLimit));
-    dirtyFlag_[34] = true;
+    dirtyFlag_[32] = true;
 }
 
 const std::string &CoreCustomers::getValueOfIrsAccountId() const noexcept
@@ -3379,17 +3229,17 @@ const std::shared_ptr<std::string> &CoreCustomers::getIrsAccountId() const noexc
 void CoreCustomers::setIrsAccountId(const std::string &pIrsAccountId) noexcept
 {
     irsAccountId_ = std::make_shared<std::string>(pIrsAccountId);
-    dirtyFlag_[35] = true;
+    dirtyFlag_[33] = true;
 }
 void CoreCustomers::setIrsAccountId(std::string &&pIrsAccountId) noexcept
 {
     irsAccountId_ = std::make_shared<std::string>(std::move(pIrsAccountId));
-    dirtyFlag_[35] = true;
+    dirtyFlag_[33] = true;
 }
 void CoreCustomers::setIrsAccountIdToNull() noexcept
 {
     irsAccountId_.reset();
-    dirtyFlag_[35] = true;
+    dirtyFlag_[33] = true;
 }
 
 const std::string &CoreCustomers::getValueOfIrsAccountName() const noexcept
@@ -3406,12 +3256,12 @@ const std::shared_ptr<std::string> &CoreCustomers::getIrsAccountName() const noe
 void CoreCustomers::setIrsAccountName(const std::string &pIrsAccountName) noexcept
 {
     irsAccountName_ = std::make_shared<std::string>(pIrsAccountName);
-    dirtyFlag_[36] = true;
+    dirtyFlag_[34] = true;
 }
 void CoreCustomers::setIrsAccountName(std::string &&pIrsAccountName) noexcept
 {
     irsAccountName_ = std::make_shared<std::string>(std::move(pIrsAccountName));
-    dirtyFlag_[36] = true;
+    dirtyFlag_[34] = true;
 }
 
 const std::string &CoreCustomers::getValueOfContactPerson() const noexcept
@@ -3428,12 +3278,12 @@ const std::shared_ptr<std::string> &CoreCustomers::getContactPerson() const noex
 void CoreCustomers::setContactPerson(const std::string &pContactPerson) noexcept
 {
     contactPerson_ = std::make_shared<std::string>(pContactPerson);
-    dirtyFlag_[37] = true;
+    dirtyFlag_[35] = true;
 }
 void CoreCustomers::setContactPerson(std::string &&pContactPerson) noexcept
 {
     contactPerson_ = std::make_shared<std::string>(std::move(pContactPerson));
-    dirtyFlag_[37] = true;
+    dirtyFlag_[35] = true;
 }
 
 const std::string &CoreCustomers::getValueOfContactPersonPhone() const noexcept
@@ -3450,12 +3300,12 @@ const std::shared_ptr<std::string> &CoreCustomers::getContactPersonPhone() const
 void CoreCustomers::setContactPersonPhone(const std::string &pContactPersonPhone) noexcept
 {
     contactPersonPhone_ = std::make_shared<std::string>(pContactPersonPhone);
-    dirtyFlag_[38] = true;
+    dirtyFlag_[36] = true;
 }
 void CoreCustomers::setContactPersonPhone(std::string &&pContactPersonPhone) noexcept
 {
     contactPersonPhone_ = std::make_shared<std::string>(std::move(pContactPersonPhone));
-    dirtyFlag_[38] = true;
+    dirtyFlag_[36] = true;
 }
 
 const std::string &CoreCustomers::getValueOfContactPersonEmail() const noexcept
@@ -3472,12 +3322,12 @@ const std::shared_ptr<std::string> &CoreCustomers::getContactPersonEmail() const
 void CoreCustomers::setContactPersonEmail(const std::string &pContactPersonEmail) noexcept
 {
     contactPersonEmail_ = std::make_shared<std::string>(pContactPersonEmail);
-    dirtyFlag_[39] = true;
+    dirtyFlag_[37] = true;
 }
 void CoreCustomers::setContactPersonEmail(std::string &&pContactPersonEmail) noexcept
 {
     contactPersonEmail_ = std::make_shared<std::string>(std::move(pContactPersonEmail));
-    dirtyFlag_[39] = true;
+    dirtyFlag_[37] = true;
 }
 
 void CoreCustomers::updateId(const uint64_t id)
@@ -3520,8 +3370,6 @@ const std::vector<std::string> &CoreCustomers::insertColumns() noexcept
         "address",
         "currency_name",
         "currency_code",
-        "buying_rate",
-        "selling_rate",
         "credit_limit",
         "irs_account_id",
         "irs_account_name",
@@ -3922,30 +3770,6 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[32])
     {
-        if(getBuyingRate())
-        {
-            binder << getValueOfBuyingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[33])
-    {
-        if(getSellingRate())
-        {
-            binder << getValueOfSellingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[34])
-    {
         if(getCreditLimit())
         {
             binder << getValueOfCreditLimit();
@@ -3956,7 +3780,7 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[33])
     {
         if(getIrsAccountId())
         {
@@ -3968,7 +3792,7 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[34])
     {
         if(getIrsAccountName())
         {
@@ -3980,7 +3804,7 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[35])
     {
         if(getContactPerson())
         {
@@ -3992,7 +3816,7 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[36])
     {
         if(getContactPersonPhone())
         {
@@ -4004,7 +3828,7 @@ void CoreCustomers::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[37])
     {
         if(getContactPersonEmail())
         {
@@ -4210,16 +4034,6 @@ const std::vector<std::string> CoreCustomers::updateColumns() const
     if(dirtyFlag_[37])
     {
         ret.push_back(getColumnName(37));
-    }
-
-    if(dirtyFlag_[38])
-    {
-        ret.push_back(getColumnName(38));
-    }
-
-    if(dirtyFlag_[39])
-    {
-        ret.push_back(getColumnName(39));
     }
 
     return ret;
@@ -4614,30 +4428,6 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
 
     if(dirtyFlag_[32])
     {
-        if(getBuyingRate())
-        {
-            binder << getValueOfBuyingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[33])
-    {
-        if(getSellingRate())
-        {
-            binder << getValueOfSellingRate();
-        }
-        else
-        {
-            binder << nullptr;
-        }
-    }
-
-    if(dirtyFlag_[34])
-    {
         if(getCreditLimit())
         {
             binder << getValueOfCreditLimit();
@@ -4648,7 +4438,7 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[35])
+    if(dirtyFlag_[33])
     {
         if(getIrsAccountId())
         {
@@ -4660,7 +4450,7 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[36])
+    if(dirtyFlag_[34])
     {
         if(getIrsAccountName())
         {
@@ -4672,7 +4462,7 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[37])
+    if(dirtyFlag_[35])
     {
         if(getContactPerson())
         {
@@ -4684,7 +4474,7 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[38])
+    if(dirtyFlag_[36])
     {
         if(getContactPersonPhone())
         {
@@ -4696,7 +4486,7 @@ void CoreCustomers::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
-    if(dirtyFlag_[39])
+    if(dirtyFlag_[37])
     {
         if(getContactPersonEmail())
         {
@@ -5065,28 +4855,6 @@ Json::Value CoreCustomers::toJson() const
         ret["currency_code"]=Json::Value();
     }
 
-    if(getBuyingRate())
-    {
-
-        ret["buying_rate"]=getValueOfBuyingRate();
-
-    }
-    else
-    {
-        ret["buying_rate"]=Json::Value();
-    }
-
-    if(getSellingRate())
-    {
-
-        ret["selling_rate"]=getValueOfSellingRate();
-
-    }
-    else
-    {
-        ret["selling_rate"]=Json::Value();
-    }
-
     if(getCreditLimit())
     {
 
@@ -5165,7 +4933,7 @@ Json::Value CoreCustomers::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 40)
+    if(pMasqueradingVector.size() == 38)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -5618,10 +5386,10 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[32].empty())
         {
-            if(getBuyingRate())
+            if(getCreditLimit())
             {
 
-                ret[pMasqueradingVector[32]]=getValueOfBuyingRate();
+                ret[pMasqueradingVector[32]]=getValueOfCreditLimit();
 
             }
             else
@@ -5632,10 +5400,10 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[33].empty())
         {
-            if(getSellingRate())
+            if(getIrsAccountId())
             {
 
-                ret[pMasqueradingVector[33]]=getValueOfSellingRate();
+                ret[pMasqueradingVector[33]]=getValueOfIrsAccountId();
 
             }
             else
@@ -5646,10 +5414,10 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[34].empty())
         {
-            if(getCreditLimit())
+            if(getIrsAccountName())
             {
 
-                ret[pMasqueradingVector[34]]=getValueOfCreditLimit();
+                ret[pMasqueradingVector[34]]=getValueOfIrsAccountName();
 
             }
             else
@@ -5660,10 +5428,10 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[35].empty())
         {
-            if(getIrsAccountId())
+            if(getContactPerson())
             {
 
-                ret[pMasqueradingVector[35]]=getValueOfIrsAccountId();
+                ret[pMasqueradingVector[35]]=getValueOfContactPerson();
 
             }
             else
@@ -5674,10 +5442,10 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[36].empty())
         {
-            if(getIrsAccountName())
+            if(getContactPersonPhone())
             {
 
-                ret[pMasqueradingVector[36]]=getValueOfIrsAccountName();
+                ret[pMasqueradingVector[36]]=getValueOfContactPersonPhone();
 
             }
             else
@@ -5688,43 +5456,15 @@ Json::Value CoreCustomers::toMasqueradedJson(
 
         if(!pMasqueradingVector[37].empty())
         {
-            if(getContactPerson())
+            if(getContactPersonEmail())
             {
 
-                ret[pMasqueradingVector[37]]=getValueOfContactPerson();
+                ret[pMasqueradingVector[37]]=getValueOfContactPersonEmail();
 
             }
             else
             {
                 ret[pMasqueradingVector[37]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[38].empty())
-        {
-            if(getContactPersonPhone())
-            {
-
-                ret[pMasqueradingVector[38]]=getValueOfContactPersonPhone();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[38]]=Json::Value();
-            }
-        }
-
-        if(!pMasqueradingVector[39].empty())
-        {
-            if(getContactPersonEmail())
-            {
-
-                ret[pMasqueradingVector[39]]=getValueOfContactPersonEmail();
-
-            }
-            else
-            {
-                ret[pMasqueradingVector[39]]=Json::Value();
             }
         }
 
@@ -6084,28 +5824,6 @@ Json::Value CoreCustomers::toMasqueradedJson(
         ret["currency_code"]=Json::Value();
     }
 
-    if(getBuyingRate())
-    {
-
-        ret["buying_rate"]=getValueOfBuyingRate();
-
-    }
-    else
-    {
-        ret["buying_rate"]=Json::Value();
-    }
-
-    if(getSellingRate())
-    {
-
-        ret["selling_rate"]=getValueOfSellingRate();
-
-    }
-    else
-    {
-        ret["selling_rate"]=Json::Value();
-    }
-
     if(getCreditLimit())
     {
 
@@ -6412,51 +6130,39 @@ bool CoreCustomers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        if(!validJsonOfField(32, "buying_rate", pJson["buying_rate"], err, true))
-            return false;
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        if(!validJsonOfField(33, "selling_rate", pJson["selling_rate"], err, true))
-            return false;
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        if(!validJsonOfField(34, "credit_limit", pJson["credit_limit"], err, true))
+        if(!validJsonOfField(32, "credit_limit", pJson["credit_limit"], err, true))
             return false;
     }
 
     if(pJson.isMember("irs_account_id"))
     {
-        if(!validJsonOfField(35, "irs_account_id", pJson["irs_account_id"], err, true))
+        if(!validJsonOfField(33, "irs_account_id", pJson["irs_account_id"], err, true))
             return false;
     }
 
     if(pJson.isMember("irs_account_name"))
     {
-        if(!validJsonOfField(36, "irs_account_name", pJson["irs_account_name"], err, true))
+        if(!validJsonOfField(34, "irs_account_name", pJson["irs_account_name"], err, true))
             return false;
     }
 
     if(pJson.isMember("contact_person"))
     {
-        if(!validJsonOfField(37, "contact_person", pJson["contact_person"], err, true))
+        if(!validJsonOfField(35, "contact_person", pJson["contact_person"], err, true))
             return false;
     }
 
     if(pJson.isMember("contact_person_phone"))
     {
-        if(!validJsonOfField(38, "contact_person_phone", pJson["contact_person_phone"], err, true))
+        if(!validJsonOfField(36, "contact_person_phone", pJson["contact_person_phone"], err, true))
             return false;
     }
 
     if(pJson.isMember("contact_person_email"))
     {
-        if(!validJsonOfField(39, "contact_person_email", pJson["contact_person_email"], err, true))
+        if(!validJsonOfField(37, "contact_person_email", pJson["contact_person_email"], err, true))
             return false;
     }
 
@@ -6466,7 +6172,7 @@ bool CoreCustomers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                        const std::vector<std::string> &pMasqueradingVector,
                                                        std::string &err)
 {
-    if(pMasqueradingVector.size() != 40)
+    if(pMasqueradingVector.size() != 38)
     {
         err = "Bad masquerading vector";
         return false;
@@ -6895,26 +6601,6 @@ bool CoreCustomers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 
       }
 
-      if(!pMasqueradingVector[38].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[38]))
-          {
-              if(!validJsonOfField(38, pMasqueradingVector[38], pJson[pMasqueradingVector[38]], err, true))
-                  return false;
-          }
-
-      }
-
-      if(!pMasqueradingVector[39].empty())
-      {
-          if(pJson.isMember(pMasqueradingVector[39]))
-          {
-              if(!validJsonOfField(39, pMasqueradingVector[39], pJson[pMasqueradingVector[39]], err, true))
-                  return false;
-          }
-
-      }
-
     }
     catch(const Json::LogicError &e)
     {
@@ -7124,51 +6810,39 @@ bool CoreCustomers::validateJsonForUpdate(const Json::Value &pJson, std::string 
             return false;
     }
 
-    if(pJson.isMember("buying_rate"))
-    {
-        if(!validJsonOfField(32, "buying_rate", pJson["buying_rate"], err, false))
-            return false;
-    }
-
-    if(pJson.isMember("selling_rate"))
-    {
-        if(!validJsonOfField(33, "selling_rate", pJson["selling_rate"], err, false))
-            return false;
-    }
-
     if(pJson.isMember("credit_limit"))
     {
-        if(!validJsonOfField(34, "credit_limit", pJson["credit_limit"], err, false))
+        if(!validJsonOfField(32, "credit_limit", pJson["credit_limit"], err, false))
             return false;
     }
 
     if(pJson.isMember("irs_account_id"))
     {
-        if(!validJsonOfField(35, "irs_account_id", pJson["irs_account_id"], err, false))
+        if(!validJsonOfField(33, "irs_account_id", pJson["irs_account_id"], err, false))
             return false;
     }
 
     if(pJson.isMember("irs_account_name"))
     {
-        if(!validJsonOfField(36, "irs_account_name", pJson["irs_account_name"], err, false))
+        if(!validJsonOfField(34, "irs_account_name", pJson["irs_account_name"], err, false))
             return false;
     }
 
     if(pJson.isMember("contact_person"))
     {
-        if(!validJsonOfField(37, "contact_person", pJson["contact_person"], err, false))
+        if(!validJsonOfField(35, "contact_person", pJson["contact_person"], err, false))
             return false;
     }
 
     if(pJson.isMember("contact_person_phone"))
     {
-        if(!validJsonOfField(38, "contact_person_phone", pJson["contact_person_phone"], err, false))
+        if(!validJsonOfField(36, "contact_person_phone", pJson["contact_person_phone"], err, false))
             return false;
     }
 
     if(pJson.isMember("contact_person_email"))
     {
-        if(!validJsonOfField(39, "contact_person_email", pJson["contact_person_email"], err, false))
+        if(!validJsonOfField(37, "contact_person_email", pJson["contact_person_email"], err, false))
             return false;
     }
 
@@ -7178,7 +6852,7 @@ bool CoreCustomers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                      const std::vector<std::string> &pMasqueradingVector,
                                                      std::string &err)
 {
-    if(pMasqueradingVector.size() != 40)
+    if(pMasqueradingVector.size() != 38)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7416,18 +7090,6 @@ bool CoreCustomers::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[37].empty() && pJson.isMember(pMasqueradingVector[37]))
       {
           if(!validJsonOfField(37, pMasqueradingVector[37], pJson[pMasqueradingVector[37]], err, false))
-              return false;
-      }
-
-      if(!pMasqueradingVector[38].empty() && pJson.isMember(pMasqueradingVector[38]))
-      {
-          if(!validJsonOfField(38, pMasqueradingVector[38], pJson[pMasqueradingVector[38]], err, false))
-              return false;
-      }
-
-      if(!pMasqueradingVector[39].empty() && pJson.isMember(pMasqueradingVector[39]))
-      {
-          if(!validJsonOfField(39, pMasqueradingVector[39], pJson[pMasqueradingVector[39]], err, false))
               return false;
       }
 
@@ -8076,8 +7738,7 @@ bool CoreCustomers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -8102,37 +7763,6 @@ bool CoreCustomers::validJsonOfField(size_t index,
                 return false;
             }
 
-            break;
-
-        case 35:
-
-            if(pJson.isNull())
-            {
-                return true;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
-            break;
-
-        case 36:
-
-            if(pJson.isNull())
-            {
-                err="The " + fieldName + " column cannot be null";
-                return false;
-            }
-
-            if(!pJson.isString())
-            {
-                err="Type error in the "+fieldName+" field";
-                return false;
-            }
-
             if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 200)
             {
                 err="String length exceeds limit for the " +
@@ -8143,7 +7773,7 @@ bool CoreCustomers::validJsonOfField(size_t index,
 
             break;
 
-        case 37:
+        case 35:
 
             if(pJson.isNull())
             {
@@ -8167,7 +7797,7 @@ bool CoreCustomers::validJsonOfField(size_t index,
 
             break;
 
-        case 38:
+        case 36:
 
             if(pJson.isNull())
             {
@@ -8191,7 +7821,7 @@ bool CoreCustomers::validJsonOfField(size_t index,
 
             break;
 
-        case 39:
+        case 37:
 
             if(pJson.isNull())
             {
@@ -8437,6 +8067,94 @@ void CoreCustomers::getDeletedByUser(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(Users(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCustomerGroups CoreCustomers::getTenant(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_customer_groups where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *tenantId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCustomerGroups(r[0]);
+}
+
+void CoreCustomers::getTenant(const DbClientPtr &clientPtr,
+                              const std::function<void(CoreCustomerGroups)> &rcb,
+                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_customer_groups where id = $1";
+    *clientPtr << sql
+               << *tenantId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCustomerGroups(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+CoreCustomerGroups CoreCustomers::getCustomerGroup(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_customer_groups where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *customerGroupId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCustomerGroups(r[0]);
+}
+
+void CoreCustomers::getCustomerGroup(const DbClientPtr &clientPtr,
+                                     const std::function<void(CoreCustomerGroups)> &rcb,
+                                     const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_customer_groups where id = $1";
+    *clientPtr << sql
+               << *customerGroupId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCustomerGroups(r[0]));
                     }
                }
                >> ecb;

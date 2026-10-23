@@ -43,6 +43,8 @@ namespace BusinessDesk
 
 class CoreCurrencies;
 
+class CoreCustomerGroups;
+
 class Tenants;
 
 class Users;
@@ -85,8 +87,6 @@ class CoreCustomers
         static const std::string _address;
         static const std::string _currency_name;
         static const std::string _currency_code;
-        static const std::string _buying_rate;
-        static const std::string _selling_rate;
         static const std::string _credit_limit;
         static const std::string _irs_account_id;
         static const std::string _irs_account_name;
@@ -439,24 +439,6 @@ class CoreCustomers
     void setCurrencyCode(const std::string &pCurrencyCode) noexcept;
     void setCurrencyCode(std::string &&pCurrencyCode) noexcept;
 
-    /**  For column buying_rate  */
-    ///Get the value of the column buying_rate, returns the default value if the column is null
-    const std::string &getValueOfBuyingRate() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getBuyingRate() const noexcept;
-    ///Set the value of the column buying_rate
-    void setBuyingRate(const std::string &pBuyingRate) noexcept;
-    void setBuyingRate(std::string &&pBuyingRate) noexcept;
-
-    /**  For column selling_rate  */
-    ///Get the value of the column selling_rate, returns the default value if the column is null
-    const std::string &getValueOfSellingRate() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getSellingRate() const noexcept;
-    ///Set the value of the column selling_rate
-    void setSellingRate(const std::string &pSellingRate) noexcept;
-    void setSellingRate(std::string &&pSellingRate) noexcept;
-
     /**  For column credit_limit  */
     ///Get the value of the column credit_limit, returns the default value if the column is null
     const std::string &getValueOfCreditLimit() const noexcept;
@@ -514,7 +496,7 @@ class CoreCustomers
 
 
 
-    static size_t getColumnNumber() noexcept {  return 40;  }
+    static size_t getColumnNumber() noexcept {  return 38;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -545,6 +527,16 @@ class CoreCustomers
     Users getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
     void getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(Users)> &rcb,
+                          const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCustomerGroups getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
+                   const std::function<void(CoreCustomerGroups)> &rcb,
+                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    CoreCustomerGroups getCustomerGroup(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCustomerGroup(const drogon::orm::DbClientPtr &clientPtr,
+                          const std::function<void(CoreCustomerGroups)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
@@ -594,8 +586,6 @@ class CoreCustomers
     std::shared_ptr<std::string> address_;
     std::shared_ptr<std::string> currencyName_;
     std::shared_ptr<std::string> currencyCode_;
-    std::shared_ptr<std::string> buyingRate_;
-    std::shared_ptr<std::string> sellingRate_;
     std::shared_ptr<std::string> creditLimit_;
     std::shared_ptr<std::string> irsAccountId_;
     std::shared_ptr<std::string> irsAccountName_;
@@ -614,7 +604,7 @@ class CoreCustomers
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[40]={ false };
+    bool dirtyFlag_[38]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -847,29 +837,15 @@ class CoreCustomers
         {
             needSelection=true;
         }
-        sql += "buying_rate,";
+        sql += "credit_limit,";
         ++parametersCount;
 
         if(!dirtyFlag_[32])
         {
             needSelection=true;
         }
-        sql += "selling_rate,";
-        ++parametersCount;
 
-        if(!dirtyFlag_[33])
-        {
-            needSelection=true;
-        }
-        sql += "credit_limit,";
-        ++parametersCount;
-
-        if(!dirtyFlag_[34])
-        {
-            needSelection=true;
-        }
-
-        if(dirtyFlag_[35])
+        if(dirtyFlag_[33])
         {
             sql += "irs_account_id,";
             ++parametersCount;
@@ -877,28 +853,28 @@ class CoreCustomers
         sql += "irs_account_name,";
         ++parametersCount;
 
-        if(!dirtyFlag_[36])
+        if(!dirtyFlag_[34])
         {
             needSelection=true;
         }
         sql += "contact_person,";
         ++parametersCount;
 
-        if(!dirtyFlag_[37])
+        if(!dirtyFlag_[35])
         {
             needSelection=true;
         }
         sql += "contact_person_phone,";
         ++parametersCount;
 
-        if(!dirtyFlag_[38])
+        if(!dirtyFlag_[36])
         {
             needSelection=true;
         }
         sql += "contact_person_email,";
         ++parametersCount;
 
-        if(!dirtyFlag_[39])
+        if(!dirtyFlag_[37])
         {
             needSelection=true;
         }
@@ -1278,11 +1254,6 @@ class CoreCustomers
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[34])
         {
 
@@ -1304,6 +1275,11 @@ class CoreCustomers
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[36])
         {
 
@@ -1318,32 +1294,6 @@ class CoreCustomers
         }
 
         if(dirtyFlag_[37])
-        {
-
-            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
-
-        }
-
-        else
-        {
-            sql +="default,";
-        }
-
-        if(dirtyFlag_[38])
-        {
-
-            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
-
-        }
-
-        else
-        {
-            sql +="default,";
-        }
-
-        if(dirtyFlag_[39])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);

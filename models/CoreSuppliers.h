@@ -73,8 +73,6 @@ class CoreSuppliers
         static const std::string _contact_person_email;
         static const std::string _vat_number;
         static const std::string _currency_id;
-        static const std::string _buying_rate;
-        static const std::string _selling_rate;
         static const std::string _credit_limit;
         static const std::string _irs_account_id;
         static const std::string _is_resident;
@@ -306,24 +304,6 @@ class CoreSuppliers
     void setCurrencyId(const std::string &pCurrencyId) noexcept;
     void setCurrencyId(std::string &&pCurrencyId) noexcept;
 
-    /**  For column buying_rate  */
-    ///Get the value of the column buying_rate, returns the default value if the column is null
-    const std::string &getValueOfBuyingRate() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getBuyingRate() const noexcept;
-    ///Set the value of the column buying_rate
-    void setBuyingRate(const std::string &pBuyingRate) noexcept;
-    void setBuyingRate(std::string &&pBuyingRate) noexcept;
-
-    /**  For column selling_rate  */
-    ///Get the value of the column selling_rate, returns the default value if the column is null
-    const std::string &getValueOfSellingRate() const noexcept;
-    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<std::string> &getSellingRate() const noexcept;
-    ///Set the value of the column selling_rate
-    void setSellingRate(const std::string &pSellingRate) noexcept;
-    void setSellingRate(std::string &&pSellingRate) noexcept;
-
     /**  For column credit_limit  */
     ///Get the value of the column credit_limit, returns the default value if the column is null
     const std::string &getValueOfCreditLimit() const noexcept;
@@ -441,7 +421,7 @@ class CoreSuppliers
 
 
 
-    static size_t getColumnNumber() noexcept {  return 33;  }
+    static size_t getColumnNumber() noexcept {  return 31;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -517,8 +497,6 @@ class CoreSuppliers
     std::shared_ptr<std::string> contactPersonEmail_;
     std::shared_ptr<std::string> vatNumber_;
     std::shared_ptr<std::string> currencyId_;
-    std::shared_ptr<std::string> buyingRate_;
-    std::shared_ptr<std::string> sellingRate_;
     std::shared_ptr<std::string> creditLimit_;
     std::shared_ptr<std::string> irsAccountId_;
     std::shared_ptr<bool> isResident_;
@@ -544,7 +522,7 @@ class CoreSuppliers
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[33]={ false };
+    bool dirtyFlag_[31]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -680,35 +658,23 @@ class CoreSuppliers
 
         if(dirtyFlag_[18])
         {
-            sql += "buying_rate,";
+            sql += "credit_limit,";
             ++parametersCount;
         }
 
         if(dirtyFlag_[19])
         {
-            sql += "selling_rate,";
+            sql += "irs_account_id,";
             ++parametersCount;
         }
 
         if(dirtyFlag_[20])
         {
-            sql += "credit_limit,";
-            ++parametersCount;
-        }
-
-        if(dirtyFlag_[21])
-        {
-            sql += "irs_account_id,";
-            ++parametersCount;
-        }
-
-        if(dirtyFlag_[22])
-        {
             sql += "is_resident,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[23])
+        if(dirtyFlag_[21])
         {
             sql += "tax_office,";
             ++parametersCount;
@@ -716,31 +682,31 @@ class CoreSuppliers
         sql += "balance,";
         ++parametersCount;
 
-        if(!dirtyFlag_[24])
+        if(!dirtyFlag_[22])
         {
             needSelection=true;
         }
         sql += "created_at,";
         ++parametersCount;
 
-        if(!dirtyFlag_[25])
+        if(!dirtyFlag_[23])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[26])
+        if(dirtyFlag_[24])
         {
             sql += "created_by_user_id,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[27])
+        if(dirtyFlag_[25])
         {
             sql += "last_modified_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[28])
+        if(dirtyFlag_[26])
         {
             sql += "last_modified_by_user_id,";
             ++parametersCount;
@@ -748,18 +714,18 @@ class CoreSuppliers
         sql += "is_deleted,";
         ++parametersCount;
 
-        if(!dirtyFlag_[29])
+        if(!dirtyFlag_[27])
         {
             needSelection=true;
         }
 
-        if(dirtyFlag_[30])
+        if(dirtyFlag_[28])
         {
             sql += "deleted_at,";
             ++parametersCount;
         }
 
-        if(dirtyFlag_[31])
+        if(dirtyFlag_[29])
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
@@ -767,7 +733,7 @@ class CoreSuppliers
         sql += "version,";
         ++parametersCount;
 
-        if(!dirtyFlag_[32])
+        if(!dirtyFlag_[30])
         {
             needSelection=true;
         }
@@ -974,12 +940,22 @@ class CoreSuppliers
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[23])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(dirtyFlag_[24])
@@ -990,22 +966,12 @@ class CoreSuppliers
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[25])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
-        }
-
-        else
-        {
-            sql +="default,";
         }
 
         if(dirtyFlag_[26])
@@ -1024,6 +990,11 @@ class CoreSuppliers
 
         }
 
+        else
+        {
+            sql +="default,";
+        }
+
         if(dirtyFlag_[28])
         {
 
@@ -1040,28 +1011,7 @@ class CoreSuppliers
 
         }
 
-        else
-        {
-            sql +="default,";
-        }
-
         if(dirtyFlag_[30])
-        {
-
-            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
-
-        }
-
-        if(dirtyFlag_[31])
-        {
-
-            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
-            sql.append(placeholderStr, n);
-
-        }
-
-        if(dirtyFlag_[32])
         {
 
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
