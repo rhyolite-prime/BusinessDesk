@@ -5,6 +5,7 @@ definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Company profile' })
 const request = useRequestFetch(), form = reactive(emptyCompanyProfile()), saved = ref<ProfileForm>(emptyCompanyProfile())
 const exists = ref(false), loaded = ref(false), loading = ref(true), saving = ref(false), editing = ref(false), error = ref(''), saveError = ref(''), currencyError = ref('')
+const logoPending = ref(false), logoRevision = ref(0)
 const password = ref(''), clearPassword = ref(false), hasPassword = ref(false)
 const currencies = ref<{ id: string; code: string; name: string; isActive: boolean }[]>([])
 const sections = [
@@ -22,6 +23,7 @@ const disabled = computed(() => !editing.value || loading.value || saving.value 
 const message = (e: any) => e?.data?.statusMessage || 'Request failed. Please retry.'
 let version = 0, currencyVersion = 0
 function populate(result: Record<string, any>) {
+  logoRevision.value++; logoPending.value = false
   const next = emptyCompanyProfile()
   for (const f of companyProfileFields) if (f.key in result) next[f.key] = result[f.key]
   Object.assign(form, next); saved.value = { ...next }; password.value = ''; clearPassword.value = false; hasPassword.value = result.hasEmailPassword === true
@@ -51,9 +53,9 @@ async function loadCurrencies() {
     currencies.value = all.filter(row => row.isActive)
   } catch { if (current === currencyVersion) currencyError.value = 'Currency choices could not be loaded. Retry before selecting a default.' }
 }
-function cancel() { Object.assign(form, saved.value); password.value = ''; clearPassword.value = false; saveError.value = ''; editing.value = !exists.value }
+function cancel() { logoRevision.value++; logoPending.value = false; Object.assign(form, saved.value); password.value = ''; clearPassword.value = false; saveError.value = ''; editing.value = !exists.value }
 async function save() {
-  if (disabled.value) return
+  if (disabled.value || logoPending.value) return
   saving.value = true; saveError.value = ''
   try {
     const body = { ...form, ...(password.value ? { emailPassword: password.value } : {}), ...(clearPassword.value ? { clearEmailPassword: true } : {}) }
@@ -77,7 +79,7 @@ onUnmounted(() => { version++; currencyVersion++ })
       <section v-for="section in sections" :key="section.id" class="rounded-xl border border-slate-200/80 bg-white shadow-sm dark:border-slate-800 dark:bg-[#15201e]">
         <header class="border-b border-slate-100 px-5 py-4 dark:border-slate-800"><h2 class="text-sm font-semibold text-slate-800 dark:text-slate-200">{{ section.title }}</h2><p class="mt-1 text-xs text-slate-400">{{ section.description }}</p></header>
         <fieldset :disabled="disabled" class="grid gap-5 p-5 sm:grid-cols-2">
-          <template v-for="field in companyProfileFields.filter(f => f.group === section.id)" :key="field.key">
+          <template v-for="field in companyProfileFields.filter(f => f.group === section.id && f.key !== 'country' && f.key !== 'companyLogoUrl')" :key="field.key">
             <label v-if="field.kind === 'b'" class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-300"><input v-model="form[field.key]" type="checkbox" class="h-4 w-4 accent-brand-700" />{{ field.label }}</label>
             <label v-else class="block text-xs font-semibold text-slate-600 dark:text-slate-300" :class="field.key === 'address' ? 'sm:col-span-2' : ''">{{ field.label }}<span v-if="field.key === 'companyName'" class="text-rose-500"> *</span>
               <select v-if="field.key === 'firstMonthOfFiscalYear'" v-model.number="form.firstMonthOfFiscalYear" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option v-for="(month, index) in months" :key="month" :value="index + 1">{{ month }}</option></select>
@@ -85,17 +87,17 @@ onUnmounted(() => { version++; currencyVersion++ })
               <textarea v-else-if="field.key === 'address'" v-model="form.address as string" rows="3" :maxlength="field.max" class="mt-1.5 w-full rounded-lg border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500 dark:border-slate-700" />
               <input v-else-if="field.kind === 'r' || field.kind === 'i'" v-model.number="form[field.key]" required type="number" :min="0" :max="field.max" :step="field.kind === 'r' ? '0.000001' : '1'" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700" />
               <input v-else v-model="form[field.key]" :required="field.key === 'companyName'" :maxlength="field.max || 36" :type="field.key === 'email' || field.key === 'primaryEmailAddress' ? 'email' : field.key === 'phoneNo' ? 'tel' : 'text'" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700" />
-              <span v-if="field.key === 'country'" class="mt-1 block text-[10px] font-normal text-slate-400">Optional UUID from your country registry; country name can be entered separately.</span>
-              <span v-if="field.key === 'companyLogoUrl'" class="mt-1 block text-[10px] font-normal text-slate-400">HTTP(S) or app-relative URL. No logo upload or remote fetch is performed.</span>
+
             </label>
           </template>
+          <CompanyLogoUpload :key="logoRevision" v-if="section.id === 'company'" :model-value="String(form.companyLogoUrl || '')" :disabled="disabled" @update:model-value="form.companyLogoUrl = $event" @pending="logoPending = $event" />
           <template v-if="section.id === 'mail'">
             <div class="sm:col-span-2"><p class="text-xs text-slate-500">SMTP password: <strong>{{ hasPassword ? 'Configured (hidden)' : 'Not configured' }}</strong></p><label v-if="editing" class="mt-3 block text-xs font-semibold text-slate-600 dark:text-slate-300">New SMTP password<input v-model="password" type="password" maxlength="1024" autocomplete="new-password" placeholder="Leave blank to keep the saved password" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700" /></label><label v-if="editing && hasPassword" class="mt-3 flex items-center gap-2 text-xs text-slate-500"><input v-model="clearPassword" type="checkbox" class="accent-brand-700" @change="clearPassword && (password = '')" />Remove saved SMTP password</label></div>
           </template>
         </fieldset>
         <div v-if="section.id === 'company' && currencyError" class="px-5 pb-4 text-xs text-rose-600" role="alert">{{ currencyError }} <button type="button" class="underline" @click="loadCurrencies">Retry currency lookup</button></div>
       </section>
-      <div v-if="editing" class="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-[#172321]/95"><p v-if="saveError" role="alert" class="text-xs text-rose-600">{{ saveError }}</p><span v-else class="text-xs text-slate-400">{{ exists ? 'Changes apply only to your tenant.' : 'Create the single profile for this tenant.' }}</span><div class="ml-auto flex gap-3"><button type="button" :disabled="saving" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 dark:border-slate-700" @click="cancel"><X :size="14" />{{ exists ? 'Cancel' : 'Reset' }}</button><button type="submit" :disabled="saving || loading" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"><Check :size="14" />{{ saving ? 'Saving…' : exists ? 'Save changes' : 'Create company profile' }}</button></div></div>
+      <div v-if="editing" class="sticky bottom-3 z-10 flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white/95 p-4 shadow-lg backdrop-blur dark:border-slate-700 dark:bg-[#172321]/95"><p v-if="saveError" role="alert" class="text-xs text-rose-600">{{ saveError }}</p><span v-else class="text-xs text-slate-400">{{ exists ? 'Changes apply only to your tenant.' : 'Create the single profile for this tenant.' }}</span><div class="ml-auto flex gap-3"><button type="button" :disabled="saving" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-500 dark:border-slate-700" @click="cancel"><X :size="14" />{{ exists ? 'Cancel' : 'Reset' }}</button><button type="submit" :disabled="saving || loading || logoPending" class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"><Check :size="14" />{{ saving ? 'Saving…' : exists ? 'Save changes' : 'Create company profile' }}</button></div></div>
     </form>
   </div>
 </template>

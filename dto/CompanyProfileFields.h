@@ -36,7 +36,7 @@ inline constexpr std::array<Field,35> fields{{
  {"primaryEmailAddress","primary_email_address","varchar(254)",'s',254},
  {"isTaxLeviesInclusive","is_tax_levies_inclusive","boolean",'b',0},
  {"approveInvoiceBeforePayment","approve_invoice_before_payment","boolean",'b',0},
- {"companyLogoUrl","company_logo_url","varchar(2048)",'s',2048},
+ {"companyLogoUrl","company_logo_url","text",'s',349551},
  {"enforceOu","enforce_ou","boolean",'b',0},
 }};
 }

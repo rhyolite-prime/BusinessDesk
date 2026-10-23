@@ -1,4 +1,5 @@
 #include "CompanyProfileService.h"
+#include "utils/CompanyLogo.h"
 #include "dto/CompanyProfileFields.h"
 #include "utils/CompanyProfileSecret.h"
 #include "utils/TransactionUtil.h"
@@ -28,7 +29,7 @@ bool valid(Json::Value& b){
  const std::regex email(R"(^[^\s@]+@[^\s@]+\.[^\s@]+$)");
  for(const auto& key:{"email","primaryEmailAddress"})if(!b[key].asString().empty()&&!std::regex_match(b[key].asString(),email))return false;
  const auto host=b["mailHostName"].asString();if(!host.empty()&&(std::any_of(host.begin(),host.end(),[](unsigned char c){return std::isspace(c)||c<32||c==127||c=='/'||c=='\\'||c=='@';})||b["portNumber"].asInt()<1||b["primaryEmailAddress"].asString().empty()))return false;
- const auto logo=b["companyLogoUrl"].asString();if(std::any_of(logo.begin(),logo.end(),[](unsigned char c){return c<32||c==127||c=='\\';}))return false;if(!logo.empty()&&!(logo.starts_with("https://")||logo.starts_with("http://")||(logo.starts_with("/")&&!logo.starts_with("//"))))return false;
+ if(!utils::validCompanyLogo(b["companyLogoUrl"].asString()))return false;
  return true;
 }
 std::string publicSelect(){std::string sql="jsonb_build_object('id',id,'hasEmailPassword',email_password_encrypted IS NOT NULL";for(const auto& f:fields)sql+=",'"+std::string(f.name)+"',"+f.column;return sql+") AS profile";}

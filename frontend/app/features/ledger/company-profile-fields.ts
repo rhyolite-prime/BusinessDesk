@@ -232,9 +232,9 @@ export const companyProfileFields = [
   },
   {
     "key": "companyLogoUrl",
-    "label": "Company logo URL",
+    "label": "Company logo",
     "kind": "s",
-    "max": 2048,
+    "max": 349551,
     "group": "company"
   },
   {

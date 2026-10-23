@@ -74,9 +74,9 @@ are accepted only for optional UUIDs, not strings/numbers/booleans.
   supplied name, email and default currency in the provisioning transaction. The C# typo `DefaultCurrenyId` is exposed canonically as
   `defaultCurrencyId`; legacy input `defaultCurrenyId` is accepted, but supplying
   both names is rejected. Responses always use the canonical spelling.
-- `companyLogoUrl`: max 2048 bytes; HTTP(S) or app-relative path, without control
-  characters/backslashes. This feature does not upload or fetch/render remote
-  logos server-side.
+- `companyLogoUrl`: legacy HTTP(S)/app-relative URLs remain limited to 2048 bytes.
+  Migration 025 also permits bounded inline PNG/JPEG uploads through the profile
+  save API; see the logo upload section below. No remote logo is fetched server-side.
 
 Currency validation locks the selected currency in the write transaction. The
 existing currency service now treats any live profile default as a reference,
@@ -203,3 +203,41 @@ Optionally set `COMPANY_PROFILE_TEST_SANITIZERS` to
 `-fsanitize=address,undefined -fno-omit-frame-pointer -g`. The transport seam is not
 a running Drogon HTTP/JWT/PostgreSQL deployment; live deployment and concurrent
 financial-posting verification remain separate checks.
+
+
+## Logo upload control (migration 025)
+
+The company-profile form no longer displays Country ID or a logo URL textbox.
+Country name remains editable, and existing country UUIDs are preserved rather
+than cleared by the UI. The Company logo control selects a PNG/JPEG, previews it,
+and supports removal. Selection is staged until profile Save; Cancel/Reset
+restores the saved logo. Reloads display the persisted image in read-only mode.
+
+Apply `025_company_profile_logo_upload.sql` before deploying this change. It
+widens `company_logo_url` to bounded text; uploaded raster bytes travel as a data
+URL in the existing authenticated profile POST/PUT. This stores the logo with the
+tenant's database-backed profile, not in ephemeral web-server files. No separate
+public upload endpoint, unauthenticated file store, or object-store credentials
+are introduced. Existing HTTP(S)/app-relative logo URLs remain compatible.
+
+PNG/JPEG only, maximum **256 KiB** and **4096 × 4096** pixels. Client-side decoding
+checks readability and dimensions before updating the form. Server validation
+checks MIME allowlists, strict base64 syntax, decoded size, raster signatures and
+PNG/JPEG dimensions; SVG/HTML data URLs and malformed/oversized payloads are
+rejected. The upload uses the existing tenant token, origin checks and audit path.
+SMTP secrets remain excluded from responses. Uploaded images increase profile
+response/backup sizes by their base64 representation; no image-processing or
+external-fetch service is used.
+
+Rollback does not truncate stored images: first back up and clear inline logos.
+The down migration explicitly refuses inline data URLs and values that exceed the
+old length limit. The country column and its API compatibility are unchanged.
+No application database migration was run during development.
+
+`test/company_profile/service_pg_test.cc` covers the migration round trip,
+PNG/JPEG persistence beyond 2048 characters, unsafe upload rejection, removal,
+and refusal to truncate during rollback, alongside existing profile/crypto tests.
+`test/company_profile/logo_browser_test.mjs` runs built Nuxt/Chromium against a
+controlled upstream and covers hidden legacy inputs, selection/preview, save,
+reload, country preservation, cancellation/removal and invalid-file handling.
+Run it with `node --experimental-strip-types` and the usual browser dependencies.

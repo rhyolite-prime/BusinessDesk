@@ -45,6 +45,8 @@ int main(){
  sql("DROP SCHEMA IF EXISTS company_profile_test CASCADE");sql("CREATE SCHEMA company_profile_test");sql("SET search_path TO company_profile_test");
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY,is_deleted boolean NOT NULL DEFAULT false)");sql("CREATE TABLE users(id uuid PRIMARY KEY)");sql("CREATE TABLE core_currencies(id uuid PRIMARY KEY,is_deleted boolean DEFAULT false,is_active boolean DEFAULT true)");
  std::ifstream migration("database/migrations/008_company_profiles.sql");std::stringstream source;source<<migration.rdbuf();std::stringstream statements(source.str());std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);
+ auto logoMigration=[&](const std::string& suffix){std::ifstream f("database/migrations/025_company_profile_logo_upload"+suffix);std::string line,content;while(std::getline(f,line))if(!line.starts_with("--"))content+=line+"\n";std::stringstream parts(content);std::string q;while(std::getline(parts,q,';'))if(q.find_first_not_of(" \n\r\t")!=std::string::npos)sql(q);};
+ logoMigration(".sql");logoMigration(".down.sql");logoMigration(".sql");
  sql("INSERT INTO tenants(id) VALUES($1),($2)",{tenant,other});sql("INSERT INTO users(id) VALUES($1),($2)",{actor,actor2});
  const std::string currency="30000000-0000-4000-8000-000000000001";sql("INSERT INTO core_currencies(id) VALUES($1)",{currency});
  bool lockVerified=false;
@@ -100,6 +102,20 @@ int main(){
  bad=Json::Value{};bad["companyLogoUrl"]="javascript:alert(1)";check(!call("update",bad).success,"unsafe logo scheme rejected");bad["companyLogoUrl"]="/logo.png";check(call("update",bad).success,"relative logo URL accepted");
  sql("UPDATE core_currencies SET is_active=false WHERE id=$1",{currency});check(!call("update",Json::Value(Json::objectValue)).success,"inactive currency rejected");sql("UPDATE core_currencies SET is_active=true WHERE id=$1",{currency});
  sql("UPDATE core_currencies SET is_deleted=true WHERE id=$1",{currency});check(!call("update",Json::Value(Json::objectValue)).success,"deleted currency rejected");sql("UPDATE core_currencies SET is_deleted=false WHERE id=$1",{currency});
+ const std::string png="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+a6QAAAABJRU5ErkJggg==";
+ Json::Value logo;logo["companyLogoUrl"]=png;check(call("update",logo).success&&call("get").result["companyLogoUrl"]==png,"uploaded PNG persists across reads");
+ for(const auto& format:{"png","jpeg"}) {
+  std::ifstream image(std::string("test/company_profile/fixtures/logo.")+format,std::ios::binary);std::string bytes((std::istreambuf_iterator<char>(image)),std::istreambuf_iterator<char>());
+  std::string encoded(4*((bytes.size()+2)/3)+1,'\0');const auto n=EVP_EncodeBlock(reinterpret_cast<unsigned char*>(encoded.data()),reinterpret_cast<const unsigned char*>(bytes.data()),bytes.size());encoded.resize(n);
+  const auto uploaded=std::string("data:image/")+format+";base64,"+encoded;logo["companyLogoUrl"]=uploaded;
+  check(uploaded.size()>2048&&call("update",logo).success&&call("get").result["companyLogoUrl"]==uploaded,"full-size raster upload persists beyond legacy URL limit");
+ }
+ bool blockedRollback=false;try{logoMigration(".down.sql");}catch(...){blockedRollback=true;sql("ROLLBACK");}check(blockedRollback,"rollback refuses to truncate uploaded logos");
+ logo["companyLogoUrl"]=png;check(call("update",logo).success,"profile still writable after rejected rollback");
+ for(const auto& invalid:{"data:image/svg+xml;base64,PHN2Zz4=","data:text/html;base64,PGgxPg==","data:image/png;base64,ZmFrZQ==","data:image/jpeg;base64,ZmFrZQ==","data:image/png;base64,%%%%"}){logo["companyLogoUrl"]=invalid;check(!call("update",logo).success,"unsafe or malformed uploaded logo rejected");}
+ logo["companyLogoUrl"]="data:image/png;base64,"+std::string(349532,'A');check(!call("update",logo).success,"oversized upload rejected");
+ check(call("get").result["companyLogoUrl"]==png,"invalid upload does not replace saved logo");
+ logo["companyLogoUrl"]="";check(call("update",logo).success&&call("get").result["companyLogoUrl"]=="","uploaded logo can be removed");
  Json::Value legacy;legacy["defaultCurrenyId"]=currency;check(call("update",legacy).success,"legacy C# spelling accepted");legacy["defaultCurrencyId"]=currency;check(!call("update",legacy).success,"ambiguous currency aliases rejected");
  legacy.removeMember("defaultCurrenyId");legacy["defaultCurrencyId"]="00000000-0000-0000-0000-000000000000";r=call("update",legacy);check(!r.success,"company local currency cannot be cleared with Guid.Empty");legacy["defaultCurrencyId"]=Json::nullValue;check(!call("update",legacy).success,"company local currency cannot be null");
  drogon::TestTransaction::failCommit=true;Json::Value rollback;rollback["companyName"]="Must not persist";check(!call("update",rollback).success,"commit failure reported");drogon::TestTransaction::failCommit=false;check(call("get").result["companyName"]=="Example Company","failed commit rolled back");
