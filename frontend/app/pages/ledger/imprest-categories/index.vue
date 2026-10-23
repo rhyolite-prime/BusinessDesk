@@ -4,11 +4,9 @@ import {
   useImprestCategories,
   type ImprestCategory,
 } from '../../../features/ledger/useImprestCategories'
-import { useLedgerSetup } from '../../../features/ledger/setup-data'
 
 definePageMeta({ layout: 'admin-ledger' })
 
-const setup = useLedgerSetup()
 const { categories, loading, error, load, unit } = useImprestCategories()
 const request = useRequestFetch()
 const units = ref<{ id: string; name: string }[]>([])
@@ -21,12 +19,6 @@ const deleteTarget = ref<ImprestCategory | null>(null),
   saveError = ref(''),
   deleteError = ref('')
 const form = reactive({ name: '' })
-const defaultCategoryId = computed(
-  () => setup.defaultGlNumbers.value?.imprestCategoryId || '',
-)
-const inUseCount = computed(
-  () => categories.value.filter((c) => c.id === defaultCategoryId.value).length,
-)
 const visibleCategories = computed(() =>
   categories.value.filter((c) =>
     c.name.toLowerCase().includes(search.value.trim().toLowerCase()),
@@ -197,7 +189,7 @@ async function removeCategory() {
       <button type="button" :disabled="busy" @click="retry">Retry</button>
     </p>
 
-    <section class="grid gap-3 sm:grid-cols-2">
+    <section class="grid gap-3">
       <article
         class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"
       >
@@ -208,18 +200,6 @@ async function removeCategory() {
           class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white"
         >
           {{ categories.length }}
-        </p>
-      </article>
-      <article
-        class="rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"
-      >
-        <p class="text-[11px] font-medium text-slate-500 dark:text-slate-400">
-          Assigned as default
-        </p>
-        <p
-          class="mt-2 text-2xl font-semibold tracking-tight text-slate-900 dark:text-white"
-        >
-          {{ inUseCount }}
         </p>
       </article>
     </section>
@@ -259,7 +239,6 @@ async function removeCategory() {
           >
             <tr>
               <th class="px-5 py-3">Imprest category</th>
-              <th class="px-4 py-3">Default GL mapping</th>
               <th class="w-24 px-4 py-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -281,14 +260,6 @@ async function removeCategory() {
                   >
                 </div>
               </td>
-              <td class="px-4 py-3.5">
-                <span
-                  v-if="category.id === defaultCategoryId"
-                  class="inline-flex items-center rounded-full bg-brand-50 px-2.5 py-1 text-[10px] font-semibold text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"
-                  >Default category</span
-                >
-                <span v-else class="text-xs text-slate-400">—</span>
-              </td>
               <td class="px-4 py-3.5 text-right">
                 <button
                   type="button"
@@ -303,12 +274,8 @@ async function removeCategory() {
                   type="button"
                   class="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30"
                   :aria-label="`Delete ${category.name}`"
-                  :title="
-                    category.id === defaultCategoryId
-                      ? 'Change the Default GL Numbers mapping before deleting'
-                      : 'Delete category'
-                  "
-                  :disabled="category.id === defaultCategoryId || busy"
+                  title="Delete category"
+                  :disabled="busy"
                   @click="openDelete(category)"
                 >
                   <Trash2 :size="14" />
@@ -316,7 +283,7 @@ async function removeCategory() {
               </td>
             </tr>
             <tr v-if="!visibleCategories.length">
-              <td colspan="3" class="px-5 py-12 text-center">
+              <td colspan="2" class="px-5 py-12 text-center">
                 <p
                   class="text-sm font-semibold text-slate-700 dark:text-slate-200"
                 >
@@ -334,14 +301,10 @@ async function removeCategory() {
         class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800"
       >
         <span
-          >Categories used by default mappings or existing imprests cannot be
-          deleted.</span
+          >Categories referenced by accounting setup or existing imprests cannot
+          be deleted.</span
         >
-        <NuxtLink
-          to="/ledger/default-gl-numbers"
-          class="font-semibold text-brand-700 hover:underline dark:text-brand-300"
-          >Review Default GL Numbers →</NuxtLink
-        >
+
       </div>
     </section>
 
