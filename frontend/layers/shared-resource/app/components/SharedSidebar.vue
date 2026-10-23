@@ -50,6 +50,7 @@ const ledgerGroups: NavigationGroup[] = [
           { label: 'Cost Centers', to: '/ledger/shared-config/cost-centers', icon: 'building-library' },
           { label: 'Currencies', to: '/ledger/shared-config/currencies', icon: 'banknotes' },
           { label: 'Supplier groups', to: '/ledger/shared-config/supplier-groups', icon: 'user-group' },
+          { label: 'Customer groups', to: '/ledger/shared-config/customer-groups', icon: 'user-group' },
           { label: 'Customers', to: '/ledger/shared-config/customers', icon: 'user-group' },
           { label: 'Suppliers', to: '/ledger/shared-config/suppliers', icon: 'truck' },
           { label: 'Employees', to: '/ledger/shared-config/employees', icon: 'identification' },

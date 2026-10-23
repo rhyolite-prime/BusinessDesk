@@ -199,3 +199,8 @@ mock upstream, checking authentication, bearer forwarding, no-store, CSRF,
 sanitized migration/error responses, actual forms/CRUD transport, stale edits,
 read-only views, cancellation, references, mobile layout, pagination and lookups.
 PostgreSQL behavior is covered separately, not inferred from the mock upstream.
+
+Supplier and supplier-group deletes from the UI now send `{ version }`; supplied
+versions are checked to reject stale deletion. Legacy bodyless supplier DELETE
+calls remain supported. See [customer-crud.md](customer-crud.md) for the shared
+directory/modal CRUD behavior and customer-group extension.

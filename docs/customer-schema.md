@@ -28,9 +28,11 @@ New strings default to empty, money defaults to zero, optional UUIDs default to
 NULL; existing customers remain usable without fabricated legacy data. Currency
 snapshot names/codes are backfilled for live customers from live currencies.
 Snapshots do not auto-update on catalog renames. Group/status indexes support
-future tenant-scoped live-record filtering. Group and status UUIDs have no foreign
-keys yet: their actual master definitions were not supplied, so no tables, rows
-or enum meanings have been invented. `status` does not implicitly change
+future tenant-scoped live-record filtering. Migration 021 originally left
+group/status UUIDs without master foreign keys.
+Migration 022 now supplies live tenant-scoped customer groups and the customer
+group FK; status UUIDs still have no master definition or inferred enum meaning.
+`status` does not implicitly change
 `is_active`, which remains the receipt eligibility flag.
 
 `credit_account_id` is a separate legacy field, not an automatic alias for
@@ -38,8 +40,10 @@ or enum meanings have been invented. `status` does not implicitly change
 Likewise `balance` is stored metadata, not a newly implemented AR subledger;
 receipt posting continues to update GL balances through the existing journal
 ceremony. Client writes to tenant/audit/balance metadata have **not** been added.
-The current customer CRUD API, minimal receipt lookup and form remain unchanged;
-this task extends the database table only. Generated ORM models were not
+The subsequent customer/group CRUD implementation now exposes writable legacy
+fields through the API and a modal form; see [customer-crud.md](customer-crud.md).
+The receipt lookup remains compatible with its minimal projection requirements.
+Generated ORM models were not
 regenerated or hand-edited; the customer service currently uses SQL projections.
 
 The down migration is destructive **for the added fields only**: it discards

@@ -665,6 +665,7 @@ int main() {
         "receipt edit preserves both allocation snapshots");
   check(!call("update", rid, crEdit).success, "stale receipt edit rejected");
   customerEdit["version"] = customerUpdated.result["version"];
+  customerEdit["accountNumber"] = "FORBIDDEN-REMAP";
   check(!customerCall("update", customerId, customerEdit).success,
         "live receipt protects customer mapping");
   Json::Value receiptFilter;
@@ -771,6 +772,153 @@ int main() {
   invalidPage["pageNo"] = 0;
   check(!customerCall("list", "", invalidPage).success,
         "customer pagination bounded");
+  Json::Value groupBody;
+  groupBody["name"] = "Trade customers";
+  check(!customerCall("group-create", "", groupBody, {tenant, actor2}).success,
+        "customer group writes require administrator");
+  auto cg = customerCall("group-create", "", groupBody);
+  check(cg.success && cg.result["createdByUserId"] == actor,
+        "customer group create is tenant scoped and audited");
+  const auto cgId = cg.result["id"].asString();
+  check(!customerCall("group-create", "", groupBody).success,
+        "duplicate customer group rejected");
+  check(customerCall("group-get", cgId, {}).success &&
+            !customerCall("group-get", cgId, {}, {other, actor}).success,
+        "customer group detail and tenant isolation");
+  groupBody["version"] = cg.result["version"];
+  groupBody["name"] = "Trade clients";
+  auto cgu = customerCall("group-update", cgId, groupBody);
+  check(cgu.success && !customerCall("group-update", cgId, groupBody).success,
+        "customer group rename and stale version protection");
+  Json::Value full;
+  full["accountNumber"] = "CUS-FULL";
+  full["name"] = "Full customer";
+  full["accountingUnitId"] = unit;
+  full["receivableAccountId"] = account;
+  full["currencyId"] = currency;
+  full["isActive"] = true;
+  full["customerGroupId"] = cgId;
+  full["status"] = "Legacy live";
+  full["statusId"] = "a0000000-0000-4000-8000-000000000088";
+  full["vatNumber"] = "VAT-88";
+  full["tinNumber"] = "TIN-88";
+  full["email"] = "customer@example.test";
+  full["phoneNo"] = "+233201234567";
+  full["address"] = "Accra";
+  full["contactPerson"] = "Ama";
+  full["contactPersonPhone"] = "+233241234567";
+  full["contactPersonEmail"] = "ama@example.test";
+  full["vatAccountId"] = tax;
+  full["creditAccountId"] = bank;
+  full["irsAccountId"] = tax;
+  full["buyingRate"] = "12.1234567890";
+  full["sellingRate"] = "13.9876543210";
+  full["creditLimit"] = "99999999999999.123456";
+  auto complete = customerCall("create", "", full);
+  if (!complete.success)
+    std::cerr << complete.toJson() << std::endl;
+  check(complete.success, "create all customer legacy fields");
+  for (auto key : full.getMemberNames())
+    check(complete.result[key] == full[key],
+          "customer editable field round trips exactly");
+  check(complete.result["customerGroupName"] == "Trade clients" &&
+            complete.result["creditAccountName"] == "Test GL" &&
+            complete.result["currencyCode"] == "GHS" &&
+            complete.result["balance"] == "0.000000",
+        "customer names snapshots and zero balance are server derived");
+  const auto fullId = complete.result["id"].asString();
+  check(customerCall("get", fullId, {}).result["email"] ==
+            "customer@example.test",
+        "customer full detail endpoint");
+  for (auto key :
+       {"balance", "tenantId", "createdByUserId", "customerGroupName",
+        "vatAccountName", "currencyCode", "snapshot_currency_name"}) {
+    auto badFull = full;
+    badFull[key] = "spoof";
+    check(!customerCall("create", "", badFull).success,
+          "customer audit balance and derived labels cannot be forged");
+  }
+  for (auto key : {"buyingRate", "sellingRate", "creditLimit"}) {
+    auto badFull = full;
+    badFull[key] = 1.2;
+    check(!customerCall("create", "", badFull).success,
+          "customer decimals require strings");
+    badFull[key] = "1e4";
+    check(!customerCall("create", "", badFull).success,
+          "customer decimal exponents rejected");
+  }
+  auto badFull = full;
+  badFull["email"] = "invalid@";
+  check(!customerCall("create", "", badFull).success,
+        "customer email validated");
+  badFull = full;
+  badFull["vatAccountId"] = supplier;
+  check(!customerCall("create", "", badFull).success,
+        "invalid customer optional GL rejected");
+  badFull = full;
+  badFull["customerGroupId"] = supplier;
+  check(!customerCall("create", "", badFull).success,
+        "unknown or foreign customer group rejected");
+  Json::Value query;
+  query["kind"] = "groups";
+  query["query"] = "Trade";
+  query["pageSize"] = 1;
+  check(customerCall("options", "", query).result["data"][0]["id"] == cgId,
+        "customer group options search and pagination");
+  query["kind"] = "receivables";
+  query["query"] = "";
+  query["accountingUnitId"] = unit;
+  query["pageSize"] = 100;
+  check(!customerCall("options", "", query).result["data"].empty(),
+        "customer receivable lookup uses live posting unit");
+  Json::Value gd;
+  gd["version"] = cgu.result["version"];
+  check(!customerCall("group-delete", cgId, gd).success,
+        "referenced customer group cannot be archived");
+  Json::Value partial;
+  partial["version"] = complete.result["version"];
+  partial["contactPerson"] = "Efua";
+  auto partialSaved = customerCall("update", fullId, partial);
+  check(partialSaved.success &&
+            partialSaved.result["buyingRate"] == full["buyingRate"] &&
+            partialSaved.result["contactPerson"] == "Efua",
+        "customer omitted extended fields remain unchanged on update");
+  Json::Value fd;
+  fd["version"] = complete.result["version"];
+  check(!customerCall("delete", fullId, fd).success,
+        "stale customer delete rejected");
+  fd["version"] = partialSaved.result["version"];
+  drogon::TestTransaction::failCommit = true;
+  check(!customerCall("delete", fullId, fd).success,
+        "customer failed commit reported");
+  drogon::TestTransaction::failCommit = false;
+  check(customerCall("get", fullId, {}).success,
+        "failed commit did not archive customer");
+  check(customerCall("delete", fullId, fd).success &&
+            !customerCall("get", fullId, {}).success,
+        "customer versioned soft delete");
+  Json::Value wrongGd;
+  wrongGd["version"] = 1;
+  check(!customerCall("group-delete", cgId, wrongGd).success,
+        "stale customer group delete rejected");
+  check(customerCall("group-delete", cgId, gd).success,
+        "unreferenced customer group soft delete");
+  check(!customerCall("group-get", cgId, {}).success,
+        "archived customer group hidden");
+  query["kind"] = "groups";
+  query["query"] = "Trade";
+  check(customerCall("options", "", query).result["data"].empty(),
+        "archived group not offered in customer lookup");
+  check(!customerCall("create", "", full).success,
+        "archived group cannot be assigned to customer");
+  auto groupsReset =
+      sql("SELECT "
+          "tenant_reset_snapshot($1,ARRAY['core_customer_groups'])::text s",
+          {tenant})[0]
+          .value["s"]
+          .asString();
+  check(groupsReset.find("core_customers") != std::string::npos,
+        "customer groups registered with dependent customers for tenant reset");
   std::cout << checks
             << " payment and receipt voucher PostgreSQL checks passed\n";
 

@@ -214,10 +214,14 @@ int main() {
         "update group version");
   check(call("update", true, group, updatedGroup).error["code"] == "conflict",
         "stale group update rejected");
-  for (auto op : {"get", "update", "delete"})
-    check(call(op, true, group, updatedGroup, {other, actor2}).error["code"] ==
+  for (auto op : {"get", "update", "delete"}) {
+    auto command = updatedGroup;
+    if (std::string(op) == "delete")
+      command.removeMember("name");
+    check(call(op, true, group, command, {other, actor2}).error["code"] ==
               "not_found",
           "cross-tenant group inaccessible");
+  }
   Json::Value b;
   b["name"] = " Accra Supplies ";
   b["accountNumber"] = " SUP-001 ";
@@ -233,12 +237,25 @@ int main() {
   b["creditLimit"] = "99999999999999.123456";
   b["isResident"] = true;
   b["email"] = "supplier@example.test";
+  b["phoneNo"] = "+233201234567";
+  b["address"] = "Accra";
+  b["contactPerson"] = "Ama";
+  b["contactPersonPhone"] = "+233241234567";
+  b["contactPersonEmail"] = "ama@example.test";
+  b["vatNumber"] = "VAT-001";
+  b["tinNumber"] = "TIN-001";
+  b["taxOffice"] = "Accra central";
   probeGroup = group;
   lockArmed = true;
   auto created = call("create", false, "", b);
   if (!created.success)
     std::cerr << created.toJson() << std::endl;
   check(created.success, "supplier create with full audited relationships");
+  for (auto key : {"phoneNo", "address", "contactPerson", "contactPersonPhone",
+                   "contactPersonEmail", "vatNumber", "tinNumber", "taxOffice",
+                   "vatAccountId", "debitAccountId", "irsAccountId",
+                   "currencyId", "sellingRate"})
+    check(created.result[key] == b[key], "expanded supplier field round trips");
   auto id = created.result["id"].asString();
   check(lockObserved,
         "supplier mutation locks its group against concurrent soft deletion");
@@ -333,6 +350,10 @@ int main() {
   for (auto op : {"get", "update", "delete"}) {
     auto input = edit;
     input["version"] = 2;
+    if (std::string(op) == "delete") {
+      input = Json::objectValue;
+      input["version"] = 2;
+    }
     check(call(op, false, id, input, {other, actor2}).error["code"] ==
               "not_found",
           "foreign supplier inaccessible");
@@ -436,6 +457,10 @@ int main() {
       "id=$2 AND is_deleted=false",
       {tenant, voucherId});
   drogon::TestTransaction::failCommit = true;
+  Json::Value staleDelete;
+  staleDelete["version"] = call("get", false, id).result["version"].asInt() + 1;
+  check(call("delete", false, id, staleDelete).error["code"] == "conflict",
+        "stale supplier delete rejected");
   auto failed = call("delete", false, id);
   drogon::TestTransaction::failCommit = false;
   check(!failed.success && call("get", false, id).success,

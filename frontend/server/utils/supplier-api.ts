@@ -52,7 +52,7 @@ export async function supplierRequest(
         }
       : undefined
   const body =
-    method === 'POST' || method === 'PUT' ? await readBody(event) : undefined
+    method !== 'GET' ? await readBody(event) : undefined
   try {
     const r = await $fetch<{
       success: boolean

@@ -148,6 +148,7 @@ async function remove() {
   try {
     await request(`${endpoint.value}/${deletion.value.id}`, {
       method: 'DELETE',
+      body: { version: deletion.value.version },
     })
     if (current !== generation || who !== identity()) return
     deletion.value = null

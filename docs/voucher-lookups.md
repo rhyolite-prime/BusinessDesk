@@ -183,8 +183,8 @@ the existing audited tenant business-data reset. No seed/demo customer is added.
 **No application database migration was applied during development.**
 
 Create customers at **Shared config → Customers** (`/ledger/shared-config/customers`).
-Fields: customer number, name, posting unit, receivable G/L, transaction currency,
-and active flag. Authenticated live tenant users can read the minimal catalog;
+Customer add/edit now opens an expanded modal with the legacy contact, tax, group,
+status, currency/rate and GL fields; see [customer-crud.md](customer-crud.md). Authenticated live tenant users can read the minimal catalog;
 only tenant administrators can create/update/archive. Tenant/audit scope comes
 from the authenticated actor, never the body. Mapping validates a live,
 manual-postable, non-control base-currency GL in the chosen active unit, plus an
@@ -207,4 +207,5 @@ also pass native syntax checking with real Drogon/Trantor/JsonCpp headers.
 
 The additive legacy `Customer` field extension is documented in
 [`customer-schema.md`](customer-schema.md); apply migration 021 for that schema
-extension. It does not change the minimal receipt lookup or customer form.
+extension. Migration 022 and the expanded customer/group modal CRUD are described
+in [customer-crud.md](customer-crud.md); receipt mapping semantics remain unchanged.

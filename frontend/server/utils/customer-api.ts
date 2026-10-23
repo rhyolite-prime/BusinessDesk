@@ -13,7 +13,8 @@ import { headUuid } from './account-head-api'
 export async function customerRequest(
   event: H3Event,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
-  mode: 'list' | 'detail' = 'list',
+  mode: 'list' | 'detail' | 'options' = 'list',
+  group = false,
 ) {
   setHeader(event, 'Cache-Control', 'no-store')
   if (method !== 'GET') checkAuthOrigin(event)
@@ -25,7 +26,7 @@ export async function customerRequest(
     })
   const id = getRouterParam(event, 'id'),
     query = getQuery(event)
-  if (mode !== 'list' && !headUuid(id))
+  if (mode === 'detail' && !headUuid(id))
     throw createError({
       statusCode: 400,
       statusMessage: 'Valid customer ID required.',
@@ -40,23 +41,28 @@ export async function customerRequest(
       statusMessage: 'Customer API is not configured.',
     })
   const body = method !== 'GET' ? await readBody(event) : undefined
-  const suffix = mode === 'list' ? '' : `/${id}`
+  const suffix =
+    mode === 'detail' ? `/${id}` : mode === 'options' ? '/options' : ''
   try {
     const r = await $fetch<{
       success: boolean
       result: unknown
       error?: { code: string; message: string }
-    }>(`${base}/api/v1/shared/customers${suffix}`, {
-      method,
-      body,
-      query,
-      retry: 0,
-      timeout: 70000,
-      headers: {
-        authorization: `Bearer ${session.accessToken}`,
-        'x-request-id': getHeader(event, 'x-request-id') || crypto.randomUUID(),
+    }>(
+      `${base}/api/v1/shared/${group ? 'customer-groups' : 'customers'}${suffix}`,
+      {
+        method,
+        body,
+        query,
+        retry: 0,
+        timeout: 70000,
+        headers: {
+          authorization: `Bearer ${session.accessToken}`,
+          'x-request-id':
+            getHeader(event, 'x-request-id') || crypto.randomUUID(),
+        },
       },
-    })
+    )
     if (!r.success)
       throw createError({ statusCode: 503, data: { error: r.error } })
     return r.result
@@ -76,7 +82,7 @@ export async function customerRequest(
       statusMessage: codes[code]
         ? String(err?.message || 'Customer action failed.')
         : code === 'schema_not_ready'
-          ? 'Customer database upgrade required. Apply migration 020 and its prerequisites.'
+          ? 'Customer database upgrade required. Apply migrations through 022 and their prerequisites.'
           : 'Customer service unavailable. Reload before retrying customer changes.',
       data: { code },
     })

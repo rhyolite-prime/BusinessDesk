@@ -343,7 +343,7 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
             who.tenantId, id);
         if (rows.empty())
           co_return fail("not_found", "Record not found.");
-        if (op == "update" &&
+        if ((op == "update" || (op == "delete" && b.isMember("version"))) &&
             rows[0]["version"].as<int>() != b["version"].asInt())
           co_return fail("conflict", "Record changed. Reload before saving.");
         bool hasVouchers = false;
@@ -461,6 +461,14 @@ SupplierService::execute(std::string op, bool group, std::string id,
     co_return fail(
         "validation_error",
         "Check required fields, email, identifiers and exact decimal strings.");
+  if (op == "delete" && !body.isNull()) {
+    if (!body.isObject() || body.getMemberNames().size() != 1 ||
+        !body["version"].isInt() || body["version"].asInt() < 1 ||
+        body["version"].asInt() == 2147483647)
+      co_return fail(
+          "validation_error",
+          "Current version is required when supplying a delete body.");
+  }
   try {
     auto db = drogon::app().getDbClient();
     auto ready = co_await db->execSqlCoro(
