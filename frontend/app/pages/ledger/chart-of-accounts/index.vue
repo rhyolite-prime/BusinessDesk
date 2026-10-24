@@ -63,6 +63,12 @@ const deleteTarget = ref<string | null>(null)
 const saveError = ref('')
 const form = reactive({ name: '', parentId: '', standardAccountType: 'Asset' as StandardAccountType, isActive: true })
 
+// Child heads inherit their parent's classification. Roots remain editable.
+watch(() => form.parentId, parentId => {
+  const parent = heads.value.find(head => head.id === parentId)
+  if (parent) form.standardAccountType = parent.standardAccountType
+})
+
 const activeCount = computed(() => setup.accountHeads.value.filter((head) => head.isActive).length)
 const rootCount = computed(() => setup.accountHeads.value.filter((head) => !head.parentId).length)
 const parentChoices = computed(() => {
@@ -76,7 +82,7 @@ const parentChoices = computed(() => {
     excluded.add(editingId.value)
     collectDescendants(editingId.value)
   }
-  return treeRows.value.map(row => row.head).filter((head) => !excluded.has(head.id) && head.isActive && head.standardAccountType === form.standardAccountType)
+  return treeRows.value.map(row => row.head).filter((head) => !excluded.has(head.id) && head.isActive)
 })
 const treeRows = computed(() => buildAccountHeadTree(heads.value))
 const visibleHeads = computed(() => filterAccountHeadTree(treeRows.value, search.value, typeFilter.value))
@@ -234,7 +240,7 @@ async function deleteHead() {
           <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account head name</span><input v-model="form.name" required maxlength="160" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" placeholder="e.g. Current Assets" /></label>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Parent head</span><select v-model="form.parentId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">Top level</option><option v-for="head in parentChoices" :key="head.id" :value="head.id">{{ setup.accountHeadPath(head.id) }}</option></select></label>
-            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><select v-model="form.standardAccountType" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option v-for="type in standardAccountTypes" :key="type" :value="type">{{ type }}</option></select></label>
+            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><select v-model="form.standardAccountType" :disabled="!!form.parentId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option v-for="type in standardAccountTypes" :key="type" :value="type">{{ type }}</option></select><span v-if="form.parentId" class="mt-1 block text-[10px] font-normal text-slate-400">Inherited from the selected parent head.</span></label>
           </div>
           <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300"><input v-model="form.isActive" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" /> Active for account setup</label>
           <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }}</p>
