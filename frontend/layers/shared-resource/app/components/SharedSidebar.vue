@@ -63,7 +63,7 @@ const ledgerGroups: NavigationGroup[] = [
         label: 'Account Setup',
         icon: 'cog-6-tooth',
         children: [
-          { label: 'Account Heads', to: '/ledger/account-heads', icon: 'building-library' },
+          { label: 'Chart of Accounts', to: '/ledger/chart-of-accounts', icon: 'building-library' },
           { label: 'Bank Account', to: '/ledger/bank-accounts', icon: 'wallet' },
           { label: 'Chart of Account Control', to: '/ledger/account-controls', icon: 'cog-6-tooth' },
           { label: 'Chart of Account Detail', to: '/ledger/accounts', icon: 'document-text' },

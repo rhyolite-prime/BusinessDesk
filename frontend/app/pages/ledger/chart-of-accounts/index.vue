@@ -156,10 +156,10 @@ async function deleteHead() {
     <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
       <div>
         <div class="mb-2 text-xs font-medium text-slate-400">General Ledger <span class="mx-1 text-slate-300">/</span> Account Setup</div>
-        <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Account Heads</h1>
+        <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Chart of Accounts</h1>
         <p class="mt-1.5 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Build the Chart of Accounts hierarchy and assign each head its standard account type.</p>
       </div>
-      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="!unitId || loading || saving" @click="openCreate"><Plus :size="15" /> Add account head</button>
+      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="!unitId || loading || saving" @click="openCreate"><Plus :size="15" /> Add To Chart of Account </button>
     </section>
 
     <section class="grid gap-3 sm:grid-cols-3">
