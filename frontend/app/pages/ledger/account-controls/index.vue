@@ -66,7 +66,10 @@ const showForm = ref(false)
 const editingId = ref<string | null>(null)
 const deleteTarget = ref<string | null>(null)
 const saveError = ref('')
-const form = reactive({ accountGroupId: '', parentAccountHeaderId: '', accountHeaderName: '', minAccount: 0, maxAccount: 0, isActive: true })
+const form = reactive({ accountGroupId: '', parentAccountHeaderId: '', minAccount: 0, maxAccount: 0, isActive: true })
+
+// Always derive the stored name from the selected head, including when editing.
+const accountHeaderName = computed(() => headRows.value.find(row => row.head.id === form.accountGroupId)?.path || '')
 
 const expandedControlIds = ref(new Set<string>())
 const isSearching = computed(() => Boolean(search.value.trim()))
@@ -186,7 +189,7 @@ function deleteControlTitle(id: string) {
 function openCreate() {
   editingId.value = null
   saveError.value = ''
-  Object.assign(form, { accountGroupId: availableGroups.value[0]?.id || '', parentAccountHeaderId: '', accountHeaderName: '', minAccount: 0, maxAccount: 0, isActive: true })
+  Object.assign(form, { accountGroupId: availableGroups.value[0]?.id || '', parentAccountHeaderId: '', minAccount: 0, maxAccount: 0, isActive: true })
   showForm.value = true
 }
 
@@ -196,7 +199,7 @@ async function openEdit(control: LedgerAccountControl) {
   try {
     const row = await request<LedgerAccountControl>(`/api/ledger/account-controls/${control.id}`, { query: { accountingUnitId: unitId.value } })
     editingId.value = row.id
-    Object.assign(form, { accountGroupId: row.accountGroupId, parentAccountHeaderId: row.parentAccountHeaderId || '', accountHeaderName: row.accountHeaderName, minAccount: row.minAccount, maxAccount: row.maxAccount, isActive: row.isActive })
+    Object.assign(form, { accountGroupId: row.accountGroupId, parentAccountHeaderId: row.parentAccountHeaderId || '', minAccount: row.minAccount, maxAccount: row.maxAccount, isActive: row.isActive })
     showForm.value = true
   } catch (error) { loadError.value = errorMessage(error) }
   finally { saving.value = false }
@@ -205,7 +208,7 @@ async function openEdit(control: LedgerAccountControl) {
 async function saveControl() {
   if (saving.value || loading.value) return
   saveError.value = ''
-  const name = form.accountHeaderName.trim()
+  const name = accountHeaderName.value.trim()
   const min = Number(form.minAccount)
   const max = Number(form.maxAccount)
   if (!form.accountGroupId || !setup.accountHeads.value.some((head) => head.id === form.accountGroupId && head.isActive)) {
@@ -213,7 +216,7 @@ async function saveControl() {
     return
   }
   if (!name) {
-    saveError.value = 'Enter an account header name.'
+    saveError.value = 'Select an available chart-of-accounts head.'
     return
   }
   if (!Number.isSafeInteger(min) || !Number.isSafeInteger(max) || min < 0 || max < min || max > 2147483647) {
@@ -324,7 +327,6 @@ async function deleteControl() {
         <div class="flex items-start justify-between"><div><h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ editingId ? 'Edit account control' : 'New account control' }}</h2><p class="mt-1 text-xs text-slate-500">Set the chart head, parent header, and allowed account-number range.</p></div><button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" :disabled="saving" @click="showForm = false"><X :size="17" /></button></div>
         <form class="mt-5 space-y-4" @submit.prevent="saveControl"><fieldset :disabled="saving" class="space-y-4">
           <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Chart of account</span><select v-model="form.accountGroupId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">Select chart head</option><option v-if="form.accountGroupId && !availableGroups.some(head => head.id === form.accountGroupId)" :value="form.accountGroupId" disabled>Current head is inactive/unavailable</option><option v-for="head in availableGroups" :key="head.id" :value="head.id">{{ setup.accountHeadPath(head.id) }}</option></select></label>
-          <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account header name</span><input v-model="form.accountHeaderName" required maxlength="160" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" placeholder="e.g. Trade receivables" /></label>
           <div class="grid gap-4 sm:grid-cols-3">
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Minimum account no.</span><input v-model.number="form.minAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Maximum account no.</span><input v-model.number="form.maxAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
