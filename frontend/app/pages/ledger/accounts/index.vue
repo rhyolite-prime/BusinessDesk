@@ -197,7 +197,7 @@ async function remove() {
         </table>
       </div>
       <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800">
-        <span>Live setup records for the selected unit. Posted balances are not part of this setup API.</span>
+        <span> </span>
         <NuxtLink to="/ledger/account-controls" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Back to account controls →</NuxtLink>
       </div>
     </section>
