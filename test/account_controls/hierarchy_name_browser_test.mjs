@@ -48,15 +48,20 @@ try {
  try {
   const context=await browser.newContext();await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(30000)
   await page.goto(base+'/ledger/account-controls',{waitUntil:'domcontentloaded'});const add=page.getByRole('button',{name:'Add control header'});await add.click()
-  const group=page.getByRole('combobox',{name:/^Chart of account/}),min=page.getByLabel('Minimum account no.'),max=page.getByLabel('Maximum account no.')
+  const min=page.getByLabel('Minimum account no.'),max=page.getByLabel('Maximum account no.')
+  const chooseHead=async id=>{
+   await page.getByRole('button',{name:/^Chart of account/}).click()
+   await page.getByRole('combobox',{name:'Search chart heads'}).fill(rows.find(row=>row.id===id).name)
+   await page.getByRole('listbox',{name:'Chart heads'}).getByRole('option').first().click()
+  }
   check(await page.getByLabel('Account header name').count()===0,'manual name field is absent')
-  await group.selectOption(uuid(6));await min.fill('2000');await max.fill('2099');await page.getByRole('button',{name:'Create control',exact:true}).click();await page.getByRole('heading',{name:'New account control',exact:true}).waitFor({state:'hidden'})
+  await chooseHead(uuid(6));await min.fill('2000');await max.fill('2099');await page.getByRole('button',{name:'Create control',exact:true}).click();await page.getByRole('heading',{name:'New account control',exact:true}).waitFor({state:'hidden'})
   check(controls[0].accountHeaderName==='Liabilities / Current liabilities','create stores complete selected hierarchy path')
   check(controls[0].accountGroupId===uuid(6)&&controls[0].accountingUnitId===unit,'selected head and accounting unit are preserved')
   const edit=page.getByRole('button',{name:'Edit account control',exact:true});await edit.click();check(await page.getByLabel('Account header name').count()===0,'edit also hides name field')
-  await group.selectOption(uuid(4));await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.getByRole('heading',{name:'Edit account control',exact:true}).waitFor({state:'hidden'});check(controls[0].accountHeaderName==='Revenue','changing selection replaces old hierarchy name with root name')
+  await chooseHead(uuid(4));await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.getByRole('heading',{name:'Edit account control',exact:true}).waitFor({state:'hidden'});check(controls[0].accountHeaderName==='Revenue','changing selection replaces old hierarchy name with root name')
   controls[0].accountHeaderName='Legacy manually entered name';await page.reload();await edit.click();await page.getByRole('button',{name:'Save changes',exact:true}).click();await page.getByRole('heading',{name:'Edit account control',exact:true}).waitFor({state:'hidden'});check(controls[0].accountHeaderName==='Revenue','editing legacy control derives name even without changing selection')
-  await add.click();await group.selectOption(uuid(6));await group.selectOption(uuid(3));await min.fill('3000');await max.fill('3099');await page.getByRole('button',{name:'Create control',exact:true}).click();await page.getByRole('heading',{name:'New account control',exact:true}).waitFor({state:'hidden'});check(controls[1].accountHeaderName==='Equity','switching head before create submits latest resolved name')
+  await add.click();await chooseHead(uuid(6));await chooseHead(uuid(3));await min.fill('3000');await max.fill('3099');await page.getByRole('button',{name:'Create control',exact:true}).click();await page.getByRole('heading',{name:'New account control',exact:true}).waitFor({state:'hidden'});check(controls[1].accountHeaderName==='Equity','switching head before create submits latest resolved name')
   check(seen.every(r=>r.token==='Bearer tenant-token'),'API requests remain authenticated');check(!errors.length,'no browser runtime errors')
  }finally{await browser.close()}
  console.log(`${checks} control hierarchy-name browser checks passed`)

@@ -104,6 +104,11 @@ const capacity = computed(() => {
   return total
 })
 const availableGroups = computed(() => headRows.value.map(row => row.head).filter(head => head.isActive))
+const chartHeadOptions = computed(() => availableGroups.value.map(head => ({
+  id: head.id,
+  label: setup.accountHeadPath(head.id),
+  type: head.standardAccountType || 'Unknown',
+})))
 const parentChoices = computed(() => {
   const excluded = new Set<string>()
   if (editingId.value) {
@@ -327,7 +332,7 @@ async function deleteControl() {
       <section class="max-h-[92vh] w-full max-w-[620px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-[#172321]">
         <div class="flex items-start justify-between"><div><h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ editingId ? 'Edit account control' : 'New account control' }}</h2><p class="mt-1 text-xs text-slate-500">Set the chart head, parent header, and allowed account-number range.</p></div><button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" :disabled="saving" @click="showForm = false"><X :size="17" /></button></div>
         <form class="mt-5 space-y-4" @submit.prevent="saveControl"><fieldset :disabled="saving" class="space-y-4">
-          <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Chart of account</span><select v-model="form.accountGroupId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">Select chart head</option><option v-if="form.accountGroupId && !availableGroups.some(head => head.id === form.accountGroupId)" :value="form.accountGroupId" disabled>Current head is inactive/unavailable</option><option v-for="head in availableGroups" :key="head.id" :value="head.id">{{ setup.accountHeadPath(head.id) }}</option></select></label>
+          <AccountControlPicker v-model="form.accountGroupId" kind="heads" :options="chartHeadOptions" :disabled="saving || loading" />
           <div class="grid gap-4 sm:grid-cols-3">
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Minimum account no.</span><input v-model.number="form.minAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Maximum account no.</span><input v-model.number="form.maxAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
