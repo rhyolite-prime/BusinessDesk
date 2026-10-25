@@ -85,6 +85,11 @@ const parentChoices = computed(() => {
   }
   return treeRows.value.map(row => row.head).filter((head) => !excluded.has(head.id) && head.isActive)
 })
+const parentHeadOptions = computed(() => parentChoices.value.map(head => ({
+  id: head.id,
+  label: setup.accountHeadPath(head.id),
+  type: head.standardAccountType || 'Unknown',
+})))
 const treeRows = computed(() => buildAccountHeadTree(heads.value))
 const visibleHeads = computed(() => filterAccountHeadTree(treeRows.value, search.value, typeFilter.value))
 
@@ -240,7 +245,7 @@ async function deleteHead() {
         <form class="mt-5 space-y-4" @submit.prevent="saveHead"><fieldset :disabled="saving" class="space-y-4">
           <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account head name</span><input v-model="form.name" required maxlength="160" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" placeholder="e.g. Current Assets" /></label>
           <div class="grid gap-4 sm:grid-cols-2">
-            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Parent head</span><select v-model="form.parentId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">Top level</option><option v-for="head in parentChoices" :key="head.id" :value="head.id">{{ setup.accountHeadPath(head.id) }}</option></select></label>
+            <AccountControlPicker v-model="form.parentId" kind="parents" :options="parentHeadOptions" :disabled="saving || loading" />
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><select v-model="form.standardAccountType" :disabled="!!form.parentId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option v-for="type in standardAccountTypes" :key="type" :value="type">{{ type }}</option></select><span v-if="form.parentId" class="mt-1 block text-[10px] font-normal text-slate-400">Inherited from the selected parent head.</span></label>
           </div>
           <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300"><input v-model="form.isActive" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" /> Active for account setup</label>

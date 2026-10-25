@@ -41,15 +41,21 @@ try {
  try {
   const context=await browser.newContext();await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(30000)
   await page.goto(base+'/ledger/chart-of-accounts',{waitUntil:'domcontentloaded'});const add=page.getByRole('button',{name:'Add To Chart of Account',exact:false});await add.waitFor();await add.click()
-  const parent=page.getByRole('combobox',{name:/^Parent head/}),type=page.getByRole('combobox',{name:/^Standard account type/})
+  const parent=page.getByRole('button',{name:/^Parent head/}),type=page.getByRole('combobox',{name:/^Standard account type/})
   check(await type.inputValue()==='Asset'&&await type.isEnabled(),'root head classification is editable')
-  check(await parent.locator('option').count()===7,'parent choices include all five types and nested active heads, not inactive heads')
-  for(const [id,name] of [[uuid(2),'Liability'],[uuid(3),'Equity'],[uuid(4),'Revenue'],[uuid(5),'Expense'],[uuid(1),'Asset'],[uuid(6),'Liability']]){
-   await parent.selectOption(id);check(await type.inputValue()===name&&await type.isDisabled(),`selected parent automatically determines ${name} and prevents mismatches`)
+  await parent.click();check(await page.getByRole('listbox',{name:'Parent heads'}).getByRole('option').count()===6,'parent choices include all five types and nested active heads, not inactive heads');await page.getByRole('combobox',{name:'Search parent heads'}).press('Escape')
+  const chooseParent=async id=>{
+   await parent.click()
+   if(!id){await page.getByRole('button',{name:'Top level (no parent)',exact:true}).click();return}
+   await page.getByRole('combobox',{name:'Search parent heads'}).fill(rows.find(row=>row.id===id).name)
+   await page.getByRole('listbox',{name:'Parent heads'}).getByRole('option').first().click()
   }
-  await parent.selectOption('');check(await type.isEnabled(),'clearing the parent restores root account type selection');await type.selectOption('Revenue');check(await type.inputValue()==='Revenue','root type can be chosen manually')
-  await parent.selectOption(uuid(2));await page.getByLabel('Account head name').fill('New inherited liability');await page.getByRole('button',{name:'Create head',exact:true}).click();await page.getByText('New inherited liability',{exact:true}).waitFor();check(rows.at(-1).accountType===1&&rows.at(-1).parentId===uuid(2),'create submits inherited parent type to the API')
-  await add.click();check(await type.inputValue()==='Asset'&&await type.isEnabled()&&await parent.inputValue()==='','new root form resets inherited state');await page.getByRole('button',{name:'Cancel',exact:true}).click()
+  for(const [id,name] of [[uuid(2),'Liability'],[uuid(3),'Equity'],[uuid(4),'Revenue'],[uuid(5),'Expense'],[uuid(1),'Asset'],[uuid(6),'Liability']]){
+   await chooseParent(id);check(await type.inputValue()===name&&await type.isDisabled(),`selected parent automatically determines ${name} and prevents mismatches`)
+  }
+  await chooseParent('');check(await type.isEnabled(),'clearing the parent restores root account type selection');await type.selectOption('Revenue');check(await type.inputValue()==='Revenue','root type can be chosen manually')
+  await chooseParent(uuid(2));await page.getByLabel('Account head name').fill('New inherited liability');await page.getByRole('button',{name:'Create head',exact:true}).click();await page.getByText('New inherited liability',{exact:true}).waitFor();check(rows.at(-1).accountType===1&&rows.at(-1).parentId===uuid(2),'create submits inherited parent type to the API')
+  await add.click();check(await type.inputValue()==='Asset'&&await type.isEnabled()&&(await parent.textContent()).includes('Top level (no parent)'),'new root form resets inherited state');await page.getByRole('button',{name:'Cancel',exact:true}).click()
   check(seen.every(r=>r.token==='Bearer tenant-token'),'all requests forward bearer token');check(!errors.length,'no browser runtime errors')
  }finally{await browser.close()}
  console.log(`${checks} parent account-type browser checks passed`)
