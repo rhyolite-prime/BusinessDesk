@@ -8,7 +8,7 @@ const require=createRequire(new URL('../../frontend/package.json',import.meta.ur
 const source=await readFile(new URL('../../frontend/app/features/reports/report-exports.ts',import.meta.url),'utf8')
 let js=ts.transpileModule(source,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
 js=js.replace(/import\('([^']+)'\)/g,(_,name)=>`import('${pathToFileURL(require.resolve(name))}')`)
-const {createReportPdf,createReportExcel,createReportWord}=await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
+const {createReportPdf,createReportExcel,createReportWord,reportPdfDefinition,reportPalette}=await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
 const report={id:'stress',title:'CHART OF ACCOUNTS',companyName:'Example Company',subtitle:'Head office · All statuses',generatedAt:'25 Oct 2026, 12:00',columns:[{key:'number',title:'Account No.',width:19},{key:'name',title:'Account Name',width:59},{key:'currency',title:'Currency',width:22}],sections:[{title:'Assets / Current Assets / Cash',rows:Array.from({length:500},(_,i)=>[String(10000+i),`Account ${i} — ${'A long account description '.repeat(i%5===0?7:1)}`,'Ghana Cedi'])}]}
 report.sections[0].rows[0]=['00100','=HYPERLINK("https://example.invalid","Not a formula") <script> & Café','Ghana Cedi']
 await mkdir('/tmp/businessdesk-report-tests',{recursive:true})
@@ -20,3 +20,15 @@ assert.equal(sheet.getCell('A7').value,'00100');assert.equal(sheet.getCell('B7')
 const JSZip=require('jszip'),zip=await JSZip.loadAsync(await word.arrayBuffer())
 assert.match(await zip.file('word/header1.xml').async('string'),/Example Company/);assert.match(await zip.file('word/footer1.xml').async('string'),/NUMPAGES/);assert.match(await zip.file('word/document.xml').async('string'),/tblHeader/);assert.match(await zip.file('word/document.xml').async('string'),/&lt;script&gt;/)
 console.log('10 native export structure/security checks passed (500 wrapped records)')
+
+assert.deepEqual(reportPalette('monochrome'),{ink:'000000',accent:'000000',muted:'555555',fill:'EEEEEE'})
+assert.notEqual(reportPalette('color').accent,reportPalette('monochrome').accent)
+assert.equal(reportPdfDefinition(report,'monochrome').defaultStyle.color,'#000000')
+const bwPdf=await createReportPdf(report,'monochrome');await writeFile('/tmp/businessdesk-report-tests/stress-bw.pdf',bwPdf)
+const bwExcel=await createReportExcel(report,'monochrome'),bwBook=new ExcelJS.Workbook();await bwBook.xlsx.load(await bwExcel.arrayBuffer());const bwSheet=bwBook.getWorksheet('Report')
+assert.equal(bwSheet.getCell('A6').fill.fgColor.argb,'FFEEEEEE');assert.equal(bwSheet.getCell('A6').font.color.argb,'FF000000');assert.equal(bwSheet.pageSetup.blackAndWhite,true)
+assert.equal(sheet.getCell('A6').fill.fgColor.argb,'FFDCEFE8');assert.equal(sheet.pageSetup.blackAndWhite,false)
+const bwWord=await createReportWord(report,'monochrome'),bwZip=await JSZip.loadAsync(await bwWord.arrayBuffer())
+assert.match(await bwZip.file('word/document.xml').async('string'),/w:fill="EEEEEE"/)
+assert.doesNotMatch(await bwZip.file('word/header1.xml').async('string'),/176B53/)
+console.log('10 report appearance/export checks passed')

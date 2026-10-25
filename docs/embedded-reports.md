@@ -47,6 +47,30 @@ views. Exports always include all filtered records, not just the current page.
 Downloaded files are not stored on the server. Browser object URLs and PDF
 rendering resources are released after use/unmount.
 
+## Appearance and direct printing
+
+The viewer's **Report appearance** control switches between Color and Black &
+white. Switching regenerates the actual PDF, rather than applying a canvas/CSS
+filter. The selected mode is applied consistently to preview, PDF, Excel, Word,
+and printing. Black & white uses only grayscale text/shading; Excel also sets its
+black-and-white print flag. The choice belongs to the viewer instance and is not
+persisted as a cross-tenant browser preference.
+
+**Print report** hands the full cached PDF to a same-origin blob iframe and opens
+the browser's print dialog. It does not print the ERP chrome or just the current
+canvas page, and does not regenerate or change record filters. Browser/PDF print
+support and user permission are required; the user still chooses the printer,
+page range, and printer settings. If the browser cannot print embedded PDFs,
+export PDF and print from a PDF reader. Blob URLs/frames are cleaned after print,
+on unmount/replacement, and by a fallback timeout for native handlers that do not
+emit afterprint.
+
+Headless tests verify full-PDF handoff and print API invocation with a mocked
+print window, including failure and cleanup paths. They do not confirm an OS
+print dialog or physical printer output. Run `node test/ledger/report_print_test.mjs`
+for print handoff/resource checks; the exporter and browser tests also cover
+appearance switching, grayscale PDF download, and both export style variants.
+
 ## Adding another standard report
 
 Standard reports are code-defined and embedded, not external template files:

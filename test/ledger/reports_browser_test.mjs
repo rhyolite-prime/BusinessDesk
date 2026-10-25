@@ -77,6 +77,27 @@ try {
   for(const [label,ext] of [['Export PDF','pdf'],['Export Excel','xlsx'],['Export Word','docx']]){
    const downloadPromise=page.waitForEvent('download');await page.getByRole('button',{name:label,exact:true}).click();const download=await downloadPromise;await copyFile(await download.path(),`/tmp/businessdesk-report-tests/chart-of-accounts.${ext}`);check(download.suggestedFilename().endsWith('.'+ext),`real ${ext} export downloads`)
   }
+  const appearance=page.getByRole('combobox',{name:/^Report appearance/})
+  await appearance.selectOption('monochrome');await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(text).toContainText('Example Company');checks++
+  const bwDownload=page.waitForEvent('download');await page.getByRole('button',{name:'Export PDF',exact:true}).click();await copyFile(await (await bwDownload).path(),'/tmp/businessdesk-report-tests/chart-of-accounts-bw.pdf');checks++
+  await expect(page.getByRole('button',{name:'Print report',exact:true})).toBeEnabled();checks++
+  // Native print dialog cannot be driven in headless Chromium; mock only the
+  // print frame to verify the real UI passes the complete selected PDF to it.
+  await page.evaluate(()=>{
+   window.__printCalls=0
+   const append=document.body.appendChild.bind(document.body)
+   document.body.appendChild=function(node){
+    if(node instanceof HTMLIFrameElement&&node.title==='Report print document'){
+     Object.defineProperty(node,'contentWindow',{value:{addEventListener(){},focus(){},print(){window.__printCalls++}}})
+     window.__printSource=node.src
+     setTimeout(()=>node.onload?.(new Event('load')),0)
+     return node
+    }
+    return append(node)
+   }
+  })
+  await page.getByRole('button',{name:'Print report',exact:true}).click();await expect.poll(()=>page.evaluate(()=>window.__printCalls)).toBe(1);check(await page.evaluate(()=>window.__printSource.startsWith('blob:')),'print receives full generated PDF blob')
+  await appearance.selectOption('color');await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(text).toContainText('Example Company');checks++
   await page.setViewportSize({width:390,height:844});await page.getByLabel('Zoom',{exact:false}).selectOption('fit');await expect(text).toContainText('Example Company');checks++
   const type=page.getByLabel('Account type',{exact:false}),status=page.getByRole('combobox',{name:/^Status/})
   await type.selectOption('0');await expect(viewer).toContainText('90 records');await expect(text).toContainText('CHART OF ACCOUNTS');checks++

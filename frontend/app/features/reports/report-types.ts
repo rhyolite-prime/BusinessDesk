@@ -13,3 +13,5 @@ export interface EmbeddedReport {
 export const embeddedReports = {
   'chart-of-accounts': { title: 'CHART OF ACCOUNTS', route: '/ledger/reports/chart-of-accounts' },
 } as const
+
+export type ReportColorMode = 'color' | 'monochrome'
