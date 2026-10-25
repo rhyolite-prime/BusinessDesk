@@ -122,3 +122,9 @@ heading. `reportHierarchyRows` is shared by PDF, Excel and Word. PDF uses a sing
 flowing table with repeating column headings, wrapped non-splitting account rows,
 and page-break checks that keep group headings with account data. Header separator,
 page footers, color modes and full-PDF printing remain in place.
+
+Primary report ordering always follows the backend AccountType enum: Asset (0),
+Liability (1), Equity (2), Revenue (3), Expense (4). Unknown/invalid classifications
+appear last. Account-number branch sorting is secondary, within each type, and
+never interleaves or reorders these top-level groups. This applies to the shared
+report model consumed by preview, printing, PDF, Excel and Word.

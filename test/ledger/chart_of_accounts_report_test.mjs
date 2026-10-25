@@ -51,3 +51,15 @@ const shortNumbers={...numbered,accounts:numbered.accounts.map((account,index)=>
 assert.equal(build(shortNumbers).sections[0].rows[0][0],'2','numeric order, not lexical order')
 assert.equal(reportHierarchyRows(build(deep)).filter(row=>row.kind==='heading'&&row.label==='Z group').length,1)
 console.log('6 posting-account number ordering checks passed')
+
+// Account types always outrank posting-number and alphabetic ordering.
+const enumRecords=[4,2,1,3,0].map((accountType,index)=>({...input.accounts[0],id:`enum-${index}`,accountHeaderId:`enum-control-${accountType}`,accountType,accountNumber:String((5-accountType)*10000)}))
+const enumInput={...input,accounts:enumRecords,controls:enumRecords.map(account=>({id:account.accountHeaderId,accountHeaderName:['Z assets','Y liabilities','X equity','B revenue','A expense'][account.accountType]}))}
+const enumReport=build(enumInput)
+assert.deepEqual(enumReport.sections.map(section=>section.path[0]),['Asset','Liability','Equity','Revenue','Expense'])
+assert.deepEqual(enumReport.sections.flatMap(section=>section.rows.map(row=>row[0])),['50000','40000','30000','20000','10000'],'numbers do not reorder the standard account types')
+assert.deepEqual(reportHierarchyRows(enumReport).filter(row=>row.kind==='heading'&&row.depth===0).map(row=>row.label),['Asset','Liability','Equity','Revenue','Expense'])
+const withUnknown=build({...enumInput,accounts:[{...enumRecords[0],id:'unknown',accountType:-1,accountNumber:'1'},...enumRecords]})
+assert.equal(withUnknown.sections.at(-1).path[0],'Unknown')
+assert.deepEqual(build({...enumInput,type:'2'}).sections.map(section=>section.path[0]),['Equity'])
+console.log('5 standard account-type precedence checks passed')

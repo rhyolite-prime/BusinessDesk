@@ -9,14 +9,17 @@ export function chartOfAccountsReport(input: {
   companyName: string; unitName: string; baseCurrencyId: string; generatedAt: string
   status?: string; type?: string; query?: string
 }): EmbeddedReport {
+  // Backend AccountType enum: primary report order, independent of names/numbers.
   const types = ['Asset', 'Liability', 'Equity', 'Revenue', 'Expense']
+  const accountTypeRank = (value: number) => Number.isInteger(value) && value >= 0 && value < types.length ? value : types.length
+  const headingRank = (label: string) => { const rank = types.indexOf(label); return rank < 0 ? types.length : rank }
   const controls = new Map(input.controls.map(control => [control.id, control]))
   const currencies = new Map(input.currencies.map(currency => [currency.id, currency.name || currency.code]))
   const query = input.query?.trim().toLowerCase() || ''
   const accounts = input.accounts.filter(account => (!input.status || account.status === input.status)
     && (!input.type || String(account.accountType) === input.type)
     && (!query || `${account.accountNumber} ${account.accountName} ${controls.get(account.accountHeaderId)?.accountHeaderName || ''}`.toLowerCase().includes(query)))
-    .sort((a, b) => a.accountType - b.accountType || (controls.get(a.accountHeaderId)?.accountHeaderName || '').localeCompare(controls.get(b.accountHeaderId)?.accountHeaderName || '') || a.accountNumber.localeCompare(b.accountNumber, 'en', { numeric: true }) || a.id.localeCompare(b.id))
+    .sort((a, b) => accountTypeRank(a.accountType) - accountTypeRank(b.accountType) || (controls.get(a.accountHeaderId)?.accountHeaderName || '').localeCompare(controls.get(b.accountHeaderId)?.accountHeaderName || '') || a.accountNumber.localeCompare(b.accountNumber, 'en', { numeric: true }) || a.id.localeCompare(b.id))
   const sections = new Map<string, ReportSection>()
   for (const account of accounts) {
     const type = types[account.accountType] || 'Unknown'
@@ -45,7 +48,7 @@ export function chartOfAccountsReport(input: {
   }
   const orderedSections = [...sections.values()].sort((a, b) => {
     const first = a.path!, second = b.path!
-    const typeOrder = (types.indexOf(first[0]!) - types.indexOf(second[0]!))
+    const typeOrder = headingRank(first[0]!) - headingRank(second[0]!)
     if (typeOrder) return typeOrder
     for (let i = 1; i < Math.min(first.length, second.length); i++) {
       if (first[i] !== second[i]) {
