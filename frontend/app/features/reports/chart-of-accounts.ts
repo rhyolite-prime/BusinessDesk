@@ -31,13 +31,28 @@ export function chartOfAccountsReport(input: {
     const currency = currencies.get(account.currencyId || input.baseCurrencyId) || (account.currencyId ? 'Unavailable currency' : 'Unit base currency (unavailable)')
     section.rows.push([account.accountNumber, account.accountName, currency])
   }
+  // Rank each sibling branch by its lowest posting-account number, including
+  // descendants. Keep prefixes together so shared headings are emitted once.
+  const branchMinimum = new Map<string, string>()
+  const compareNumber = (a: string, b: string) => a.localeCompare(b, 'en', { numeric: true })
+  for (const section of sections.values()) {
+    for (const row of section.rows) {
+      for (let depth = 1; depth <= section.path!.length; depth++) {
+        const key = JSON.stringify(section.path!.slice(0, depth)), previous = branchMinimum.get(key)
+        if (previous === undefined || compareNumber(row[0]!, previous) < 0) branchMinimum.set(key, row[0]!)
+      }
+    }
+  }
   const orderedSections = [...sections.values()].sort((a, b) => {
     const first = a.path!, second = b.path!
     const typeOrder = (types.indexOf(first[0]!) - types.indexOf(second[0]!))
     if (typeOrder) return typeOrder
     for (let i = 1; i < Math.min(first.length, second.length); i++) {
-      const order = first[i]!.localeCompare(second[i]!)
-      if (order) return order
+      if (first[i] !== second[i]) {
+        const firstMinimum = branchMinimum.get(JSON.stringify(first.slice(0, i + 1)))!
+        const secondMinimum = branchMinimum.get(JSON.stringify(second.slice(0, i + 1)))!
+        return compareNumber(firstMinimum, secondMinimum) || first[i]!.localeCompare(second[i]!)
+      }
     }
     return first.length - second.length
   })

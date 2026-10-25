@@ -108,7 +108,10 @@ After installing frontend dependencies:
 
 The report adapter splits control names into path segments under their authoritative
 account type, normalizes only exact root aliases (Assets → Asset, Liabilities →
-Liability), and sorts branches segment-by-segment. Shared prefixes are emitted once,
+Liability), and sorts sibling branches by their lowest posting-account number (including
+descendants), with labels used only to break ties. Posting accounts inside each
+group are ordered numerically. Parent prefixes remain before their descendants
+and each branch stays contiguous. Shared prefixes are emitted once,
 with increasing indentation, before their account rows. Controls with the same
 resolved path share a presentation group without dropping any account records.
 Missing metadata is still labeled explicitly. Filtering retains the hierarchy of
