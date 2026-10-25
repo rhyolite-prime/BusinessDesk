@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' }>()
-const copy = computed(() => props.kind === 'heads' ? {
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' }>()
+const copy = computed(() => props.kind === 'parents' ? {
+  label: 'Parent head', plural: 'parent heads', search: 'Search parent heads',
+  placeholder: 'Top level (no parent)', unavailable: 'Current parent is inactive/unavailable — select another',
+  hint: 'Search name, hierarchy or type…', empty: 'No matching parent heads.',
+} : props.kind === 'heads' ? {
   label: 'Chart of account', plural: 'chart heads', search: 'Search chart heads',
   placeholder: 'Select active chart head', unavailable: 'Current head is inactive/unavailable — select another',
   hint: 'Search name, hierarchy or type…', empty: 'No matching chart heads.',
@@ -33,6 +37,7 @@ async function expand() {
   await nextTick(); searchInput.value?.focus(); scrollActive()
 }
 function close() { open.value = false; trigger.value?.focus() }
+function chooseTopLevel() { emit('update:modelValue', ''); close() }
 function choose(option: ControlOption) { emit('update:modelValue', option.id); close() }
 function scrollActive() { root.value?.querySelector(`[data-index="${active.value}"]`)?.scrollIntoView({ block: 'nearest' }) }
 function keydown(event: KeyboardEvent) {
@@ -60,11 +65,14 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
       <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? copy.unavailable : copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
     </button>
     <div v-if="open" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+      <button v-if="kind === 'parents'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
+        <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" />Top level (no parent)
+      </button>
       <div class="relative border-b border-slate-100 p-2 dark:border-slate-800">
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
-      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
+      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
         <div v-for="group in groups" :key="group.type" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"
