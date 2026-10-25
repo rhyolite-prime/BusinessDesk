@@ -108,6 +108,7 @@ const ledgerGroups: NavigationGroup[] = [
         label: 'Reports',
         icon: 'chart-bar-square',
         children: [
+          { label: 'Chart of Accounts', to: '/ledger/reports/chart-of-accounts', icon: 'document-text' },
           reportItem('Trial Balance'),
           reportItem('Balance Sheet'),
           {
