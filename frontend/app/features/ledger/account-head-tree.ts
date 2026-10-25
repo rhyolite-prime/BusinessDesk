@@ -59,3 +59,16 @@ export function filterAccountHeadTree(rows: readonly AccountHeadTreeRow[], searc
   }
   return rows.filter(row => included.has(row.head.id))
 }
+
+/** Use rendered tree depth, rather than following possibly malformed parent IDs. */
+export function collapseAccountHeadTree(rows: readonly AccountHeadTreeRow[], collapsed: ReadonlySet<string>): AccountHeadTreeRow[] {
+  const visible: AccountHeadTreeRow[] = []
+  let hiddenBelow: number | null = null
+  for (const row of rows) {
+    if (hiddenBelow !== null && row.depth > hiddenBelow) continue
+    hiddenBelow = null
+    visible.push(row)
+    if (collapsed.has(row.head.id)) hiddenBelow = row.depth
+  }
+  return visible
+}

@@ -39,3 +39,12 @@ assert.equal(build([records[0], records[0]]).length, 1, 'duplicate records never
 const deep = Array.from({ length: 1000 }, (_, index) => head(String(index), String(index), index ? String(index - 1) : null))
 assert.equal(build(deep.reverse()).at(-1).depth, 999, 'iterative traversal handles deep input without recursion')
 console.log('18 account-head hierarchy regression checks passed')
+
+const { collapseAccountHeadTree: collapse } = await import(`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`)
+assert.deepEqual(collapse(rows, new Set()).map(row => row.head.id), rows.map(row => row.head.id))
+assert.deepEqual(collapse(rows, new Set(['assets'])).map(row => row.head.id), ['revenue', 'assets'])
+assert.deepEqual(collapse(rows, new Set(['current'])).map(row => row.head.id), ['revenue', 'assets', 'fixed', 'current'])
+assert.deepEqual(collapse(rows, new Set(['assets', 'current'])).map(row => row.head.id), ['revenue', 'assets'])
+assert.deepEqual(collapse(rows, new Set(['fixed', 'missing'])).map(row => row.head.id), rows.map(row => row.head.id))
+assert.deepEqual(collapse([], new Set(['assets'])), [])
+console.log('6 account head collapse checks passed')

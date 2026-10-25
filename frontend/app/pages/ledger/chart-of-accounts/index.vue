@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import { Check, ChevronDown, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
+import { Check, ChevronDown, ChevronRight, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
 import type { StandardAccountType, LedgerAccountHead } from '../../../features/ledger/setup-data'
 import { standardAccountTypes } from '../../../features/ledger/setup-data'
-import { buildAccountHeadTree, filterAccountHeadTree } from '../../../features/ledger/account-head-tree'
+import { buildAccountHeadTree, filterAccountHeadTree, collapseAccountHeadTree } from '../../../features/ledger/account-head-tree'
 
 definePageMeta({ layout: 'admin-ledger' })
 const request = useRequestFetch()
@@ -28,7 +28,7 @@ function mapHead(row: any, index: number): LedgerAccountHead {
 function message(error: any) { return error?.data?.statusMessage || error?.message || 'Request failed. Please retry.' }
 async function loadHeads() {
   const version = ++loadVersion
-  heads.value = []; loadError.value = ''; showForm.value = false; deleteTarget.value = null
+  heads.value = []; collapsedHeadIds.value = new Set(); loadError.value = ''; showForm.value = false; deleteTarget.value = null
   if (!unitId.value) return
   loading.value = true
   const selectedUnit = unitId.value
@@ -56,6 +56,7 @@ onMounted(async () => {
   finally { if (!unitId.value) loading.value = false }
 })
 onUnmounted(() => { loadVersion++ })
+const collapsedHeadIds = ref(new Set<string>())
 const search = ref('')
 const typeFilter = ref('')
 const showForm = ref(false)
@@ -91,7 +92,17 @@ const parentHeadOptions = computed(() => parentChoices.value.map(head => ({
   type: head.standardAccountType || 'Unknown',
 })))
 const treeRows = computed(() => buildAccountHeadTree(heads.value))
-const visibleHeads = computed(() => filterAccountHeadTree(treeRows.value, search.value, typeFilter.value))
+const isFiltering = computed(() => !!search.value.trim() || !!typeFilter.value)
+const parentHeadIds = computed(() => new Set(treeRows.value.filter((row, index, rows) => rows[index + 1] && rows[index + 1]!.depth > row.depth).map(row => row.head.id)))
+const matchingHeads = computed(() => filterAccountHeadTree(treeRows.value, search.value, typeFilter.value))
+const visibleHeads = computed(() => isFiltering.value ? matchingHeads.value : collapseAccountHeadTree(matchingHeads.value, collapsedHeadIds.value))
+function isExpanded(id: string) { return isFiltering.value || !collapsedHeadIds.value.has(id) }
+function toggleHead(id: string) {
+  const next = new Set(collapsedHeadIds.value)
+  if (next.has(id)) next.delete(id)
+  else next.add(id)
+  collapsedHeadIds.value = next
+}
 
 function directChildrenCount(id: string) {
   return setup.accountHeads.value.filter((head) => head.parentId === id).length
@@ -192,7 +203,9 @@ async function deleteHead() {
           <Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
           <input v-model="search" type="search" placeholder="Search account heads…" class="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none transition placeholder:text-slate-400 focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" />
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300" :disabled="loading || isFiltering || !parentHeadIds.size" @click="collapsedHeadIds = new Set()">Expand all</button>
+          <button type="button" class="rounded-lg border border-slate-200 px-3 py-2 text-xs font-medium text-slate-600 disabled:opacity-40 dark:border-slate-700 dark:text-slate-300" :disabled="loading || isFiltering || !parentHeadIds.size" @click="collapsedHeadIds = new Set(parentHeadIds)">Collapse all</button>
           <label class="relative">
             <select v-model="typeFilter" class="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-medium text-slate-600 outline-none hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300">
               <option value="">All account types</option><option v-for="type in standardAccountTypes" :key="type" :value="type">{{ type }}</option>
@@ -212,6 +225,7 @@ async function deleteHead() {
             <tr v-for="{ head, depth } in visibleHeads" :key="head.id" class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
               <td class="px-5 py-3.5">
                 <div class="flex items-center gap-2" :style="{ paddingLeft: `${depth * 22}px` }">
+                  <button v-if="parentHeadIds.has(head.id)" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-default dark:hover:bg-slate-800" :disabled="isFiltering" :aria-label="`${isExpanded(head.id) ? 'Collapse' : 'Expand'} ${head.name}`" :aria-expanded="isExpanded(head.id)" @click="toggleHead(head.id)"><ChevronDown v-if="isExpanded(head.id)" :size="14" /><ChevronRight v-else :size="14" /></button><span v-else class="w-7 shrink-0" />
                   <span class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-brand-700 dark:bg-brand-900/30 dark:text-brand-300"><span class="text-[10px] font-bold">{{ head.name.slice(0, 1) }}</span></span>
                   <span v-if="depth" aria-hidden="true" class="text-slate-400">↳</span>
                   <span class="text-xs font-semibold text-slate-800 dark:text-slate-200">{{ head.name }}</span>
