@@ -3,6 +3,7 @@ import { Check, ChevronDown, Plus, Pencil, Trash2, X, Search } from '@lucide/vue
 import type { LedgerAccountControl, LedgerAccountHead } from '../../../features/ledger/setup-data'
 import { standardAccountTypes } from '../../../features/ledger/setup-data'
 import { buildAccountHeadTree } from '../../../features/ledger/account-head-tree'
+import { sortAccountControlsByType } from '../../../features/ledger/account-control-order'
 import type { AccountDetail, AccountDetailInput } from '../../../features/ledger/account-detail-types'
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Chart of Account Details' })
@@ -27,7 +28,7 @@ function controlPath(id: string) {
   }
   return names.join(' / ') || 'Unavailable control'
 }
-const eligibleControls = computed(() => controls.value.filter(control => control.isActive && heads.value.some(head => head.id === control.accountGroupId && head.isActive) && !controls.value.some(child => child.parentAccountHeaderId === control.id)))
+const eligibleControls = computed(() => sortAccountControlsByType(controls.value.filter(control => control.isActive && heads.value.some(head => head.id === control.accountGroupId && head.isActive) && !controls.value.some(child => child.parentAccountHeaderId === control.id)), heads.value))
 const selectedControl = computed(() => controls.value.find(row => row.id === form.accountHeaderId))
 const selectedType = computed(() => heads.value.find(head => head.id === selectedControl.value?.accountGroupId)?.standardAccountType || 'Select a control')
 const visibleAccounts = computed(() => {
