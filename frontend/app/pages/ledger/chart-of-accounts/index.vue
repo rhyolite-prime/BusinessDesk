@@ -6,6 +6,7 @@ import { buildAccountHeadTree, filterAccountHeadTree } from '../../../features/l
 
 definePageMeta({ layout: 'admin-ledger' })
 const request = useRequestFetch()
+const addButton = ref<HTMLButtonElement | null>(null)
 const units = ref<{ id: string; name: string; code: string }[]>([])
 const unitId = ref('')
 const heads = ref<LedgerAccountHead[]>([])
@@ -165,7 +166,7 @@ async function deleteHead() {
         <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Chart of Accounts</h1>
         <p class="mt-1.5 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Build the Chart of Accounts hierarchy and assign each head its standard account type.</p>
       </div>
-      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="!unitId || loading || saving" @click="openCreate"><Plus :size="15" /> Add To Chart of Account </button>
+      <button ref="addButton" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="!unitId || loading || saving" @click="openCreate"><Plus :size="15" /> Add To Chart of Account </button>
     </section>
 
     <section class="grid gap-3 sm:grid-cols-3">
@@ -260,5 +261,6 @@ async function deleteHead() {
         <div class="mt-5 flex justify-end gap-2"><button class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300" :disabled="saving" @click="deleteTarget = null">Cancel</button><button class="h-9 rounded-lg bg-rose-600 px-3 text-xs font-semibold text-white hover:bg-rose-700" :disabled="saving" @click="deleteHead">{{ saving ? 'Deleting…' : 'Delete head' }}</button></div>
       </section>
     </div>
+    <ScrollAddFab :target="addButton" label="Add To Chart of Account" :disabled="!unitId || loading || saving" :hidden="showForm || !!deleteTarget" @click="openCreate" />
   </div>
 </template>

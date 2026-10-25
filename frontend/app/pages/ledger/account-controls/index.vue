@@ -6,6 +6,7 @@ import { buildAccountHeadTree } from '../../../features/ledger/account-head-tree
 
 definePageMeta({ layout: 'admin-ledger' })
 const request = useRequestFetch()
+const addButton = ref<HTMLButtonElement | null>(null)
 const units = ref<{ id: string; name: string; code: string }[]>([])
 const unitId = ref('')
 const controls = ref<LedgerAccountControl[]>([])
@@ -285,7 +286,7 @@ async function deleteControl() {
         <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Chart of Account Control</h1>
         <p class="mt-1.5 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Define account headers, parent relationships, and permitted account-number ranges.</p>
       </div>
-      <button class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="loading || saving || !unitId || !availableGroups.length" @click="openCreate"><Plus :size="15" /> Add control header</button>
+      <button ref="addButton" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800" :disabled="loading || saving || !unitId || !availableGroups.length" @click="openCreate"><Plus :size="15" /> Add control header</button>
     </section>
 
 
@@ -340,5 +341,6 @@ async function deleteControl() {
     </div>
 
     <div v-if="deleteTarget" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" @click.self="!saving && (deleteTarget = null)"><section class="w-full max-w-[420px] rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-[#172321]"><h2 class="text-base font-semibold text-slate-900 dark:text-white">Delete control header?</h2><p class="mt-2 text-sm text-slate-500">This soft-deletes the saved control. Controls with live child controls or ledger accounts cannot be deleted.</p><p v-if="deleteError" role="alert" class="mt-3 text-sm text-rose-600">{{ deleteError }}</p><div class="mt-5 flex justify-end gap-2"><button class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 dark:border-slate-700 dark:text-slate-300" :disabled="saving" @click="deleteTarget = null">Cancel</button><button class="h-9 rounded-lg bg-rose-600 px-3 text-xs font-semibold text-white hover:bg-rose-700" :disabled="saving" @click="deleteControl">{{ saving ? 'Deleting…' : 'Delete header' }}</button></div></section></div>
+    <ScrollAddFab :target="addButton" label="Add control header" :disabled="loading || saving || !unitId || !availableGroups.length" :hidden="showForm || !!deleteTarget" @click="openCreate" />
   </div>
 </template>

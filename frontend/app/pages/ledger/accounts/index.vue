@@ -9,6 +9,7 @@ import type { AccountDetail, AccountDetailInput } from '../../../features/ledger
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Chart of Account Details' })
 const request = useRequestFetch()
+const addButton = ref<HTMLButtonElement | null>(null)
 const unitId = useState<string>('ledger-accounting-unit', () => '')
 const units = ref<{ id: string; code: string; name: string }[]>([])
 const accounts = ref<AccountDetail[]>([]), controls = ref<LedgerAccountControl[]>([]), heads = ref<LedgerAccountHead[]>([])
@@ -138,7 +139,7 @@ async function remove() {
         <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Chart of Account Details</h1>
         <p class="mt-1.5 max-w-2xl text-sm text-slate-500 dark:text-slate-400">Manage posting accounts, control assignments, currencies and posting settings.</p>
       </div>
-      <button :disabled="saving || loading || !unitId || !eligibleControls.length || !currencies.length" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800 disabled:opacity-50" @click="openCreate"><Plus :size="15" /> Add account detail</button>
+      <button ref="addButton" :disabled="saving || loading || !unitId || !eligibleControls.length || !currencies.length" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800 disabled:opacity-50" @click="openCreate"><Plus :size="15" /> Add account detail</button>
     </section>
 
     <section class="grid gap-3 sm:grid-cols-3">
@@ -245,5 +246,6 @@ async function remove() {
         </div>
       </section>
     </div>
+    <ScrollAddFab :target="addButton" label="Add account detail" :disabled="saving || loading || !unitId || !eligibleControls.length || !currencies.length" :hidden="showForm || !!deleteTarget" @click="openCreate" />
   </div>
 </template>
