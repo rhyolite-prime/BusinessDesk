@@ -99,6 +99,6 @@ onBeforeUnmount(() => { cleanupPrint?.(); generation++; renderVersion++; observe
       <canvas v-show="total && !generating" ref="canvas" aria-hidden="true" class="mx-auto bg-white shadow-md" />
       <div class="sr-only" role="document" :aria-label="`Report page ${page} of ${total}`">{{ pageText }}</div>
     </div>
-    <p class="p-3 text-xs text-slate-500">Print and exports include all filtered records in the selected appearance. Printing opens your browser’s print dialog. PDF matches this preview; Excel and Word paginate in their respective applications.</p>
+    <p class="p-3 text-xs text-slate-500"></p>
   </section>
 </template>
