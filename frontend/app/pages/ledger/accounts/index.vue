@@ -3,6 +3,7 @@ import { Check, ChevronDown, Plus, Pencil, Trash2, X, Search } from '@lucide/vue
 import type { LedgerAccountControl, LedgerAccountHead } from '../../../features/ledger/setup-data'
 import { standardAccountTypes } from '../../../features/ledger/setup-data'
 import { buildAccountHeadTree } from '../../../features/ledger/account-head-tree'
+import { joinAccountHierarchyPaths } from '../../../features/ledger/account-hierarchy-label'
 import { sortAccountControlsByType } from '../../../features/ledger/account-control-order'
 import type { AccountDetail, AccountDetailInput } from '../../../features/ledger/account-detail-types'
 definePageMeta({ layout: 'admin-ledger' })
@@ -26,7 +27,7 @@ function controlPath(id: string) {
     seen.add(current.id); names.unshift(current.accountHeaderName)
     current = controls.value.find(row => row.id === current?.parentAccountHeaderId)
   }
-  return names.join(' / ') || 'Unavailable control'
+  return joinAccountHierarchyPaths(...names) || 'Unavailable control'
 }
 const eligibleControls = computed(() => sortAccountControlsByType(controls.value.filter(control => control.isActive && heads.value.some(head => head.id === control.accountGroupId && head.isActive) && !controls.value.some(child => child.parentAccountHeaderId === control.id)), heads.value))
 const selectedControl = computed(() => controls.value.find(row => row.id === form.accountHeaderId))
@@ -208,7 +209,7 @@ async function remove() {
           <button :disabled="saving" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" @click="showForm = false"><X :size="17" /></button>
         </div>
         <form class="mt-5 space-y-4" @submit.prevent="save"><fieldset :disabled="saving" class="space-y-4">
-          <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account control</span><select v-model="form.accountHeaderId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select active leaf control</option><option v-if="form.accountHeaderId && !eligibleControls.some(row => row.id === form.accountHeaderId)" :value="form.accountHeaderId" disabled>Current control is inactive/unavailable</option><option v-for="control in eligibleControls" :key="control.id" :value="control.id">{{ headName(control.accountGroupId) }} / {{ controlPath(control.id) }} ({{ control.minAccount }}–{{ control.maxAccount }})</option></select></label>
+          <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account control</span><select v-model="form.accountHeaderId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select active leaf control</option><option v-if="form.accountHeaderId && !eligibleControls.some(row => row.id === form.accountHeaderId)" :value="form.accountHeaderId" disabled>Current control is inactive/unavailable</option><option v-for="control in eligibleControls" :key="control.id" :value="control.id">{{ joinAccountHierarchyPaths(headName(control.accountGroupId), controlPath(control.id)) }} ({{ control.minAccount }}–{{ control.maxAccount }})</option></select></label>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account number</span><input v-model="form.accountNumber" required maxlength="80" inputmode="numeric" pattern="[0-9]+" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" /><span v-if="selectedControl" class="mt-1 block text-[10px] text-slate-400">Allowed range: {{ selectedControl.minAccount }}–{{ selectedControl.maxAccount }}. Leading zeros are normalized.</span></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><input :value="selectedType" readonly class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800" /></label>
