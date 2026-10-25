@@ -73,7 +73,7 @@ try {
    if(viewport.width===1440){
     await page.getByLabel('Minimum account no.').fill('2000');await page.getByLabel('Maximum account no.').fill('2099');await page.getByRole('button',{name:'Create control',exact:true}).click();await expect(page.getByRole('heading',{name:'New account control',exact:true})).toHaveCount(0)
     check(controls.at(-1).accountGroupId===uuid(6)&&controls.at(-1).accountHeaderName==='Liabilities / Current liabilities','save submits selected head ID and full hidden hierarchy name')
-    await page.getByRole('row').filter({hasText:'Liabilities / Current liabilities'}).getByRole('button',{name:'Edit account control',exact:true}).click();await expect(trigger).toContainText('Liabilities / Current liabilities');checks++
+    await page.getByRole('row').filter({has:page.getByText('Current liabilities',{exact:true})}).getByRole('button',{name:'Edit account control',exact:true}).click();await expect(trigger).toContainText('Liabilities / Current liabilities');checks++
     await trigger.click();await search.fill('Equity');await list.getByRole('option',{name:'Equity',exact:true}).click();await page.getByRole('button',{name:'Save changes',exact:true}).click();await expect(page.getByRole('heading',{name:'Edit account control',exact:true})).toHaveCount(0)
     check(controls.at(-1).accountGroupId===uuid(3)&&controls.at(-1).accountHeaderName==='Equity','editing selection updates hidden name')
    }else await page.getByRole('button',{name:'Cancel',exact:true}).click()

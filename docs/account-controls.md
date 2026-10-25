@@ -111,3 +111,26 @@ CRUD or introduce operation-specific permission grants.
 
 The service tests use the ORM seam with real crypto; HTTP tests use a mock
 upstream. No live PostgreSQL/Drogon deployment has been exercised by these tests.
+
+
+### Name-derived presentation hierarchy
+
+The control directory preprocesses `accountHeaderName` paths (for example,
+`Assets / Current Assets / Cash`) into a display-only prefix tree. Parent IDs
+are not consulted for grouping, indentation, expansion, or search context.
+Actual prefix records retain their ranges, status and actions. Missing prefixes
+become group-only rows without fabricated IDs, ranges, or CRUD actions. Records
+with identical names remain separate; no API records are rewritten or dropped.
+Roots follow accounting-type order, with siblings ordered by range and name.
+Searching names/paths/ranges retains ancestors and temporarily expands matches;
+chart-head filtering remains based on the actual accountGroupId.
+
+The obsolete Parent header selector is hidden. New controls send a null parent;
+existing parent IDs are retained during editing. Stored relationships and their
+backend range, dependency, tenant and accounting-unit protections are unchanged.
+Visual nesting does not imply a persisted parent-control relationship.
+
+Regression coverage:
+- `node test/ledger/account_control_name_tree_test.mjs`
+- `PICKER_BROWSER_DEPS=/path/to/browser/deps node test/ledger/account_control_presentation_browser_test.mjs`
+  (built Nuxt plus controlled upstream, Chromium, desktop and mobile).

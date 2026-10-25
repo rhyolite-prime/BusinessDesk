@@ -2,6 +2,7 @@
 import { Check, ChevronDown, ChevronRight, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
 import type { LedgerAccountControl, LedgerAccountHead } from '../../../features/ledger/setup-data'
 import { standardAccountTypes } from '../../../features/ledger/setup-data'
+import { buildControlNameTree, filterControlNameTree } from '../../../features/ledger/account-control-name-tree'
 import { buildAccountHeadTree } from '../../../features/ledger/account-head-tree'
 
 definePageMeta({ layout: 'admin-ledger' })
@@ -19,15 +20,7 @@ const setup = {
   accountControls: controls,
   accountHeads: heads,
   accountHeadPath(id: string) { return headRows.value.find(row => row.head.id === id)?.path || 'Unavailable head' },
-  accountControlPath(id: string) {
-    const names: string[] = [], seen = new Set<string>()
-    let control = controls.value.find(item => item.id === id)
-    while (control && !seen.has(control.id)) {
-      seen.add(control.id); names.unshift(control.accountHeaderName)
-      control = controls.value.find(item => item.id === control?.parentAccountHeaderId)
-    }
-    return names.join(' / ')
-  },
+
 }
 const errorMessage = (error: any) => error?.data?.statusMessage || error?.message || 'Request failed. Please retry.'
 async function allPages(resource: string, unit: string, version: number) {
@@ -50,7 +43,7 @@ async function loadControls() {
     if (version !== loadVersion) return
     controls.value = controlRows
     heads.value = groupRows.map((row, index) => ({ id: row.id, name: row.name, parentId: row.parentId || null, isActive: row.isActive, standardAccountType: standardAccountTypes[row.accountType]!, sortOrder: index }))
-    expandedControlIds.value = new Set(controlRows.map(row => row.id))
+    collapsedNamePaths.value = new Set()
   } catch (error) { if (version === loadVersion) loadError.value = errorMessage(error) }
   finally { if (version === loadVersion) loading.value = false }
 }
@@ -72,7 +65,7 @@ const form = reactive({ accountGroupId: '', parentAccountHeaderId: '', minAccoun
 // Always derive the stored name from the selected head, including when editing.
 const accountHeaderName = computed(() => headRows.value.find(row => row.head.id === form.accountGroupId)?.path || '')
 
-const expandedControlIds = ref(new Set<string>())
+const collapsedNamePaths = ref(new Set<string>())
 const isSearching = computed(() => Boolean(search.value.trim()))
 const activeControls = computed(() => setup.accountControls.value.filter((control) => control.isActive).length)
 const capacity = computed(() => {
@@ -109,73 +102,17 @@ const chartHeadOptions = computed(() => availableGroups.value.map(head => ({
   label: setup.accountHeadPath(head.id),
   type: head.standardAccountType || 'Unknown',
 })))
-const parentChoices = computed(() => {
-  const excluded = new Set<string>()
-  if (editingId.value) {
-    const collectDescendants = (parentId: string) => {
-      for (const child of setup.accountControls.value.filter((control) => control.parentAccountHeaderId === parentId)) {
-        if (!excluded.has(child.id)) { excluded.add(child.id); collectDescendants(child.id) }
-      }
-    }
-    excluded.add(editingId.value)
-    collectDescendants(editingId.value)
-  }
-  return setup.accountControls.value.filter((control) => control.isActive && control.id !== editingId.value && control.accountGroupId === form.accountGroupId && !excluded.has(control.id))
-})
-const visibleControls = computed(() => {
-  const term = search.value.trim().toLowerCase()
-  const inGroup = setup.accountControls.value.filter((control) => !groupFilter.value || control.accountGroupId === groupFilter.value)
-  if (!term) return inGroup.sort((a, b) => a.minAccount - b.minAccount)
-
-  const matches = inGroup.filter((control) => `${control.accountHeaderName} ${control.minAccount} ${control.maxAccount} ${setup.accountControlPath(control.id)} ${setup.accountHeadPath(control.accountGroupId)}`.toLowerCase().includes(term))
-  const includeIds = new Set(matches.map((control) => control.id))
-  const byId = new Map(setup.accountControls.value.map((control) => [control.id, control]))
-  for (const match of matches) {
-    let parentId = match.parentAccountHeaderId
-    const visited = new Set<string>()
-    while (parentId && !visited.has(parentId)) {
-      visited.add(parentId)
-      includeIds.add(parentId)
-      parentId = byId.get(parentId)?.parentAccountHeaderId || null
-    }
-  }
-  return inGroup.filter((control) => includeIds.has(control.id)).sort((a, b) => a.minAccount - b.minAccount)
-})
-const treeRows = computed(() => {
-  const childrenByParent = new Map<string, LedgerAccountControl[]>()
-  for (const control of visibleControls.value) {
-    if (!control.parentAccountHeaderId) continue
-    const children = childrenByParent.get(control.parentAccountHeaderId) || []
-    children.push(control)
-    childrenByParent.set(control.parentAccountHeaderId, children)
-  }
-  for (const children of childrenByParent.values()) children.sort((a, b) => a.minAccount - b.minAccount)
-
-  const roots = visibleControls.value.filter((control) => !control.parentAccountHeaderId || !visibleControls.value.some((parent) => parent.id === control.parentAccountHeaderId))
-  const rows: Array<{ control: LedgerAccountControl; depth: number; hasChildren: boolean }> = []
-  const visited = new Set<string>()
-  const visit = (controls: LedgerAccountControl[], depth: number) => {
-    for (const control of controls) {
-      if (visited.has(control.id)) continue
-      visited.add(control.id)
-      const children = childrenByParent.get(control.id) || []
-      rows.push({ control, depth, hasChildren: children.length > 0 })
-      if (children.length && (isSearching.value || expandedControlIds.value.has(control.id))) visit(children, depth + 1)
-    }
-  }
-  visit(roots.sort((a, b) => a.minAccount - b.minAccount), 0)
-  return rows
-})
-
-function isExpanded(id: string) {
-  return isSearching.value || expandedControlIds.value.has(id)
-}
-
-function toggleExpanded(id: string) {
-  const next = new Set(expandedControlIds.value)
-  if (next.has(id)) next.delete(id)
-  else next.add(id)
-  expandedControlIds.value = next
+// Infer display hierarchy exclusively from accountHeaderName, not parent IDs.
+const nameTree = computed(() => buildControlNameTree(controls.value.filter(control => !groupFilter.value || control.accountGroupId === groupFilter.value)))
+const matchingRows = computed(() => filterControlNameTree(nameTree.value, search.value))
+const visibleControls = computed(() => matchingRows.value.filter(row => row.control).map(row => row.control!))
+const treeRows = computed(() => matchingRows.value.filter(row => isSearching.value || !row.ancestors.some(path => collapsedNamePaths.value.has(path))))
+function isExpanded(path: string) { return isSearching.value || !collapsedNamePaths.value.has(path) }
+function toggleExpanded(path: string) {
+  const next = new Set(collapsedNamePaths.value)
+  if (next.has(path)) next.delete(path)
+  else next.add(path)
+  collapsedNamePaths.value = next
 }
 
 watch(() => form.accountGroupId, (groupId) => {
@@ -310,18 +247,28 @@ async function deleteControl() {
         </div>
       </div>
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[820px] text-left">
-          <thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-5 py-3">Hierarchy name</th><th class="px-4 py-3">Chart of account</th><th class="px-4 py-3">Account range</th><th class="px-4 py-3 text-right">Capacity</th><th class="px-4 py-3">Status</th><th class="w-24 px-4 py-3 text-right">Actions</th></tr></thead>
+        <table class="w-full min-w-[680px] text-left">
+          <thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-5 py-3">Hierarchy name</th><th class="px-4 py-3">Account range</th><th class="px-4 py-3 text-right">Capacity</th><th class="px-4 py-3">Status</th><th class="w-24 px-4 py-3 text-right">Actions</th></tr></thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-for="{ control, depth, hasChildren } in treeRows" :key="control.id" class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
-              <td class="px-5 py-3.5"><div class="flex items-center gap-2" :style="{ paddingLeft: `${depth * 20}px` }"><button v-if="hasChildren" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 hover:text-slate-700 disabled:cursor-default dark:hover:bg-slate-800 dark:hover:text-white" :disabled="isSearching" :aria-label="isExpanded(control.id) ? 'Collapse child controls' : 'Expand child controls'" :aria-expanded="isExpanded(control.id)" @click="toggleExpanded(control.id)"><ChevronDown v-if="isExpanded(control.id)" :size="14" /><ChevronRight v-else :size="14" /></button><span v-else class="w-7 shrink-0" /><span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-slate-500 ring-1 ring-slate-100 dark:bg-slate-800 dark:ring-slate-700"><span class="text-[10px] font-bold">{{ control.accountHeaderName.slice(0, 2).toUpperCase() }}</span></span><span><span class="block text-xs font-semibold text-slate-800 dark:text-slate-200">{{ control.accountHeaderName }}</span><span v-if="control.parentAccountHeaderId" class="mt-0.5 block text-[10px] text-slate-400">{{ setup.accountControlPath(control.id) }}</span></span></div></td>
-              <td class="px-4 py-3.5 text-xs text-slate-500 dark:text-slate-400">{{ setup.accountHeadPath(control.accountGroupId) }}</td>
-              <td class="px-4 py-3.5 font-mono text-xs text-slate-700 dark:text-slate-300">{{ control.minAccount }}–{{ control.maxAccount }}</td>
-              <td class="px-4 py-3.5 text-right text-xs tabular-nums text-slate-500 dark:text-slate-400">{{ (control.maxAccount - control.minAccount + 1).toLocaleString() }}</td>
-              <td class="px-4 py-3.5"><span class="inline-flex items-center gap-1.5 text-[10px] font-medium" :class="control.isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-400'"><span class="h-1.5 w-1.5 rounded-full" :class="control.isActive ? 'bg-emerald-500' : 'bg-slate-300'" />{{ control.isActive ? 'Active' : 'Inactive' }}</span></td>
-              <td class="px-4 py-3.5 text-right"><button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Edit account control" :disabled="loading || saving" @click="openEdit(control)"><Pencil :size="14" /></button><button class="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Delete account control" :title="deleteControlTitle(control.id)" :disabled="!canDelete(control.id)" @click="deleteError = ''; deleteTarget = control.id"><Trash2 :size="14" /></button></td>
+            <template v-for="row in treeRows" :key="row.key">
+              <tr v-if="!row.control" class="bg-slate-50/80 dark:bg-slate-900/60">
+                <td colspan="5" class="px-5 py-3">
+                  <button type="button" class="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200" :style="{ paddingLeft: `${Math.min(row.depth, 6) * 20}px` }" :disabled="isSearching" :aria-label="`${isExpanded(row.pathKey) ? 'Collapse' : 'Expand'} ${row.path}`" :aria-expanded="isExpanded(row.pathKey)" @click="toggleExpanded(row.pathKey)"><ChevronDown v-if="isExpanded(row.pathKey)" :size="14" /><ChevronRight v-else :size="14" />{{ row.label }}<span class="text-[10px] font-normal text-slate-400">Group</span></button>
+                </td>
+              </tr>
+              <tr v-else class="transition hover:bg-slate-50/70 dark:hover:bg-slate-900/40">
+                <td class="px-5 py-3.5"><div class="flex items-start gap-2" :style="{ paddingLeft: `${Math.min(row.depth, 6) * 20}px` }">
+                  <button v-if="row.hasChildren" type="button" class="flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" :disabled="isSearching" :aria-label="`${isExpanded(row.pathKey) ? 'Collapse' : 'Expand'} ${row.path}`" :aria-expanded="isExpanded(row.pathKey)" @click="toggleExpanded(row.pathKey)"><ChevronDown v-if="isExpanded(row.pathKey)" :size="14" /><ChevronRight v-else :size="14" /></button><span v-else class="w-7 shrink-0" />
+                  <span class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-brand-50 text-[10px] font-bold text-brand-700 dark:bg-slate-800 dark:text-brand-300">{{ row.label.slice(0, 2).toUpperCase() }}</span>
+                  <span><span class="block text-xs font-semibold text-slate-800 dark:text-slate-200">{{ row.label }}</span><span v-if="row.depth" class="mt-1 block text-[10px] text-slate-400">{{ row.path.split(' / ').slice(0, -1).join(' / ') }}</span></span>
+                </div></td>
+              <td class="px-4 py-3.5 font-mono text-xs text-slate-700 dark:text-slate-300">{{ row.control.minAccount }}–{{ row.control.maxAccount }}</td>
+              <td class="px-4 py-3.5 text-right text-xs tabular-nums text-slate-500 dark:text-slate-400">{{ (row.control.maxAccount - row.control.minAccount + 1).toLocaleString() }}</td>
+              <td class="px-4 py-3.5"><span class="inline-flex items-center gap-1.5 text-[10px] font-medium" :class="row.control.isActive ? 'text-emerald-700 dark:text-emerald-300' : 'text-slate-400'"><span class="h-1.5 w-1.5 rounded-full" :class="row.control.isActive ? 'bg-emerald-500' : 'bg-slate-300'" />{{ row.control.isActive ? 'Active' : 'Inactive' }}</span></td>
+              <td class="px-4 py-3.5 text-right"><button class="rounded-md p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" aria-label="Edit account control" :disabled="loading || saving" @click="openEdit(row.control)"><Pencil :size="14" /></button><button class="rounded-md p-1.5 text-slate-400 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Delete account control" :title="deleteControlTitle(row.control.id)" :disabled="!canDelete(row.control.id)" @click="deleteError = ''; deleteTarget = row.control.id"><Trash2 :size="14" /></button></td>
             </tr>
-            <tr v-if="!loading && !loadError && unitId && !visibleControls.length"><td colspan="6" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No control headers found</p><p class="mt-1 text-xs text-slate-400">Try another filter or add a control header to this chart.</p></td></tr>
+            </template>
+            <tr v-if="!loading && !loadError && unitId && !visibleControls.length"><td colspan="5" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No control headers found</p><p class="mt-1 text-xs text-slate-400">Try another filter or add a control header to this chart.</p></td></tr>
           </tbody>
         </table>
       </div>
@@ -330,13 +277,12 @@ async function deleteControl() {
 
     <div v-if="showForm" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" @click.self="!saving && (showForm = false)">
       <section class="max-h-[92vh] w-full max-w-[620px] overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl dark:border-slate-700 dark:bg-[#172321]">
-        <div class="flex items-start justify-between"><div><h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ editingId ? 'Edit account control' : 'New account control' }}</h2><p class="mt-1 text-xs text-slate-500">Set the chart head, parent header, and allowed account-number range.</p></div><button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" :disabled="saving" @click="showForm = false"><X :size="17" /></button></div>
+        <div class="flex items-start justify-between"><div><h2 class="text-lg font-semibold text-slate-900 dark:text-white">{{ editingId ? 'Edit account control' : 'New account control' }}</h2><p class="mt-1 text-xs text-slate-500">Select the chart head and allowed account-number range.</p></div><button class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" :disabled="saving" @click="showForm = false"><X :size="17" /></button></div>
         <form class="mt-5 space-y-4" @submit.prevent="saveControl"><fieldset :disabled="saving" class="space-y-4">
           <AccountControlPicker v-model="form.accountGroupId" kind="heads" :options="chartHeadOptions" :disabled="saving || loading" />
-          <div class="grid gap-4 sm:grid-cols-3">
+          <div class="grid gap-4 sm:grid-cols-2">
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Minimum account no.</span><input v-model.number="form.minAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
             <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Maximum account no.</span><input v-model.number="form.maxAccount" type="number" min="0" max="2147483647" step="1" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
-            <label class="block sm:col-span-1"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Parent header</span><select v-model="form.parentAccountHeaderId" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">No parent</option><option v-for="control in parentChoices" :key="control.id" :value="control.id">{{ setup.accountControlPath(control.id) }}</option></select></label>
           </div>
           <label class="flex items-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300"><input v-model="form.isActive" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" /> Active for account setup</label>
           <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }}</p>
