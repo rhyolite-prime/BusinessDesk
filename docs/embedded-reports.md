@@ -5,8 +5,9 @@
 Open **General Ledger → Reports → Chart of Accounts** at
 `/ledger/reports/chart-of-accounts`. The built-in report follows the supplied
 Chart of Accounts PDF: company/title header, grouped account numbers/names/
-currencies, and a dated BusinessDesk footer with page X of Y. Control-path and
-column headings repeat when a group continues onto another page.
+currencies, and a dated BusinessDesk footer with page X of Y. Column headings repeat on every PDF page. Account-type and control/sub-control
+headings form a nested hierarchy like the supplied sample; shared prefixes appear
+once per branch rather than as repeated slash-separated labels.
 
 Select an accounting unit, account type, status, and/or text search. Refresh
 fetches a new data snapshot. The generated timestamp uses the unit time zone.
@@ -39,7 +40,7 @@ service. Rendering/exports run only in the authenticated user's browser.
   print headers, fitted print width, and print footers with page fields. Account
   numbers remain text, preserving leading zeros. Strings are not formulas.
 - **Word (.docx):** real OOXML document with repeating company/title headers,
-  group/column table headers, non-splitting rows, and PAGE/NUMPAGES footer fields.
+  indented group headings, repeating column table headers, non-splitting rows, and PAGE/NUMPAGES footer fields.
 
 Excel and Word paginate in their respective applications, so their page counts
 may differ from PDF. Footer/print settings appear in their print/page-layout
@@ -102,3 +103,19 @@ After installing frontend dependencies:
   Covers 450 records over three API pages, actual PDF pages, navigation, zoom,
   all downloads, mobile fit, filters/races, empty results, upstream failure,
   missing company profile, and bearer-token forwarding.
+
+### Hierarchical Chart of Accounts layout
+
+The report adapter splits control names into path segments under their authoritative
+account type, normalizes only exact root aliases (Assets → Asset, Liabilities →
+Liability), and sorts branches segment-by-segment. Shared prefixes are emitted once,
+with increasing indentation, before their account rows. Controls with the same
+resolved path share a presentation group without dropping any account records.
+Missing metadata is still labeled explicitly. Filtering retains the hierarchy of
+matching accounts. This is a presentation transform, not a stored parent relation.
+
+`ReportSection.path` is optional: generic reports without it retain a single section
+heading. `reportHierarchyRows` is shared by PDF, Excel and Word. PDF uses a single
+flowing table with repeating column headings, wrapped non-splitting account rows,
+and page-break checks that keep group headings with account data. Header separator,
+page footers, color modes and full-PDF printing remain in place.

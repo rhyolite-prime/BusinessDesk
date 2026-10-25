@@ -7,7 +7,7 @@ const {chartOfAccountsReport:build}=await import(`data:text/javascript;base64,${
 const input={accounts:[{id:'b',accountType:0,accountHeaderId:'cash',accountNumber:'10010',accountName:'Cash ten',currencyId:null,status:'inactive'},{id:'a',accountType:0,accountHeaderId:'cash',accountNumber:'10002',accountName:'Cash two',currencyId:'usd',status:'active'},{id:'c',accountType:1,accountHeaderId:'due',accountNumber:'20000',accountName:'Payable',currencyId:null,status:'active'}],controls:[{id:'cash',accountHeaderName:'Assets / Cash'},{id:'due',accountHeaderName:'Liabilities / Accounts Payable'}],currencies:[{id:'ghs',name:'Ghana Cedi',code:'GHS'},{id:'usd',name:'US Dollar',code:'USD'}],companyName:'Example',unitName:'Head Office',baseCurrencyId:'ghs',generatedAt:'25 Oct 2026, 12:00'}
 const snapshot=JSON.stringify(input),report=build(input)
 assert.equal(report.sections.length,2)
-assert.equal(report.sections[0].title,'Assets / Cash')
+assert.equal(report.sections[0].title,'Asset / Cash')
 assert.deepEqual(report.sections[0].rows.map(row=>row[0]),['10002','10010'])
 assert.equal(report.sections[0].rows[0][2],'US Dollar')
 assert.equal(report.sections[0].rows[1][2],'Ghana Cedi')
@@ -24,3 +24,19 @@ assert.equal(build({...input,currencies:[]}).sections[0].rows[1][2],'Unit base c
 assert.equal(build({...input,companyName:''}).companyName,'Company profile not configured')
 assert.equal(JSON.stringify(input),snapshot,'source records remain immutable')
 console.log('17 chart-of-accounts report checks passed')
+const hierarchySource=await readFile(new URL('../../frontend/app/features/reports/report-hierarchy.ts',import.meta.url),'utf8')
+const hierarchyJs=ts.transpileModule(hierarchySource,{compilerOptions:{target:ts.ScriptTarget.ES2022,module:ts.ModuleKind.ES2022}}).outputText
+const {reportHierarchyRows}=await import(`data:text/javascript;base64,${Buffer.from(hierarchyJs).toString('base64')}`)
+const nested={...input,controls:[...input.controls,{id:'bank',accountHeaderName:'Assets / Current Assets / Bank'},{id:'hand',accountHeaderName:'Assets / Current Assets / Cash'},{id:'asset',accountHeaderName:'Assets'},{id:'cash2',accountHeaderName:'Assets / Cash'},{id:'management',accountHeaderName:'Asset Management'}],accounts:[...input.accounts,{...input.accounts[0],id:'bank1',accountHeaderId:'bank'},{...input.accounts[0],id:'hand1',accountHeaderId:'hand'},{...input.accounts[0],id:'root',accountHeaderId:'asset'},{...input.accounts[0],id:'dupe-path',accountHeaderId:'cash2'},{...input.accounts[0],id:'management',accountHeaderId:'management'}]}
+const hierarchical=build(nested),rendered=reportHierarchyRows(hierarchical),headings=rendered.filter(row=>row.kind==='heading')
+assert.equal(headings.filter(row=>row.label==='Asset').length,1)
+assert.equal(headings.filter(row=>row.label==='Current Assets').length,1)
+assert.equal(headings.find(row=>row.label==='Bank').depth,2)
+assert.equal(headings.find(row=>row.label==='Asset Management').depth,1,'strip only exact root aliases')
+assert.equal(rendered.filter(row=>row.kind==='record').length,nested.accounts.length,'all accounts retained, including duplicate control paths')
+assert.equal(hierarchical.sections.find(section=>section.title==='Asset / Cash').rows.length,3)
+assert.deepEqual(headings.map(row=>row.label),['Asset','Asset Management','Cash','Current Assets','Bank','Cash','Liability','Accounts Payable'])
+assert.equal(reportHierarchyRows(build({...nested,query:'Bank'}))[0].label,'Asset','filtered report retains full heading chain')
+assert.equal(reportHierarchyRows(build({...nested,query:'Bank'}))[2].label,'Bank')
+assert.deepEqual(reportHierarchyRows(build({...input,accounts:[]})),[])
+console.log('10 nested report hierarchy checks passed')
