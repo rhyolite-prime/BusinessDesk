@@ -67,7 +67,7 @@ async function verify() {
   <div>
     <div v-if="step === 'credentials'">
       <h1 class="text-2xl font-bold text-ink">Sign in</h1>
-      <p class="text-sm text-ink-faint mt-1">Enter your tenant account and user credentials.</p>
+      <p class="text-sm text-ink-faint mt-1">Enter your account and user credentials.</p>
 
       <form class="space-y-4 mt-7" @submit.prevent="signIn">
         <FormField label="Account ID" required>
