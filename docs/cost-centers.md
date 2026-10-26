@@ -142,7 +142,7 @@ clearing search restores the user's collapsed state. Parent choices, descendant
 exclusion, CRUD UUIDs and deletion protections are unchanged.
 
 The journal header and each line use the shared searchable picker, grouped by
-root cost center, displaying the leaf name plus its ancestor breadcrumb. Search
+immediate parent UUID, with its full path as the header and displaying the leaf name plus its ancestor breadcrumb. Search
 matches the full path, including options beyond 20 records. Not configured clears
 to null. Header changes still apply to all existing lines and default new lines;
 line overrides remain independent. Mixed/unavailable persisted selections remain
@@ -159,3 +159,11 @@ and `test/ledger/cost_center_picker_browser_test.mjs` (built Nuxt + controlled
 upstream, desktop/mobile). A parent-ID contract assertion is also added to
 `test/journals/service_pg_test.cc`; running it requires the disposable PostgreSQL
 and native dependencies documented by test/journals/run_pg.sh.
+
+
+Journal picker groups use `parentId` directly, not just the root ancestor or a
+parent's display name. Grandchildren have a separate immediate-parent header
+(e.g. Head office / Operations). Null-parent entries are selectable under
+Top-level cost centers. Distinct parents sharing a name retain separate groups
+keyed by UUID. Missing parents receive an explicit Unavailable parent header;
+records are not dropped. Searching filters group membership without changing IDs.

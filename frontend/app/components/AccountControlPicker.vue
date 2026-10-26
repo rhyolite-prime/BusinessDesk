@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
-interface ControlOption { id: string; label: string; type: string; min?: number; max?: number }
+interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
 const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers'; label?: string; unavailableText?: string }>()
 const copy = computed(() => props.kind === 'cost-centers' ? {
   label: 'Cost center', plural: 'cost centers', search: 'Search cost centers',
@@ -25,14 +25,19 @@ const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null)
 const open = ref(false), query = ref(''), active = ref(-1)
 const fieldLabel = computed(() => props.label || copy.value.label)
-const types = computed(() => props.kind === 'cost-centers' ? [...new Set(props.options.map(option => option.type))].sort((a, b) => a.localeCompare(b)) : ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'])
+const optionGroupKey = (option: ControlOption) => props.kind === 'cost-centers' ? option.groupKey || option.type : option.type
+const groupDefinitions = computed(() => {
+  if (props.kind !== 'cost-centers') return ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => ({ key: type, type }))
+  const definitions = new Map(props.options.map(option => [optionGroupKey(option), { key: optionGroupKey(option), type: option.type }]))
+  return [...definitions.values()].sort((a, b) => a.key === 'root' ? b.key === 'root' ? 0 : -1 : b.key === 'root' ? 1 : a.type.localeCompare(b.type) || a.key.localeCompare(b.key))
+})
 const selected = computed(() => props.options.find(option => option.id === props.modelValue))
-const ordered = computed(() => [...props.options].sort((a, b) => types.value.indexOf(a.type) - types.value.indexOf(b.type) || (a.min ?? 0) - (b.min ?? 0) || (a.max ?? 0) - (b.max ?? 0) || a.label.localeCompare(b.label)))
+const ordered = computed(() => [...props.options].sort((a, b) => groupDefinitions.value.findIndex(group => group.key === optionGroupKey(a)) - groupDefinitions.value.findIndex(group => group.key === optionGroupKey(b)) || (a.min ?? 0) - (b.min ?? 0) || (a.max ?? 0) - (b.max ?? 0) || a.label.localeCompare(b.label)))
 const filtered = computed(() => {
   const terms = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
   return ordered.value.filter(option => terms.every(term => `${option.type} ${option.label} ${option.min ?? ''} ${option.max ?? ''}`.toLowerCase().includes(term)))
 })
-const groups = computed(() => types.value.map(type => ({ type, options: filtered.value.filter(option => option.type === type) })).filter(group => group.options.length))
+const groups = computed(() => groupDefinitions.value.map(group => ({ ...group, options: filtered.value.filter(option => optionGroupKey(option) === group.key) })).filter(group => group.options.length))
 const title = (option: ControlOption) => option.label.split(' / ').at(-1)
 const hierarchy = (option: ControlOption) => option.label.split(' / ').slice(0, -1).join(' / ')
 async function expand() {
@@ -78,7 +83,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
       <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
-        <div v-for="group in groups" :key="group.type" role="group" :aria-label="group.type">
+        <div v-for="group in groups" :key="group.key" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"
             class="flex cursor-pointer items-start gap-2 border-b border-slate-100 px-3 py-2.5 last:border-0 dark:border-slate-800" :class="active === filtered.indexOf(option) ? 'bg-brand-50 dark:bg-slate-800' : 'hover:bg-slate-50 dark:hover:bg-slate-800'" @pointerdown.prevent @click="choose(option)" @pointermove="active = filtered.indexOf(option)">

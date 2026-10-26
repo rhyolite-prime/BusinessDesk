@@ -80,7 +80,8 @@ try {
    await page.goto(base+'/ledger/journals/new?accountingUnitId='+unit,{waitUntil:'networkidle'})
    const header=page.getByRole('button',{name:/^Header cost center/}),linePickers=()=>page.getByRole('button',{name:/^Cost center /}),pickerSearch=page.getByRole('combobox',{name:'Search cost centers'}),list=page.getByRole('listbox',{name:'Cost centers'})
    await expect(header).toBeEnabled();await header.click();check(await list.getByRole('option').count()===40,'all cost centers beyond first 20 available')
-   check(JSON.stringify(await list.getByRole('group').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label'))))===JSON.stringify(['Branch','Head office']),'choices grouped by top-level center')
+   check(JSON.stringify(await list.getByRole('group').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label'))))===JSON.stringify(['Top-level cost centers','Branch','Head office','Head office / Operations']),'choices grouped under their immediate parent headers')
+   check(await list.getByRole('group',{name:'Head office / Operations',exact:true}).getByRole('option').count()===1,'grandchild is grouped under immediate parent');check(await list.getByRole('group',{name:'Top-level cost centers',exact:true}).getByRole('option').count()===2,'root centers have their own header');
    check((await list.boundingBox()).height<=256,'picker list bounded')
    await pickerSearch.fill('Head office Operations Team');await expect(list.getByRole('option')).toHaveCount(1);await pickerSearch.press('Enter');await expect(header).toContainText('Head office / Operations / Team');await expect(linePickers()).toHaveCount(2);for(const button of await linePickers().all())await expect(button).toContainText('Head office / Operations / Team');checks++
    await page.getByRole('button',{name:'Add line',exact:true}).click();await expect(linePickers()).toHaveCount(3);await expect(linePickers().last()).toContainText('Head office / Operations / Team');checks++
