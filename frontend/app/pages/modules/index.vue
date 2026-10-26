@@ -60,7 +60,7 @@ async function signOut() {
     <div class="mx-auto max-w-[1600px] px-4 pb-8 pt-5 sm:px-6 lg:px-7">
       <header class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">BusinessDesk ERP</p>
+          <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">BusinessDesk 720 ERP</p>
           <h1 class="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-slate-900 dark:text-white">Module manager</h1>
           <p class="mt-1 max-w-2xl text-[11px] leading-5 text-slate-500 dark:text-slate-400">Choose a workspace for finance, operations, people, or your industry workflows.</p>
           <p class="mt-1.5 text-[10px] text-slate-400">Account: <span class="font-medium text-slate-500 dark:text-slate-300">{{ accountId }}</span></p>

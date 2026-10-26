@@ -46,7 +46,7 @@ onMounted(initializeTheme)
       </main>
       <ToastHost />
       <footer class="px-4 pb-6 pt-2 text-center text-[11px] text-slate-400 sm:px-6 lg:px-9">
-        BusinessDesk ERP · Payroll workspace · Preview data only
+        BusinessDesk 720 ERP · Payroll workspace · Preview data only
       </footer>
     </div>
   </div>
