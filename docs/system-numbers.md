@@ -154,3 +154,41 @@ Optionally set `SYSTEM_NUMBER_TEST_SANITIZERS` to
 `-fsanitize=address,undefined -fno-omit-frame-pointer -g`.
 No full live Drogon HTTP/JWT/DB deployment or concurrent allocation testing is
 claimed by the transport-seam and mock-upstream tests.
+
+## Host: sync templates to an existing tenant
+
+On **Host → System numbers**, use **Sync system numbers to a tenant**. Search
+for an organization/account ID, select it, choose a mode, and type `SYNC`.
+
+- **Override by module and key**: case-insensitive key matching within a module;
+  overwrite all numbering fields (including `lastNo`), preserve matching IDs,
+  and copy missing host templates. Archived copies are restored. A source copy
+  whose key was renamed is reset to its host template when the host key is
+  missing. Other tenant-only entries are retained.
+- **Hard-delete all and recreate**: permanently remove every system-number row
+  for the selected tenant, including soft-deleted rows, then insert fresh UUIDs
+  from live host templates. This does not delete business documents.
+
+**Warning:** both modes copy the host's Last No. This may reuse previously
+issued numbers. Verify counters before posting new documents. Hard replacement
+cannot be undone through the application.
+
+`POST /api/v1/host/system-numbers/sync` accepts exactly:
+`{"tenantId":"<uuid>","mode":"override|replace","confirmation":"SYNC"}`.
+The same-origin frontend proxy is `POST /api/host/system-numbers/sync`.
+Only a live, active, unlocked host administrator can invoke it. Tenant identity
+cannot invoke the service. The selected tenant must not be deleted. No tenant
+or audit identity is taken from client-provided credentials.
+
+The operation uses one transaction, locks the target tenant and the numbering
+table against concurrent template/counter writes, and awaits commit. Empty host
+templates refuse either mode (especially preventing accidental destructive
+replacement). Errors roll back the entire operation. Responses report
+`tenantId`, `mode`, `updated`, `copied` (inserted/restored/reset source copies),
+and `deleted` (hard-deleted rows). Created/modified actor fields use the host
+administrator's authenticated ID. Unique conflicts are returned without partial
+changes. No database migration is required.
+
+Regression: `test/system_numbers/run_pg.sh` runs real PostgreSQL transaction,
+authorization, key override, archived restoration, tenant isolation, replacement,
+empty-template protection and commit-rollback checks.

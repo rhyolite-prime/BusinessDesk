@@ -40,9 +40,9 @@ int main(){
  };
  // Dedicated disposable database/schema only. Setup uses individual statements for execParams.
  sql("DROP SCHEMA IF EXISTS system_number_test CASCADE");sql("CREATE SCHEMA system_number_test");sql("SET search_path TO system_number_test");
- sql("CREATE TABLE tenants(id uuid PRIMARY KEY)");sql("CREATE TABLE users(id uuid PRIMARY KEY,is_deleted boolean DEFAULT false,is_active boolean DEFAULT true,is_locked_out boolean DEFAULT false,is_host_admin_user boolean DEFAULT false)");
+ sql("CREATE TABLE tenants(id uuid PRIMARY KEY,is_deleted boolean DEFAULT false)");sql("CREATE TABLE users(id uuid PRIMARY KEY,is_deleted boolean DEFAULT false,is_active boolean DEFAULT true,is_locked_out boolean DEFAULT false,is_host_admin_user boolean DEFAULT false)");
  std::ifstream migration("database/migrations/006_system_numbers.sql");std::stringstream source;source<<migration.rdbuf();std::stringstream statements(source.str());std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);
- sql("INSERT INTO tenants VALUES($1),($2)",{tenant,other});sql("INSERT INTO users(id) VALUES($1),($2)",{actor,actor2});
+ sql("INSERT INTO tenants(id) VALUES($1),($2)",{tenant,other});sql("INSERT INTO users(id) VALUES($1),($2)",{actor,actor2});
  // Prove this test uses the real binary protocol, not a text-only approximation.
  drogon::testParameterWidths={4};bool reproduced=false;
  try {sql("SELECT 1 LIMIT $1",{20});} catch(const std::exception& e) {reproduced=std::string(e.what()).find("insufficient data left in message")!=std::string::npos;}
@@ -87,9 +87,35 @@ int main(){
  body["prefix"]="HOST-";check(call("update",id,body).success,"host updates template");
  check(call("get",copy,{},false,{tenant,actor2}).result["prefix"]=="OWN-","host update preserves tenant settings");
  drogon::TestTransaction::failCommit=true;body["prefix"]="FAIL-";r=call("update",id,body);check(!r.success,"commit failure reported");drogon::TestTransaction::failCommit=false;check(call("get",id).result["prefix"]=="HOST-","failed commit rolls back");
+ Json::Value sync;sync["tenantId"]=tenant;sync["mode"]="override";sync["confirmation"]="SYNC";
+ check(!call("sync","",sync,false,{tenant,actor2}).success,"tenant cannot sync");
+ check(!call("sync","",sync,true,{"",actor2}).success,"ordinary host cannot sync");
+ auto invalid=sync;invalid["confirmation"]="";check(!call("sync","",invalid).success,"confirmation required");
+ invalid=sync;invalid["mode"]="unknown";check(!call("sync","",invalid).success,"invalid mode rejected");
+ invalid=sync;invalid["tenantId"]="bad";check(!call("sync","",invalid).success,"invalid tenant rejected");
+ sql("UPDATE tenants SET is_deleted=true WHERE id=$1",{tenant});check(!call("sync","",sync).success,"deleted tenant rejected");sql("UPDATE tenants SET is_deleted=false WHERE id=$1",{tenant});
+ auto extra=body;extra["key"]="EXTRA";auto extraHost=call("create","",extra).result["id"].asString();
+ sql("INSERT INTO core_system_numbers (tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,'TENANT-ONLY',prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3",{tenant,actor,extraHost});
+ check(call("delete",extraHost).success,"archive extra host template");
+ r=call("sync","",sync);check(r.success&&r.result["updated"]==1,"override existing key");
+ check(call("get",copy,{},false,{tenant,actor2}).result["prefix"]=="HOST-","override values copied and ID preserved");
+ check(call("list","",{},false,{tenant,actor2}).result["totalCount"]==2,"tenant-only keys retained");
+ check(call("get",otherCopy,{},false,{other,actor2}).result["prefix"]=="JV-","sync isolates other tenant");
+ sql("UPDATE core_system_numbers SET is_deleted=true WHERE id=$1",{copy});
+ r=call("sync","",sync);check(r.success&&r.result["copied"]==1,"archived source restored");
+ check(call("get",copy,{},false,{tenant,actor2}).success,"restored copy retains ID");
+ sync["mode"]="replace";
+ drogon::TestTransaction::failCommit=true;r=call("sync","",sync);check(!r.success,"replace commit failure reported");drogon::TestTransaction::failCommit=false;
+ check(call("get",copy,{},false,{tenant,actor2}).success,"failed replace rolled back deleted rows");
+ sql("UPDATE core_system_numbers SET is_deleted=true WHERE tenant_id=$1 AND key='TENANT-ONLY'",{tenant});
+ r=call("sync","",sync);check(r.success&&r.result["deleted"]==2&&r.result["copied"]==1,"replace deletes archived and live rows then copies");
+ check(!call("get",copy,{},false,{tenant,actor2}).success,"replace creates new IDs");
+ check(sql("SELECT count(*) AS n FROM core_system_numbers WHERE tenant_id=$1",{tenant})[0].value["n"]==1,"replace removes tenant-only archived row");
+ auto newCopy=call("list","",{},false,{tenant,actor2}).result["data"][0]["id"].asString();
  check(call("delete",id).success,"host soft deletes template");check(!call("get",id).success,"deleted template hidden");check(!call("update",id,body).success,"deleted template cannot be edited");
  check(sql("SELECT * FROM core_system_numbers WHERE id=$1",{id})[0].value["deleted_by_user_id"]==actor,"delete audit");
- check(call("get",copy,{},false,{tenant,actor2}).success,"host deletion preserves copy");check(call("update",copy,body,false,{tenant,actor2}).success,"copy remains editable after host deletion");
+ check(call("get",newCopy,{},false,{tenant,actor2}).success,"host deletion preserves copy");check(call("update",newCopy,body,false,{tenant,actor2}).success,"copy remains editable after host deletion");
+ check(!call("sync","",sync).success,"empty host templates prevent destructive sync");check(call("get",newCopy,{},false,{tenant,actor2}).success,"empty template rejection preserves rows");
  sql("DROP SCHEMA system_number_test CASCADE");drogon::app().getDbClient()->execute={};PQfinish(db);
  std::cout<<checks<<" system number PostgreSQL checks passed\n";
 }

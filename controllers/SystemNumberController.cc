@@ -21,3 +21,5 @@ drogon::Task<drogon::HttpResponsePtr> SystemNumberController::sharedGet(drogon::
 drogon::Task<drogon::HttpResponsePtr> SystemNumberController::sharedCreate(drogon::HttpRequestPtr req) { co_return co_await handle(req,"create",false,std::string{}); }
 drogon::Task<drogon::HttpResponsePtr> SystemNumberController::sharedUpdate(drogon::HttpRequestPtr req, std::string id) { co_return co_await handle(req,"update",false,id); }
 drogon::Task<drogon::HttpResponsePtr> SystemNumberController::sharedRemove(drogon::HttpRequestPtr req, std::string id) { co_return co_await handle(req,"delete",false,id); }
+
+drogon::Task<drogon::HttpResponsePtr> SystemNumberController::hostSync(drogon::HttpRequestPtr req) { co_return co_await handle(req,"sync",true,std::string{}); }

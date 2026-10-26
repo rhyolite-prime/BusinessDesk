@@ -2,4 +2,4 @@
 definePageMeta({ layout: 'host-admin' })
 useHead({ title: 'Host system numbers' })
 </script>
-<template><SystemNumberCatalog host /></template>
+<template><div class="space-y-6"><SystemNumberCatalog host /><SystemNumberTenantSync /></div></template>

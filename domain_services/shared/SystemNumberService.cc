@@ -34,6 +34,37 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,std::string op,std::string
   auto admins=co_await db->execSqlCoro("SELECT id FROM users WHERE id=$1 AND is_deleted=false AND is_active=true AND is_locked_out=false AND is_host_admin_user=true",who.userId);
   if(admins.empty())co_return fail("forbidden","Host administrator required.");
  }
+ if(op=="sync") {
+  const auto tenant=body["tenantId"].asString();
+  // Serialize syncs against this tenant, including destructive replacement.
+  auto target=co_await db->execSqlCoro("SELECT id FROM tenants WHERE id=$1 AND is_deleted=false FOR UPDATE",tenant);
+  if(target.empty())co_return fail("not_found","Tenant not found.");
+  // A table lock keeps template edits and tenant counter writes out of the snapshot.
+  co_await db->execSqlCoro("LOCK TABLE core_system_numbers IN SHARE ROW EXCLUSIVE MODE");
+  auto templates=co_await db->execSqlCoro("SELECT * FROM core_system_numbers WHERE tenant_id IS NULL AND is_deleted=false ORDER BY module_id,lower(key),id");
+  if(templates.empty())co_return fail("conflict","No host templates are available; nothing was changed.");
+  int deleted=0,updated=0,created=0;
+  if(body["mode"].asString()=="replace") {
+   auto removed=co_await db->execSqlCoro("DELETE FROM core_system_numbers WHERE tenant_id=$1 RETURNING id",tenant);
+   deleted=static_cast<int>(removed.size());
+  }
+  for(const auto& source:templates) {
+   const auto sourceId=source["id"].as<std::string>();
+   auto existing=co_await db->execSqlCoro("SELECT id FROM core_system_numbers WHERE tenant_id=$1 AND module_id=$2::integer AND lower(key)=lower($3) AND is_deleted=false",tenant,source["module_id"].as<int>(),source["key"].as<std::string>());
+   if(!existing.empty()) {
+    co_await db->execSqlCoro("UPDATE core_system_numbers t SET item_name=s.item_name,key=s.key,prefix=s.prefix,suffix=s.suffix,format_pattern=s.format_pattern,padding=s.padding,last_no=s.last_no,last_modified_at=now(),last_modified_by_user_id=$3 FROM core_system_numbers s WHERE t.id=$1 AND s.id=$2",existing[0]["id"].as<std::string>(),sourceId,who.userId);
+    ++updated;
+   } else {
+    // Revive an archived snapshot (or renamed source copy) rather than violate the source index.
+    auto copied=co_await db->execSqlCoro("INSERT INTO core_system_numbers (tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,$3 FROM core_system_numbers WHERE id=$2 ON CONFLICT (tenant_id,source_template_id) WHERE tenant_id IS NOT NULL DO UPDATE SET module_id=EXCLUDED.module_id,item_name=EXCLUDED.item_name,key=EXCLUDED.key,prefix=EXCLUDED.prefix,suffix=EXCLUDED.suffix,format_pattern=EXCLUDED.format_pattern,padding=EXCLUDED.padding,last_no=EXCLUDED.last_no,is_deleted=false,deleted_at=NULL,deleted_by_user_id=NULL,last_modified_at=now(),last_modified_by_user_id=$3 RETURNING id",tenant,sourceId,who.userId);
+    ++created;
+   }
+  }
+  dto::BaseApiResponse result;result.success=true;
+  result.result["tenantId"]=tenant;result.result["mode"]=body["mode"];
+  result.result["deleted"]=deleted;result.result["updated"]=updated;result.result["copied"]=created;
+  co_return result;
+ }
  // A UUID bind is retained in both SQL shapes; it never comes from client JSON.
  const std::string scope=host?"tenant_id IS NULL AND $1::uuid IS NOT NULL AND is_deleted=false":"tenant_id=$1::uuid AND is_deleted=false";
  const std::string scopeId=host?who.userId:who.tenantId;
@@ -74,7 +105,11 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,std::string op,std::string
 }
 drogon::Task<dto::BaseApiResponse> SystemNumberService::execute(std::string op,std::string id,Json::Value body,int page,int size,std::string query,utils::AuditIdentity who,bool host){
  if(!uuid(who.userId)||(host?who.hasTenant():!uuid(who.tenantId)))co_return fail("unauthorized","Authentication with the correct scope is required.");
- if(op!="list"&&op!="get"&&op!="create"&&op!="update"&&op!="delete")co_return fail("validation_error","Invalid operation.");
+ if(op!="list"&&op!="get"&&op!="create"&&op!="update"&&op!="delete"&&op!="sync")co_return fail("validation_error","Invalid operation.");
+ if(op=="sync") {
+  if(!host)co_return fail("forbidden","Host administrator required.");
+  if(!body.isObject()||body.size()!=3||!body["tenantId"].isString()||!uuid(body["tenantId"].asString())||!body["mode"].isString()||(body["mode"].asString()!="override"&&body["mode"].asString()!="replace")||!body["confirmation"].isString()||body["confirmation"].asString()!="SYNC")co_return fail("validation_error","Select a tenant, sync mode and type SYNC to confirm.");
+ }
  if(!host&&(op=="create"||op=="delete"))co_return fail("forbidden","Tenant copies may only be edited.");
  if((op=="get"||op=="update"||op=="delete")&&!uuid(id))co_return fail("validation_error","Invalid ID.");
  if(page<1||page>1000000||size<1||size>200||query.size()>100)co_return fail("validation_error","Invalid list parameters.");
