@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' }>()
-const copy = computed(() => props.kind === 'parents' ? {
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers'; label?: string; unavailableText?: string }>()
+const copy = computed(() => props.kind === 'cost-centers' ? {
+  label: 'Cost center', plural: 'cost centers', search: 'Search cost centers',
+  placeholder: 'Not configured', unavailable: 'Unavailable cost center (replace)',
+  hint: 'Search name or hierarchy…', empty: 'No matching cost centers.',
+} : props.kind === 'parents' ? {
   label: 'Parent head', plural: 'parent heads', search: 'Search parent heads',
   placeholder: 'Top level (no parent)', unavailable: 'Current parent is inactive/unavailable — select another',
   hint: 'Search name, hierarchy or type…', empty: 'No matching parent heads.',
@@ -20,14 +24,15 @@ const optionLabel = (option: ControlOption) => option.min !== undefined && optio
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null)
 const open = ref(false), query = ref(''), active = ref(-1)
-const types = ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense']
+const fieldLabel = computed(() => props.label || copy.value.label)
+const types = computed(() => props.kind === 'cost-centers' ? [...new Set(props.options.map(option => option.type))].sort((a, b) => a.localeCompare(b)) : ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'])
 const selected = computed(() => props.options.find(option => option.id === props.modelValue))
-const ordered = computed(() => [...props.options].sort((a, b) => types.indexOf(a.type) - types.indexOf(b.type) || (a.min ?? 0) - (b.min ?? 0) || (a.max ?? 0) - (b.max ?? 0) || a.label.localeCompare(b.label)))
+const ordered = computed(() => [...props.options].sort((a, b) => types.value.indexOf(a.type) - types.value.indexOf(b.type) || (a.min ?? 0) - (b.min ?? 0) || (a.max ?? 0) - (b.max ?? 0) || a.label.localeCompare(b.label)))
 const filtered = computed(() => {
   const terms = query.value.trim().toLowerCase().split(/\s+/).filter(Boolean)
   return ordered.value.filter(option => terms.every(term => `${option.type} ${option.label} ${option.min ?? ''} ${option.max ?? ''}`.toLowerCase().includes(term)))
 })
-const groups = computed(() => types.map(type => ({ type, options: filtered.value.filter(option => option.type === type) })).filter(group => group.options.length))
+const groups = computed(() => types.value.map(type => ({ type, options: filtered.value.filter(option => option.type === type) })).filter(group => group.options.length))
 const title = (option: ControlOption) => option.label.split(' / ').at(-1)
 const hierarchy = (option: ControlOption) => option.label.split(' / ').slice(0, -1).join(' / ')
 async function expand() {
@@ -59,20 +64,20 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
 
 <template>
   <div ref="root" @focusout="event => { if (!root?.contains(event.relatedTarget as Node)) open = false }">
-    <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ copy.label }}</span>
+    <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ fieldLabel }}</span>
     <button ref="trigger" type="button" :disabled="disabled" :aria-labelledby="`${id}-label ${id}-value`" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="`${id}-list`"
       class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900" @click="open ? close() : expand()" @keydown.down.prevent="expand">
-      <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? copy.unavailable : copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
+      <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
     </button>
     <div v-if="open" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-      <button v-if="kind === 'parents'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
-        <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" />Top level (no parent)
+      <button v-if="kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
+        <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)' }}
       </button>
       <div class="relative border-b border-slate-100 p-2 dark:border-slate-800">
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
-      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
+      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
         <div v-for="group in groups" :key="group.type" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"

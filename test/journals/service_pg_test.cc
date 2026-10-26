@@ -118,6 +118,11 @@ int main(){
 
  const std::string center="70000000-0000-4000-8000-000000000001",center2="70000000-0000-4000-8000-000000000002";
  sql("INSERT INTO core_cost_centers(id,tenant_id,name,created_by_user_id) VALUES($1,$3,'Head office',$4),($2,$3,'Branch',$4)",{center,center2,tenant,actor});
+ sql("UPDATE core_cost_centers SET parent_id=$2 WHERE id=$1",{center2,center});
+ auto centerOptions=call("options");bool rootFound=false,childFound=false;
+ for(const auto& c:centerOptions.result["costCenters"]){if(c["id"]==center)rootFound=c["parentId"].isNull();if(c["id"]==center2)childFound=c["parentId"]==center;}
+ check(rootFound&&childFound,"journal cost center options include null roots and parent IDs for hierarchy");
+ sql("UPDATE core_cost_centers SET parent_id=NULL WHERE id=$1",{center2});
  auto orgBody=input;for(auto& l:orgBody["lines"])l["organizationUnitId"]=center;
  auto orgSaved=create(orgBody);check(orgSaved.success&&orgSaved.result["lines"][0]["organizationUnitId"]==center&&orgSaved.result["lines"][0]["organizationUnitName"]=="Head office","organization id and server-derived name saved on create");
  auto orgId=orgSaved.result["id"].asString();orgBody["version"]=orgSaved.result["version"];for(int i=0;i<2;i++){orgBody["lines"][i]["id"]=orgSaved.result["lines"][i]["id"];orgBody["lines"][i]["organizationUnitId"]=center2;}

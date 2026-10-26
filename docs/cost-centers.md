@@ -132,3 +132,30 @@ Optional `COST_CENTER_TEST_SANITIZERS`:
 `-fsanitize=address,undefined -fno-omit-frame-pointer -g`.
 Tests do not constitute a full live Drogon HTTP/JWT/PostgreSQL deployment or
 comprehensive concurrent financial-posting verification.
+
+
+## Expandable directory and journal pickers
+
+Cost-center rows can be expanded/collapsed individually or using Expand all /
+Collapse all. Search temporarily reveals matching branches and their ancestors;
+clearing search restores the user's collapsed state. Parent choices, descendant
+exclusion, CRUD UUIDs and deletion protections are unchanged.
+
+The journal header and each line use the shared searchable picker, grouped by
+root cost center, displaying the leaf name plus its ancestor breadcrumb. Search
+matches the full path, including options beyond 20 records. Not configured clears
+to null. Header changes still apply to all existing lines and default new lines;
+line overrides remain independent. Mixed/unavailable persisted selections remain
+visible, and non-draft journals cannot change selections.
+
+Journal options now include nullable `parentId` for cost centers. Rebuild/restart
+the backend alongside the frontend to receive hierarchy metadata; no new database
+migration is required (parent_id already exists in migration 007). Tenant and
+soft-delete predicates remain unchanged. The optional frontend field permits older
+flat option responses without inventing parent relationships.
+
+Validation: `node test/ledger/cost_center_options_test.mjs`, existing tree tests,
+and `test/ledger/cost_center_picker_browser_test.mjs` (built Nuxt + controlled
+upstream, desktop/mobile). A parent-ID contract assertion is also added to
+`test/journals/service_pg_test.cc`; running it requires the disposable PostgreSQL
+and native dependencies documented by test/journals/run_pg.sh.

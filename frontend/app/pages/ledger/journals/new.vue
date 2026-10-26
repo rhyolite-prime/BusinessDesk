@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ArrowLeft, Plus, Trash2, Save } from '@lucide/vue'
 import { toRaw } from 'vue'
+import { costCenterOptions } from '../../../features/ledger/cost-center-options'
 import { journalRateDisplay } from '../../../features/ledger/journal-rate-display'
 import {
   suggestBatchDescription,
@@ -53,6 +54,7 @@ const form = reactive({
 const header = reactive({ costCenterId: null as string | null })
 const batchNumber = ref('')
 const mixedCostCenters = '__mixed__'
+const centerChoices = computed(() => costCenterOptions(options.value.costCenters))
 function applyHeaderCostCenter() {
   if (header.costCenterId === mixedCostCenters) return
   for (const line of lines.value) line.costCenterId = header.costCenterId
@@ -660,44 +662,10 @@ async function save() {
             Descriptions use journal/account, currency, date and reference
             keywords until you edit them.
           </p>
-          <label class="min-w-0 text-xs font-semibold"
-            >Header cost center
-            <select
-              v-model="header.costCenterId"
-              class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
-              @change="applyHeaderCostCenter"
-            >
-              <option
-                v-if="header.costCenterId === mixedCostCenters"
-                :value="mixedCostCenters"
-                disabled
-              >
-                Mixed cost centers — choose to apply to all
-              </option>
-              <option :value="null">Not configured</option>
-              <option
-                v-if="
-                  header.costCenterId &&
-                  header.costCenterId !== mixedCostCenters &&
-                  !options.costCenters.some((c) => c.id === header.costCenterId)
-                "
-                :value="header.costCenterId"
-              >
-                Unavailable cost center (replace)
-              </option>
-              <option
-                v-for="center in options.costCenters"
-                :key="center.id"
-                :value="center.id"
-              >
-                {{ center.name }}
-              </option>
-            </select>
-            <span class="mt-1 block text-[10px] font-normal text-slate-400"
-              >Applies to every line, including when cleared; new lines inherit
-              it.</span
-            >
-          </label>
+          <div class="min-w-0">
+            <AccountControlPicker :model-value="header.costCenterId || ''" kind="cost-centers" label="Header cost center" :options="centerChoices" :disabled="loading || saving || readonly" :unavailable-text="header.costCenterId === mixedCostCenters ? 'Mixed cost centers — choose to apply to all' : undefined" @update:model-value="value => { header.costCenterId = value || null; applyHeaderCostCenter() }" />
+            <span class="mt-1 block text-[10px] font-normal text-slate-400">Applies to every line, including when cleared; new lines inherit it.</span>
+          </div>
           <label class="flex items-center gap-2 text-xs"
             ><input
               v-model="form.isMultiCurrency"
@@ -943,28 +911,9 @@ async function save() {
             <div
               class="journal-detail-fields mt-3 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
-              <label class="min-w-0 text-[11px] xl:col-span-2"
-                >Cost center
-                <select v-model="l.costCenterId" class="journal-input">
-                  <option :value="null">Not configured</option>
-                  <option
-                    v-if="
-                      l.costCenterId &&
-                      !options.costCenters.some((c) => c.id === l.costCenterId)
-                    "
-                    :value="l.costCenterId"
-                  >
-                    Unavailable (replace)
-                  </option>
-                  <option
-                    v-for="c in options.costCenters"
-                    :key="c.id"
-                    :value="c.id"
-                  >
-                    {{ c.name }}
-                  </option>
-                </select>
-              </label>
+              <div class="min-w-0 xl:col-span-2">
+                <AccountControlPicker :model-value="l.costCenterId || ''" kind="cost-centers" :options="centerChoices" :disabled="loading || saving || readonly" @update:model-value="value => l.costCenterId = value || null" />
+              </div>
               <label class="min-w-0 text-[11px]"
                 >Reference
                 <input
