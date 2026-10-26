@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { loadRememberedAccountId, saveRememberedAccountId } from '../utils/rememberedAccount'
-useHead({ title: 'Tenant sign in' })
+useHead({ title: 'Account sign in' })
 definePageMeta({ layout: 'auth' })
 const toast = useToast()
 const api = useApi()
