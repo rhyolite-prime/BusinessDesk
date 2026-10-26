@@ -96,13 +96,13 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,cons
  if(op=="options"){
   auto accounts=co_await db->execSqlCoro("SELECT id,account_number,account_name,COALESCE(currency_id,$3::uuid) AS currency_id FROM gl_accounts WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND status='active' AND allow_manual_posting=true AND is_control_account=false ORDER BY account_number,id",who.tenantId,unit,base);
   auto currencies=co_await db->execSqlCoro("SELECT id,code,name FROM core_currencies WHERE is_deleted=false AND is_active=true ORDER BY code,id");
-  auto centers=co_await db->execSqlCoro("SELECT id,name FROM core_cost_centers WHERE tenant_id=$1 AND is_deleted=false ORDER BY lower(name),id",who.tenantId);
+  auto centers=co_await db->execSqlCoro("SELECT id,name,parent_id FROM core_cost_centers WHERE tenant_id=$1 AND is_deleted=false ORDER BY lower(name),id",who.tenantId);
   auto periods=co_await db->execSqlCoro("SELECT id,period,period_start_date::text AS begin_date,period_end_date::text AS end_date FROM gl_accounting_periods WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND status='open' ORDER BY period DESC,id",who.tenantId,unit);
   for(auto key:{"accounts","currencies","costCenters","periods"})result.result[key]=Json::arrayValue;
   result.result["baseCurrencyId"]=base;
   for(auto& r:accounts){Json::Value v;v["id"]=r["id"].as<std::string>();v["accountNumber"]=r["account_number"].as<std::string>();v["name"]=r["account_name"].as<std::string>();v["currencyId"]=r["currency_id"].as<std::string>();result.result["accounts"].append(v);}
   for(auto& r:currencies){Json::Value v;for(auto k:{"id","code","name"})v[k]=r[k].as<std::string>();result.result["currencies"].append(v);}
-  for(auto& r:centers){Json::Value v;v["id"]=r["id"].as<std::string>();v["name"]=r["name"].as<std::string>();result.result["costCenters"].append(v);}
+  for(auto& r:centers){Json::Value v;v["id"]=r["id"].as<std::string>();v["name"]=r["name"].as<std::string>();const auto parent=r["parent_id"].as<std::string>();v["parentId"]=parent.empty()?Json::Value():Json::Value(parent);result.result["costCenters"].append(v);}
   for(auto& r:periods){Json::Value v;v["id"]=r["id"].as<std::string>();v["period"]=r["period"].as<int>();v["beginDate"]=r["begin_date"].as<std::string>();v["endDate"]=r["end_date"].as<std::string>();result.result["periods"].append(v);}
   result.success=true;co_return result;
  }

@@ -49,7 +49,7 @@ export interface JournalOptions {
     currencyId: string
   }[]
   currencies: { id: string; code: string; name: string }[]
-  costCenters: { id: string; name: string }[]
+  costCenters: { id: string; name: string; parentId?: string | null }[]
   periods: { id: string; period: number; beginDate: string; endDate: string }[]
 }
 export const emptyJournalOptions = (): JournalOptions => ({
