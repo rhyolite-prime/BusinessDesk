@@ -48,7 +48,7 @@ int main(){
  sql("DROP SCHEMA IF EXISTS journal_test CASCADE");sql("CREATE SCHEMA journal_test");sql("SET search_path TO journal_test");
  sql("CREATE TABLE tenants(id uuid PRIMARY KEY,is_deleted boolean NOT NULL DEFAULT false)");sql("CREATE TABLE users(id uuid PRIMARY KEY,tenant_id uuid,first_name text,last_name text,email text,is_deleted boolean NOT NULL DEFAULT false)");
  auto migrate=[&](const char* path){std::ifstream file(path);std::string line,clean;while(std::getline(file,line))if(line.find_first_not_of(" \t")!=std::string::npos&&!line.substr(line.find_first_not_of(" \t")).starts_with("--"))clean+=line+"\n";std::stringstream statements(clean);std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);};
- migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");migrate("database/migrations/008_company_profiles.sql");
+ migrate("database/migrations/006_system_numbers.sql");migrate("database/migrations/001_create_ledger_schema.sql");migrate("database/migrations/007_cost_centers.sql");migrate("database/migrations/008_company_profiles.sql");
  drogon::app().getDbClient()->execute=sql;
  const std::string unit="30000000-0000-4000-8000-000000000001",unit2="30000000-0000-4000-8000-000000000002",currency="40000000-0000-4000-8000-000000000001",usd="40000000-0000-4000-8000-000000000002",account="50000000-0000-4000-8000-000000000001",account2="50000000-0000-4000-8000-000000000002",foreign="50000000-0000-4000-8000-000000000003",period="60000000-0000-4000-8000-000000000001";
  auto call=[&](std::string op,std::string id="",Json::Value body=Json::Value{},std::string u="30000000-0000-4000-8000-000000000001",AuditIdentity who={tenant,actor}){return JournalService::execute(op,id,u,body,who).get();};
@@ -64,6 +64,11 @@ int main(){
  for(int i=0;i<2;i++){Json::Value l;l["accountId"]=i?account2:account;l["currencyId"]=currency;l["exchangeRate"]="1";l["debit"]=i?"0":"1.123456";l["credit"]=i?"1.123456":"0";input["lines"].append(l);}
  auto create=[&](Json::Value b){auto r=call("create","",b);if(!r.success)std::cerr<<r.toJson()<<std::endl;return r;};
  check(!call("list","",{},unit,{}).success,"anonymous denied");check(!call("list","",{},unit,{other,actor}).success,"foreign tenant denied");check(call("options").result["accounts"].size()==3,"real accounts");check(call("options").result["periods"].size()==1,"real periods");
+ check(call("next-number").error["code"]=="validation_error","missing journal system number diagnosed");
+ const auto templateId=sql("INSERT INTO core_system_numbers(module_id,item_name,key,prefix,suffix,padding,last_no,created_by_user_id) VALUES(1,'Journal','journal-batch-id','JV-','/26',5,10,$1) RETURNING id",{actor})[0].value["id"];
+ const auto numberId=sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,key,prefix,suffix,padding,last_no,$2 FROM core_system_numbers WHERE id=$3 RETURNING id",{tenant,actor,templateId})[0].value["id"];
+ check(call("next-number").result["batchNumber"]=="JV-00011/26","system number preview uses prefix suffix and padding");
+ check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1",{numberId})[0].value["last_no"]==10,"preview leaves counter unchanged");
  auto r=create(input);check(r.success,"create local draft");auto row=r.result;const auto id=row["id"].asString();check(row["status"]=="draft"&&row["totalDebit"]=="1.123456"&&row["lines"].size()==2,"exact local draft");check(sql("SELECT count(*)::int AS n FROM gl_account_balances")[0].value["n"]==0,"draft does not post");check(call("get",id).success&&call("list").result["total"].asInt()==1,"get/list persisted");check(!call("get",id,{},unit2).success,"unit isolation");
  const std::string legacyCenter="70000000-0000-4000-8000-000000000099";
  sql("INSERT INTO core_cost_centers(id,tenant_id,name,created_by_user_id) VALUES($1,$2,'Legacy unit',$3)",{legacyCenter,tenant,actor});
@@ -155,6 +160,43 @@ int main(){
  sql("UPDATE gl_accounting_periods SET is_deleted=true WHERE id=$1",{pid});check(!periodCall("history",pid).success&&!periodCall("open",pid,change).success,"deleted period cannot be read or manipulated");
  AccountingPeriodController periodController;auto periodRequest=std::make_shared<drogon::HttpRequest>();periodRequest->attributes()->insert("tenantId",tenant);periodRequest->attributes()->insert("tenantUserId",actor);periodRequest->parameters["accountingUnitId"]=unit;periodRequest->parameters["year"]="2026";
  auto periodHttp=periodController.list(periodRequest).get();check(periodHttp->status==200&&periodHttp->headers["Cache-Control"]=="no-store","real period controller listing and cache headers");periodRequest->parameters["year"]="oops";check(periodController.list(periodRequest).get()->status==400,"controller validates year without coercion");periodRequest->parameters.erase("year");periodRequest->json=std::make_shared<Json::Value>(pc);(*periodRequest->json)["accountingUnitId"]=unit2;check(periodController.create(periodRequest).get()->status==400,"controller rejects query/body unit mismatch");periodRequest->json.reset();check(periodController.create(periodRequest).get()->status==400,"controller rejects missing create body");
+ // New previews use formatted tenant system numbers; stale previews skip every used value.
+ auto numbered=input;numbered["periodId"]=Json::nullValue;
+ sql("UPDATE core_system_numbers SET prefix='N-',suffix='/X',format_pattern='{SUFFIX}/{NO}-{PREFIX}',padding=3,last_no=40 WHERE id=$1",{numberId});
+ auto preview=call("next-number");check(preview.success&&preview.result["batchNumber"]=="/X/041-N-","custom token order and literal separators");
+ numbered["batchNumber"]=preview.result["batchNumber"];
+ auto firstNumber=create(numbered);check(firstNumber.success&&firstNumber.result["batchNumber"]==numbered["batchNumber"],"unused form preview saved unchanged");
+ auto duplicateNumber=create(numbered);check(duplicateNumber.success&&duplicateNumber.result["batchNumber"]=="/X/042-N-","stale preview collision increments before insert");
+ check(duplicateNumber.result["lines"][0].isObject()&&sql("SELECT batch_number FROM gl_journal_lines WHERE journal_batch_id=$1 AND is_deleted=false",{duplicateNumber.result["id"]})[0].value["batch_number"]=="/X/042-N-","line batch number matches saved header");
+ sql("UPDATE gl_journal_batches SET is_deleted=true WHERE id=$1",{firstNumber.result["id"]});
+ auto archivedNumber=create(numbered);check(archivedNumber.success&&archivedNumber.result["batchNumber"]=="/X/043-N-","archived and multiple used numbers skipped");
+ auto unusedOlder=numbered;unusedOlder["batchNumber"]="/X/039-N-";
+ auto savedOlder=create(unusedOlder);check(savedOlder.success&&savedOlder.result["batchNumber"]=="/X/039-N-","unused earlier preview kept unchanged");
+ check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1",{numberId})[0].value["last_no"]==43,"older unused preview does not rewind counter");
+ sql("INSERT INTO gl_journal_batches(tenant_id,accounting_unit_id,batch_number,batch_date,batch_description,created_by_user_id) VALUES($1,$2,'/X/050-N-','2026-10-20','Other unit',$3)",{tenant,unit2,actor});
+ auto crossUnitNumber=numbered;crossUnitNumber["batchNumber"]="/X/050-N-";
+ auto crossUnitSaved=create(crossUnitNumber);check(crossUnitSaved.success&&crossUnitSaved.result["batchNumber"]=="/X/051-N-","number used in another tenant unit is skipped");
+ bool numberLockVerified=false;
+ drogon::app().getDbClient()->execute=[&](const std::string& q,const std::vector<Json::Value>& p){
+  auto result=sql(q,p);
+  if(!numberLockVerified&&q.find("FROM core_system_numbers")!=std::string::npos&&q.find("FOR UPDATE")!=std::string::npos) {
+   auto* c=PQconnectdb(std::getenv("JOURNAL_TEST_DATABASE_URL"));auto numberUuid=numberId.asString();const char* value=numberUuid.c_str();
+   auto* locked=PQexecParams(c,"SELECT id FROM journal_test.core_system_numbers WHERE id=$1 FOR UPDATE NOWAIT",1,nullptr,&value,nullptr,nullptr,0);
+   const char* code=PQresultErrorField(locked,'C');check(code&&std::string(code)=="55P03","concurrent allocator cannot acquire system number lock");PQclear(locked);PQfinish(c);numberLockVerified=true;
+  }
+  return result;
+ };
+ check(create(numbered).success&&numberLockVerified,"journal allocation holds number row lock through creation");
+ drogon::app().getDbClient()->execute=sql;
+ auto malformedNumber=numbered;malformedNumber["batchNumber"]="arbitrary";check(!call("create","",malformedNumber).success,"arbitrary client number rejected");
+ sql("UPDATE core_system_numbers SET prefix='CHANGED-' WHERE id=$1",{numberId});check(!call("create","",numbered).success,"settings changed since preview requires reload");
+ sql("UPDATE core_system_numbers SET prefix='N-' WHERE id=$1",{numberId});
+ const auto beforeNumber=sql("SELECT last_no FROM core_system_numbers WHERE id=$1",{numberId})[0].value["last_no"];
+ drogon::TestTransaction::failCommit=true;check(!call("create","",numbered).success,"numbered commit failure surfaced");drogon::TestTransaction::failCommit=false;
+ check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1",{numberId})[0].value["last_no"]==beforeNumber,"counter rollback with journal");
+ sql("UPDATE core_system_numbers SET last_no=2147483647 WHERE id=$1",{numberId});check(call("next-number").error["code"]=="conflict","exhausted number fails cleanly");
+ sql("UPDATE core_system_numbers SET last_no=43,is_deleted=true WHERE id=$1",{numberId});check(!call("next-number").success&&!call("create","",numbered).success,"archived system number unavailable");
+ sql("UPDATE core_system_numbers SET is_deleted=false WHERE id=$1",{numberId});
  sql("UPDATE gl_accounts SET is_deleted=true WHERE id=$1 AND is_deleted=false",{account});check(!call("create","",input).success,"deleted account rejected");check(call("options").result["accounts"].size()==2,"deleted account omitted");
  sql("DROP SCHEMA journal_test CASCADE");PQfinish(db);std::cout<<checks<<" journal PostgreSQL checks passed\n";
 }

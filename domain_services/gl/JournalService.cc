@@ -17,6 +17,39 @@ bool text(Json::Value& v,size_t limit,bool required=false){if(v.isNull()&&!requi
 bool decimal(const Json::Value& v,bool rate=false){static const std::regex money("^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$"),fx("^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$");return v.isString()&&std::regex_match(v.asString(),rate?fx:money);}
 bool zero(const std::string& s){return s.find_first_not_of("0.")==std::string::npos;}
 bool one(const std::string& s){return s=="1"||(s.starts_with("1.")&&s.find_first_not_of('0',2)==std::string::npos);}
+// Expand tokens in the pattern only: prefix/suffix are literal values.
+std::string batchFormat(const Row& settings, int64_t counter){
+ auto digits=std::to_string(counter);const int padding=settings["padding"].as<int>();
+ if(padding<0||padding>18)throw std::invalid_argument("Invalid numbering padding");
+ if(digits.size()<static_cast<size_t>(padding))digits.insert(0,padding-digits.size(),'0');
+ const auto pattern=settings["format_pattern"].as<std::string>();std::string result;int numberTokens=0;
+ for(size_t i=0;i<pattern.size();) {
+  if(pattern.compare(i,4,"{NO}")==0){result+=digits;i+=4;++numberTokens;}
+  else if(pattern.compare(i,8,"{PREFIX}")==0){result+=settings["prefix"].as<std::string>();i+=8;}
+  else if(pattern.compare(i,8,"{SUFFIX}")==0){result+=settings["suffix"].as<std::string>();i+=8;}
+  else {if(pattern[i]=='{'||pattern[i]=='}')throw std::invalid_argument("Invalid numbering token");result+=pattern[i++];}
+ }
+ if(numberTokens!=1||result.empty()||result.size()>40)throw std::invalid_argument("Journal number must fit 40 bytes and include NO exactly once");
+ return result;
+}
+// Accept only a canonical formatted preview, never arbitrary client numbering.
+int64_t previewCounter(const Row& settings,const std::string& preview){
+ batchFormat(settings,0);const auto pattern=settings["format_pattern"].as<std::string>();
+ const auto at=pattern.find("{NO}");
+ // Split the formatted value around its numeric slot using a unique placeholder.
+ auto left=pattern.substr(0,at),right=pattern.substr(at+4);
+ auto expand=[&](const std::string& part){std::string out;for(size_t i=0;i<part.size();) {
+  if(part.compare(i,8,"{PREFIX}")==0){out+=settings["prefix"].as<std::string>();i+=8;}
+  else if(part.compare(i,8,"{SUFFIX}")==0){out+=settings["suffix"].as<std::string>();i+=8;}
+  else out+=part[i++];
+ }return out;};
+ left=expand(left);right=expand(right);
+ if(!preview.starts_with(left)||!preview.ends_with(right)||preview.size()<=left.size()+right.size())return -1;
+ const auto digits=preview.substr(left.size(),preview.size()-left.size()-right.size());
+ if(digits.size()>18||digits.find_first_not_of("0123456789")!=std::string::npos)return -1;
+ const auto value=std::stoll(digits);
+ return value>0&&value<=2147483647&&batchFormat(settings,value)==preview?value:-1;
+}
 Json::Value decode(const Row& row){Json::Value v;Json::Reader r;if(!r.parse(row["record"].as<std::string>(),v))throw std::runtime_error("Invalid journal projection");return v;}
 std::string projection(){return R"(jsonb_build_object('id',b.id,'accountingUnitId',b.accounting_unit_id,'batchNumber',b.batch_number,'batchDate',b.batch_date,'description',b.batch_description,
 'periodId',b.period_id,'version',b.version,'status',b.status,'totalDebit',b.total_debit::text,'totalCredit',b.total_credit::text,
@@ -35,7 +68,7 @@ drogon::Task<bool> ready(DbClientPtr db){auto r=co_await db->execSqlCoro(R"(SELE
  AND EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_lines') AND attname='line_number' AND NOT attisdropped)
  AND NOT EXISTS(SELECT 1 FROM pg_attribute WHERE attrelid=to_regclass('gl_journal_lines') AND attname='cost_center_id' AND NOT attisdropped)
  AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_lines_live_position') AND indisvalid AND indisready)
- AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_batches_idempotency') AND NOT indnullsnotdistinct AND indisvalid) AND to_regclass('core_cost_centers') IS NOT NULL AND to_regclass('core_company_profiles') IS NOT NULL AS ready)");co_return !r.empty()&&r[0]["ready"].as<bool>();}
+ AND EXISTS(SELECT 1 FROM pg_index WHERE indexrelid=to_regclass('uq_gl_journal_batches_idempotency') AND NOT indnullsnotdistinct AND indisvalid) AND to_regclass('core_cost_centers') IS NOT NULL AND to_regclass('core_company_profiles') IS NOT NULL AND to_regclass('core_system_numbers') IS NOT NULL AS ready)");co_return !r.empty()&&r[0]["ready"].as<bool>();}
 struct Normalized {Json::Value body;std::string error;};
 drogon::Task<Normalized> normalize(DbClientPtr db,Json::Value body,const Json::Value& current,const std::string& base,const std::string& unit,const utils::AuditIdentity& who,bool write){
  Normalized n;auto invalid=[&](std::string error){Normalized x;x.error=error;return x;};
@@ -107,9 +140,11 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,cons
   result.success=true;co_return result;
  }
  if(op=="next-number"){
-  auto seq=co_await db->execSqlCoro("SELECT prefix,suffix,next_batch_number FROM gl_journal_batch_sequences WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false",who.tenantId,unit);
-  std::string number=seq.empty()?"1":std::to_string(seq[0]["next_batch_number"].as<int>());if(number.size()<8)number.insert(0,8-number.size(),'0');std::string prefix=seq.empty()?"":seq[0]["prefix"].as<std::string>();
-  result.result["batchNumber"]=(prefix.empty()?"GJ-":prefix)+number+(seq.empty()?"":seq[0]["suffix"].as<std::string>());result.result["reserved"]=false;result.success=true;co_return result;
+  auto settings=co_await db->execSqlCoro("SELECT * FROM core_system_numbers WHERE tenant_id=$1 AND module_id=1 AND lower(key)='journal-batch-id' AND is_deleted=false",who.tenantId);
+  if(settings.empty())co_return fail("validation_error","Configure the General Ledger system number journal-batch-id before creating journals.");
+  const auto counter=static_cast<int64_t>(settings[0]["last_no"].as<int>())+1;
+  if(counter>2147483647)co_return fail("conflict","Journal system number is exhausted.");
+  result.result["batchNumber"]=batchFormat(settings[0],counter);result.result["reserved"]=false;result.success=true;co_return result;
  }
  if(op=="list"){auto rows=co_await db->execSqlCoro(selection()+" ORDER BY b.batch_date DESC,b.created_at DESC,b.id",who.tenantId,unit);result.result["items"]=Json::arrayValue;for(auto& r:rows)result.result["items"].append(decode(r));result.result["total"]=Json::UInt64(rows.size());result.success=true;co_return result;}
  Json::Value current;
@@ -149,9 +184,25 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,cons
  }
  std::string saved=id,number=current["batchNumber"].isString()?current["batchNumber"].asString():"";
  if(op=="create"){
-  co_await db->execSqlCoro("INSERT INTO gl_journal_batch_sequences(tenant_id,accounting_unit_id,created_by_user_id) VALUES($1,$2,$3) ON CONFLICT(tenant_id,accounting_unit_id) DO NOTHING",who.tenantId,unit,who.userId);
-  auto seq=co_await db->execSqlCoro("UPDATE gl_journal_batch_sequences SET current_batch_number=next_batch_number,next_batch_number=next_batch_number+sequence_increment,last_modified_at=now(),last_modified_by_user_id=$3 WHERE tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND next_batch_number>0 AND next_batch_number<=2147483647-sequence_increment RETURNING prefix,suffix,current_batch_number",who.tenantId,unit,who.userId);
-  if(seq.empty())co_return fail("conflict","Journal sequence is deleted or exhausted; configure a live sequence before saving.");std::string value=std::to_string(seq[0]["current_batch_number"].as<int>());if(value.size()<8)value.insert(0,8-value.size(),'0');std::string prefix=seq[0]["prefix"].as<std::string>();number=(prefix.empty()?"GJ-":prefix)+value+seq[0]["suffix"].as<std::string>();
+  auto settings=co_await db->execSqlCoro("SELECT * FROM core_system_numbers WHERE tenant_id=$1 AND module_id=1 AND lower(key)='journal-batch-id' AND is_deleted=false FOR UPDATE",who.tenantId);
+  if(settings.empty())co_return fail("validation_error","Configure the General Ledger system number journal-batch-id before creating journals.");
+  const auto& config=settings[0];
+  int64_t counter=static_cast<int64_t>(config["last_no"].as<int>())+1;
+  if(input.isMember("batchNumber")) {
+   counter=previewCounter(config,input["batchNumber"].asString());
+   if(counter<1)co_return fail("validation_error","Batch preview no longer matches the numbering settings. Reload the journal form.");
+  }
+  // Also serialize against other journal writers that do not use this system number.
+  co_await db->execSqlCoro("LOCK TABLE gl_journal_batches IN SHARE ROW EXCLUSIVE MODE");
+  while(true) {
+   if(counter>2147483647)co_return fail("conflict","Journal system number is exhausted.");
+   number=batchFormat(config,counter);
+   auto used=co_await db->execSqlCoro("SELECT id FROM gl_journal_batches WHERE tenant_id=$1 AND batch_number=$2 LIMIT 1",who.tenantId,number);
+   // Include archived journals: issued numbers must not be reused.
+   if(used.empty())break;
+   ++counter;
+  }
+  co_await db->execSqlCoro("UPDATE core_system_numbers SET last_no=GREATEST(last_no,$2::bigint)::integer,last_modified_at=now(),last_modified_by_user_id=$3 WHERE id=$1",config["id"].as<std::string>(),counter,who.userId);
  }
  body["batchNumber"]=number;const std::string payload=Json::FastWriter().write(body);
  if(op=="create"){
@@ -200,9 +251,10 @@ drogon::Task<dto::BaseApiResponse> JournalService::execute(std::string op,std::s
  if(op=="create"||op=="update"||op=="validate"||op=="delete"||op=="post"){
   if(!body.isObject()||!body["accountingUnitId"].isString()||lower(body["accountingUnitId"].asString())!=lower(unit))co_return fail("validation_error","Accounting-unit scope mismatch.");
   for(auto& k:body.getMemberNames()){
-   bool common=k=="accountingUnitId",version=k=="version"&&(op=="update"||op=="delete"||op=="post"),period=k=="periodId"&&op!="delete",draft=(op=="create"||op=="update"||op=="validate")&&(k=="batchDate"||k=="description"||k=="isMultiCurrency"||k=="lines");
+   bool common=k=="accountingUnitId",version=k=="version"&&(op=="update"||op=="delete"||op=="post"),period=k=="periodId"&&op!="delete",draft=(op=="create"||op=="update"||op=="validate")&&(k=="batchDate"||k=="description"||k=="isMultiCurrency"||k=="lines"||(k=="batchNumber"&&op!="update"));
    if(!common&&!version&&!period&&!draft)co_return fail("validation_error","Unexpected journal field; status, scope, numbers and audits are server-owned.");
   }
+  if(body.isMember("batchNumber")&&(!body["batchNumber"].isString()||body["batchNumber"].asString().empty()||body["batchNumber"].asString().size()>40))co_return fail("validation_error","Invalid batch preview.");
   if((op=="update"||op=="delete"||op=="post")&&(!body["version"].isInt()||body["version"].asInt()<1))co_return fail("validation_error","Supply the current journal version.");
  }
  try{
@@ -212,7 +264,8 @@ drogon::Task<dto::BaseApiResponse> JournalService::execute(std::string op,std::s
   try{r=co_await run(tx,op,id,unit,body,who);}catch(...){tx->rollback();throw;}
   if(!r.success){tx->rollback();co_return r;}
   if(!(co_await utils::CommitTransaction{std::move(tx)}))co_return fail("database_error","Unable to commit journal.");co_return r;
- }catch(const UniqueViolation&){co_return fail("conflict","Journal number or request key is already reserved.");}
+ }catch(const std::invalid_argument&){co_return fail("validation_error","Check journal-batch-id numbering tokens, padding and maximum formatted length (40 bytes).");}
+ catch(const UniqueViolation&){co_return fail("conflict","Journal number or request key is already reserved.");}
  catch(const std::exception&){co_return fail("database_error","Journal service unavailable.");}
 }
 }

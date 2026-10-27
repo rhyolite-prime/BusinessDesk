@@ -524,6 +524,7 @@ async function save() {
   const current = version
   const body = {
     accountingUnitId: unitId.value,
+    ...(!original.value ? { batchNumber: batchNumber.value } : {}),
     ...form,
     periodId: original.value?.periodId || null,
     ...(original.value ? { version: original.value.version } : {}),
@@ -631,6 +632,7 @@ async function save() {
               readonly
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
             />
+            <span v-if="!original" class="mt-1 block text-xs font-normal text-slate-500">From journal-batch-id settings. If already used, this number increments when saved.</span>
           </label>
           <label class="min-w-0 text-xs font-semibold"
             >Batch date<input

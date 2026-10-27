@@ -63,8 +63,9 @@ upstream is absent. Existing ledger/auth upstream configuration is reused.
 Errors: validation 400, unauthorized 401, forbidden 403, missing/deleted/out-of-
 scope record or inactive unit 404, stale version/non-draft/number/period conflict
 409, approval-required 409, migration/DB/commit failures 503. Server-generated
-numbers, scope, status, names, base amounts, audit fields and deletion flags
-cannot be supplied as write properties.
+scope, status, names, base amounts, audit fields and deletion flags
+cannot be supplied as write properties. Creation may submit the read-only
+`batchNumber` preview; the server validates and resolves collisions.
 
 ## Input and monetary semantics
 
@@ -181,14 +182,31 @@ bypassed by stale client state.
 
 ## Numbering, final posting and safeguards
 
-The server allocates a number from `gl_journal_batch_sequences` within the same
-transaction as creation. The default is `GJ-` plus an eight-digit counter,
-monotonic within the accounting unit (not reset annually); existing live sequence
-prefix/suffix/increment are respected. GET preview does not reserve/consume a
-number. Sequence failures/collisions roll back creation; numbers remain reserved
-after deletion. Deleted/exhausted sequences require operator repair, not silent
-resurrection. Batch numbers cannot be edited. POST creation has no client retry
-idempotency key in this API; after a lost response refresh before creating again.
+New journal numbers use the tenant's live `core_system_numbers` entry with
+`module_id=1` (General Ledger) and key `journal-batch-id` (case-insensitive).
+Configure it in the tenant or sync the host template before creating journals.
+There is no fallback to `gl_journal_batch_sequences`. Preview uses `last_no + 1`,
+left-padded to `padding` digits, expanding `{NO}`, `{PREFIX}`, and `{SUFFIX}` in
+`format_pattern` (including literal separators and custom token ordering).
+Example: lastNo 10, padding 5, prefix JV-, suffix /26 and
+`{PREFIX}{NO}{SUFFIX}` produce `JV-00011/26`. The formatted number must fit the
+existing 40-byte batch-number columns. Preview does not reserve or consume it.
+
+The form submits this read-only preview as `batchNumber` on creation. The server
+validates it against the current tenant numbering pattern, locks the system
+number row and journal table, and checks for prior use across that tenant's
+accounting units, including archived journals. If unused, the preview is saved
+unchanged; otherwise the numeric part increments until unused. The chosen number
+is written to both header and lines, and `last_no` advances without moving
+backwards, in the same transaction. Failure rolls everything back. Clients that
+omit the preview receive a server-generated candidate. Changed formatting
+requires a form reload rather than silently accepting arbitrary numbering.
+Existing drafts retain their number during edits and posting. System-number
+sync/reset may lower counters, but previously used journal numbers are skipped.
+
+POST creation has no client retry idempotency key in this API; after a lost
+response refresh before creating again. No new migration is required; migration
+006_system_numbers.sql must already be applied along with the journal migrations.
 
 Draft create/edit/delete do not change balances. Final posting:
 
@@ -407,7 +425,7 @@ The PG suite requires a **disposable PostgreSQL database** and creates/drops
 `journal_test`. Optional sanitizer flags:
 `JOURNAL_TEST_SANITIZERS='-fsanitize=address,undefined -fno-omit-frame-pointer -g'`.
 It runs production JournalService, AccountingPeriodService and period-controller code/real SQL, with a synchronous libpq/coroutine
-transport seam: migrations, scoped CRUD, sequence allocation, stale versions,
+transport seam: migrations, scoped CRUD, system-number allocation/collision handling, stale versions,
 exact FX conversion, balance/history posting, rollback injection, repeated-post
 protection, processed lines, approval policy enforcement and a competing NOWAIT
 connection. It also checks migration 013 up/down/up, closed-first period creation,

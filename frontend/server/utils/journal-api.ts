@@ -86,6 +86,9 @@ export async function journalRequest(
       e?.data?.error?.code || e?.response?._data?.error?.code || e?.data?.code
     const detail = e?.data?.error?.message || e?.response?._data?.error?.message
     const currencyConfigurationMessages = [
+      'Configure the General Ledger system number journal-batch-id before creating journals.',
+      'Batch preview no longer matches the numbering settings. Reload the journal form.',
+      'Check journal-batch-id numbering tokens, padding and maximum formatted length (40 bytes).',
       'Set a live active default currency on the company profile before entering journals.',
       'Accounting unit base currency must match the company profile default currency. Reconcile currency configuration before entering or posting journals.',
     ]
