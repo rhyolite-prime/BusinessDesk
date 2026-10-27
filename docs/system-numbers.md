@@ -215,3 +215,16 @@ Multiple tenants are processed individually and results are shown per tenant,
 including failures. Each tenant operation is atomic; the batch is not a shared
 transaction. A failure for one tenant does not undo successful syncs for others.
 Do not blindly retry successes: host Last No values are copied on every sync.
+
+
+### Sync by modules
+
+Choose **By modules** in the host sync form and check one or more of the 16
+Modules enum entries. Each module shows its active host-template count. All
+templates in the checked modules are sent as explicit `templateIds` to each
+selected tenant using override mode; other modules and tenant-only rows are
+left unchanged. Template loading spans every page. Empty module selections,
+modules without templates, failed loading, and selections above the API's
+1000-template limit cannot be submitted. Changing modules clears the SYNC
+confirmation. Hard replacement is not offered in module mode. Last No and
+per-tenant transaction behavior are unchanged. No migration is required.

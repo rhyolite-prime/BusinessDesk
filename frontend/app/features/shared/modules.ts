@@ -23,3 +23,7 @@ export const moduleOptions = Object.entries(Modules)
 export const isKnownModule = (value: number) => moduleOptions.some(option => option.value === value)
 
 export const moduleLabel = (value: number): string => moduleOptions.find(option => option.value === value)?.label ?? `Unknown module (${value})`
+
+/** Resolve module selections to explicit template IDs for the selective sync API. */
+export const templateIdsForModules = (templates: readonly { id: string; moduleId: number }[], modules: readonly number[]): string[] =>
+  templates.filter(template => modules.includes(template.moduleId)).map(template => template.id)
