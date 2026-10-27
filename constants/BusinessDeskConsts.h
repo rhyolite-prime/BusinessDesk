@@ -15,6 +15,25 @@ namespace business_desk::constants {
         Closed    = 3,
     };
 
+    enum class Modules : int {
+        GeneralLedger  = 1,
+        SchoolInformationSystem  = 2,
+        Payroll    = 3,
+        PrintIntelligence = 4,
+        AccountsPayable    = 5,
+        AccountsReceivable    = 6,
+        FixedAssets    = 7,
+        PointOfSale    = 8,
+        HumanResource    = 9,
+        Inventory    = 10,
+        SupplyChain    = 11,
+        Manufacturing    = 12,
+        DocumentManagement    = 13,
+        PropertyRentals    = 14,
+        CustomerRelationshipManagement    = 15,
+        ProjectManagement    = 16,
+    };
+
     enum class AccountType : int {
         Unknown       = -1,
         Asset         = 0,
