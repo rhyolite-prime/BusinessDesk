@@ -2,6 +2,7 @@
 #include "utils/TransactionUtil.h"
 #include <regex>
 #include <cstdint>
+#include <set>
 namespace business_desk::domain_services {
 namespace {
 using namespace drogon::orm;
@@ -43,6 +44,12 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,std::string op,std::string
   co_await db->execSqlCoro("LOCK TABLE core_system_numbers IN SHARE ROW EXCLUSIVE MODE");
   auto templates=co_await db->execSqlCoro("SELECT * FROM core_system_numbers WHERE tenant_id IS NULL AND is_deleted=false ORDER BY module_id,lower(key),id");
   if(templates.empty())co_return fail("conflict","No host templates are available; nothing was changed.");
+  std::set<std::string> selectedIds;
+  if(body.isMember("templateIds")) {
+   for(const auto& value:body["templateIds"])selectedIds.insert(value.asString());
+   size_t found=0;for(const auto& source:templates)if(selectedIds.count(source["id"].as<std::string>()))++found;
+   if(found!=selectedIds.size())co_return fail("validation_error","Some selected templates are unavailable. Refresh and retry.");
+  }
   int deleted=0,updated=0,created=0;
   if(body["mode"].asString()=="replace") {
    auto removed=co_await db->execSqlCoro("DELETE FROM core_system_numbers WHERE tenant_id=$1 RETURNING id",tenant);
@@ -50,6 +57,7 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,std::string op,std::string
   }
   for(const auto& source:templates) {
    const auto sourceId=source["id"].as<std::string>();
+   if(!selectedIds.empty()&&!selectedIds.count(sourceId))continue;
    auto existing=co_await db->execSqlCoro("SELECT id FROM core_system_numbers WHERE tenant_id=$1 AND module_id=$2::integer AND lower(key)=lower($3) AND is_deleted=false",tenant,source["module_id"].as<int>(),source["key"].as<std::string>());
    if(!existing.empty()) {
     co_await db->execSqlCoro("UPDATE core_system_numbers t SET item_name=s.item_name,key=s.key,prefix=s.prefix,suffix=s.suffix,format_pattern=s.format_pattern,padding=s.padding,last_no=s.last_no,last_modified_at=now(),last_modified_by_user_id=$3 FROM core_system_numbers s WHERE t.id=$1 AND s.id=$2",existing[0]["id"].as<std::string>(),sourceId,who.userId);
@@ -108,7 +116,14 @@ drogon::Task<dto::BaseApiResponse> SystemNumberService::execute(std::string op,s
  if(op!="list"&&op!="get"&&op!="create"&&op!="update"&&op!="delete"&&op!="sync")co_return fail("validation_error","Invalid operation.");
  if(op=="sync") {
   if(!host)co_return fail("forbidden","Host administrator required.");
-  if(!body.isObject()||body.size()!=3||!body["tenantId"].isString()||!uuid(body["tenantId"].asString())||!body["mode"].isString()||(body["mode"].asString()!="override"&&body["mode"].asString()!="replace")||!body["confirmation"].isString()||body["confirmation"].asString()!="SYNC")co_return fail("validation_error","Select a tenant, sync mode and type SYNC to confirm.");
+  if(!body.isObject()||(body.size()!=3&&body.size()!=4)||!body["tenantId"].isString()||!uuid(body["tenantId"].asString())||!body["mode"].isString()||(body["mode"].asString()!="override"&&body["mode"].asString()!="replace")||!body["confirmation"].isString()||body["confirmation"].asString()!="SYNC")co_return fail("validation_error","Select a tenant, sync mode and type SYNC to confirm.");
+  for(const auto& key:body.getMemberNames())if(key!="tenantId"&&key!="mode"&&key!="confirmation"&&key!="templateIds")co_return fail("validation_error","Unknown sync field.");
+  if(body.isMember("templateIds")) {
+   const auto& ids=body["templateIds"];
+   if(body["mode"].asString()!="override"||!ids.isArray()||ids.empty()||ids.size()>1000)co_return fail("validation_error","Select 1–1000 templates using override mode.");
+   std::set<std::string> unique;
+   for(const auto& value:ids)if(!value.isString()||!uuid(value.asString())||!unique.insert(value.asString()).second)co_return fail("validation_error","Invalid or duplicate template ID.");
+  }
  }
  if(!host&&(op=="create"||op=="delete"))co_return fail("forbidden","Tenant copies may only be edited.");
  if((op=="get"||op=="update"||op=="delete")&&!uuid(id))co_return fail("validation_error","Invalid ID.");

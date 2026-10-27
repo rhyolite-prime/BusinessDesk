@@ -29,6 +29,7 @@ try {
  let response=await post('bd_host_access=host-token');assert.equal(response.status,200);assert.deepEqual(await response.json(),{deleted:0,updated:1,copied:2})
  assert.deepEqual(seen[0],{method:'POST',body,token:'Bearer host-token'})
  body.mode='replace';response=await post('bd_host_access=host-token');assert.equal(response.status,200);assert.equal(seen[1].body.mode,'replace')
+ body.mode='override';body.templateIds=['20000000-0000-4000-8000-000000000001'];response=await post('bd_host_access=host-token');assert.equal(response.status,200);assert.deepEqual(seen[2].body.templateIds,body.templateIds)
  fail=409;response=await post('bd_host_access=host-token');assert.equal(response.status,409);assert.match((await response.json()).statusMessage,/No changes were saved/)
- console.log('11 system-number sync HTTP proxy checks passed')
+ console.log('13 system-number sync HTTP proxy checks passed')
 } finally {app.kill();upstream.close()}

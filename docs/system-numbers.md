@@ -192,3 +192,26 @@ changes. No database migration is required.
 Regression: `test/system_numbers/run_pg.sh` runs real PostgreSQL transaction,
 authorization, key override, archived restoration, tenant isolation, replacement,
 empty-template protection and commit-rollback checks.
+
+
+### Selective sync and multiple tenants
+
+The host sync form now supports selecting one or more tenants (use the native
+multi-select controls) and choosing **All host templates** or **Specific system
+numbers**. Specific mode shows all active host templates, loaded across every
+page, with module name, item name and key. Check at least one template. Changing
+the tenant, mode, scope or template selection clears the typed confirmation.
+Search changes clear the tenant selection to avoid syncing hidden accounts.
+
+Selective sync always uses **Override by module and key**. Nonselected templates
+and unrelated tenant rows are untouched. Hard replacement is available only in
+All host templates mode. Empty, duplicate, malformed, archived, non-host or
+unavailable template IDs are rejected before any numbering changes are made.
+The endpoint accepts an optional `templateIds` UUID array (1–1000 entries) in
+addition to the existing fields. Omit it to sync all templates; an empty array
+is never interpreted as all. Partial selection with `replace` is rejected.
+
+Multiple tenants are processed individually and results are shown per tenant,
+including failures. Each tenant operation is atomic; the batch is not a shared
+transaction. A failure for one tenant does not undo successful syncs for others.
+Do not blindly retry successes: host Last No values are copied on every sync.

@@ -104,6 +104,20 @@ int main(){
  sql("UPDATE core_system_numbers SET is_deleted=true WHERE id=$1",{copy});
  r=call("sync","",sync);check(r.success&&r.result["copied"]==1,"archived source restored");
  check(call("get",copy,{},false,{tenant,actor2}).success,"restored copy retains ID");
+ // Selective sync must never affect nonselected entries or other tenants.
+ auto selective=sync;selective["templateIds"]=Json::arrayValue;selective["templateIds"].append(id);
+ sql("UPDATE core_system_numbers SET prefix='SELECTIVE-' WHERE id=$1",{id});
+ r=call("sync","",selective);check(r.success&&r.result["updated"]==1,"selective template sync");
+ check(call("get",copy,{},false,{tenant,actor2}).result["prefix"]=="SELECTIVE-","selected template updated");
+ check(sql("SELECT prefix FROM core_system_numbers WHERE tenant_id=$1 AND key='TENANT-ONLY'",{tenant})[0].value["prefix"]!="SELECTIVE-","nonselected entry unchanged");
+ check(call("get",otherCopy,{},false,{other,actor2}).result["prefix"]=="JV-","selective sync isolates tenants");
+ auto badSelection=selective;badSelection["mode"]="replace";check(!call("sync","",badSelection).success,"selective replace rejected");
+ badSelection=selective;badSelection["templateIds"]=Json::arrayValue;check(!call("sync","",badSelection).success,"empty selection rejected");
+ badSelection=selective;badSelection["templateIds"].append(id);check(!call("sync","",badSelection).success,"duplicate selection rejected");
+ badSelection=selective;badSelection["templateIds"][0]="bad-id";check(!call("sync","",badSelection).success,"malformed selection rejected");
+ badSelection=selective;badSelection["templateIds"].append(extraHost);check(!call("sync","",badSelection).success,"archived template rejected before changes");
+ badSelection=selective;badSelection["templateIds"][0]=copy;check(!call("sync","",badSelection).success,"tenant copy cannot be selected as template");
+ check(call("sync","",selective,true,{"",actor2}).error["code"]=="forbidden","selective ordinary host forbidden");
  sync["mode"]="replace";
  drogon::TestTransaction::failCommit=true;r=call("sync","",sync);check(!r.success,"replace commit failure reported");drogon::TestTransaction::failCommit=false;
  check(call("get",copy,{},false,{tenant,actor2}).success,"failed replace rolled back deleted rows");
