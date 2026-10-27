@@ -21,3 +21,5 @@ export const moduleOptions = Object.entries(Modules)
   .filter(([, value]) => typeof value === 'number')
   .map(([name, value]) => ({ value: value as Modules, label: name.replace(/([a-z])([A-Z])/g, '$1 $2') }))
 export const isKnownModule = (value: number) => moduleOptions.some(option => option.value === value)
+
+export const moduleLabel = (value: number): string => moduleOptions.find(option => option.value === value)?.label ?? `Unknown module (${value})`
