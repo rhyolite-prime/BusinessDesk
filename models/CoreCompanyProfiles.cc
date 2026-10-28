@@ -113,6 +113,8 @@ const std::string CoreCompanyProfiles::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string CoreCompanyProfiles::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string CoreCompanyProfiles::Cols::_display_decimals = "\"display_decimals\"";
+
 
 const std::string CoreCompanyProfiles::primaryKeyName = "id";
 
@@ -165,7 +167,8 @@ const std::vector<typename CoreCompanyProfiles::MetaData> CoreCompanyProfiles::m
 {"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","std::string","uuid",0,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"display_decimals","int32_t","integer",4,0,0,1}
 
 };
 const std::string &CoreCompanyProfiles::getColumnName(size_t index) noexcept(false)
@@ -537,11 +540,18 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
         }
 
+        if(!r["display_decimals"].isNull())
+        {
+
+            displayDecimals_=std::make_shared<int32_t>(r["display_decimals"].as<int32_t>());
+
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 44 > r.size())
+        if(offset + 45 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -951,13 +961,21 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Row &r, const ssize_t indexOffset
 
         }
 
+        index = offset + 44;
+        if(!r[index].isNull())
+        {
+
+            displayDecimals_=std::make_shared<int32_t>(r[index].as<int32_t>());
+
+        }
+
     }
 
 }
 
 CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 44)
+    if(pMasqueradingVector.size() != 45)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1413,6 +1431,15 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson, const std::ve
         if(!pJson[pMasqueradingVector[43]].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[43]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
+    {
+        dirtyFlag_[44] = true;
+        if(!pJson[pMasqueradingVector[44]].isNull())
+        {
+            displayDecimals_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[44]].asInt64());
         }
     }
 
@@ -1874,12 +1901,21 @@ CoreCompanyProfiles::CoreCompanyProfiles(const Json::Value &pJson) noexcept(fals
         }
     }
 
+    if(pJson.isMember("display_decimals"))
+    {
+        dirtyFlag_[44]=true;
+        if(!pJson["display_decimals"].isNull())
+        {
+            displayDecimals_=std::make_shared<int32_t>((int32_t)pJson["display_decimals"].asInt64());
+        }
+    }
+
 }
 
 void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 44)
+    if(pMasqueradingVector.size() != 45)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -2337,6 +2373,15 @@ void CoreCompanyProfiles::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
+    {
+        dirtyFlag_[44] = true;
+        if(!pJson[pMasqueradingVector[44]].isNull())
+        {
+            displayDecimals_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[44]].asInt64());
+        }
+    }
+
 }
 
 void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -2791,6 +2836,15 @@ void CoreCompanyProfiles::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["deleted_by_user_id"].isNull())
         {
             deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("display_decimals"))
+    {
+        dirtyFlag_[44] = true;
+        if(!pJson["display_decimals"].isNull())
+        {
+            displayDecimals_=std::make_shared<int32_t>((int32_t)pJson["display_decimals"].asInt64());
         }
     }
 
@@ -3704,6 +3758,23 @@ void CoreCompanyProfiles::setDeletedByUserIdToNull() noexcept
     dirtyFlag_[43] = true;
 }
 
+const int32_t &CoreCompanyProfiles::getValueOfDisplayDecimals() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(displayDecimals_)
+        return *displayDecimals_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &CoreCompanyProfiles::getDisplayDecimals() const noexcept
+{
+    return displayDecimals_;
+}
+void CoreCompanyProfiles::setDisplayDecimals(const int32_t &pDisplayDecimals) noexcept
+{
+    displayDecimals_ = std::make_shared<int32_t>(pDisplayDecimals);
+    dirtyFlag_[44] = true;
+}
+
 void CoreCompanyProfiles::updateId(const uint64_t id)
 {
 }
@@ -3755,7 +3826,8 @@ const std::vector<std::string> &CoreCompanyProfiles::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "display_decimals"
 
     };
     return inCols;
@@ -4292,6 +4364,18 @@ void CoreCompanyProfiles::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[44])
+    {
+        if(getDisplayDecimals())
+        {
+            binder << getValueOfDisplayDecimals();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> CoreCompanyProfiles::updateColumns() const
@@ -4516,6 +4600,11 @@ const std::vector<std::string> CoreCompanyProfiles::updateColumns() const
     if(dirtyFlag_[43])
     {
         ret.push_back(getColumnName(43));
+    }
+
+    if(dirtyFlag_[44])
+    {
+        ret.push_back(getColumnName(44));
     }
 
     return ret;
@@ -5052,6 +5141,18 @@ void CoreCompanyProfiles::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[44])
+    {
+        if(getDisplayDecimals())
+        {
+            binder << getValueOfDisplayDecimals();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value CoreCompanyProfiles::toJson() const
 {
@@ -5541,6 +5642,17 @@ Json::Value CoreCompanyProfiles::toJson() const
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getDisplayDecimals())
+    {
+
+        ret["display_decimals"]=getValueOfDisplayDecimals();
+
+    }
+    else
+    {
+        ret["display_decimals"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -5553,7 +5665,7 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 44)
+    if(pMasqueradingVector.size() == 45)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -6172,6 +6284,20 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[44].empty())
+        {
+            if(getDisplayDecimals())
+            {
+
+                ret[pMasqueradingVector[44]]=getValueOfDisplayDecimals();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[44]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -6660,6 +6786,17 @@ Json::Value CoreCompanyProfiles::toMasqueradedJson(
         ret["deleted_by_user_id"]=Json::Value();
     }
 
+    if(getDisplayDecimals())
+    {
+
+        ret["display_decimals"]=getValueOfDisplayDecimals();
+
+    }
+    else
+    {
+        ret["display_decimals"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -6942,13 +7079,19 @@ bool CoreCompanyProfiles::validateJsonForCreation(const Json::Value &pJson, std:
             return false;
     }
 
+    if(pJson.isMember("display_decimals"))
+    {
+        if(!validJsonOfField(44, "display_decimals", pJson["display_decimals"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 44)
+    if(pMasqueradingVector.size() != 45)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7407,6 +7550,16 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForCreation(const Json::Value &
 
       }
 
+      if(!pMasqueradingVector[44].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[44]))
+          {
+              if(!validJsonOfField(44, pMasqueradingVector[44], pJson[pMasqueradingVector[44]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -7688,13 +7841,19 @@ bool CoreCompanyProfiles::validateJsonForUpdate(const Json::Value &pJson, std::s
             return false;
     }
 
+    if(pJson.isMember("display_decimals"))
+    {
+        if(!validJsonOfField(44, "display_decimals", pJson["display_decimals"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool CoreCompanyProfiles::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 44)
+    if(pMasqueradingVector.size() != 45)
     {
         err = "Bad masquerading vector";
         return false;
@@ -7968,6 +8127,12 @@ bool CoreCompanyProfiles::validateMasqueradedJsonForUpdate(const Json::Value &pJ
       if(!pMasqueradingVector[43].empty() && pJson.isMember(pMasqueradingVector[43]))
       {
           if(!validJsonOfField(43, pMasqueradingVector[43], pJson[pMasqueradingVector[43]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[44].empty() && pJson.isMember(pMasqueradingVector[44]))
+      {
+          if(!validJsonOfField(44, pMasqueradingVector[44], pJson[pMasqueradingVector[44]], err, false))
               return false;
       }
 
@@ -8767,6 +8932,22 @@ bool CoreCompanyProfiles::validJsonOfField(size_t index,
             }
 
             if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 44:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

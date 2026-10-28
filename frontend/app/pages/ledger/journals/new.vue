@@ -954,11 +954,7 @@ async function save() {
             }}
           </p>
         </div>
-        <p class="text-xs text-slate-400">
-          Drafts may be unbalanced, but every line must be valid. Only final
-          posting affects balances. New organizational-unit assignments are
-          unavailable until a real catalog is connected.
-        </p>
+         
         <details
           v-if="!readonly && issues.length"
           class="text-xs text-amber-700"
@@ -985,7 +981,7 @@ async function save() {
             class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2 text-xs font-semibold text-white disabled:opacity-40"
           >
             <Save :size="14" />{{
-              saving ? 'Saving…' : editingId ? 'Save changes' : 'Save draft'
+              saving ? 'Saving…' : editingId ? 'Save changes' : 'Save'
             }}
           </button>
         </div>

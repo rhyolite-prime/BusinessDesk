@@ -97,6 +97,7 @@ class CoreCompanyProfiles
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _display_decimals;
 
     };
 
@@ -536,9 +537,17 @@ class CoreCompanyProfiles
     void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column display_decimals  */
+    ///Get the value of the column display_decimals, returns the default value if the column is null
+    const int32_t &getValueOfDisplayDecimals() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getDisplayDecimals() const noexcept;
+    ///Set the value of the column display_decimals
+    void setDisplayDecimals(const int32_t &pDisplayDecimals) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 44;  }
+
+    static size_t getColumnNumber() noexcept {  return 45;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -630,6 +639,7 @@ class CoreCompanyProfiles
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
     std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> displayDecimals_;
 
     struct MetaData
     {
@@ -642,7 +652,7 @@ class CoreCompanyProfiles
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[44]={ false };
+    bool dirtyFlag_[45]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -965,6 +975,13 @@ class CoreCompanyProfiles
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
+        }
+        sql += "display_decimals,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[44])
+        {
+            needSelection=true;
         }
 
         if(parametersCount > 0)
@@ -1510,6 +1527,19 @@ class CoreCompanyProfiles
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        if(dirtyFlag_[44])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(parametersCount > 0)
