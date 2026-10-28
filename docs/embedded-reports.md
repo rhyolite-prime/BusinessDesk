@@ -128,3 +128,11 @@ Liability (1), Equity (2), Revenue (3), Expense (4). Unknown/invalid classificat
 appear last. Account-number branch sorting is secondary, within each type, and
 never interleaves or reorders these top-level groups. This applies to the shared
 report model consumed by preview, printing, PDF, Excel and Word.
+
+## Posted-ledger financial reports
+
+The posted-ledger report suite is now available at `/ledger/reports/financial`,
+with explicit tenant-admin account classifications at `/ledger/reports/mappings`.
+See [financial-reports.md](financial-reports.md) for the 17 report variants,
+accounting basis, formulas, deployment migration, security and operational limits.
+The existing Chart of Accounts and its hierarchy behavior remain unchanged.

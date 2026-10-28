@@ -9,6 +9,7 @@ export interface EmbeddedReport {
   generatedAt: string
   columns: ReportColumn[]
   sections: ReportSection[]
+  landscape?: boolean
 }
 export const embeddedReports = {
   'chart-of-accounts': { title: 'CHART OF ACCOUNTS', route: '/ledger/reports/chart-of-accounts' },
