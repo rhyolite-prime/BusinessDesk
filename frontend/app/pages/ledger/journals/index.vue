@@ -12,7 +12,8 @@ import {
 import type { Journal } from '../../../features/ledger/journal-types'
 import { emptyJournalOptions } from '../../../features/ledger/journal-types'
 import { useJournals } from '../../../features/ledger/useJournals'
-import { displayBudgetAmount } from '../../../features/ledger/budget-amounts'
+
+const displayBudgetAmount = (value: string) => formatDecimalAmount(value)
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Journals' })
 const api = useJournals(),

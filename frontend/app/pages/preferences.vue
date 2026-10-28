@@ -6,6 +6,7 @@ import {
 } from '../composables/useTenantPreferences'
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Preferences' })
+const companyDecimals = useState<number | null>('tenant-display-decimals', () => null)
 type Table = { table: string; module: string }
 type Item = Table & { rows: number }
 type Plan = {
@@ -240,8 +241,8 @@ async function reset() {
 const sample = computed(() => {
   try {
     return new Intl.NumberFormat(form.locale, {
-      minimumFractionDigits: form.moneyDecimals,
-      maximumFractionDigits: form.moneyDecimals,
+      minimumFractionDigits: companyDecimals.value ?? form.moneyDecimals,
+      maximumFractionDigits: companyDecimals.value ?? form.moneyDecimals,
       useGrouping: form.useGrouping,
     }).format(12345.6789)
   } catch {
@@ -357,9 +358,11 @@ const sample = computed(() => {
             >
             <FormField
               label="Currency display decimals"
-              hint="Display only; does not change stored amounts, rates or posting precision."
+              hint="Company Profile → ERP display settings controls monetary decimals when a company profile is configured."
               ><select
-                v-model.number="form.moneyDecimals"
+                :value="companyDecimals ?? form.moneyDecimals"
+                :disabled="companyDecimals !== null"
+                @change="form.moneyDecimals = Number(($event.target as HTMLSelectElement).value)"
                 aria-label="Currency display decimals"
                 class="preference-input"
               >

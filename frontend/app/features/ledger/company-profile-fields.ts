@@ -1,4 +1,5 @@
 export const companyProfileFields = [
+  { key: 'displayDecimals', label: 'Monetary display decimal places', kind: 'i', max: 6, group: 'display' },
   {
     "key": "companyName",
     "label": "Company name",
@@ -241,5 +242,5 @@ export const companyProfileFields = [
 export type ProfileKey = typeof companyProfileFields[number]["key"]
 export type ProfileForm = Record<ProfileKey, string | number | boolean | null>
 export function emptyCompanyProfile(): ProfileForm {
- return Object.fromEntries(companyProfileFields.map(f => [f.key, f.kind === "b" ? false : f.kind === "u" ? null : f.key === "firstMonthOfFiscalYear" ? 1 : f.kind === "i" || f.kind === "r" ? 0 : ""])) as ProfileForm
+ return Object.fromEntries(companyProfileFields.map(f => [f.key, f.kind === "b" ? false : f.kind === "u" ? null : f.key === "displayDecimals" ? 2 : f.key === "firstMonthOfFiscalYear" ? 1 : f.kind === "i" || f.kind === "r" ? 0 : ""])) as ProfileForm
 }

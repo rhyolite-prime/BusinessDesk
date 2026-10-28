@@ -450,3 +450,15 @@ Migration 014 is tested up/down/up, with live legacy backfill, conflict rollback
 archived-data protection, organization create/edit/clear/post persistence and
 server-owned names. The model schema test checks positional indices after the
 physical column drop. These checks do not constitute a full backend link.
+
+
+### Searchable GL accounts and floating cost-center pickers
+
+Both journal cost-center fields and the per-line GL account picker open bounded,
+searchable overlay lists without adding height to the form's grid. Opening a
+header cost-center list therefore does not displace the Multi-currency checkbox.
+GL search matches account number/name, preserves the local-vs-multi-currency
+account filter, calls the existing currency/rate selection handler and supports
+arrow keys, Enter and Escape. Unavailable saved accounts remain identifiable;
+posted/read-only journals cannot change them. Adding a line focuses its GL
+picker. Other account/head picker consumers keep their existing layout.

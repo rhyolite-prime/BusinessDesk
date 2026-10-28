@@ -47,6 +47,8 @@ int main(){
  std::ifstream migration("database/migrations/008_company_profiles.sql");std::stringstream source;source<<migration.rdbuf();std::stringstream statements(source.str());std::string statement;while(std::getline(statements,statement,';'))if(statement.find_first_not_of(" \n\r\t")!=std::string::npos)sql(statement);
  auto logoMigration=[&](const std::string& suffix){std::ifstream f("database/migrations/025_company_profile_logo_upload"+suffix);std::string line,content;while(std::getline(f,line))if(!line.starts_with("--"))content+=line+"\n";std::stringstream parts(content);std::string q;while(std::getline(parts,q,';'))if(q.find_first_not_of(" \n\r\t")!=std::string::npos)sql(q);};
  logoMigration(".sql");logoMigration(".down.sql");logoMigration(".sql");
+ auto displayMigration=[&](const std::string& suffix){std::ifstream f("database/migrations/026_company_display_decimals"+suffix);std::stringstream content;content<<f.rdbuf();std::stringstream parts(content.str());std::string q;while(std::getline(parts,q,';'))if(q.find_first_not_of(" \n\r\t")!=std::string::npos)sql(q);};
+ displayMigration(".sql");displayMigration(".down.sql");displayMigration(".sql");
  sql("INSERT INTO tenants(id) VALUES($1),($2)",{tenant,other});sql("INSERT INTO users(id) VALUES($1),($2)",{actor,actor2});
  const std::string currency="30000000-0000-4000-8000-000000000001";sql("INSERT INTO core_currencies(id) VALUES($1)",{currency});
  bool lockVerified=false;
@@ -67,6 +69,7 @@ int main(){
  drogon::app().config["COMPANY_PROFILE_SMTP_KEY"]=std::string(64,'z');check(!call("create",input).success,"nonhex encryption key fails closed");
  drogon::app().config["COMPANY_PROFILE_SMTP_KEY"]=std::string(64,'a');
  r=call("create",input);check(r.success,"profile create");auto id=r.result["id"].asString();
+ check(r.result["displayDecimals"]==2,"default monetary precision is two");
  check(r.result["companyName"]=="Example Company"&&r.result["firstMonthOfFiscalYear"]==4,"model values normalized and saved");check(r.result["paySocialSecurityFund"].asBool()&&r.result["socialSecurityFundEmployeeRate"]==5.5,"fund rates and booleans persisted");
  check(r.result["hasEmailPassword"].asBool()&&!r.result.isMember("emailPassword")&&r.toJson().toStyledString().find("test-only-smtp-password")==std::string::npos,"public result never contains secret");
  auto cipher=sql("SELECT email_password_encrypted FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["email_password_encrypted"].asString();
@@ -81,6 +84,9 @@ int main(){
  r=call("create",input);check(!r.success&&r.error["code"]=="conflict","singleton rejects second profile");
  r=call("get",{},{other,actor2});check(!r.success&&r.error["code"]=="not_found","foreign tenant cannot read profile");
  Json::Value second;second["companyName"]="Other Company";second["defaultCurrencyId"]=currency;r=call("create",second,{other,actor2});check(r.success&&r.result["id"]!=id,"each tenant has independent singleton");
+ for(int n=0;n<=6;++n){Json::Value decimals;decimals["displayDecimals"]=n;auto changed=call("update",decimals);check(changed.success&&changed.result["displayDecimals"]==n,"display precision 0 through 6 persisted");}
+ for(const auto& invalid:std::vector<Json::Value>{-1,7,1.5,"2",Json::Value{}}){Json::Value bad;bad["displayDecimals"]=invalid;check(!call("update",bad).success,"invalid decimal precision rejected");}
+ check(call("get",{},{other,actor2}).result["displayDecimals"]==2,"monetary precision tenant isolated");
  Json::Value patch;patch["cityName"]="Accra";r=call("update",patch,{tenant,actor2});check(r.success&&r.result["cityName"]=="Accra"&&r.result["paySocialSecurityFund"].asBool()&&r.result["socialSecurityFundEmployeeRate"]==5.5,"partial update preserves omitted model fields");
  check(call("get",{},{other,actor2}).result["cityName"]=="","updates tenant isolated");check(sql("SELECT * FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["last_modified_by_user_id"]==actor2,"modification audit");
  patch["emailPassword"]="";check(call("update",patch).success&&sql("SELECT email_password_encrypted FROM core_company_profiles WHERE tenant_id=$1",{tenant})[0].value["email_password_encrypted"]==cipher,"blank password retains ciphertext");

@@ -14,7 +14,7 @@ using dto::company_profile::fields;
 dto::BaseApiResponse fail(const char* code,const char* message){dto::BaseApiResponse r;r.error["code"]=code;r.error["message"]=message;return r;}
 bool uuid(const std::string& value){static const std::regex pattern("^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$");return std::regex_match(value,pattern);}
 std::string trim(std::string s){auto a=s.find_first_not_of(" \t\r\n"),b=s.find_last_not_of(" \t\r\n");return a==std::string::npos?"":s.substr(a,b-a+1);}
-Json::Value defaults(){Json::Value b;for(const auto& f:fields){if(f.kind=='b')b[f.name]=false;else if(f.kind=='u')b[f.name]=Json::nullValue;else if(f.kind=='r'||f.kind=='i')b[f.name]=std::string(f.name)=="firstMonthOfFiscalYear"?1:0;else b[f.name]="";}return b;}
+Json::Value defaults(){Json::Value b;for(const auto& f:fields){if(f.kind=='b')b[f.name]=false;else if(f.kind=='u')b[f.name]=Json::nullValue;else if(f.kind=='r'||f.kind=='i')b[f.name]=std::string(f.name)=="displayDecimals"?2:std::string(f.name)=="firstMonthOfFiscalYear"?1:0;else b[f.name]="";}return b;}
 bool known(const std::string& key){if(key=="emailPassword"||key=="clearEmailPassword"||key=="defaultCurrenyId")return true;for(const auto& f:fields)if(key==f.name)return true;return false;}
 bool valid(Json::Value& b){
  for(const auto& f:fields){auto& v=b[f.name];

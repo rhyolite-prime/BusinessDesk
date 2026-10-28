@@ -20,9 +20,9 @@ import {
   budgetMicros,
   budgetPeriods,
   budgetTotal,
-  displayBudgetAmount,
   percentBudgetAmount,
 } from "../../../features/ledger/budget-amounts";
+const displayBudgetAmount = (value: string) => formatDecimalAmount(value)
 definePageMeta({ layout: "admin-ledger" });
 useHead({ title: "Budgets" });
 const request = useRequestFetch(),

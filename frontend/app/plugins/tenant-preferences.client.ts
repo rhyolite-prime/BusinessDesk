@@ -2,14 +2,21 @@ import type { TenantPreferences } from '../composables/useTenantPreferences'
 export default defineNuxtPlugin(() => {
   const { user } = useBusinessDeskAuth(),
     { settings, version } = useTenantPreferences()
+  const displayDecimals = useState<number | null>('tenant-display-decimals', () => null)
   let request = 0
   watch(
     () => (user.value ? `${user.value.accountId}:${user.value.username}` : ''),
     async (identity) => {
       const current = ++request
+      displayDecimals.value = null
       settings.value = null
       version.value = -1
       if (!identity) return
+      try {
+        const profile = await $fetch<{displayDecimals?: number}>('/api/shared/company-profile')
+        if(current === request) displayDecimals.value = profile.displayDecimals ?? 2
+      } catch { /* Older servers/missing profiles retain the formatting default. */ }
+      if (current !== request) return
       try {
         const response = await $fetch<{
           settings: TenantPreferences

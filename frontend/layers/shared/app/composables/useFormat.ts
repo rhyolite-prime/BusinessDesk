@@ -2,6 +2,7 @@
 
 export function useFormat() {
   const { brand } = useBrand()
+  const displayDecimals = useState<number | null>('tenant-display-decimals', () => null)
   const preferences = useState<{
     locale: string
     timeZone: string
@@ -18,12 +19,12 @@ export function useFormat() {
       return new Intl.NumberFormat(preferences.value?.locale || cur.locale, {
         style: 'currency',
         currency: cur.code,
-        minimumFractionDigits: preferences.value?.moneyDecimals ?? 2,
-        maximumFractionDigits: preferences.value?.moneyDecimals ?? 2,
+        minimumFractionDigits: displayDecimals.value ?? preferences.value?.moneyDecimals ?? 2,
+        maximumFractionDigits: displayDecimals.value ?? preferences.value?.moneyDecimals ?? 2,
         useGrouping: preferences.value?.useGrouping ?? true,
       }).format(abs ? Math.abs(v) : v)
     } catch {
-      return `${cur.symbol} ${(abs ? Math.abs(v) : v).toLocaleString(undefined, { minimumFractionDigits: 2 })}`
+      return `${cur.symbol} ${(abs ? Math.abs(v) : v).toLocaleString(undefined, { minimumFractionDigits: displayDecimals.value ?? 2, maximumFractionDigits: displayDecimals.value ?? 2 })}`
     }
   }
 

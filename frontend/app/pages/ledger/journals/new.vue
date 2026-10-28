@@ -27,6 +27,7 @@ import {
 } from '../../../features/ledger/money'
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Journal editor' })
+const displayLedgerAmount = (value: bigint) => formatDecimalAmount(formatLedgerAmount(value))
 const api = useJournals(),
   { unitId } = api,
   route = useRoute()
@@ -303,7 +304,7 @@ async function addLine() {
     block: 'start',
   })
   element
-    .querySelector<HTMLSelectElement>('select')
+    .querySelector<HTMLButtonElement>('button[aria-haspopup="listbox"]')
     ?.focus({ preventScroll: true })
 }
 function base(l: JournalLine, side: 'debit' | 'credit') {
@@ -704,37 +705,16 @@ async function save() {
             <div
               class="journal-amount-fields grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
-              <label class="min-w-0 text-[11px] xl:col-span-3"
-                >GL account
-                <select
-                  v-model="l.accountId"
-                  required
-                  class="journal-input"
-                  @change="selectAccount(l)"
-                >
-                  <option value="">Select a GL account</option>
-                  <option
-                    v-if="
-                      l.accountId &&
-                      !options.accounts.some((a) => a.id === l.accountId)
-                    "
-                    :value="l.accountId"
-                  >
-                    {{ l.accountName || 'Unavailable account (replace)' }}
-                  </option>
-                  <option
-                    v-for="a in options.accounts.filter(
-                      (a) =>
-                        form.isMultiCurrency ||
-                        a.currencyId === options.baseCurrencyId,
-                    )"
-                    :key="a.id"
-                    :value="a.id"
-                  >
-                    {{ a.accountNumber }} · {{ a.name }}
-                  </option>
-                </select>
-              </label>
+              <AccountControlPicker
+                class="min-w-0 xl:col-span-3"
+                kind="accounts"
+                label="GL account"
+                :model-value="l.accountId"
+                :options="options.accounts.filter(a => form.isMultiCurrency || a.currencyId === options.baseCurrencyId).map(a => ({ id: a.id, label: `${a.accountNumber} · ${a.name}`, type: 'GL accounts' }))"
+                :disabled="loading || saving || readonly"
+                :unavailable-text="l.accountName || 'Unavailable account (replace)'"
+                @update:model-value="value => { l.accountId = value; selectAccount(l) }"
+              />
               <label class="min-w-0 text-[11px]"
                 >Transaction date
                 <input
@@ -800,7 +780,7 @@ async function save() {
                   :value="
                     base(l, 'debit') === null
                       ? ''
-                      : formatLedgerAmount(base(l, 'debit')!)
+                      : displayLedgerAmount(base(l, 'debit')!)
                   "
                   readonly
                   inputmode="decimal"
@@ -824,7 +804,7 @@ async function save() {
                   :value="
                     base(l, 'credit') === null
                       ? ''
-                      : formatLedgerAmount(base(l, 'credit')!)
+                      : displayLedgerAmount(base(l, 'credit')!)
                   "
                   readonly
                   inputmode="decimal"
@@ -931,7 +911,7 @@ async function save() {
                 <span class="font-mono">{{
                   base(l, 'debit') === null
                     ? 'Invalid'
-                    : formatLedgerAmount(base(l, 'debit')!)
+                    : displayLedgerAmount(base(l, 'debit')!)
                 }}</span></span
               >
               <span
@@ -939,7 +919,7 @@ async function save() {
                 <span class="font-mono">{{
                   base(l, 'credit') === null
                     ? 'Invalid'
-                    : formatLedgerAmount(base(l, 'credit')!)
+                    : displayLedgerAmount(base(l, 'credit')!)
                 }}</span></span
               >
             </div>
@@ -953,13 +933,13 @@ async function save() {
           <p>
             Base debit
             <strong class="ml-2 font-mono">{{
-              formatLedgerAmount(totals.debit)
+              displayLedgerAmount(totals.debit)
             }}</strong>
           </p>
           <p>
             Base credit
             <strong class="ml-2 font-mono">{{
-              formatLedgerAmount(totals.credit)
+              displayLedgerAmount(totals.credit)
             }}</strong>
           </p>
           <p :class="positiveBalanced ? 'text-emerald-600' : 'text-amber-600'">

@@ -1,8 +1,12 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers'; label?: string; unavailableText?: string }>()
-const copy = computed(() => props.kind === 'cost-centers' ? {
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts'; label?: string; unavailableText?: string }>()
+const copy = computed(() => props.kind === 'accounts' ? {
+  label: 'GL account', plural: 'accounts', search: 'Search GL accounts',
+  placeholder: 'Select a GL account', unavailable: 'Unavailable account (replace)',
+  hint: 'Search account number or name…', empty: 'No matching GL accounts.',
+} : props.kind === 'cost-centers' ? {
   label: 'Cost center', plural: 'cost centers', search: 'Search cost centers',
   placeholder: 'Not configured', unavailable: 'Unavailable cost center (replace)',
   hint: 'Search name or hierarchy…', empty: 'No matching cost centers.',
@@ -23,11 +27,12 @@ const optionLabel = (option: ControlOption) => option.min !== undefined && optio
   ? `${option.label} (${option.min}–${option.max})` : option.label
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null)
+const floating = computed(() => props.kind === 'cost-centers' || props.kind === 'accounts')
 const open = ref(false), query = ref(''), active = ref(-1)
 const fieldLabel = computed(() => props.label || copy.value.label)
 const optionGroupKey = (option: ControlOption) => props.kind === 'cost-centers' ? option.groupKey || option.type : option.type
 const groupDefinitions = computed(() => {
-  if (props.kind !== 'cost-centers') return ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => ({ key: type, type }))
+  if (props.kind !== 'cost-centers' && props.kind !== 'accounts') return ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => ({ key: type, type }))
   const definitions = new Map(props.options.map(option => [optionGroupKey(option), { key: optionGroupKey(option), type: option.type }]))
   return [...definitions.values()].sort((a, b) => a.key === 'root' ? b.key === 'root' ? 0 : -1 : b.key === 'root' ? 1 : a.type.localeCompare(b.type) || a.key.localeCompare(b.key))
 })
@@ -68,13 +73,13 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
 </script>
 
 <template>
-  <div ref="root" @focusout="event => { if (!root?.contains(event.relatedTarget as Node)) open = false }">
+  <div ref="root" class="relative min-w-0" :class="open && floating ? 'z-40' : ''" @focusout="event => { if (!root?.contains(event.relatedTarget as Node)) open = false }">
     <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ fieldLabel }}</span>
     <button ref="trigger" type="button" :disabled="disabled" :aria-labelledby="`${id}-label ${id}-value`" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="`${id}-list`"
       class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900" @click="open ? close() : expand()" @keydown.down.prevent="expand">
       <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
     </button>
-    <div v-if="open" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+    <div v-if="open" :class="floating ? 'absolute left-0 right-0 top-full z-50' : ''" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
       <button v-if="kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
         <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)' }}
       </button>
@@ -82,7 +87,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
-      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
+      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'accounts' ? 'GL accounts' : kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
         <div v-for="group in groups" :key="group.key" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"
