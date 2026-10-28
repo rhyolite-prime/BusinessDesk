@@ -632,7 +632,7 @@ async function save() {
               readonly
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 font-mono dark:border-slate-700 dark:bg-slate-900"
             />
-            <span v-if="!original" class="mt-1 block text-xs font-normal text-slate-500">From journal-batch-id settings. If already used, this number increments when saved.</span>
+            <span v-if="!original" class="mt-1 block text-xs font-normal text-slate-500"></span>
           </label>
           <label class="min-w-0 text-xs font-semibold"
             >Batch date<input
@@ -650,23 +650,10 @@ async function save() {
               maxlength="200"
               class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
           /></label>
-          <p class="text-[10px] text-slate-400 xl:col-span-3">
-            {{
-              original
-                ? 'Batch number is server-assigned.'
-                : 'Batch number is a preview; the server assigns the final number on save.'
-            }}
-            {{
-              form.isMultiCurrency
-                ? 'Each row’s currency comes from its GL account; foreign rates remain editable.'
-                : 'Local currency comes from Company Profile and applies to every line at rate 1.0000.'
-            }}
-            Descriptions use journal/account, currency, date and reference
-            keywords until you edit them.
-          </p>
+           
           <div class="min-w-0">
             <AccountControlPicker :model-value="header.costCenterId || ''" kind="cost-centers" label="Header cost center" :options="centerChoices" :disabled="loading || saving || readonly" :unavailable-text="header.costCenterId === mixedCostCenters ? 'Mixed cost centers — choose to apply to all' : undefined" @update:model-value="value => { header.costCenterId = value || null; applyHeaderCostCenter() }" />
-            <span class="mt-1 block text-[10px] font-normal text-slate-400">Applies to every line, including when cleared; new lines inherit it.</span>
+            <span class="mt-1 block text-[10px] font-normal text-slate-400"> </span>
           </div>
           <label class="flex items-center gap-2 text-xs"
             ><input
@@ -675,13 +662,7 @@ async function save() {
               @change="changeMode"
             />Multi-currency journal</label
           >
-          <p class="text-xs text-slate-400">
-            {{
-              form.isMultiCurrency
-                ? 'Rates are explicit: 1 unit of transaction currency × rate = base currency. No demo rates are supplied.'
-                : 'Local journals use the Company Profile default currency on every line at rate 1.0000. Enable multi-currency for foreign currencies.'
-            }}
-          </p>
+          
         </section>
         <section class="space-y-4">
           <header class="flex items-center justify-between">
