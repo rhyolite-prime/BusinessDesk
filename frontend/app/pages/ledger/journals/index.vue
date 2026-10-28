@@ -2,6 +2,7 @@
 import { journalRateDisplay } from '../../../features/ledger/journal-rate-display'
 import {
   Plus,
+  CircleCheck,
   Pencil,
   Trash2,
   ChevronDown,
@@ -315,7 +316,20 @@ async function execute() {
               <td class="text-right font-mono">
                 {{ displayBudgetAmount(row.totalCredit) }}
               </td>
-              <td class="px-4">{{ row.status }}</td>
+              <td class="px-4">
+                <span
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold leading-4 ring-1 ring-inset"
+                  :class="row.status === 'posted'
+                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25'
+                    : 'bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25'"
+                  :title="row.status === 'posted' ? 'Posted to the ledger; read-only' : 'Saved draft; not yet posted to the ledger'"
+                  :aria-label="`Journal status: ${row.status === 'posted' ? 'Posted' : 'Draft'}`"
+                >
+                  <CircleCheck v-if="row.status === 'posted'" :size="12" aria-hidden="true" />
+                  <Pencil v-else :size="12" aria-hidden="true" />
+                  {{ row.status === 'posted' ? 'Posted' : 'Draft' }}
+                </span>
+              </td>
               <td class="p-4 text-right">
                 <div class="flex justify-end gap-2">
                   <NuxtLink
