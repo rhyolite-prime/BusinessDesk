@@ -31,3 +31,20 @@ assert.equal(formatDecimalAmount('1'),'1.00')
 const {emptyCompanyProfile}=await load('frontend/app/features/ledger/company-profile-fields.ts')
 assert.equal(emptyCompanyProfile().displayDecimals,2)
 console.log('24 display precision/default/exact-string/tenant-reset checks passed')
+
+// Expanded journal register lines and confirmation totals must never render raw amounts.
+const register = fs.readFileSync('frontend/app/pages/ledger/journals/index.vue', 'utf8')
+for (const field of ['debit', 'credit', 'baseDebit', 'baseCredit']) {
+ assert.ok(register.includes(`{{ displayBudgetAmount(l.${field}) }}`), `journal line ${field} uses tenant precision`)
+ assert.ok(!register.includes(`{{ l.${field} }}`), `journal line ${field} is not rendered raw`)
+}
+const amounts = ['25.000000', '0.000000', '1.234567']
+const original = [...amounts]
+for (const digits of [0, 2, 4, 6]) {
+ decimals.value = digits
+ for (const amount of amounts) {
+  assert.equal(formatDecimalAmount(amount), new Intl.NumberFormat('en-GH', { minimumFractionDigits: digits, maximumFractionDigits: digits }).format(amount))
+ }
+}
+assert.deepEqual(amounts, original)
+console.log('Expanded journal amount formatting regression checks passed')

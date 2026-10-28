@@ -13,7 +13,7 @@ import type { Journal } from '../../../features/ledger/journal-types'
 import { emptyJournalOptions } from '../../../features/ledger/journal-types'
 import { useJournals } from '../../../features/ledger/useJournals'
 
-const displayBudgetAmount = (value: string) => formatDecimalAmount(value)
+const displayBudgetAmount = (value: string | undefined) => value === undefined ? '—' : formatDecimalAmount(value)
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Journals' })
 const api = useJournals(),
@@ -371,10 +371,10 @@ async function execute() {
                         {{ journalRateDisplay(l.exchangeRate) }}
                       </td>
                       <td class="text-right font-mono">
-                        {{ l.debit }} / {{ l.baseDebit }}
+                        {{ displayBudgetAmount(l.debit) }} / {{ displayBudgetAmount(l.baseDebit) }}
                       </td>
                       <td class="text-right font-mono">
-                        {{ l.credit }} / {{ l.baseCredit }}
+                        {{ displayBudgetAmount(l.credit) }} / {{ displayBudgetAmount(l.baseCredit) }}
                       </td>
                     </tr>
                   </tbody>
@@ -434,8 +434,8 @@ async function execute() {
             Refreshing open periods…
           </p>
           <p class="font-mono">
-            Local debit {{ target.totalDebit }} · Local credit
-            {{ target.totalCredit }}
+            Local debit {{ displayBudgetAmount(target.totalDebit) }} · Local credit
+            {{ displayBudgetAmount(target.totalCredit) }}
           </p>
           <div class="flex flex-wrap gap-3">
             <NuxtLink
