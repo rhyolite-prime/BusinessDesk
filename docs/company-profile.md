@@ -241,3 +241,33 @@ and refusal to truncate during rollback, alongside existing profile/crypto tests
 controlled upstream and covers hidden legacy inputs, selection/preview, save,
 reload, country preservation, cancellation/removal and invalid-file handling.
 Run it with `node --experimental-strip-types` and the usual browser dependencies.
+
+
+## Tenant-wide monetary display precision
+
+Apply `026_company_display_decimals.sql` **before deploying the updated backend**.
+It adds `core_company_profiles.display_decimals` with default 2 and a database
+check restricting integers to 0–6. Existing profiles retain a two-decimal default.
+The profile API exposes `displayDecimals`; create/update validate the range and
+tenant scoping, preserve the value in partial updates and return it on reads.
+Rollback is provided in `026_company_display_decimals.down.sql` (deploy the prior
+backend first). No generated ORM relationship edits are required.
+
+Company Profile → **ERP display settings** lets a tenant choose monetary display
+decimals. This is **display only**, not posting precision: raw amount inputs,
+ledger storage, exchange-rate precision, tax extraction/rounding and balancing
+algorithms remain unchanged. Monetary output through shared `useFormat().money`,
+`formatCurrency`, journal base totals, budgets, journal registers, petty cash,
+and payroll currency displays follows this setting. Counts, percentages, account
+numbers and exchange rates retain their own intentional formatting. Code-defined
+reports use their provided formatted values; the current chart-of-accounts
+report has no monetary columns.
+
+The value is loaded for the authenticated tenant, cleared on logout/account
+switch and updated immediately after a successful profile save. The Preferences
+currency-decimal control defers to Company Profile when configured, avoiding two
+competing settings. Missing profiles/older API responses use the existing
+fallback/default. Other already-open browser tabs obtain changes on reload.
+Financial inputs deliberately keep full saved precision even if displays round
+them to fewer places. Decimal-string formatting avoids converting large ledger
+values through JavaScript floating-point numbers.

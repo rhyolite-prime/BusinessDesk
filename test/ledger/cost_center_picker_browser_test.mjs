@@ -25,6 +25,7 @@ const upstream=http.createServer(async(req,res)=>{
  if(path==='/api/v1/auth/me')return req.headers.authorization==='Bearer tenant-token'?send(200,{userId:uuid(999),username:'admin',accountId:'acme'}):send(401,null)
  if(req.headers.authorization!=='Bearer tenant-token')return send(401,null,{code:'unauthorized'})
  seen.push({path,body,method:req.method,token:req.headers.authorization})
+ if(path==='/api/v1/shared/company-profile')return send(200,{displayDecimals:4})
  if(path==='/api/v1/shared/cost-centers')return send(200,{data:centers})
  if(path.startsWith('/api/v1/shared/cost-centers/'))return send(200,centers.find(c=>c.id===path.split('/').at(-1)))
  if(path==='/api/v1/ledger/accounting-units')return send(200,{data:[{id:unit,name:'Head office',code:'HQ',isActive:true}],totalPages:1})
@@ -78,8 +79,9 @@ try {
    await search.fill('');await expect(team).toHaveCount(0);await page.getByRole('button',{name:'Expand all',exact:true}).click();await expect(team).toBeVisible();checks++
    await page.getByRole('button',{name:'Collapse all',exact:true}).click();await expect(team).toHaveCount(0);await page.getByRole('button',{name:'Expand all',exact:true}).click();checks++
    await page.goto(base+'/ledger/journals/new?accountingUnitId='+unit,{waitUntil:'networkidle'})
+   check(await page.getByText('0.0000',{exact:true}).count()>0,'journal monetary displays use tenant company precision');
    const header=page.getByRole('button',{name:/^Header cost center/}),linePickers=()=>page.getByRole('button',{name:/^Cost center /}),pickerSearch=page.getByRole('combobox',{name:'Search cost centers'}),list=page.getByRole('listbox',{name:'Cost centers'})
-   await expect(header).toBeEnabled();await header.click();check(await list.getByRole('option').count()===40,'all cost centers beyond first 20 available')
+   await expect(header).toBeEnabled();const currencyBox=page.getByRole('checkbox',{name:'Multi-currency journal'});const currencyBefore=await currencyBox.evaluate(el=>el.getBoundingClientRect().top+window.scrollY);await header.click();const currencyAfter=await currencyBox.evaluate(el=>el.getBoundingClientRect().top+window.scrollY);check(Math.abs(currencyBefore-currencyAfter)<1,'opening cost-center popup never shifts multi-currency checkbox');check(await list.getByRole('option').count()===40,'all cost centers beyond first 20 available')
    check(JSON.stringify(await list.getByRole('group').evaluateAll(nodes=>nodes.map(n=>n.getAttribute('aria-label'))))===JSON.stringify(['Top-level cost centers','Branch','Head office','Head office / Operations']),'choices grouped under their immediate parent headers')
    check(await list.getByRole('group',{name:'Head office / Operations',exact:true}).getByRole('option').count()===1,'grandchild is grouped under immediate parent');check(await list.getByRole('group',{name:'Top-level cost centers',exact:true}).getByRole('option').count()===2,'root centers have their own header');
    check((await list.boundingBox()).height<=256,'picker list bounded')
@@ -88,6 +90,8 @@ try {
    await linePickers().first().click();await pickerSearch.fill('Branch Operations');await list.getByRole('option').click();await expect(linePickers().first()).toContainText('Branch / Operations');await expect(linePickers().last()).toContainText('Head office / Operations / Team');checks++
    await header.click();await pickerSearch.fill('never matches');await expect(list.getByRole('status')).toHaveText('No matching cost centers.');await page.getByRole('button',{name:'Not configured',exact:true}).click();for(const button of await linePickers().all())await expect(button).toContainText('Not configured');checks++
    await header.click();await pickerSearch.press('Escape');await expect(header).toBeFocused();checks++
+   const gl=page.getByRole('button',{name:/^GL account/}).first();await gl.click();const glSearch=page.getByRole('combobox',{name:'Search GL accounts'});await glSearch.fill('10001 Cash');await expect(page.getByRole('listbox',{name:'GL accounts'}).getByRole('option')).toHaveCount(1);await glSearch.press('Enter');await expect(gl).toContainText('10001 · Cash');checks++
+   await gl.click();await glSearch.fill('no such account');await expect(page.getByRole('listbox',{name:'GL accounts'}).getByRole('status')).toHaveText('No matching GL accounts.');await glSearch.press('Escape');await expect(gl).toBeFocused();checks++
   }
   await page.goto(base+'/ledger/journals/new?accountingUnitId='+unit+'&id='+uuid(8000),{waitUntil:'networkidle'})
   const editHeader=page.getByRole('button',{name:/^Header cost center/});await expect(editHeader).toContainText('Mixed cost centers');checks++

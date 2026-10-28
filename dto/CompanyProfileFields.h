@@ -2,7 +2,8 @@
 #include <array>
 namespace business_desk::dto::company_profile {
 struct Field { const char* name; const char* column; const char* sqlType; char kind; int limit; };
-inline constexpr std::array<Field,34> fields{{
+inline constexpr std::array<Field,35> fields{{
+ {"displayDecimals","display_decimals","integer",'i',6},
  {"companyName","company_name","varchar(200)",'s',200},
  {"countryName","country_name","varchar(100)",'s',100},
  {"cityName","city_name","varchar(160)",'s',160},

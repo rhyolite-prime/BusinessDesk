@@ -8,7 +8,9 @@ const exists = ref(false), loaded = ref(false), loading = ref(true), saving = re
 const logoPending = ref(false), logoRevision = ref(0)
 const password = ref(''), clearPassword = ref(false), hasPassword = ref(false)
 const currencies = ref<{ id: string; code: string; name: string; isActive: boolean }[]>([])
+const displayDecimals = useState<number | null>('tenant-display-decimals', () => null)
 const sections = [
+ { id: 'display', title: 'ERP display settings', description: 'Decimal places for monetary displays across the ERP (0–6). This does not change stored values, taxes, exchange rates or posting calculations.' },
  { id: 'company', title: 'Company details', description: 'Your business identity, location, registration and fiscal year.' },
  { id: 'social', title: 'Social security', description: 'Employer registration and employee/employer contribution percentages.' },
  { id: 'provident', title: 'Provident fund', description: 'Primary provident fund contributions and tax treatment.' },
@@ -60,7 +62,7 @@ async function save() {
   try {
     const body = { ...form, ...(password.value ? { emailPassword: password.value } : {}), ...(clearPassword.value ? { clearEmailPassword: true } : {}) }
     const result = exists.value ? await request<Record<string, any>>('/api/shared/company-profile', { method: 'PUT', body }) : await request<Record<string, any>>('/api/shared/company-profile', { method: 'POST', body })
-    populate(result); exists.value = true; editing.value = false
+    populate(result); displayDecimals.value = Number(result.displayDecimals ?? 2); exists.value = true; editing.value = false
   } catch (e) { saveError.value = message(e) }
   finally { saving.value = false }
 }
@@ -82,7 +84,8 @@ onUnmounted(() => { version++; currencyVersion++ })
           <template v-for="field in companyProfileFields.filter(f => f.group === section.id && f.key !== 'companyLogoUrl')" :key="field.key">
             <label v-if="field.kind === 'b'" class="flex items-center gap-3 rounded-lg border border-slate-100 p-3 text-xs text-slate-600 dark:border-slate-800 dark:text-slate-300"><input v-model="form[field.key]" type="checkbox" class="h-4 w-4 accent-brand-700" />{{ field.label }}</label>
             <label v-else class="block text-xs font-semibold text-slate-600 dark:text-slate-300" :class="field.key === 'address' ? 'sm:col-span-2' : ''">{{ field.label }}<span v-if="field.key === 'companyName'" class="text-rose-500"> *</span>
-              <select v-if="field.key === 'firstMonthOfFiscalYear'" v-model.number="form.firstMonthOfFiscalYear" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option v-for="(month, index) in months" :key="month" :value="index + 1">{{ month }}</option></select>
+              <select aria-label="Monetary display decimal places" v-if="field.key === 'displayDecimals'" v-model.number="form.displayDecimals" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option v-for="n in [0,1,2,3,4,5,6]" :key="n" :value="n">{{ n }}</option></select>
+              <select v-else-if="field.key === 'firstMonthOfFiscalYear'" v-model.number="form.firstMonthOfFiscalYear" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option v-for="(month, index) in months" :key="month" :value="index + 1">{{ month }}</option></select>
               <select v-else-if="field.key === 'defaultCurrencyId'" v-model="form.defaultCurrencyId" required class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option :value="null" disabled>Select the local currency</option><option v-if="form.defaultCurrencyId && !currencies.some(c => c.id === form.defaultCurrencyId)" :value="form.defaultCurrencyId">Saved currency (currently unavailable)</option><option v-for="currency in currencies" :key="currency.id" :value="currency.id">{{ currency.code }} — {{ currency.name }}</option></select>
               <textarea v-else-if="field.key === 'address'" v-model="form.address as string" rows="3" :maxlength="field.max" class="mt-1.5 w-full rounded-lg border border-slate-200 bg-transparent px-3 py-2 text-sm outline-none focus:border-brand-500 dark:border-slate-700" />
               <input v-else-if="field.kind === 'r' || field.kind === 'i'" v-model.number="form[field.key]" required type="number" :min="0" :max="field.max" :step="field.kind === 'r' ? '0.000001' : '1'" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700" />

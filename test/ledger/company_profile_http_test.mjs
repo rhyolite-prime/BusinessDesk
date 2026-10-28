@@ -77,10 +77,11 @@ try{
    const context=await browser.newContext({viewport:{width:1440,height:1100}});await context.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await context.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message))
    await page.goto(base+'/ledger/shared-config/company-profile');await page.getByRole('button',{name:'Create company profile',exact:true}).waitFor()
    await page.getByLabel('Company name',{exact:false}).fill('Browser Company');await page.getByLabel('City name',{exact:true}).fill('Accra');await page.getByLabel('First month of fiscal year',{exact:false}).selectOption('4');await page.getByLabel('Default currency',{exact:false}).selectOption(currencyId)
+   await page.getByLabel('Monetary display decimal places',{exact:false}).selectOption('4');
    await page.getByLabel('Pay social security fund',{exact:true}).check();await page.getByLabel('Social security fund employee rate',{exact:true}).fill('5.5');await page.getByLabel('Social security fund employer rate',{exact:true}).fill('13')
    await page.getByLabel('Mail host name',{exact:true}).fill('smtp.example.test');await page.getByLabel('Port number',{exact:true}).fill('587');await page.getByLabel('Primary email address',{exact:true}).fill('mail@example.test');await page.getByLabel('New SMTP password',{exact:true}).fill('browser-test-password')
    await page.getByRole('button',{name:'Create company profile',exact:true}).click();await page.getByRole('button',{name:'Edit profile',exact:true}).waitFor()
-   const saved=profiles.get('Bearer tenant-token');check(saved.companyName==='Browser Company'&&saved.firstMonthOfFiscalYear===4&&saved.defaultCurrencyId===currencyId&&saved.socialSecurityFundEmployeeRate===5.5&&saved.paySocialSecurityFund,'browser form saves grouped model fields')
+   const saved=profiles.get('Bearer tenant-token');check(saved.displayDecimals===4&&saved.companyName==='Browser Company'&&saved.firstMonthOfFiscalYear===4&&saved.defaultCurrencyId===currencyId&&saved.socialSecurityFundEmployeeRate===5.5&&saved.paySocialSecurityFund,'browser form saves grouped model fields')
    check(await page.getByLabel('Company name',{exact:false}).isDisabled(),'saved profile defaults to view mode')
    check(!(await page.locator('body').innerText()).includes('browser-test-password')&&!await page.getByLabel('New SMTP password',{exact:true}).count(),'saved password never redisplayed')
    check(await page.getByRole('button',{name:/delete/i}).count()===0,'no delete UI')
