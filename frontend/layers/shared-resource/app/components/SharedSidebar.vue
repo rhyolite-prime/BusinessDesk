@@ -117,13 +117,11 @@ const ledgerGroups: NavigationGroup[] = [
             children: [
               reportItem('Basic'),
               reportItem('Budget', 'scale'),
-              reportItem('Budget New', 'scale'),
               reportItem('Prior Period', 'clock'),
               reportItem('Expenditure Returns'),
               reportItem('Comparative Operating Statement'),
               reportItem('Revenue', 'banknotes'),
               reportItem('Cross-Tab', 'list-bullet'),
-              reportItem('Cross-Tab Quarters', 'list-bullet'),
             ],
           },
           {
