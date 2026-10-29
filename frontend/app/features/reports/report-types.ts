@@ -1,5 +1,5 @@
 /** Code-defined ERP reports only. No executable templates or designer uploads. */
-export interface ReportColumn { key: string; title: string; width: number }
+export interface ReportColumn { key: string; title: string; width: number; alignment?: 'left' | 'right' }
 export interface ReportSection { title: string; path?: string[]; rows: string[][] }
 export interface EmbeddedReport {
   id: string

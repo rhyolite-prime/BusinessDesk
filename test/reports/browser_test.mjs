@@ -48,6 +48,7 @@ try {
    }
    check(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'no page horizontal overflow')
   }
+  await page.goto(base+'/ledger/reports/financial?type=trial-balance',{waitUntil:'networkidle'});await expect(page.getByLabel('From',{exact:true})).toHaveCount(0);await page.getByLabel('As of',{exact:true}).fill('2026-10-31');await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('General Ledger #');await expect(page.getByRole('document',{name:/Report page/})).toContainText('Asset');checks+=3
   await page.goto(base+'/ledger/reports/mappings',{waitUntil:'networkidle'});const category=page.getByLabel('Classification for 40001 Sales');await category.selectOption('other_income');await page.getByRole('button',{name:'Save 1 changed mappings'}).click();await expect(page.locator('p[role="status"]')).toContainText('Report mappings saved');check(accounts[1].category==='other_income','mapping writes exact account id')
   check(seen.some(request=>request.path.endsWith('/mappings')&&request.method==='PUT'&&request.body[0].accountId===uuid(3)),'mapping BFF forwards ID and method')
   admin=false;await page.reload({waitUntil:'networkidle'});await expect(category).toBeDisabled();checks++

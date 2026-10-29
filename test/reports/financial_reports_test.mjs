@@ -35,7 +35,7 @@ check(value('income-ebitda','EBITDA')==='132.00','EBITDA reconciliation includes
 check(value('balance-sheet','Accounting equation difference (must be zero)')==='0.00','balance sheet reconciles')
 check(value('balance-sheet','Total assets')==='232.00','as of includes prior history')
 check(value('balance-sheet','Unclosed earnings (cumulative revenue less expense)')==='132.00','earnings not lost at year boundary')
-check(value('trial-balance','Difference (must be zero)')==='0.00','trial balance reconciles')
+check(rows('trial-balance').find(row=>row[0]==='Difference (must be zero)')[2]==='0.00','trial balance reconciles')
 check(rows('general-ledger').some(row=>row[0]==='Opening'&&row[5]==='130.00'),'ledger opening is before range')
 check(rows('income-comparative').find(r=>r[0]==='Net income / (loss)')[2]==='30.00','prior year comparison')
 check(build('income-budget').report.sections.find(s=>s.title==='Net income').rows[0][2]==='165.00','revised budget net')
@@ -55,3 +55,11 @@ check(build('income-basic',{},huge).report.sections.find(s=>s.title==='Summary')
 assert.equal(micros('-0.123456'),-123456n);checks++
 const original=JSON.stringify(snapshot);build('income-crosstab');check(JSON.stringify(snapshot)===original,'snapshot immutable')
 console.log(`${checks} financial report engine checks passed`)
+
+const trial=build('trial-balance').report
+assert.deepEqual(trial.columns.map(column=>column.title),['General Ledger #','','Debit','Credit'])
+assert.deepEqual(trial.columns.slice(2).map(column=>column.alignment),['right','right'])
+assert.deepEqual(trial.sections.slice(0,3).map(section=>section.title),['Asset','Equity','Revenue'])
+assert.equal(trial.landscape,false)
+assert.ok(trial.sections[0].rows.every(row=>row.length===4&&!row[0].includes(' · ')))
+console.log('5 traditional trial-balance layout checks passed')

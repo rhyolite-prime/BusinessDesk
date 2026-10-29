@@ -23,7 +23,7 @@ Existing Chart of Accounts remains separate and unchanged.
 | --- | --- |
 | Journal Register | Posted batches, source, line date, account, reference/description, transaction currency/rate and original/base debit/credit. Totals are base-currency only. |
 | General Ledger / Account Activity | Account opening balance before From, in-period debits/credits, chronological running balance and closing balance. Optional account filter. |
-| Trial Balance | Account opening balances, period movements, closing debit/credit balances and explicit zero-difference control. |
+| Trial Balance | Portrait, classic black-and-white closing balances as of the selected date: separate GL number/name columns, underlined account-type headings, right-aligned debit/credit, totals and zero-difference control. |
 | Balance Sheet | As-of assets, liabilities and equity, current/noncurrent mapped sections, unclassified sections, cumulative unclosed earnings, and accounting-equation reconciliation. |
 | Cost-Center Report | Posted transaction detail grouped by center UUID, including unassigned lines, with debit/credit/net totals. |
 | Basic Income Statement | Revenue, expense detail and net income/loss. |
@@ -148,3 +148,19 @@ cannot use tenant report APIs. No report query writes ledger balances.
   sanitized failures, authentication and CSRF. The browser uses a controlled
   upstream; native Drogon/real PostgreSQL behavior is tested separately above.
 - Existing chart-of-accounts, report export and print regressions remain in place.
+
+
+### Traditional trial-balance presentation
+
+The trial balance follows the supplied reference: General Ledger # spans the
+account-number/name headers; Debit and Credit are right aligned; rows are grouped
+in Asset, Liability, Equity, Revenue, Expense order, naturally sorted by account
+number. Contra balances stay on their actual debit/credit side. Zero counterparts
+show using company precision. The view uses closing balances through **As of**;
+From is hidden and ignored (opening/movement detail remains in General Ledger).
+Totals, the reconciliation difference, company identity, scope and pagination
+remain in the report. Trial balance is always monochrome/portrait, independent of
+other reports' appearance. PDF uses bundled OFL-licensed Tinos regular/bold serif
+fonts (`frontend/public/fonts/tinos`, license alongside); Word uses Times New
+Roman; Excel retains separate GL-number/name cells with aligned monetary columns.
+No ledger calculations or source queries are changed by this presentation.

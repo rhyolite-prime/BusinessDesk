@@ -21,7 +21,11 @@ let checks=0
 for(const [kind] of reportCatalog){
  const {report}=financialReport(snapshot,{kind,from:'2026-10-01',to:'2026-10-31'})
  assert.ok(Math.abs(report.columns.reduce((sum,c)=>sum+c.width,0)-100)<0.01);checks++
- const pdf=await createReportPdf(report),xlsx=await createReportExcel(report),docx=await createReportWord(report)
+ const oldFetch=globalThis.fetch
+ if(kind==='trial-balance'){globalThis.location={};globalThis.fetch=async url=>new Response(await readFile('frontend/public'+url))}
+ const pdf=await createReportPdf(report)
+ if(kind==='trial-balance'){assert.ok(Buffer.from(pdf).includes(Buffer.from('Tinos')));checks++;delete globalThis.location;globalThis.fetch=oldFetch}
+ const xlsx=await createReportExcel(report),docx=await createReportWord(report)
  assert.equal(Buffer.from(pdf).subarray(0,4).toString(),'%PDF');checks++
  const book=new ExcelJS.Workbook();await book.xlsx.load(await xlsx.arrayBuffer());assert.equal(book.getWorksheet('Report').getCell('A2').value,report.title);checks++
  assert.equal(book.getWorksheet('Report').pageSetup.orientation,report.landscape?'landscape':'portrait');checks++

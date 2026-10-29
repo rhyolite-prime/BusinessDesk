@@ -1,4 +1,4 @@
-import type { EmbeddedReport, ReportSection } from './report-types'
+import type { EmbeddedReport, ReportSection, ReportColumn } from './report-types'
 export const reportCatalog = [
  ['journal-register','Journal Register'], ['general-ledger','General Ledger / Account Activity'], ['trial-balance','Trial Balance'], ['balance-sheet','Balance Sheet'], ['cost-center','Cost-Center Report'],
  ['income-basic','Basic Income Statement'], ['income-multistep','Multi-step Operating Statement'], ['income-budget','Budget vs Actual'], ['income-prior','Prior-period Operating Statement'], ['income-comparative','Comparative Operating Statement (prior year)'], ['income-expenditure','Expenditure Returns'], ['income-revenue','Revenue Statement'], ['income-crosstab','Cross-Tab / Cost-Center Comparison'], ['income-monthly','Monthly Operating Trends'], ['income-ytd','Year-to-Date Income Statement'], ['income-common','Common-Size Income Statement'], ['income-ebitda','EBITDA Statement'],
@@ -29,7 +29,7 @@ const typeNames=['Assets','Liabilities','Equity','Revenue','Expenses']
 export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFilters):{report:EmbeddedReport;warnings:string[]} {
  const {kind,to}=filters;let from=filters.from
  day(to)
- if(kind==='balance-sheet')from='1900-01-01'
+ if(kind==='balance-sheet'||kind==='trial-balance')from='1900-01-01'
  const fiscalStart=(date:string)=>{const d=day(date),month=snapshot.fiscalMonth||1;return `${d.getUTCFullYear()-(d.getUTCMonth()+1<month?1:0)}-${String(month).padStart(2,'0')}-01`}
  if(kind==='income-ytd')from=fiscalStart(to)
  if(day(from)>day(to)||to>snapshot.through)throw Error('Report dates must be ordered and within the loaded snapshot.')
@@ -57,7 +57,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  if(filters.costCenterId)warnings.push('Cost-center-filtered statements may not balance if only one side of a journal carries this cost center.')
  if(lines.some(l=>!snapshot.accounts.some(a=>a.id===l.accountId)))warnings.push('Historical deleted/unavailable accounts are included using their posted line identity; classify them before advanced reporting.')
  const title=reportCatalog.find(([id])=>id===kind)?.[1];if(!title)throw Error('Unknown financial report.')
- let columns:{key:string;title:string;width:number}[]=[],sections:ReportSection[]=[]
+ let columns:ReportColumn[]=[],sections:ReportSection[]=[]
  const cols=(labels:string[])=>{columns=labels.map((title,i)=>({key:String(i),title,width:labels.length===1?100:i===0?(labels.length>6?14:32):(100-(labels.length>6?14:32))/(labels.length-1)}))}
  const section=(title:string,rows:string[][])=>sections.push({title,rows})
  const accountLabel=(a:ReportAccount)=>`${a.number} · ${a.name}`
@@ -74,10 +74,18 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
    rows.push(['Closing',to,'',...totals(entries.filter(l=>l.date>=from)),money(balance)]);section(accountLabel(a),rows)
   }
  }else if(kind==='trial-balance'){
-  cols(['Account','Opening (Dr + / Cr −)','Period debit','Period credit','Closing debit','Closing credit'])
-  const all:string[][]=[];let dr=0n,cr=0n
-  for(const a of accountList){const entries=byAccount.get(a.id)||[];const opening=net(entries.filter(l=>l.date<from)),ending=net(entries);if(!entries.length)continue;const d=ending>0n?ending:0n,c=ending<0n?-ending:0n;dr+=d;cr+=c;all.push([accountLabel(a),money(opening),...totals(entries.filter(l=>l.date>=from)),money(d),money(c)])}
-  section('Trial balance',all);section('Control totals',[['TOTAL','','', '',money(dr),money(cr)],['Difference (must be zero)',money(dr-cr),'','','','']]);if(dr!==cr)warnings.push('Trial balance does not balance in the selected scope. Investigate missing/opening entries or cost-center allocation.')
+  columns=[{key:'number',title:'General Ledger #',width:14},{key:'name',title:'',width:46},{key:'debit',title:'Debit',width:20,alignment:'right'},{key:'credit',title:'Credit',width:20,alignment:'right'}]
+  let dr=0n,cr=0n
+  for(const [type,label] of [[0,'Asset'],[1,'Liability'],[2,'Equity'],[3,'Revenue'],[4,'Expense']] as const){
+   const rows:string[][]=[]
+   for(const a of accountList.filter(account=>account.type===type)){
+    const entries=byAccount.get(a.id)||[];if(!entries.length)continue
+    const ending=net(entries),debit=ending>0n?ending:0n,credit=ending<0n?-ending:0n
+    dr+=debit;cr+=credit;rows.push([a.number,a.name,money(debit),money(credit)])
+   }
+   if(rows.length)section(label,rows)
+  }
+  section('Totals',[['','TOTAL',money(dr),money(cr)],['Difference (must be zero)','',money(dr-cr),'']]);if(dr!==cr)warnings.push('Trial balance does not balance in the selected scope. Investigate missing/opening entries or cost-center allocation.')
  }else if(kind==='balance-sheet'){
   cols(['Classification / account','Balance (base)'])
   const balances=new Map(accountList.map(a=>[a.id,net(byAccount.get(a.id)||[])]))
@@ -148,5 +156,5 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  const uniqueWarnings=[...new Set(warnings)]
  // Warnings are part of the report snapshot and therefore all exported formats.
  if(uniqueWarnings.length)section('Report notes',uniqueWarnings.map(warning=>[warning,...Array(Math.max(0,columns.length-1)).fill('')]))
- return {warnings:uniqueWarnings,report:{id:kind,title:title.toUpperCase(),companyName:snapshot.companyName||'Company profile not configured',generatedAt:snapshot.generatedAt,subtitle:`${snapshot.unitName} · ${snapshot.currencyCode} (base) · ${kind==='balance-sheet'?'As of '+to:from+' to '+to} · Posted only · ${filters.costCenterId?'Cost center: '+filters.costCenterId:'All cost centers'}${accountFilter?' · Account: '+accountLabel(accounts.get(accountFilter)!):''} · Transaction-date basis`,columns,sections,landscape:columns.length>=6}}
+ return {warnings:uniqueWarnings,report:{id:kind,title:title.toUpperCase(),companyName:snapshot.companyName||'Company profile not configured',generatedAt:snapshot.generatedAt,subtitle:`${snapshot.unitName} · ${snapshot.currencyCode} (base) · ${(kind==='balance-sheet'||kind==='trial-balance')?'As of '+to:from+' to '+to} · Posted only · ${filters.costCenterId?'Cost center: '+filters.costCenterId:'All cost centers'}${accountFilter?' · Account: '+accountLabel(accounts.get(accountFilter)!):''} · Transaction-date basis`,columns,sections,landscape:columns.length>=6}}
 }
