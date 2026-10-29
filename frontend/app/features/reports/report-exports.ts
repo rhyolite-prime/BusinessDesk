@@ -25,7 +25,7 @@ export function reportPdfDefinition(report: EmbeddedReport, mode: ReportColorMod
     else body.push(row.cells.map((text, index) => ({ id: index === 0 ? `report-account-${rowIndex}` : undefined, text, alignment: report.columns[index]?.alignment, margin: [index === 0 ? (trial ? 9 : Math.min(row.depth, 4) * 12 + 3) : 3, trial ? 4 : 2, 3, trial ? 4 : 2] })))
   }
   const content: Content[] = hierarchy.length ? [{ table: { widths: report.columns.map(column => `${column.width}%`), headerRows: 1, keepWithHeaderRows: 1, dontBreakRows: true, body }, layout: trial ? {hLineWidth: (i:number) => i === 1 ? 1.2 : 0, vLineWidth: () => 0, hLineColor: () => '#000000'} : 'noBorders' }] : []
-  return { info: { title: report.title, author: report.companyName, creator: 'BusinessDesk' }, pageSize: 'A4', pageOrientation: report.landscape ? 'landscape' : 'portrait', pageMargins: [36, Math.max(110, 70 + Math.ceil(report.companyName.length / 65) * 16 + Math.ceil(report.subtitle.length / 95) * 10), 36, 48], pageBreakBefore: (node, following) => !!node.id?.startsWith('report-heading-') && !following.some(item => item.id?.startsWith('report-account-')), defaultStyle: { font: 'Roboto', fontSize: trial ? 11 : report.landscape ? 7.5 : 9, color: `#${palette.ink}` },
+  return { info: { title: report.title, author: report.companyName, creator: 'BusinessDesk' }, pageSize: 'A4', pageOrientation: report.landscape ? 'landscape' : 'portrait', pageMargins: [36, Math.max(110, 70 + Math.ceil(report.companyName.length / 65) * 16 + Math.ceil(report.subtitle.length / 95) * 10), 36, 48], pageBreakBefore: (node, following) => !!node.id?.startsWith('report-heading-') && !following.some(item => item.id?.startsWith('report-account-')), defaultStyle: { font: 'Roboto', fontSize: report.landscape ? 7.5 : 9, color: `#${palette.ink}` },
     header: { margin: [36, 25, 36, 0], stack: [
       { text: report.companyName, alignment: 'center', bold: true, color: `#${palette.accent}`, fontSize: report.companyName.length > 100 ? 9 : 13 },
       { canvas: [{ type: 'line', x1: 0, y1: 7, x2: contentWidth, y2: 7, lineWidth: 1 }] },
@@ -43,18 +43,7 @@ export async function createReportPdf(report: EmbeddedReport, mode: ReportColorM
   const [{ default: pdfMake }, { default: fonts }] = await Promise.all([import('pdfmake/build/pdfmake'), import('pdfmake/build/vfs_fonts')])
   const vfs = { ...fonts } as unknown as Record<string,string>
   const definition = reportPdfDefinition(report, mode)
-  // Bundled OFL fonts keep the reference's traditional serif appearance offline.
-  if(report.id === 'trial-balance' && typeof location !== 'undefined') {
-    for(const file of ['Tinos-Regular.ttf','Tinos-Bold.ttf']) {
-      const response=await fetch(`/fonts/tinos/${file}`)
-      if(!response.ok)throw new Error('Unable to load trial-balance font')
-      const bytes=new Uint8Array(await response.arrayBuffer())
-      let binary='';for(let i=0;i<bytes.length;i+=8192)binary+=String.fromCharCode(...bytes.subarray(i,i+8192))
-      vfs[file]=btoa(binary)
-    }
-    definition.defaultStyle = { ...definition.defaultStyle, font:'Tinos' }
-  }
-  const reportFonts = { Roboto:{normal:'Roboto-Regular.ttf',bold:'Roboto-Medium.ttf',italics:'Roboto-Italic.ttf',bolditalics:'Roboto-MediumItalic.ttf'}, ...pdfMake.fonts, Tinos:{normal:'Tinos-Regular.ttf',bold:'Tinos-Bold.ttf',italics:'Tinos-Regular.ttf',bolditalics:'Tinos-Bold.ttf'} }
+  const reportFonts = { Roboto:{normal:'Roboto-Regular.ttf',bold:'Roboto-Medium.ttf',italics:'Roboto-Italic.ttf',bolditalics:'Roboto-MediumItalic.ttf'}, ...pdfMake.fonts }
   return new Promise(resolve => pdfMake.createPdf(definition,undefined,reportFonts,vfs).getBuffer(buffer => resolve(new Uint8Array(buffer))))
 }
 
@@ -99,7 +88,7 @@ export async function createReportWord(report: EmbeddedReport, mode: ReportColor
       : item.fullWidth ? new TableRow({cantSplit:true,children:[new TableCell({columnSpan:report.columns.length,children:[paragraph(item.cells[0] || '')]})]})
       : new TableRow({ cantSplit: true, children: item.cells.map((text, index) => new TableCell({ width: { size: report.columns[index]!.width, type: WidthType.PERCENTAGE }, children: [paragraph(text, false, report.columns[index]?.alignment)] })) })),
   ] })] : []
-  const doc = new Document({ styles:trial?{default:{document:{run:{font:'Times New Roman'}}}}:undefined, creator: 'BusinessDesk', title: report.title, sections: [{ properties: { page: { size: { width: report.landscape ? 16838 : 11906, height: report.landscape ? 11906 : 16838 }, margin: { top: 2600, bottom: 1000, left: 720, right: 720, header: 400, footer: 400 } } },
+  const doc = new Document({ creator: 'BusinessDesk', title: report.title, sections: [{ properties: { page: { size: { width: report.landscape ? 16838 : 11906, height: report.landscape ? 11906 : 16838 }, margin: { top: 2600, bottom: 1000, left: 720, right: 720, header: 400, footer: 400 } } },
     headers: { default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: report.companyName, bold: true, color: palette.accent, size: report.companyName.length > 100 ? 18 : 26 })], alignment: AlignmentType.CENTER }), new Paragraph({ children: [new TextRun({ text: report.title, bold: true, color: palette.accent, size: 22 })], alignment: AlignmentType.CENTER }), new Paragraph({ children: [new TextRun({ text: report.subtitle, color: palette.muted, size: 16 })], alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: palette.accent, space: 8 } } })] }) },
     footers: { default: new Footer({ children: [new Paragraph({ children: [new TextRun({ text: `Report printed on ${report.generatedAt}  |  BusinessDesk · G/L  |  Page `, size: 14 }), new TextRun({ children: [PageNumber.CURRENT], size: 14 }), new TextRun({ text: ' of ', size: 14 }), new TextRun({ children: [PageNumber.TOTAL_PAGES], size: 14 })] })] }) },
     children: children.length ? children : [paragraph('No accounts match the selected filters.')],

@@ -160,7 +160,8 @@ show using company precision. The view uses closing balances through **As of**;
 From is hidden and ignored (opening/movement detail remains in General Ledger).
 Totals, the reconciliation difference, company identity, scope and pagination
 remain in the report. Trial balance is always monochrome/portrait, independent of
-other reports' appearance. PDF uses bundled OFL-licensed Tinos regular/bold serif
-fonts (`frontend/public/fonts/tinos`, license alongside); Word uses Times New
-Roman; Excel retains separate GL-number/name cells with aligned monetary columns.
+other reports' appearance. All reports use the same font settings as the Chart of Accounts in each output
+format (including Roboto for PDF). Reference templates guide layout only, never
+font selection. Trial Balance has no separate font assets or font overrides.
+Excel retains separate GL-number/name cells with aligned monetary columns.
 No ledger calculations or source queries are changed by this presentation.
