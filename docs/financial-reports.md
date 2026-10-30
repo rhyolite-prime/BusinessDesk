@@ -158,7 +158,7 @@ in Asset, Liability, Equity, Revenue, Expense order, naturally sorted by account
 number. Contra balances stay on their actual debit/credit side. Zero counterparts
 show using company precision. The view uses closing balances through **As of**;
 From is hidden and ignored (opening/movement detail remains in General Ledger).
-Totals, the reconciliation difference, company identity, scope and pagination
+Grand totals, company identity, scope and pagination
 remain in the report. Trial balance is always monochrome/portrait, independent of
 other reports' appearance. All reports use the same font settings as the Chart of Accounts in each output
 format (including Roboto for PDF). Reference templates guide layout only, never
@@ -188,9 +188,10 @@ reflected in the URL; existing `/ledger/reports/financial?type=…` and
 
 Trial Balance finishes with a bold **GRAND TOTAL** row containing the sum of
 closing debit balances and the sum of closing credit balances, in the selected
-scope and company display precision. It follows reconciliation controls and any
+scope and company display precision. It follows any
 report notes, so it is the final report row, including PDF/print, Excel and Word.
-The reconciliation difference remains visible; totals are never forced equal.
+There is no control-totals/difference section or duplicate grand-total heading.
+Totals are never forced equal; an unbalanced scope still produces a warning.
 All reports continue using the Chart of Accounts font settings.
 
 

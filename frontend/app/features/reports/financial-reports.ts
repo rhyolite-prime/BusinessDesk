@@ -87,7 +87,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
    if(rows.length)section(label,rows)
   }
   trialTotals={debit:dr,credit:cr}
-  section('Control totals',[['Difference (must be zero)','',money(dr-cr),'']]);if(dr!==cr)warnings.push('Trial balance does not balance in the selected scope. Investigate missing/opening entries or cost-center allocation.')
+  if(dr!==cr)warnings.push('Trial balance does not balance in the selected scope. Investigate missing/opening entries or cost-center allocation.')
  }else if(kind==='balance-sheet'){
   cols(['Classification / account','Balance (base)'])
   const balances=new Map(accountList.map(a=>[a.id,net(byAccount.get(a.id)||[])]))
@@ -158,6 +158,6 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  const uniqueWarnings=[...new Set(warnings)]
  // Warnings are part of the report snapshot and therefore all exported formats.
  if(uniqueWarnings.length)section('Report notes',uniqueWarnings.map(warning=>[warning,...Array(Math.max(0,columns.length-1)).fill('')]))
- if(trialTotals)sections.push({title:'Grand total',emphasized:true,rows:[['','GRAND TOTAL',money(trialTotals.debit),money(trialTotals.credit)]]})
+ if(trialTotals)sections.push({title:'Grand total',hideHeading:true,emphasized:true,rows:[['','GRAND TOTAL',money(trialTotals.debit),money(trialTotals.credit)]]})
  return {warnings:uniqueWarnings,report:{id:kind,title:title.toUpperCase(),companyName:snapshot.companyName||'Company profile not configured',generatedAt:snapshot.generatedAt,subtitle:`${snapshot.unitName} · ${snapshot.currencyCode} (base) · ${(kind==='balance-sheet'||kind==='trial-balance')?'As of '+to:from+' to '+to} · Posted only · ${filters.costCenterId?'Cost center: '+filters.costCenterId:'All cost centers'}${accountFilter?' · Account: '+accountLabel(accounts.get(accountFilter)!):''} · Transaction-date basis`,columns,sections,landscape:columns.length>=6}}
 }

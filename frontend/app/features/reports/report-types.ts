@@ -1,6 +1,6 @@
 /** Code-defined ERP reports only. No executable templates or designer uploads. */
 export interface ReportColumn { key: string; title: string; width: number; alignment?: 'left' | 'right' }
-export interface ReportSection { title: string; path?: string[]; rows: string[][]; emphasized?: boolean }
+export interface ReportSection { title: string; path?: string[]; rows: string[][]; emphasized?: boolean; hideHeading?: boolean }
 export interface EmbeddedReport {
   id: string
   title: string

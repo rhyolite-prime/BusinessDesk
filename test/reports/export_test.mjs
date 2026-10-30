@@ -36,10 +36,10 @@ for(const [kind] of reportCatalog){
  assert.equal(reportPdfDefinition(report).pageOrientation,report.landscape?'landscape':'portrait');checks++
  if(kind==='trial-balance'){
   const sheet=book.getWorksheet('Report'),last=sheet.getRow(sheet.rowCount)
-  assert.equal(last.getCell(2).value,'GRAND TOTAL');assert.equal(last.getCell(3).value,'25.1235');assert.equal(last.getCell(4).value,'25.1235');assert.equal(last.getCell(3).font.bold,true)
+  assert.equal(sheet.getColumn(1).values.filter(value=>value==='Grand total'||value==='Control totals').length,0);assert.equal(sheet.getColumn(2).values.filter(value=>value==='GRAND TOTAL').length,1);assert.equal(last.getCell(2).value,'GRAND TOTAL');assert.equal(last.getCell(3).value,'25.1235');assert.equal(last.getCell(4).value,'25.1235');assert.equal(last.getCell(3).font.bold,true)
   const definition=reportPdfDefinition(report),body=definition.content[0].table.body
   assert.equal(body.at(-1)[1].text,'GRAND TOTAL');assert.equal(body.at(-1)[2].bold,true);assert.match(body.at(-1)[1].id,/^report-account-/)
-  const document=await zip.file('word/document.xml').async('string');assert.match(document,/GRAND TOTAL/);checks+=8
+  const document=await zip.file('word/document.xml').async('string');assert.match(document,/GRAND TOTAL/);checks+=10
  }
  await writeFile(`/tmp/businessdesk-financial-exports/${kind}.pdf`,pdf)
  await writeFile(`/tmp/businessdesk-financial-exports/${kind}.xlsx`,Buffer.from(await xlsx.arrayBuffer()))

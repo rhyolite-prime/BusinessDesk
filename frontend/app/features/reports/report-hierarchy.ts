@@ -7,7 +7,7 @@ export function reportHierarchyRows(report: EmbeddedReport): ReportHierarchyRow[
   const result: ReportHierarchyRow[] = []
   let previous: string[] = []
   for (const section of report.sections) {
-    const path = section.path?.length ? section.path : [section.title]
+    const path = section.hideHeading ? [] : section.path?.length ? section.path : [section.title]
     let common = 0
     while (common < path.length && common < previous.length && path[common] === previous[common]) common++
     for (let depth = common; depth < path.length; depth++) result.push({ kind: 'heading', label: path[depth]!, depth, shaded: !section.path })
