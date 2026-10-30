@@ -53,6 +53,7 @@ const form = reactive({
 // Header cost center is a bulk/default control; currency is GL-resolved.
 // Persisted dimensions remain authoritative on each line.
 const header = reactive({ costCenterId: null as string | null })
+const addLineButton = ref<HTMLButtonElement | null>(null)
 const batchNumber = ref('')
 const mixedCostCenters = '__mixed__'
 const centerChoices = computed(() => costCenterOptions(options.value.costCenters))
@@ -673,8 +674,9 @@ async function save() {
             </h2>
             <button
               v-if="!readonly"
+              ref="addLineButton"
               type="button"
-              :disabled="lines.length >= 500"
+              :disabled="loading || saving || lines.length >= 500"
               class="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700"
               @click="addLine"
             >
@@ -987,6 +989,13 @@ async function save() {
         </div>
       </section>
     </form>
+    <ScrollAddFab
+      :target="addLineButton"
+      label="Add line"
+      :disabled="loading || saving || readonly || !loaded || lines.length >= 500"
+      :hidden="readonly || loading || !loaded"
+      @click="addLine"
+    />
   </div>
 </template>
 <style scoped>
