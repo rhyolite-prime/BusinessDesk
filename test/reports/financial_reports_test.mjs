@@ -63,3 +63,15 @@ assert.deepEqual(trial.sections.slice(0,3).map(section=>section.title),['Asset',
 assert.equal(trial.landscape,false)
 assert.ok(trial.sections[0].rows.every(row=>row.length===4&&!row[0].includes(' · ')))
 console.log('5 traditional trial-balance layout checks passed')
+
+const finalTotal=(data=snapshot,extra={})=>build('trial-balance',extra,data).report.sections.at(-1)
+assert.deepEqual(finalTotal().rows,[['','GRAND TOTAL','342.00','342.00']])
+assert.equal(finalTotal().emphasized,true)
+assert.equal(finalTotal({...snapshot,lines:[]}).rows[0][2],'0.00')
+assert.equal(finalTotal({...snapshot,lines:[]}).rows[0][3],'0.00')
+const scoped=build('trial-balance',{costCenterId:'center-a'}).report
+assert.equal(scoped.sections.at(-2).title,'Report notes')
+assert.equal(scoped.sections.at(-1).rows[0][1],'GRAND TOTAL')
+const unbalanced=finalTotal({...snapshot,lines:[lines[0]]})
+assert.deepEqual(unbalanced.rows,[['','GRAND TOTAL','100.00','0.00']])
+console.log('7 final trial-balance grand-total checks passed')

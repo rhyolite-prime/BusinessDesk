@@ -1,7 +1,7 @@
 import type { EmbeddedReport } from './report-types'
 export type ReportHierarchyRow =
   | { kind: 'heading'; label: string; depth: number; shaded: boolean }
-  | { kind: 'record'; cells: string[]; depth: number; fullWidth?: boolean }
+  | { kind: 'record'; cells: string[]; depth: number; fullWidth?: boolean; emphasized?: boolean }
 /** Emit shared prefixes once, without deduplicating any account records. */
 export function reportHierarchyRows(report: EmbeddedReport): ReportHierarchyRow[] {
   const result: ReportHierarchyRow[] = []
@@ -11,7 +11,7 @@ export function reportHierarchyRows(report: EmbeddedReport): ReportHierarchyRow[
     let common = 0
     while (common < path.length && common < previous.length && path[common] === previous[common]) common++
     for (let depth = common; depth < path.length; depth++) result.push({ kind: 'heading', label: path[depth]!, depth, shaded: !section.path })
-    for (const cells of section.rows) result.push({ kind: 'record', cells, depth: path.length, ...(section.title === 'Report notes' ? { fullWidth: true } : {}) })
+    for (const cells of section.rows) result.push({ kind: 'record', cells, depth: path.length, ...(section.emphasized ? {emphasized:true} : {}), ...(section.title === 'Report notes' ? { fullWidth: true } : {}) })
     previous = path
   }
   return result

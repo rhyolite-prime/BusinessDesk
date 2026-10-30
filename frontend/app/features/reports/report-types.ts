@@ -1,6 +1,6 @@
 /** Code-defined ERP reports only. No executable templates or designer uploads. */
 export interface ReportColumn { key: string; title: string; width: number; alignment?: 'left' | 'right' }
-export interface ReportSection { title: string; path?: string[]; rows: string[][] }
+export interface ReportSection { title: string; path?: string[]; rows: string[][]; emphasized?: boolean }
 export interface EmbeddedReport {
   id: string
   title: string
@@ -12,7 +12,7 @@ export interface EmbeddedReport {
   landscape?: boolean
 }
 export const embeddedReports = {
-  'chart-of-accounts': { title: 'CHART OF ACCOUNTS', route: '/ledger/reports/chart-of-accounts' },
+  'chart-of-accounts': { title: 'CHART OF ACCOUNTS', route: '/ledger/reports?type=chart-of-accounts' },
 } as const
 
 export type ReportColorMode = 'color' | 'monochrome'

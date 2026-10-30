@@ -20,7 +20,7 @@ onBeforeUnmount(()=>++version)
 <template>
  <div class="space-y-5">
   <h1 class="text-2xl font-semibold">Financial report mappings</h1><p class="text-sm text-slate-500">Tenant administrators classify GL accounts explicitly. No classifications are inferred from names or account numbers. Only categories compatible with the account type are offered. Unclassified activity is flagged; advanced subtotals require complete mapping.</p>
-  <NuxtLink to="/ledger/reports/financial" class="text-sm text-brand-700">← Financial reports</NuxtLink>
+  <NuxtLink to="/ledger/reports" class="text-sm text-brand-700">← All reports</NuxtLink>
   <label class="block text-sm">Accounting unit<select :value="unitId" @change="changeUnit" :disabled="saving" class="mt-1 block h-10 w-full rounded border bg-transparent px-3"><option value="" disabled>Select a unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option></select></label>
   <p v-if="error" role="alert" class="text-sm text-rose-600">{{ error }} <button v-if="unitId && !saving" class="underline" @click="load">Reload</button></p><p v-if="message" role="status" class="text-sm text-emerald-700">{{ message }}</p>
   <p v-if="loading" role="status">Loading accounts…</p>

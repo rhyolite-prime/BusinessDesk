@@ -21,8 +21,8 @@ export function reportPdfDefinition(report: EmbeddedReport, mode: ReportColorMod
         decoration: trial ? 'underline' : undefined, fillColor: !trial && row.shaded ? `#${palette.fill}` : undefined, color: `#${palette.accent}`, margin: [Math.min(row.depth, 6) * 12 + 3, 6, 3, 3] },
       ...report.columns.slice(1).map(() => ({})),
     ])
-    else if(row.fullWidth) body.push([{text:row.cells[0] || '',colSpan:report.columns.length,margin:[3,3,3,3]},...report.columns.slice(1).map(()=>({}))])
-    else body.push(row.cells.map((text, index) => ({ id: index === 0 ? `report-account-${rowIndex}` : undefined, text, alignment: report.columns[index]?.alignment, margin: [index === 0 ? (trial ? 9 : Math.min(row.depth, 4) * 12 + 3) : 3, trial ? 4 : 2, 3, trial ? 4 : 2] })))
+    else if(row.fullWidth) body.push([{id:`report-account-${rowIndex}`,text:row.cells[0] || '',colSpan:report.columns.length,margin:[3,3,3,3]},...report.columns.slice(1).map(()=>({}))])
+    else body.push(row.cells.map((text, index) => ({ id: index === Math.max(0,row.cells.findIndex(cell=>cell!=='')) ? `report-account-${rowIndex}` : undefined, text, bold:row.emphasized, alignment: report.columns[index]?.alignment, margin: [index === 0 ? (trial ? 9 : Math.min(row.depth, 4) * 12 + 3) : 3, trial ? 4 : 2, 3, trial ? 4 : 2] })))
   }
   const content: Content[] = hierarchy.length ? [{ table: { widths: report.columns.map(column => `${column.width}%`), headerRows: 1, keepWithHeaderRows: 1, dontBreakRows: true, body }, layout: trial ? {hLineWidth: (i:number) => i === 1 ? 1.2 : 0, vLineWidth: () => 0, hLineColor: () => '#000000'} : 'noBorders' }] : []
   return { info: { title: report.title, author: report.companyName, creator: 'BusinessDesk' }, pageSize: 'A4', pageOrientation: report.landscape ? 'landscape' : 'portrait', pageMargins: [36, Math.max(110, 70 + Math.ceil(report.companyName.length / 65) * 16 + Math.ceil(report.subtitle.length / 95) * 10), 36, 48], pageBreakBefore: (node, following) => !!node.id?.startsWith('report-heading-') && !following.some(item => item.id?.startsWith('report-account-')), defaultStyle: { font: 'Roboto', fontSize: report.landscape ? 7.5 : 9, color: `#${palette.ink}` },
@@ -67,7 +67,7 @@ export async function createReportExcel(report: EmbeddedReport, mode: ReportColo
       if (trial) row.font = { ...row.font, underline:true };
       if (!trial && item.shaded) row.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: `FF${palette.fill}` } }
     } else {
-      const detail = sheet.addRow(item.cells); if(item.fullWidth)sheet.mergeCells(detail.number,1,detail.number,count); detail.font = { color: { argb: `FF${palette.ink}` } }; detail.alignment = { wrapText: true, vertical: 'top' }; detail.eachCell((cell,index) => { cell.numFmt = '@'; cell.alignment={wrapText:true,vertical:'top',horizontal:report.columns[index-1]?.alignment||'left'} })
+      const detail = sheet.addRow(item.cells); if(item.fullWidth)sheet.mergeCells(detail.number,1,detail.number,count); detail.font = { bold:item.emphasized, color: { argb: `FF${palette.ink}` } }; detail.alignment = { wrapText: true, vertical: 'top' }; detail.eachCell((cell,index) => { cell.numFmt = '@'; cell.alignment={wrapText:true,vertical:'top',horizontal:report.columns[index-1]?.alignment||'left'} })
     }
   }
   sheet.headerFooter = { oddHeader: `&C${report.companyName.replaceAll('&', '&&')}\n${report.title.replaceAll('&', '&&')}`, oddFooter: `&LReport printed on ${report.generatedAt.replaceAll('&', '&&')}&CBusinessDesk · G/L&RPage &P of &N` }
@@ -86,7 +86,7 @@ export async function createReportWord(report: EmbeddedReport, mode: ReportColor
     ...hierarchy.map(item => item.kind === 'heading'
       ? new TableRow({ cantSplit: true, children: [new TableCell({ columnSpan: report.columns.length, shading: !trial && item.shaded ? { fill: palette.fill } : undefined, children: [new Paragraph({ children: [new TextRun({ text: item.label, bold: true, underline: trial ? {} : undefined, color: palette.accent, size: item.depth === 0 ? 22 : 20 })], indent: { left: Math.min(item.depth, 6) * 240 }, spacing: { before: 120, after: 60 }, keepNext: true })] })] })
       : item.fullWidth ? new TableRow({cantSplit:true,children:[new TableCell({columnSpan:report.columns.length,children:[paragraph(item.cells[0] || '')]})]})
-      : new TableRow({ cantSplit: true, children: item.cells.map((text, index) => new TableCell({ width: { size: report.columns[index]!.width, type: WidthType.PERCENTAGE }, children: [paragraph(text, false, report.columns[index]?.alignment)] })) })),
+      : new TableRow({ cantSplit: true, children: item.cells.map((text, index) => new TableCell({ width: { size: report.columns[index]!.width, type: WidthType.PERCENTAGE }, children: [paragraph(text, !!item.emphasized, report.columns[index]?.alignment)] })) })),
   ] })] : []
   const doc = new Document({ creator: 'BusinessDesk', title: report.title, sections: [{ properties: { page: { size: { width: report.landscape ? 16838 : 11906, height: report.landscape ? 11906 : 16838 }, margin: { top: 2600, bottom: 1000, left: 720, right: 720, header: 400, footer: 400 } } },
     headers: { default: new Header({ children: [new Paragraph({ children: [new TextRun({ text: report.companyName, bold: true, color: palette.accent, size: report.companyName.length > 100 ? 18 : 26 })], alignment: AlignmentType.CENTER }), new Paragraph({ children: [new TextRun({ text: report.title, bold: true, color: palette.accent, size: 22 })], alignment: AlignmentType.CENTER }), new Paragraph({ children: [new TextRun({ text: report.subtitle, color: palette.muted, size: 16 })], alignment: AlignmentType.CENTER, border: { bottom: { style: BorderStyle.SINGLE, size: 6, color: palette.accent, space: 8 } } })] }) },

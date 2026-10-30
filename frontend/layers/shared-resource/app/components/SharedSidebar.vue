@@ -34,7 +34,6 @@ interface NavigationGroup {
 }
 
 const soon = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
-const reportItem = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
 
 const ledgerGroups: NavigationGroup[] = [
   {
@@ -108,82 +107,8 @@ const ledgerGroups: NavigationGroup[] = [
         label: 'Reports',
         icon: 'chart-bar-square',
         children: [
-          { label: 'Financial Reports & Advanced Statements', to: '/ledger/reports/financial', icon: 'chart-bar-square' },
-          { label: 'General Ledger / Account Activity', to: '/ledger/reports/financial?type=general-ledger', icon: 'document-text' },
-          { label: 'Cost-Center Report', to: '/ledger/reports/financial?type=cost-center', icon: 'document-text' },
+          { label: 'All Reports', to: '/ledger/reports', icon: 'chart-bar-square' },
           { label: 'Report Mappings', to: '/ledger/reports/mappings', icon: 'adjustments-horizontal' },
-          { label: 'Chart of Accounts', to: '/ledger/reports/chart-of-accounts', icon: 'document-text' },
-          { label: 'Trial Balance', to: '/ledger/reports/financial?type=trial-balance', icon: 'document-text' },
-          { label: 'Balance Sheet', to: '/ledger/reports/financial?type=balance-sheet', icon: 'document-text' },
-          {
-            label: 'Operating Statement',
-            icon: 'chart-bar-square',
-            children: [
-              { label: 'Basic', to: '/ledger/reports/financial?type=income-basic', icon: 'document-text' },
-              { label: 'Budget', to: '/ledger/reports/financial?type=income-budget', icon: 'document-text' },
-              { label: 'Prior Period', to: '/ledger/reports/financial?type=income-prior', icon: 'document-text' },
-              { label: 'Expenditure Returns', to: '/ledger/reports/financial?type=income-expenditure', icon: 'document-text' },
-              { label: 'Comparative Operating Statement', to: '/ledger/reports/financial?type=income-comparative', icon: 'document-text' },
-              { label: 'Revenue', to: '/ledger/reports/financial?type=income-revenue', icon: 'document-text' },
-              { label: 'Cross-Tab', to: '/ledger/reports/financial?type=income-crosstab', icon: 'document-text' },
-              { label: 'Multi-step / Gross Profit', to: '/ledger/reports/financial?type=income-multistep', icon: 'document-text' },
-              { label: 'Monthly Trends', to: '/ledger/reports/financial?type=income-monthly', icon: 'document-text' },
-              { label: 'Year-to-Date', to: '/ledger/reports/financial?type=income-ytd', icon: 'document-text' },
-              { label: 'Common-Size', to: '/ledger/reports/financial?type=income-common', icon: 'document-text' },
-              { label: 'EBITDA', to: '/ledger/reports/financial?type=income-ebitda', icon: 'document-text' },
-            ],
-          },
-          {
-            label: 'Voucher',
-            icon: 'credit-card',
-            children: [
-              reportItem('Voucher'),
-              reportItem('Official Voucher'),
-              reportItem('VAT Returns'),
-              reportItem('Receipt Voucher', 'banknotes'),
-            ],
-          },
-          {
-            label: 'Accountable Imprest',
-            icon: 'wallet',
-            children: [
-              reportItem('Statement'),
-              reportItem('By Employee', 'identification'),
-              reportItem('By Category', 'list-bullet'),
-              reportItem('Overdue Imprest', 'clock'),
-            ],
-          },
-          {
-            label: 'Reconciliation',
-            icon: 'arrow-path',
-            children: [
-              reportItem('Reconciliation'),
-              reportItem('Statement'),
-              reportItem('Statement History', 'clock'),
-              reportItem('Reconciliation History', 'clock'),
-            ],
-          },
-          { label: 'Income Expenditure', to: '/ledger/reports/financial?type=income-basic', icon: 'document-text' },
-          { label: 'GL Transaction Reports', to: '/ledger/reports/financial?type=journal-register', icon: 'document-text' },
-          {
-            label: 'Petty Cash',
-            icon: 'banknotes',
-            children: [
-              reportItem('By Account'),
-              reportItem('By OU', 'building-office'),
-              reportItem('By Batch'),
-              reportItem('By Recipient/Beneficiary', 'user'),
-            ],
-          },
-          {
-            label: 'H/W',
-            icon: 'building-office',
-            children: [
-              reportItem('General'),
-              reportItem('By Date', 'calendar-days'),
-              reportItem('Posted Cheques', 'credit-card'),
-            ],
-          },
         ],
       },
     ],

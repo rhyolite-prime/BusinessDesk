@@ -165,3 +165,30 @@ format (including Roboto for PDF). Reference templates guide layout only, never
 font selection. Trial Balance has no separate font assets or font overrides.
 Excel retains separate GL-number/name cells with aligned monetary columns.
 No ledger calculations or source queries are changed by this presentation.
+
+
+## Unified General Ledger report page
+
+`/ledger/reports` is the single rendering page for all 18 available reports:
+Chart of Accounts and the 17 financial variants above. The **Report** selector
+is grouped into Account listings, Ledger activity, Financial statements, and
+Income & operating statements. The sidebar now exposes All Reports and Report
+Mappings (a configuration screen, not a report). Existing Voucher, Imprest,
+Reconciliation, Petty Cash and H/W placeholders remain visible in disabled
+“coming soon” dropdown groups; no data or reports are invented for them.
+
+Select a report, accounting unit and relevant filters, then Generate report.
+Chart of Accounts offers account type, status and search instead of dates and
+cost center, uses the original chart report engine, and fetches **all pages** of
+accounts and controls. Changing any filter clears the generated report; generate
+again to get a new snapshot. Switching type invalidates pending requests so old
+results cannot replace the newly selected report. The selected report type is
+reflected in the URL; existing `/ledger/reports/financial?type=…` and
+`/ledger/reports/chart-of-accounts` links redirect to the unified page.
+
+Trial Balance finishes with a bold **GRAND TOTAL** row containing the sum of
+closing debit balances and the sum of closing credit balances, in the selected
+scope and company display precision. It follows reconciliation controls and any
+report notes, so it is the final report row, including PDF/print, Excel and Word.
+The reconciliation difference remains visible; totals are never forced equal.
+All reports continue using the Chart of Accounts font settings.

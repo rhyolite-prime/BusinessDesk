@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 const uuid=n=>`93000000-0000-4000-8000-${String(n).padStart(12,'0')}`,unit=uuid(1)
-let fail=false,admin=true
+let fail=false,admin=true,delaySnapshot=false
 const accounts=[{id:uuid(2),number:'10001',name:'Cash',type:0,category:'current_asset'},{id:uuid(3),number:'40001',name:'Sales',type:3,category:'revenue'}]
 const lines=accounts.map((account,i)=>({id:uuid(10+i),accountId:account.id,accountName:account.name,type:account.type,batchId:uuid(20),batchNumber:'JV-POSTED',date:'2026-10-03',batchDate:'2026-10-03',description:'Posted sale',reference:'REF-1',source:'general_journal',costCenterId:null,costCenter:null,currency:'GHS',rate:'1.0000000000',debit:i?'0.000000':'25.123456',credit:i?'25.123456':'0.000000',transactionDebit:i?'0.000000':'25.123456',transactionCredit:i?'25.123456':'0.000000',opening:false}))
 const snapshot={companyName:'Example Company',unitName:'HQ',currencyCode:'GHS',decimals:4,fiscalMonth:1,generatedAt:'2026-10-28 12:00 UTC',through:'2026-10-31',accounts,lines,budgets:[]}
@@ -18,6 +18,14 @@ const upstream=http.createServer(async(req,res)=>{
  if(path==='/api/v1/auth/me')return send(200,{userId:uuid(999),username:'admin',accountId:'acme'})
  if(path==='/api/v1/shared/company-profile')return send(200,{companyName:'Example Company',displayDecimals:4})
  if(path==='/api/v1/ledger/accounting-units')return send(200,{data:[{id:unit,name:'HQ',code:'HQ',isActive:true}],totalPages:1})
+ if(path==='/api/v1/ledger/financial-reports'&&delaySnapshot)await new Promise(resolve=>setTimeout(resolve,800))
+ if(path===`/api/v1/ledger/accounting-units/${unit}`)return send(200,{name:'HQ',baseCurrencyId:uuid(600),timeZone:'UTC'})
+ if(path==='/api/v1/ledger/accounting-unit-currencies')return send(200,[{id:uuid(600),code:'GHS',name:'Ghana Cedi'}])
+ if(path==='/api/v1/ledger/accounts'){
+  const pageNo=Number(new URL(req.url,'http://fixture').searchParams.get('pageNo')||1),a=accounts[pageNo-1]
+  return send(200,{data:a?[{id:a.id,accountNumber:a.number,accountName:a.name,accountType:a.type,accountHeaderId:uuid(500+a.type),currencyId:uuid(600),status:'active'}]:[],totalPages:2})
+ }
+ if(path==='/api/v1/ledger/account-controls')return send(200,{data:[{id:uuid(500),accountHeaderName:'Asset / Bank'},{id:uuid(503),accountHeaderName:'Revenue / Sales'}],totalPages:1})
  if(path==='/api/v1/ledger/financial-reports')return fail?send(503,null,{code:'database_error',message:'PRIVATE SQL'}):send(200,{...snapshot,canManageMappings:admin})
  if(path==='/api/v1/ledger/financial-reports/mappings'){
   if(!admin)return send(403,null,{code:'forbidden'})
@@ -49,6 +57,15 @@ try {
    check(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth+1),'no page horizontal overflow')
   }
   await page.goto(base+'/ledger/reports/financial?type=trial-balance',{waitUntil:'networkidle'});await expect(page.getByLabel('From',{exact:true})).toHaveCount(0);await page.getByLabel('As of',{exact:true}).fill('2026-10-31');await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('General Ledger #');await expect(page.getByRole('document',{name:/Report page/})).toContainText('Asset');checks+=3
+  await expect(page).toHaveURL(/\/ledger\/reports\?type=trial-balance$/);checks++
+  await expect(page.getByRole('document',{name:/Report page/})).toContainText('GRAND TOTAL');checks++
+  check(await page.locator('select[aria-label="Report"] optgroup').count()===9,'grouped report dropdown including legacy placeholders')
+  check(await page.locator('select[aria-label="Report"] option:not([disabled])').count()===18,'all 18 implemented report variants')
+  await page.getByLabel('Report',{exact:true}).selectOption('chart-of-accounts');await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);await expect(page.getByLabel('As of',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cost center',{exact:true})).toHaveCount(0);checks+=3
+  await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Cash');await expect(page.getByRole('document',{name:/Report page/})).toContainText('Sales');checks+=2
+  await page.getByLabel('Search',{exact:true}).fill('Cash');await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Cash');await expect(page.getByRole('document',{name:/Report page/})).not.toContainText('40001');checks+=2
+  await page.goto(base+'/ledger/reports/chart-of-accounts',{waitUntil:'networkidle'});await expect(page).toHaveURL(/\/ledger\/reports\?type=chart-of-accounts$/);await expect(page.getByLabel('Report',{exact:true})).toHaveValue('chart-of-accounts');checks+=2
+  await page.getByLabel('Report',{exact:true}).selectOption('trial-balance');delaySnapshot=true;await page.getByRole('button',{name:'Generate report',exact:true}).click();await page.getByLabel('Report',{exact:true}).selectOption('chart-of-accounts');await page.waitForTimeout(1000);await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);delaySnapshot=false;checks++
   await page.goto(base+'/ledger/reports/mappings',{waitUntil:'networkidle'});const category=page.getByLabel('Classification for 40001 Sales');await category.selectOption('other_income');await page.getByRole('button',{name:'Save 1 changed mappings'}).click();await expect(page.locator('p[role="status"]')).toContainText('Report mappings saved');check(accounts[1].category==='other_income','mapping writes exact account id')
   check(seen.some(request=>request.path.endsWith('/mappings')&&request.method==='PUT'&&request.body[0].accountId===uuid(3)),'mapping BFF forwards ID and method')
   admin=false;await page.reload({waitUntil:'networkidle'});await expect(category).toBeDisabled();checks++
