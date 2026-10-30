@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { financialReport, type FinancialSnapshot } from '../../../features/reports/financial-reports'
+import { formatReportTimestamp } from '../../../features/reports/report-timestamp'
 import { chartOfAccountsReport } from '../../../features/reports/chart-of-accounts'
 import { reportGroups, plannedReportGroups, type LedgerReportKind } from '../../../features/reports/report-catalog'
 import type { AccountDetail } from '../../../features/ledger/account-detail-types'
@@ -49,13 +50,16 @@ async function generate(){
    if(current!==generation)return
    if(!company?.companyName)warnings.value=['Company profile is not configured. The report header will indicate this.']
    report.value=chartOfAccountsReport({accounts,controls,currencies,companyName:company?.companyName||'',unitName:unitData.name,baseCurrencyId:unitData.baseCurrencyId,
-    generatedAt:new Intl.DateTimeFormat('en-GB',{dateStyle:'medium',timeStyle:'short',timeZone:unitData.timeZone||'UTC'}).format(new Date()),status:filters.status,type:filters.type,query:filters.query})
+    generatedAt:formatReportTimestamp(new Date(),unitData.timeZone),status:filters.status,type:filters.type,query:filters.query})
    return
   }
-  const data=await request<FinancialSnapshot>('/api/ledger/financial-reports',{query:{accountingUnitId:unit,through:filters.to}})
+  const [data,unitData]=await Promise.all([
+   request<FinancialSnapshot>('/api/ledger/financial-reports',{query:{accountingUnitId:unit,through:filters.to}}),
+   request<{timeZone:string}>(`/api/ledger/accounting-units/${unit}`),
+  ])
   if(current!==generation)return
   snapshot.value=data
-  const result=financialReport(data,{...filters,kind:filters.kind});report.value=result.report;warnings.value=result.warnings
+  const result=financialReport({...data,generatedAt:formatReportTimestamp(data.generatedAt,unitData.timeZone)},{...filters,kind:filters.kind});report.value=result.report;warnings.value=result.warnings
  }catch(e:any){if(current===generation)error.value=e?.data?.statusMessage||e?.message||'Unable to generate financial report.'}
  finally{if(current===generation)loading.value=false}
 }

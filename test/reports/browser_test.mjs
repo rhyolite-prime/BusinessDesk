@@ -7,7 +7,7 @@ const uuid=n=>`93000000-0000-4000-8000-${String(n).padStart(12,'0')}`,unit=uuid(
 let fail=false,admin=true,delaySnapshot=false
 const accounts=[{id:uuid(2),number:'10001',name:'Cash',type:0,category:'current_asset'},{id:uuid(3),number:'40001',name:'Sales',type:3,category:'revenue'}]
 const lines=accounts.map((account,i)=>({id:uuid(10+i),accountId:account.id,accountName:account.name,type:account.type,batchId:uuid(20),batchNumber:'JV-POSTED',date:'2026-10-03',batchDate:'2026-10-03',description:'Posted sale',reference:'REF-1',source:'general_journal',costCenterId:null,costCenter:null,currency:'GHS',rate:'1.0000000000',debit:i?'0.000000':'25.123456',credit:i?'25.123456':'0.000000',transactionDebit:i?'0.000000':'25.123456',transactionCredit:i?'25.123456':'0.000000',opening:false}))
-const snapshot={companyName:'Example Company',unitName:'HQ',currencyCode:'GHS',decimals:4,fiscalMonth:1,generatedAt:'2026-10-28 12:00 UTC',through:'2026-10-31',accounts,lines,budgets:[]}
+const snapshot={companyName:'Example Company',unitName:'HQ',currencyCode:'GHS',decimals:4,fiscalMonth:1,generatedAt:'2026-10-28T12:00:00.123456+00:00',through:'2026-10-31',accounts,lines,budgets:[]}
 let checks=0;const seen=[],check=(condition,label)=>{assert.ok(condition,label);checks++}
 const upstream=http.createServer(async(req,res)=>{
  let raw='';for await(const chunk of req)raw+=chunk
@@ -48,7 +48,7 @@ try {
   for(const viewport of [{width:1440,height:1000},{width:390,height:844}]){
    await page.setViewportSize(viewport);await page.goto(base+'/ledger/reports/financial?type=income-basic',{waitUntil:'networkidle'})
    await page.getByLabel('From',{exact:true}).fill('2026-10-01');await page.getByLabel('Through',{exact:true}).fill('2026-10-31');await page.getByRole('button',{name:'Generate report',exact:true}).click()
-   await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Net income');await expect(page.getByRole('document',{name:/Report page/})).toContainText('25.1235');checks+=2
+   await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Net income');await expect(page.getByRole('document',{name:/Report page/})).toContainText('25.1235');await expect(page.getByRole('document',{name:/Report page/})).toContainText('Report printed on 28 Oct 2026, 12:00');checks+=3
    await page.getByLabel('Report',{exact:true}).selectOption('general-ledger');await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);checks++
    await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export Excel',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Opening');checks++
    for(const [name,extension] of [['Export PDF','.pdf'],['Export Excel','.xlsx'],['Export Word','.docx']]){

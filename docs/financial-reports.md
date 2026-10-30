@@ -192,3 +192,15 @@ scope and company display precision. It follows reconciliation controls and any
 report notes, so it is the final report row, including PDF/print, Excel and Word.
 The reconciliation difference remains visible; totals are never forced equal.
 All reports continue using the Chart of Accounts font settings.
+
+
+### Printed-on footer
+
+Every report uses the Chart of Accounts date/time presentation: `30 Oct 2026,
+12:34` (en-GB medium date, short time) in the selected accounting unit's timezone.
+Financial reports format their server snapshot timestamp before rendering; Chart
+of Accounts formats its generation time using the same helper. This immutable
+label is shared by the preview, PDF/print, Excel and Word, rather than changing
+when an export is downloaded. Raw ISO/database timestamps and fractional seconds
+are not displayed. Invalid legacy timezones fall back to UTC; an invalid timestamp
+is labelled `Date/time unavailable` rather than breaking report generation.
