@@ -1,3 +1,2 @@
-import { handleVoucherTransition } from '../../../../utils/ledger-voucher-actions'
-
-export default defineEventHandler((event) => handleVoucherTransition(event, 'post'))
+import { supplierVoucherRequest } from '../../../../utils/supplier-voucher-api'
+export default defineEventHandler(event => supplierVoucherRequest(event, 'POST', 'post'))

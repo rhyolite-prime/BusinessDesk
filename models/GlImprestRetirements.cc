@@ -77,7 +77,7 @@ const std::string GlImprestRetirements::tableName = "\"gl_imprest_retirements\""
 
 const std::vector<typename GlImprestRetirements::MetaData> GlImprestRetirements::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"imprest_id","std::string","uuid",0,0,0,1},
 {"employee_id","std::string","uuid",0,0,0,1},
@@ -90,12 +90,12 @@ const std::vector<typename GlImprestRetirements::MetaData> GlImprestRetirements:
 {"posted_to_gl","bool","boolean",1,0,0,1},
 {"journal_batch_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlImprestRetirements::getColumnName(size_t index) noexcept(false)
@@ -118,7 +118,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -230,7 +230,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -261,7 +261,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -299,7 +299,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -326,7 +326,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -451,7 +451,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -484,7 +484,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -525,7 +525,7 @@ GlImprestRetirements::GlImprestRetirements(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -555,7 +555,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson, const std::
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -697,7 +697,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson, const std::
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -734,7 +734,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson, const std::
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -780,7 +780,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson, const std::
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[19]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -803,7 +803,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -945,7 +945,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[14]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -982,7 +982,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[16]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1028,7 +1028,7 @@ GlImprestRetirements::GlImprestRetirements(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[19]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1056,7 +1056,7 @@ void GlImprestRetirements::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1198,7 +1198,7 @@ void GlImprestRetirements::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1235,7 +1235,7 @@ void GlImprestRetirements::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -1281,7 +1281,7 @@ void GlImprestRetirements::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[19]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -1303,7 +1303,7 @@ void GlImprestRetirements::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1445,7 +1445,7 @@ void GlImprestRetirements::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[14] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1482,7 +1482,7 @@ void GlImprestRetirements::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[16] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1528,7 +1528,7 @@ void GlImprestRetirements::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[19] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1561,20 +1561,25 @@ const typename GlImprestRetirements::PrimaryKeyType & GlImprestRetirements::getP
     return *id_;
 }
 
-const int32_t &GlImprestRetirements::getValueOfTenantId() const noexcept
+const std::string &GlImprestRetirements::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlImprestRetirements::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlImprestRetirements::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlImprestRetirements::setTenantId(const int32_t &pTenantId) noexcept
+void GlImprestRetirements::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlImprestRetirements::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1837,20 +1842,25 @@ void GlImprestRetirements::setCreatedAt(const ::trantor::Date &pCreatedAt) noexc
     dirtyFlag_[13] = true;
 }
 
-const int64_t &GlImprestRetirements::getValueOfCreatedByUserId() const noexcept
+const std::string &GlImprestRetirements::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestRetirements::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestRetirements::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlImprestRetirements::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlImprestRetirements::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlImprestRetirements::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[14] = true;
 }
 void GlImprestRetirements::setCreatedByUserIdToNull() noexcept
@@ -1881,20 +1891,25 @@ void GlImprestRetirements::setLastModifiedAtToNull() noexcept
     dirtyFlag_[15] = true;
 }
 
-const int64_t &GlImprestRetirements::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlImprestRetirements::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestRetirements::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestRetirements::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlImprestRetirements::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlImprestRetirements::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[16] = true;
+}
+void GlImprestRetirements::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[16] = true;
 }
 void GlImprestRetirements::setLastModifiedByUserIdToNull() noexcept
@@ -1942,20 +1957,25 @@ void GlImprestRetirements::setDeletedAtToNull() noexcept
     dirtyFlag_[18] = true;
 }
 
-const int64_t &GlImprestRetirements::getValueOfDeletedByUserId() const noexcept
+const std::string &GlImprestRetirements::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlImprestRetirements::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlImprestRetirements::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlImprestRetirements::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlImprestRetirements::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[19] = true;
+}
+void GlImprestRetirements::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[19] = true;
 }
 void GlImprestRetirements::setDeletedByUserIdToNull() noexcept
@@ -2754,7 +2774,7 @@ Json::Value GlImprestRetirements::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2776,7 +2796,7 @@ Json::Value GlImprestRetirements::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2809,7 +2829,7 @@ Json::Value GlImprestRetirements::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3033,7 +3053,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[14]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[14]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -3061,7 +3081,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[16]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[16]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -3103,7 +3123,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[19]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[19]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3273,7 +3293,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3295,7 +3315,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3328,7 +3348,7 @@ Json::Value GlImprestRetirements::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -4076,7 +4096,7 @@ bool GlImprestRetirements::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4297,7 +4317,7 @@ bool GlImprestRetirements::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4327,7 +4347,7 @@ bool GlImprestRetirements::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4373,7 +4393,7 @@ bool GlImprestRetirements::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4432,95 +4452,7 @@ void GlImprestRetirements::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlImprests GlImprestRetirements::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprests where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImprests(r[0]);
-}
-
-void GlImprestRetirements::getTenant(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlImprests)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_imprests where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImprests(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImprests GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprests where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImprests(r[0]);
-}
-
-void GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr,
-                                             const std::function<void(GlImprests)> &rcb,
-                                             const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_imprests where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImprests(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlImprests GlImprestRetirements::getImprest(const DbClientPtr &clientPtr) const {
+GlImprests GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_imprests where id = $1";
     Result r(nullptr);
     {
@@ -4540,9 +4472,9 @@ GlImprests GlImprestRetirements::getImprest(const DbClientPtr &clientPtr) const 
     return GlImprests(r[0]);
 }
 
-void GlImprestRetirements::getImprest(const DbClientPtr &clientPtr,
-                                      const std::function<void(GlImprests)> &rcb,
-                                      const ExceptionCallback &ecb) const
+void GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr,
+                                         const std::function<void(GlImprests)> &rcb,
+                                         const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_imprests where id = $1";
     *clientPtr << sql
@@ -4564,95 +4496,7 @@ void GlImprestRetirements::getImprest(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlJournalBatches GlImprestRetirements::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlImprestRetirements::getTenant(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlJournalBatches)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr,
-                                             const std::function<void(GlJournalBatches)> &rcb,
-                                             const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlImprestRetirements::getJournalBatch(const DbClientPtr &clientPtr) const {
+GlJournalBatches GlImprestRetirements::getGlJournalBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     Result r(nullptr);
     {
@@ -4672,9 +4516,9 @@ GlJournalBatches GlImprestRetirements::getJournalBatch(const DbClientPtr &client
     return GlJournalBatches(r[0]);
 }
 
-void GlImprestRetirements::getJournalBatch(const DbClientPtr &clientPtr,
-                                           const std::function<void(GlJournalBatches)> &rcb,
-                                           const ExceptionCallback &ecb) const
+void GlImprestRetirements::getGlJournalBatches(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlJournalBatches)> &rcb,
+                                               const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     *clientPtr << sql
@@ -4696,51 +4540,7 @@ void GlImprestRetirements::getJournalBatch(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlImprestRetirements::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlImprestRetirements::getTenant(const DbClientPtr &clientPtr,
-                                     const std::function<void(CoreAccountingUnits)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -4760,9 +4560,9 @@ CoreAccountingUnits GlImprestRetirements::getAccountingUnit(const DbClientPtr &c
     return CoreAccountingUnits(r[0]);
 }
 
-void GlImprestRetirements::getAccountingUnit(const DbClientPtr &clientPtr,
-                                             const std::function<void(CoreAccountingUnits)> &rcb,
-                                             const ExceptionCallback &ecb) const
+void GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                  const std::function<void(CoreAccountingUnits)> &rcb,
+                                                  const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

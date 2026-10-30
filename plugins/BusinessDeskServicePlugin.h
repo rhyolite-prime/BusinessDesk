@@ -9,8 +9,10 @@
 #include <drogon/plugins/Plugin.h>
 
 #include "domain_services/gl/GlService.h"
+#include "domain_services/users/UserService.h"
+#include "domain_services/tenants/TenantService.h"
 
-namespace gnp::plugins {
+namespace business_desk::plugins {
     class BusinessDeskServicePlugin : public drogon::Plugin<BusinessDeskServicePlugin>
     {
     public:
@@ -24,11 +26,15 @@ namespace gnp::plugins {
         /// It must be implemented by the user.
         void shutdown() override;
 
-        business_desk::domain_services::GlService &getGlService() { return glService_; }
+        domain_services::GlService &getGlService() { return glService_; }
+        domain_services::UserService &getUserService() { return userService_; }
+        domain_services::TenantService &getTenantService() { return tenantService_; }
 
 
     private:
-        business_desk::domain_services::GlService glService_;
+        domain_services::GlService glService_;
+        domain_services::UserService userService_;
+        domain_services::TenantService tenantService_;
     };
 
 }

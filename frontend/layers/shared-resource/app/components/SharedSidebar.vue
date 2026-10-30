@@ -34,31 +34,48 @@ interface NavigationGroup {
 }
 
 const soon = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
-const reportItem = (label: string, icon = 'document-text'): NavigationLink => ({ label, icon, comingSoon: true })
 
 const ledgerGroups: NavigationGroup[] = [
   {
     title: 'General Ledger',
     icon: 'book-open',
     links: [
+      { label: 'Accounting Units', to: '/ledger/accounting-units', icon: 'building-office' },
+      {
+        label: 'Shared config',
+        icon: 'cog-6-tooth',
+        children: [
+          { label: 'Company profile', to: '/ledger/shared-config/company-profile', icon: 'building-office' },
+          { label: 'Cost Centers', to: '/ledger/shared-config/cost-centers', icon: 'building-library' },
+          { label: 'Currencies', to: '/ledger/shared-config/currencies', icon: 'banknotes' },
+          { label: 'Supplier groups', to: '/ledger/shared-config/supplier-groups', icon: 'user-group' },
+          { label: 'Customer groups', to: '/ledger/shared-config/customer-groups', icon: 'user-group' },
+          { label: 'Customers', to: '/ledger/shared-config/customers', icon: 'user-group' },
+          { label: 'Suppliers', to: '/ledger/shared-config/suppliers', icon: 'truck' },
+          { label: 'Employees', to: '/ledger/shared-config/employees', icon: 'identification' },
+          { label: 'Banks and branches', to: '/ledger/shared-config/banks-and-branches', icon: 'building-library' },
+          { label: 'System numbers', to: '/ledger/shared-config/system-numbers', icon: 'document-text' },
+          { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
+        ],
+      },
       {
         label: 'Account Setup',
         icon: 'cog-6-tooth',
         children: [
-          { label: 'Account Heads', to: '/ledger/account-heads', icon: 'building-library' },
+          { label: 'Chart of Accounts', to: '/ledger/chart-of-accounts', icon: 'building-library' },
           { label: 'Bank Account', to: '/ledger/bank-accounts', icon: 'wallet' },
           { label: 'Chart of Account Control', to: '/ledger/account-controls', icon: 'cog-6-tooth' },
           { label: 'Chart of Account Detail', to: '/ledger/accounts', icon: 'document-text' },
         ],
       },
       { label: 'Budget', to: '/ledger/budgets', icon: 'scale' },
-      { label: 'Default GL Numbers', to: '/ledger/default-gl-numbers', icon: 'document-text' },
       {
         label: 'Journal',
         icon: 'document-text',
         children: [
           { label: 'Journal', to: '/ledger/journals/new', icon: 'pencil-square' },
           { label: 'Journal History', to: '/ledger/journals', icon: 'clock' },
+          { label: 'Accounting Periods', to: '/ledger/accounting-periods', icon: 'calendar-days' },
         ],
       },
       {
@@ -90,74 +107,8 @@ const ledgerGroups: NavigationGroup[] = [
         label: 'Reports',
         icon: 'chart-bar-square',
         children: [
-          reportItem('Trial Balance'),
-          reportItem('Balance Sheet'),
-          {
-            label: 'Operating Statement',
-            icon: 'chart-bar-square',
-            children: [
-              reportItem('Basic'),
-              reportItem('Budget', 'scale'),
-              reportItem('Budget New', 'scale'),
-              reportItem('Prior Period', 'clock'),
-              reportItem('Expenditure Returns'),
-              reportItem('Comparative Operating Statement'),
-              reportItem('Revenue', 'banknotes'),
-              reportItem('Cross-Tab', 'list-bullet'),
-              reportItem('Cross-Tab Quarters', 'list-bullet'),
-            ],
-          },
-          {
-            label: 'Voucher',
-            icon: 'credit-card',
-            children: [
-              reportItem('Voucher'),
-              reportItem('Official Voucher'),
-              reportItem('VAT Returns'),
-              reportItem('Receipt Voucher', 'banknotes'),
-            ],
-          },
-          {
-            label: 'Accountable Imprest',
-            icon: 'wallet',
-            children: [
-              reportItem('Statement'),
-              reportItem('By Employee', 'identification'),
-              reportItem('By Category', 'list-bullet'),
-              reportItem('Overdue Imprest', 'clock'),
-            ],
-          },
-          {
-            label: 'Reconciliation',
-            icon: 'arrow-path',
-            children: [
-              reportItem('Reconciliation'),
-              reportItem('Statement'),
-              reportItem('Statement History', 'clock'),
-              reportItem('Reconciliation History', 'clock'),
-            ],
-          },
-          reportItem('Income Expenditure'),
-          reportItem('GL Transaction Reports', 'chart-bar-square'),
-          {
-            label: 'Petty Cash',
-            icon: 'banknotes',
-            children: [
-              reportItem('By Account'),
-              reportItem('By OU', 'building-office'),
-              reportItem('By Batch'),
-              reportItem('By Recipient/Beneficiary', 'user'),
-            ],
-          },
-          {
-            label: 'H/W',
-            icon: 'building-office',
-            children: [
-              reportItem('General'),
-              reportItem('By Date', 'calendar-days'),
-              reportItem('Posted Cheques', 'credit-card'),
-            ],
-          },
+          { label: 'All Reports', to: '/ledger/reports', icon: 'chart-bar-square' },
+          { label: 'Report Mappings', to: '/ledger/reports/mappings', icon: 'adjustments-horizontal' },
         ],
       },
     ],
@@ -186,18 +137,16 @@ const moduleGroups = computed<NavigationGroup[]>(() => [
 const groups = computed(() => isLedgerWorkspace.value ? ledgerGroups : (props.navigationGroups ?? moduleGroups.value))
 const ledgerSetupLinks: NavigationLink[] = [
   { label: 'Accounting units', icon: 'building-office', comingSoon: true },
-  { label: 'Preferences', icon: 'cog-6-tooth', comingSoon: true },
+  { label: 'Preferences', icon: 'cog-6-tooth', to: '/preferences' },
+  { label: 'Account & subscription', icon: 'building-office', to: '/account' },
 ]
 const moduleSetupLinks: NavigationLink[] = [
-  { label: 'Workspace settings', icon: 'cog-6-tooth', comingSoon: true },
+  { label: 'Preferences', icon: 'cog-6-tooth', to: '/preferences' },
+  { label: 'Account & subscription', icon: 'building-office', to: '/account' },
   { label: 'User access', icon: 'user-group', comingSoon: true },
   { label: 'Data connections', icon: 'arrow-path', comingSoon: true },
 ]
 const setupLinks = computed(() => isLedgerWorkspace.value ? ledgerSetupLinks : moduleSetupLinks)
-
-function comingSoonTitle(label: string) {
-  return `${label} is planned for a later ${props.moduleName} phase`
-}
 
 function isActive(path?: string) {
   if (!path) return false
@@ -253,18 +202,13 @@ function isActive(path?: string) {
           <AppIcon name="cog-6-tooth" :size="13" /> Configuration
         </p>
         <div class="space-y-0.5">
-          <button
+          <SharedSidebarNavItem
             v-for="link in setupLinks"
             :key="link.label"
-            type="button"
-            disabled
-            :title="comingSoonTitle(link.label)"
-            class="flex w-full cursor-not-allowed items-center gap-3 rounded-lg px-3 py-2.5 text-left text-sm font-medium text-white/30"
-          >
-            <AppIcon :name="link.icon" :size="18" />
-            <span class="min-w-0 flex-1 truncate">{{ link.label }}</span>
-            <span class="rounded-full bg-white/10 px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wide text-white/40">Soon</span>
-          </button>
+            :item="link"
+            :workspace-name="props.moduleName"
+            @navigate="emit('close')"
+          />
         </div>
       </section>
     </nav>

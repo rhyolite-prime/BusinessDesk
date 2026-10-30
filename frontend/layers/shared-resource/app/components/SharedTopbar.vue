@@ -62,7 +62,7 @@ const pageTitle = computed(() => {
 const fallbackSearchItems = computed(() => isLedgerWorkspace.value
   ? [
       { label: 'Overview', detail: 'General Ledger dashboard', to: '/ledger' },
-      { label: 'Account Heads', detail: 'Maintain the chart-of-accounts hierarchy', to: '/ledger/account-heads' },
+      { label: 'Chart of Accounts', detail: 'Maintain the chart-of-accounts hierarchy', to: '/ledger/chart-of-accounts' },
       { label: 'Bank Account', detail: 'Manage bank accounts and GL links', to: '/ledger/bank-accounts' },
       { label: 'Chart of Account Control', detail: 'Set control headers and number ranges', to: '/ledger/account-controls' },
       { label: 'Chart of Account Detail', detail: 'Manage posting accounts and balances', to: '/ledger/accounts' },

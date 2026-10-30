@@ -1,8 +1,6 @@
-/** Destroy the current session. */
+import { checkAuthOrigin, clearTenantSession } from '../../utils/tenant-auth'
 export default defineEventHandler((event) => {
-  const token = getCookie(event, 'tl_session')
-  if (token) authStore().sessions.delete(token)
-  deleteCookie(event, 'tl_session', { path: '/' })
-  deleteCookie(event, 'tl_authed', { path: '/' })
+  checkAuthOrigin(event)
+  clearTenantSession(event)
   return { ok: true }
 })

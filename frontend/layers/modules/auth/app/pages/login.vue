@@ -1,90 +1,88 @@
 <script setup lang="ts">
-useHead({ title: 'Sign in' })
+import { loadRememberedAccountId, saveRememberedAccountId } from '../utils/rememberedAccount'
+useHead({ title: 'Account sign in' })
 definePageMeta({ layout: 'auth' })
-const route = useRoute()
-const router = useRouter()
 const toast = useToast()
 const api = useApi()
-
-const step = ref<'credentials' | '2fa' | 'enrol'>('credentials')
-const form = reactive({ username: 'a.mensah', password: 'demo1234' })
+const step = ref<'credentials' | '2fa'>('credentials')
+const form = reactive({ accountId: '', usernameOrEmail: '', password: '' })
 const code = ref('')
-const challengeId = ref('')
-const pendingName = ref('')
-const enrol = ref<any>(null)
+const enrol = ref<{ qr: string; secret: string; issuer: string; account: string } | null>(null)
 const busy = ref(false)
-const redirect = computed(() => String(route.query.redirect ?? '/modules'))
-
-async function signIn() {
-  busy.value = true
-  try {
-    const res: any = await api.post('/auth/login', form)
-    challengeId.value = res.challengeId
-    pendingName.value = res.displayName
-    // try verifying with no code? No — check whether the user already enrolled.
-    // We attempt enrol setup; if a secret already exists it returns the same one.
-    const setup: any = await api.get('/auth/setup-2fa', { username: res.username })
-    enrol.value = setup
-    // Distinguish: if this secret was auto-created we can't know, so always allow
-    // verifying; show enrol QR as a fallback when verification fails.
-    step.value = '2fa'
-  } catch (e: any) {
-    toast.error('Sign-in failed', e.message)
-  } finally { busy.value = false }
-}
-
-async function verify() {
-  busy.value = true
-  try {
-    await api.post('/auth/verify-2fa', { challengeId: challengeId.value, code: code.value })
-    toast.success('Welcome back', 'You are signed in.')
-    // full navigation so the SSR guard re-evaluates with the new session
-    await nextTick()
-    window.location.assign(redirect.value && redirect.value !== '/login' ? redirect.value : '/modules')
-  } catch (e: any) {
-    toast.error('Verification failed', e.message)
-  } finally { busy.value = false }
-}
-
-// keep the demo code hint live
-let timer: any
+const expiresAt = ref(0)
+const now = ref(Date.now())
+const remaining = computed(() => Math.max(0, Math.ceil((expiresAt.value - now.value) / 1000)))
+const expired = computed(() => step.value === '2fa' && remaining.value === 0)
+watch(expired, value => { if (value) { enrol.value = null; code.value = '' } })
+let timer: ReturnType<typeof setInterval> | undefined
 onMounted(() => {
-  timer = setInterval(async () => {
-    if (step.value === '2fa' && enrol.value?.secret) {
-      try { enrol.value = await $fetch('/api/auth/setup-2fa', { query: { username: form.username } }) } catch (e) { /* ignore */ }
-    }
-  }, 5000)
+  // Read only after mount so SSR and the initial client render remain identical.
+  if (!form.accountId) form.accountId = loadRememberedAccountId()
+  timer = setInterval(() => { now.value = Date.now() }, 1000)
 })
-onUnmounted(() => clearInterval(timer))
+watch(() => form.accountId, accountId => saveRememberedAccountId(accountId))
+onUnmounted(() => { clearInterval(timer); form.password = ''; enrol.value = null })
+
+function complete() {
+  form.password = ''; enrol.value = null; code.value = ''
+  // Do not follow an untrusted redirect query. Both paths land in module manager.
+  window.location.assign('/modules')
+}
+function back() {
+  if (busy.value) return
+  step.value = 'credentials'; enrol.value = null; code.value = ''; form.password = ''
+}
+async function signIn() {
+  if (busy.value) return
+  busy.value = true
+  enrol.value = null; code.value = ''
+  try {
+    const result = await api.post('/auth/login', { ...form })
+    form.password = ''
+    if (result.authenticated === true) return complete()
+    if (result.requiresTwoFactorAuth !== true || !result.expiresIn) throw new Error('Invalid login challenge.')
+    enrol.value = result.enrollment
+    now.value = Date.now(); expiresAt.value = now.value + result.expiresIn * 1000
+    step.value = '2fa'
+  } catch (error: any) {
+    form.password = ''
+    toast.error('Sign-in failed', error.message)
+  } finally { busy.value = false }
+}
+async function verify() {
+  if (busy.value || expired.value || !/^\d{6}$/.test(code.value)) return
+  busy.value = true
+  try {
+    const result = await api.post('/auth/verify-2fa', { code: code.value })
+    if (result.authenticated !== true) throw new Error('Authentication did not complete.')
+    complete()
+  } catch (error: any) {
+    code.value = ''
+    toast.error('Verification failed', error.message)
+  } finally { busy.value = false }
+}
 </script>
 
 <template>
   <div>
     <div v-if="step === 'credentials'">
       <h1 class="text-2xl font-bold text-ink">Sign in</h1>
-      <p class="text-sm text-ink-faint mt-1">Enter your operator credentials.</p>
+      <p class="text-sm text-ink-faint mt-1">Enter your account and user credentials.</p>
 
       <form class="space-y-4 mt-7" @submit.prevent="signIn">
-        <FormField label="Username">
-          <TextInput v-model="form.username" placeholder="a.mensah" autocomplete="username" />
+        <FormField label="Account ID" required>
+          <TextInput v-model="form.accountId" placeholder="Account ID" autocomplete="organization" required :disabled="busy" />
         </FormField>
-        <FormField label="Password">
-          <TextInput v-model="form.password" type="password" placeholder="••••••••" autocomplete="current-password" />
+        <FormField label="Username or email" required>
+          <TextInput v-model="form.usernameOrEmail" placeholder="Username or email address" autocomplete="username" required :disabled="busy" />
+        </FormField>
+        <FormField label="Password" required>
+          <TextInput v-model="form.password" type="password" placeholder="••••••••" autocomplete="current-password" required :disabled="busy" />
         </FormField>
         <BaseButton type="submit" block :disabled="busy" icon="arrow-right">
           {{ busy ? 'Signing in…' : 'Continue' }}
         </BaseButton>
       </form>
-
-      <div class="mt-6 rounded-lg bg-primary-soft px-4 py-3 text-xs text-ink-soft">
-        <p class="font-semibold text-primary mb-1">Demo credentials</p>
-        <p>Username <code class="bg-white px-1.5 py-0.5 rounded">a.mensah</code> · password <code class="bg-white px-1.5 py-0.5 rounded">demo1234</code></p>
-        <p class="mt-1 text-ink-faint">Any seeded user works; the password is <code>demo1234</code>.</p>
-      </div>
-
-      <p class="text-sm text-ink-faint mt-6 text-center">
-        New institution? <NuxtLink to="/signup" class="text-primary font-semibold hover:underline">Create a platform account</NuxtLink>
-      </p>
     </div>
 
     <!-- 2FA -->
@@ -95,22 +93,22 @@ onUnmounted(() => clearInterval(timer))
         </span>
         <div>
           <h1 class="text-2xl font-bold text-ink">Two-factor authentication</h1>
-          <p class="text-sm text-ink-faint">Signed in as <strong class="text-ink">{{ pendingName }}</strong></p>
+          <p class="text-sm text-ink-faint">Verifying <strong class="text-ink">{{ form.usernameOrEmail }}</strong> for {{ form.accountId }}</p>
         </div>
       </div>
 
       <p class="text-sm text-ink-soft leading-relaxed">
         Open <strong>Google Authenticator</strong> (or Authy / Microsoft Authenticator) and enter the
-        6-digit code for <strong>BusinessDesk ERP</strong>.
+        6-digit code for your <strong>BusinessDesk</strong> account.
       </p>
 
       <!-- Enrolment QR (shown for first-time users) -->
-      <details v-if="enrol" class="mt-4 rounded-xl border border-line bg-canvas/60 p-4">
+      <details v-if="enrol" open class="mt-4 rounded-xl border border-line bg-canvas/60 p-4">
         <summary class="text-xs font-semibold text-ink-soft cursor-pointer select-none">
-          First time? Show enrolment QR for Google Authenticator
+          Set up your authenticator — scan this QR code
         </summary>
         <div class="mt-4 flex flex-col items-center text-center">
-          <img :src="enrol.qr" alt="2FA QR code" class="rounded-lg border border-line bg-white p-2 w-44 h-44" />
+          <img :src="enrol.qr" alt="2FA QR code" width="320" height="320" class="rounded-lg border border-line bg-white w-80 max-w-full h-auto" />
           <p class="text-[11px] text-ink-faint mt-3">Scan with Google Authenticator, or enter this key manually:</p>
           <code class="mt-1 text-xs bg-white border border-line rounded px-2 py-1 select-all tracking-wider">{{ enrol.secret }}</code>
         </div>
@@ -118,20 +116,20 @@ onUnmounted(() => clearInterval(timer))
 
       <form class="space-y-4 mt-5" @submit.prevent="verify">
         <FormField label="Authenticator code" required>
-          <TextInput v-model="code" placeholder="123 456" maxlength="6" inputmode="numeric"
+          <TextInput v-model="code" placeholder="123456" maxlength="6" inputmode="numeric" autocomplete="one-time-code" pattern="[0-9]{6}" :disabled="busy || expired"
             class="!text-center !text-2xl !tracking-[0.5em] !font-bold !py-3" />
         </FormField>
-        <div v-if="enrol" class="rounded-lg bg-amber-50 border border-amber-200 px-4 py-2.5 text-xs text-amber-800">
-          <p>Demo: your current code is <strong class="tnum text-base">{{ enrol.demoCode }}</strong>
-             (refreshes every {{ enrol.demoCodeExpiresIn }}s). In production this hint is removed.</p>
-        </div>
-        <BaseButton type="submit" block variant="success" icon="check" :disabled="busy || code.length !== 6">
+        <p class="text-xs" :class="expired ? 'text-red-600' : 'text-ink-faint'" role="status" aria-live="polite">
+          {{ expired ? 'This challenge expired. Go back and sign in again.' : `Challenge expires in ${remaining} seconds.` }}
+        </p>
+        <BaseButton type="submit" block variant="success" icon="check" :disabled="busy || expired || !/^\d{6}$/.test(code)">
           {{ busy ? 'Verifying…' : 'Verify & sign in' }}
         </BaseButton>
       </form>
 
+      <p v-if="!enrol" class="mt-4 text-xs text-ink-faint">Lost access to your authenticator? Contact your tenant administrator.</p>
       <button class="mt-5 text-sm text-ink-faint hover:text-ink w-full text-center"
-        @click="step = 'credentials'">← Back to sign in</button>
+        :disabled="busy" @click="back">← Back to sign in</button>
     </div>
   </div>
 </template>

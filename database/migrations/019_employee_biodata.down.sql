@@ -1,0 +1,11 @@
+BEGIN;
+DELETE FROM core_tenant_reset_registry WHERE table_name='hr_employee_biodata';
+DROP TRIGGER check_voucher_employee ON gl_payment_vouchers;
+DROP TRIGGER check_imprest_employee ON gl_imprests;
+DROP FUNCTION check_live_employee_link();
+ALTER TABLE gl_payment_vouchers DROP CONSTRAINT fk_voucher_employee;
+ALTER TABLE gl_imprests DROP CONSTRAINT fk_imprest_employee;
+DROP TABLE hr_employee_biodata;
+DROP FUNCTION employee_text_list_valid(jsonb);
+DROP INDEX uq_employee_link_user_scope;
+COMMIT;
