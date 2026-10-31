@@ -112,6 +112,10 @@ function chooseReceivable(option: { unitId?: string }) {
 }
 async function save() {
   if (busy.value || readOnly.value) return
+  if (!props.group && !form.receivableAccountId) {
+    formError.value = 'Select the Receivable G/L before saving.'
+    return
+  }
   const current = generation,
     who = identity(),
     life = lifecycle

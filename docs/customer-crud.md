@@ -134,3 +134,14 @@ Only live, active accounts in the current tenant and active units are listed.
 The primary selection determines the unit for the other fields; changing that
 unit clears dependent defaults. Existing save-time receipt eligibility, supplier
 AP-liability and same-unit validations are retained.
+
+### Searchable customer GL pickers
+
+Customer posting defaults use the Journal Entry `AccountControlPicker` in GL
+account mode. Search covers all pages from the existing customer-options API
+(100 per page, maximum 100,000; excess produces an error, not truncation).
+Receivable G/L remains required; credit/VAT/IRS remain optional and can be cleared
+with **Not configured**. Selecting a receivable account in another accounting
+unit still clears the optional defaults and reloads same-unit options. Saved
+labels and read-only behavior are preserved, as are server-side account checks.
+Customer groups and currencies retain their existing paginated controls.
