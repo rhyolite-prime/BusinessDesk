@@ -1,3 +1,4 @@
+import { formatReportDate, formatReportRate } from './report-timestamp'
 import type { EmbeddedReport, ReportSection, ReportColumn } from './report-types'
 export const reportCatalog = [
  ['journal-register','Journal Register'], ['general-ledger','General Ledger / Account Activity'], ['trial-balance','Trial Balance'], ['balance-sheet','Balance Sheet'], ['cost-center','Cost-Center Report'],
@@ -11,7 +12,7 @@ export interface ReportAccount { id:string; number:string; name:string; type:num
 export interface ReportLine { id:string; accountId:string; accountName:string; type:number; batchId:string; batchNumber:string; date:string; batchDate:string; description:string; reference:string; source:string; costCenterId:string|null; costCenter:string|null; currency:string; rate:string; debit:string; credit:string; transactionDebit:string; transactionCredit:string; opening:boolean }
 export interface ReportBudget { accountId:string; costCenterId:string|null; year:number; month:number; original:string; revised:string }
 export interface FinancialSnapshot { companyName:string; unitName:string; currencyCode:string; decimals:number; fiscalMonth:number; generatedAt:string; through:string; accounts:ReportAccount[]; lines:ReportLine[]; budgets:ReportBudget[] }
-export interface FinancialFilters { kind:ReportKind; from:string; to:string; accountId?:string; costCenterId?:string; budgetBasis?:'original'|'revised' }
+export interface FinancialFilters { kind:ReportKind; from:string; to:string; accountId?:string; costCenterId?:string; costCenterName?:string; budgetBasis?:'original'|'revised' }
 const scale=1000000n
 export function micros(value:string):bigint {
  if(!/^-?\d+(\.\d{1,6})?$/.test(value))throw Error('Invalid ledger decimal in report snapshot.')
@@ -65,14 +66,34 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  const totals=(rows:ReportLine[])=>[money(sum(rows.map(l=>micros(l.debit)))),money(sum(rows.map(l=>micros(l.credit))))]
  if(kind==='journal-register'){
   cols(['Date','Batch / source','Account','Description / reference','Currency / rate','Transaction debit','Transaction credit','Base debit','Base credit'])
-  const batches=new Map<string,ReportLine[]>();for(const line of inPeriod){if(!batches.has(line.batchId))batches.set(line.batchId,[]);batches.get(line.batchId)!.push(line)}
-  for(const rows of batches.values())section(`${rows[0]!.batchNumber} · Posted · Batch date ${rows[0]!.batchDate}`,rows.map(l=>[l.date,`${l.batchNumber} / ${l.source}`,accountLabel(accounts.get(l.accountId)!),[l.description,l.reference].filter(Boolean).join(' · '),`${l.currency} / ${l.rate}`,money(micros(l.transactionDebit)),money(micros(l.transactionCredit)),money(micros(l.debit)),money(micros(l.credit))]))
-  section('Totals (base currency only)',[['','','','','','','',...totals(inPeriod)]])
+  const years=new Map<string,Map<string,Map<string,ReportLine[]>>>()
+  for(const line of [...inPeriod].sort((a,b)=>a.date.localeCompare(b.date)||a.batchNumber.localeCompare(b.batchNumber,'en',{numeric:true})||a.batchId.localeCompare(b.batchId)||a.id.localeCompare(b.id))){
+   const year=line.date.slice(0,4),month=line.date.slice(0,7)
+   if(!years.has(year))years.set(year,new Map())
+   const months=years.get(year)!;if(!months.has(month))months.set(month,new Map())
+   const batches=months.get(month)!;if(!batches.has(line.batchId))batches.set(line.batchId,[])
+   batches.get(line.batchId)!.push(line)
+  }
+  const subtotal=(path:string[],label:string,rows:ReportLine[])=>sections.push({title:label,path,hideHeading:true,emphasized:true,rows:[['',label,'','','','','',...totals(rows)]]})
+  for(const [year,months] of years){
+   const yearRows:ReportLine[]=[]
+   for(const [month,batches] of months){
+    const monthLabel=new Intl.DateTimeFormat('en-GB',{month:'long',year:'numeric',timeZone:'UTC'}).format(day(month+'-01')),monthRows:ReportLine[]=[]
+    for(const rows of batches.values()){
+     const batch=`${rows[0]!.batchNumber} · Posted · Batch date ${formatReportDate(rows[0]!.batchDate)}`
+     sections.push({title:batch,path:[year,monthLabel,batch],rows:rows.map(l=>[formatReportDate(l.date),`${l.batchNumber} / ${l.source}`,accountLabel(accounts.get(l.accountId)!),[l.description,l.reference].filter(Boolean).join(' · '),`${l.currency} / ${formatReportRate(l.rate)}`,money(micros(l.transactionDebit)),money(micros(l.transactionCredit)),money(micros(l.debit)),money(micros(l.credit))])})
+     subtotal([year,monthLabel,batch],`${rows[0]!.batchNumber} subtotal (base)`,rows);monthRows.push(...rows)
+    }
+    subtotal([year,monthLabel],`${monthLabel} subtotal (base)`,monthRows);yearRows.push(...monthRows)
+   }
+   subtotal([year],`${year} subtotal (base)`,yearRows)
+  }
+  sections.push({title:'Grand total (base currency only)',hideHeading:true,emphasized:true,rows:[['','GRAND TOTAL','','','','','',...totals(inPeriod)]]})
  }else if(kind==='general-ledger'){
   cols(['Date','Batch / reference','Description','Debit (base)','Credit (base)','Running balance (Dr + / Cr −)'])
-  for(const a of accountList){const entries=byAccount.get(a.id)||[];if(!entries.length||accountFilter&&a.id!==accountFilter)continue;let balance=net(entries.filter(l=>l.date<from));const rows=[['Opening',from,'',money(0n),money(0n),money(balance)]]
-   for(const l of entries.filter(l=>l.date>=from)){balance+=micros(l.debit)-micros(l.credit);rows.push([l.date,[l.batchNumber,l.reference].filter(Boolean).join(' / '),l.description||'',money(micros(l.debit)),money(micros(l.credit)),money(balance)])}
-   rows.push(['Closing',to,'',...totals(entries.filter(l=>l.date>=from)),money(balance)]);section(accountLabel(a),rows)
+  for(const a of accountList){const entries=byAccount.get(a.id)||[];if(!entries.length||accountFilter&&a.id!==accountFilter)continue;let balance=net(entries.filter(l=>l.date<from));const rows=[['Opening',formatReportDate(from),'',money(0n),money(0n),money(balance)]]
+   for(const l of entries.filter(l=>l.date>=from)){balance+=micros(l.debit)-micros(l.credit);rows.push([formatReportDate(l.date),[l.batchNumber,l.reference].filter(Boolean).join(' / '),l.description||'',money(micros(l.debit)),money(micros(l.credit)),money(balance)])}
+   rows.push(['Closing',formatReportDate(to),'',...totals(entries.filter(l=>l.date>=from)),money(balance)]);section(accountLabel(a),rows)
   }
  }else if(kind==='trial-balance'){
   columns=[{key:'number',title:'General Ledger #',width:14},{key:'name',title:'',width:46},{key:'debit',title:'Debit',width:20,alignment:'right'},{key:'credit',title:'Credit',width:20,alignment:'right'}]
@@ -102,7 +123,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  }else if(kind==='cost-center'){
   cols(['Date','Batch','Account','Description','Debit (base)','Credit (base)','Net (Dr + / Cr −)'])
   const centers=new Map<string,ReportLine[]>();for(const line of inPeriod){const key=line.costCenterId||'unassigned';if(!centers.has(key))centers.set(key,[]);centers.get(key)!.push(line)}
-  for(const rows of centers.values()){const first=rows[0]!;section(`${first.costCenter||'Unassigned cost center'} · ${first.costCenterId||'unassigned'}`,[...rows.map(l=>[l.date,l.batchNumber,accountLabel(accounts.get(l.accountId)!),l.description||'',money(micros(l.debit)),money(micros(l.credit)),money(micros(l.debit)-micros(l.credit))]),['TOTAL','','','',...totals(rows),money(net(rows))]])}
+  for(const rows of centers.values()){const first=rows[0]!;section(first.costCenter||'Unassigned cost center',[...rows.map(l=>[formatReportDate(l.date),l.batchNumber,accountLabel(accounts.get(l.accountId)!),l.description||'',money(micros(l.debit)),money(micros(l.credit)),money(micros(l.debit)-micros(l.credit))]),['TOTAL','','','',...totals(rows),money(net(rows))]])}
  }else {
   const incomeAccounts=accountList.filter(a=>a.type===3||a.type===4)
   const incomeRows=(a:string,b:string,center?:string)=>period(a,b).filter(l=>!l.opening&&[3,4].includes(accounts.get(l.accountId)!.type)&&(!center||(l.costCenterId||'unassigned')===center))
@@ -123,9 +144,9 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   }else if(kind==='income-monthly'||kind==='income-crosstab'){
    const dimensions:{key:string;label:string;values:Map<string,bigint>}[]=[]
    if(kind==='income-monthly'){
-    const cursor=day(from);cursor.setUTCDate(1);while(iso(cursor)<=to){const start=iso(cursor),next=new Date(cursor);next.setUTCMonth(next.getUTCMonth()+1);const end=shift(iso(next),-1);dimensions.push({key:start,label:start.slice(0,7),values:values(start<from?from:start,end>to?to:end)});cursor.setUTCMonth(cursor.getUTCMonth()+1)}
+    const cursor=day(from);cursor.setUTCDate(1);while(iso(cursor)<=to){const start=iso(cursor),next=new Date(cursor);next.setUTCMonth(next.getUTCMonth()+1);const end=shift(iso(next),-1);dimensions.push({key:start,label:formatReportDate(start),values:values(start<from?from:start,end>to?to:end)});cursor.setUTCMonth(cursor.getUTCMonth()+1)}
    }else {
-    const centers=new Map<string,string>();for(const l of incomeRows(from,to))centers.set(l.costCenterId||'unassigned',`${l.costCenter||'Unassigned'} [${l.costCenterId||'none'}]`)
+    const centers=new Map<string,string>();for(const l of incomeRows(from,to))centers.set(l.costCenterId||'unassigned',l.costCenter||'Unassigned')
     for(const [key,label] of centers)dimensions.push({key,label,values:values(from,to,key)})
    }
    if(dimensions.length>12)throw Error('Cross-tab supports at most 12 months or cost centers per report. Narrow dates or select a cost center; no columns have been omitted.')
@@ -143,7 +164,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
    const budgetNet=sum(incomeAccounts.map(a=>budgets.get(a.id)!*(a.type===3?1n:-1n)));section('Net income',[['Revenue less expense',money(revenue-expense),money(budgetNet),money(revenue-expense-budgetNet),percent(revenue-expense-budgetNet,budgetNet),money(revenue-expense-budgetNet)]]);warnings.push(`Budget basis: ${filters.budgetBasis==='original'?'original':'revised (zero is an explicit revised value)'}. Approved/closed monthly budgets only; amounts are unit base currency. Overlapping approved budgets are additive.`)
   }else {
    const comparison=kind==='income-prior'||kind==='income-comparative',common=kind==='income-common'
-   cols(['Account','Current',...(comparison?[`Comparison ${priorStart}–${priorEnd}`,'Change','Change %']:common?['% of total revenue']:[])])
+   cols(['Account','Current',...(comparison?[`Comparison ${formatReportDate(priorStart)}–${formatReportDate(priorEnd)}`,'Change','Change %']:common?['% of total revenue']:[])])
    for(const type of [3,4]){
     if(kind==='income-revenue'&&type!==3||kind==='income-expenditure'&&type!==4)continue
     section(typeNames[type]!,incomeAccounts.filter(a=>a.type===type&&(current.get(a.id)!==0n||comparison&&prior.get(a.id)!==0n)).map(a=>{const value=current.get(a.id)!,prev=prior.get(a.id)!;return [accountLabel(a),money(value),...(comparison?[money(prev),money(value-prev),percent(value-prev,prev)]:common?[percent(value,revenue)]:[])]}))
@@ -155,9 +176,10 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   }
  }
  if(!sections.length)section('No matching posted activity',[])
+ const centerName=filters.costCenterId==='unassigned'?'Unassigned cost center':filters.costCenterName?.trim()||snapshot.lines.find(line=>line.costCenterId===filters.costCenterId&&line.costCenter)?.costCenter||'Unavailable cost center'
  const uniqueWarnings=[...new Set(warnings)]
  // Warnings are part of the report snapshot and therefore all exported formats.
  if(uniqueWarnings.length)section('Report notes',uniqueWarnings.map(warning=>[warning,...Array(Math.max(0,columns.length-1)).fill('')]))
  if(trialTotals)sections.push({title:'Grand total',hideHeading:true,emphasized:true,rows:[['','GRAND TOTAL',money(trialTotals.debit),money(trialTotals.credit)]]})
- return {warnings:uniqueWarnings,report:{id:kind,title:title.toUpperCase(),companyName:snapshot.companyName||'Company profile not configured',generatedAt:snapshot.generatedAt,subtitle:`${snapshot.unitName} · ${snapshot.currencyCode} (base) · ${(kind==='balance-sheet'||kind==='trial-balance')?'As of '+to:from+' to '+to} · ${filters.costCenterId?'Cost center: '+filters.costCenterId:'All cost centers'}${accountFilter?' · Account: '+accountLabel(accounts.get(accountFilter)!):''}`,columns,sections,landscape:columns.length>=6}}
+ return {warnings:uniqueWarnings,report:{id:kind,title:title.toUpperCase()+(filters.costCenterId?' — '+centerName:''),companyName:snapshot.companyName||'Company profile not configured',generatedAt:snapshot.generatedAt,subtitle:`${snapshot.unitName} · ${snapshot.currencyCode} (base) · ${(kind==='balance-sheet'||kind==='trial-balance')?'As of '+formatReportDate(to):formatReportDate(from)+' to '+formatReportDate(to)} · ${filters.costCenterId?'Cost center: '+centerName:'All cost centers'}${accountFilter?' · Account: '+accountLabel(accounts.get(accountFilter)!):''}`,columns,sections,landscape:columns.length>=6}}
 }

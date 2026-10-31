@@ -197,11 +197,38 @@ All reports continue using the Chart of Accounts font settings.
 
 ### Printed-on footer
 
-Every report uses the Chart of Accounts date/time presentation: `30 Oct 2026,
-12:34` (en-GB medium date, short time) in the selected accounting unit's timezone.
+Every report uses the Chart of Accounts date/time presentation: `30-Oct-2026,
+12:34` (dd-MMM-yyyy date, 24-hour hour/minute time) in the selected accounting unit's timezone.
 Financial reports format their server snapshot timestamp before rendering; Chart
 of Accounts formats its generation time using the same helper. This immutable
 label is shared by the preview, PDF/print, Excel and Word, rather than changing
 when an export is downloaded. Raw ISO/database timestamps and fractional seconds
 are not displayed. Invalid legacy timezones fall back to UTC; an invalid timestamp
 is labelled `Date/time unavailable` rather than breaking report generation.
+
+
+## Journal Register hierarchy and display conventions
+
+Journal Register is ordered by **transaction year → transaction month → batch**,
+with bold batch, month and year subtotals and one grand total. A batch with line
+transaction dates in different months appears separately inside each applicable
+month; the batch-date label is retained. Subtotals sum base debit/base credit only:
+transaction-currency columns stay blank because mixed currencies must not be added.
+Account and cost-center filters apply before grouping and subtotal calculations.
+
+Report dates, batch dates, opening/closing dates, comparison ranges, monthly column
+start dates, as-of/range headings and footer dates use **dd-MMM-yyyy** (for example,
+`03-Oct-2026`). Year/month grouping labels identify calendar periods, such as
+`2026` and `October 2026`. Query parameters, native date inputs and stored dates
+remain ISO dates. User-entered descriptions/references are not rewritten.
+Exchange rates display exactly **two decimal places**, using exact decimal half-up
+rounding without changing stored rates, monetary precision or calculations.
+
+Cost center and Account use the same searchable, grouped `AccountControlPicker`
+as Journal Entry. Catalog options are available before generating the first
+report; all pages of accounting-unit accounts are loaded. Clear options restore
+All cost centers / All accounts, and Unassigned only remains available. Historical
+accounts and cost centers from the snapshot are retained if absent from current
+catalogs. Unit changes clear selections and stale directory requests are ignored.
+The selected cost center's name appears in the report title and scope, never its
+UUID. This presentation is shared by preview, PDF/print, Excel and Word.

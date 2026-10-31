@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts'; label?: string; unavailableText?: string }>()
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts'; label?: string; unavailableText?: string; emptyLabel?: string }>()
 const copy = computed(() => props.kind === 'accounts' ? {
   label: 'GL account', plural: 'accounts', search: 'Search GL accounts',
   placeholder: 'Select a GL account', unavailable: 'Unavailable account (replace)',
@@ -77,11 +77,11 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
     <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ fieldLabel }}</span>
     <button ref="trigger" type="button" :disabled="disabled" :aria-labelledby="`${id}-label ${id}-value`" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="`${id}-list`"
       class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900" @click="open ? close() : expand()" @keydown.down.prevent="expand">
-      <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
+      <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : emptyLabel || copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
     </button>
     <div v-if="open" :class="floating ? 'absolute left-0 right-0 top-full z-50' : ''" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-      <button v-if="kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
-        <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)' }}
+      <button v-if="emptyLabel || kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
+        <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ emptyLabel || (kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)') }}
       </button>
       <div class="relative border-b border-slate-100 p-2 dark:border-slate-800">
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />

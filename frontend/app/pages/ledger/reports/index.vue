@@ -6,6 +6,7 @@ import { reportGroups, plannedReportGroups, type LedgerReportKind } from '../../
 import type { AccountDetail } from '../../../features/ledger/account-detail-types'
 import type { LedgerAccountControl } from '../../../features/ledger/setup-data'
 import type { EmbeddedReport } from '../../../features/reports/report-types'
+import { costCenterOptions } from '../../../features/ledger/cost-center-options'
 import { useJournals } from '../../../features/ledger/useJournals'
 definePageMeta({layout:'admin-ledger'})
 useHead({title:'General Ledger reports'})
@@ -19,19 +20,45 @@ const loading=ref(false),error=ref('');let generation=0
 function routeKind(){const value=String(route.query.type||'trial-balance');kind.value=reportGroups.flatMap(group=>group.reports).some(([id])=>id===value)?value as LedgerReportKind:'trial-balance'}
 routeKind();watch(()=>route.query.type,routeKind)
 watch(kind,value=>{if(route.query.type!==value)void navigateTo({path:'/ledger/reports',query:{...route.query,type:value}},{replace:true})})
-const centers=computed(()=>[...new Map((snapshot.value?.lines||[]).filter(l=>l.costCenterId).map(l=>[l.costCenterId!,{id:l.costCenterId!,name:l.costCenter||'Unavailable cost center'}])).values()])
+const directoryAccounts=ref<AccountDetail[]>([]),directoryCenters=ref<{id:string;name:string;parentId?:string|null}[]>([])
+const directoryLoading=ref(false),directoryError=ref('');let directoryGeneration=0
+const centers=computed(()=>{
+ const result=new Map(directoryCenters.value.map(center=>[center.id,center]))
+ for(const line of snapshot.value?.lines||[])if(line.costCenterId&&!result.has(line.costCenterId))result.set(line.costCenterId,{id:line.costCenterId,name:line.costCenter||'Unavailable cost center',parentId:null})
+ return [...result.values()]
+})
+const centerChoices=computed(()=>[{id:'unassigned',label:'Unassigned only',type:'Scope',groupKey:'scope'},...costCenterOptions(centers.value)])
+const accountChoices=computed(()=>{
+ const result=new Map(directoryAccounts.value.map(account=>[account.id,{id:account.id,label:`${account.accountNumber} · ${account.accountName}`,type:'GL accounts'}]))
+ for(const account of snapshot.value?.accounts||[])if(!result.has(account.id))result.set(account.id,{id:account.id,label:`${account.number} · ${account.name}`,type:'Historical accounts'})
+ return [...result.values()]
+})
 watch([kind,unitId,from,to,accountId,costCenterId,budgetBasis,chartType,chartStatus,search],()=>{++generation;loading.value=false;report.value=null;warnings.value=[];error.value=''})
-watch(unitId,()=>{snapshot.value=null;accountId.value='';costCenterId.value=''})
-async function allPages<T>(resource:string,unit:string,current:number):Promise<T[]>{
+watch(unitId,()=>{snapshot.value=null;accountId.value='';costCenterId.value='';void loadDirectories()})
+async function allPages<T>(resource:string,unit:string,current:number,valid=()=>current===generation):Promise<T[]>{
  const rows:T[]=[]
  for(let pageNo=1;;pageNo++){
-  if(current!==generation)return []
+  if(!valid())return []
   if(pageNo>500)throw new Error('This report exceeds 100,000 records. Contact your administrator.')
   const result=await request<{data:T[];totalPages:number}>(`/api/ledger/${resource}`,{query:{accountingUnitId:unit,pageNo,pageSize:200}})
-  if(current!==generation)return []
+  if(!valid())return []
   rows.push(...result.data)
   if(!result.data.length||pageNo>=result.totalPages)return rows
  }
+}
+async function loadDirectories(){
+ const current=++directoryGeneration,unit=unitId.value
+ directoryAccounts.value=[];directoryCenters.value=[];directoryError.value=''
+ directoryLoading.value=!!unit;if(!unit)return
+ try{
+  const [accounts,centers]=await Promise.all([
+   allPages<AccountDetail>('accounts',unit,current,()=>current===directoryGeneration),
+   request<{data:{id:string;name:string;parentId?:string|null}[]}>('/api/shared/cost-centers'),
+  ])
+  if(current!==directoryGeneration)return
+  directoryAccounts.value=accounts;directoryCenters.value=centers.data
+ }catch(e:any){if(current===directoryGeneration)directoryError.value=e?.data?.statusMessage||'Unable to load report filter options.'}
+ finally{if(current===directoryGeneration)directoryLoading.value=false}
 }
 async function profile(){
  try{return await request<{companyName:string}>('/api/shared/company-profile')}
@@ -39,7 +66,7 @@ async function profile(){
 }
 async function generate(){
  const current=++generation;loading.value=true;report.value=null;error.value='';warnings.value=[]
- const filters={kind:kind.value,from:from.value,to:to.value,accountId:accountId.value,costCenterId:costCenterId.value,budgetBasis:budgetBasis.value,status:chartStatus.value,type:chartType.value,query:search.value},unit=unitId.value
+ const filters={kind:kind.value,from:from.value,to:to.value,accountId:accountId.value,costCenterId:costCenterId.value,costCenterName:centers.value.find(center=>center.id===costCenterId.value)?.name||'',budgetBasis:budgetBasis.value,status:chartStatus.value,type:chartType.value,query:search.value},unit=unitId.value
  try {
   if(filters.kind==='chart-of-accounts'){
    const [accounts,controls,currencies,unitData,company]=await Promise.all([
@@ -64,7 +91,7 @@ async function generate(){
  finally{if(current===generation)loading.value=false}
 }
 onMounted(async()=>{try{units.value=await api.units();unitId.value=units.value[0]?.id||''}catch(e:any){error.value=e?.data?.statusMessage||'Unable to load accounting units.'}})
-onBeforeUnmount(()=>++generation)
+onBeforeUnmount(()=>{++generation;++directoryGeneration})
 </script>
 <template>
  <div class="space-y-5">
@@ -74,8 +101,8 @@ onBeforeUnmount(()=>++generation)
    <label class="text-sm">Accounting unit<select aria-label="Accounting unit" v-model="unitId" required class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="" disabled>Select a unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option></select></label>
    <label v-if="kind !== 'chart-of-accounts' && kind !== 'balance-sheet' && kind !== 'trial-balance'" class="text-sm">From<input v-model="from" required type="date" min="1900-01-01" :max="to" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700" /></label>
    <label v-if="kind !== 'chart-of-accounts'" class="text-sm">{{ kind === 'balance-sheet' || kind === 'trial-balance' ? 'As of' : 'Through' }}<input v-model="to" required type="date" min="1900-01-01" max="2999-12-31" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700" /></label>
-   <label v-if="kind !== 'chart-of-accounts'" class="text-sm">Cost center<select aria-label="Cost center" v-model="costCenterId" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="">All cost centers</option><option value="unassigned">Unassigned only</option><option v-for="center in centers" :key="center.id" :value="center.id">{{ center.name }} · {{ center.id.slice(0,8) }}</option></select><span class="text-xs text-slate-500">Generate once to load available cost centers.</span></label>
-   <label v-if="kind === 'general-ledger' || kind === 'journal-register'" class="text-sm">Account<select aria-label="Account" v-model="accountId" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="">All accounts</option><option v-for="account in snapshot?.accounts" :key="account.id" :value="account.id">{{ account.number }} · {{ account.name }}</option></select></label>
+   <AccountControlPicker v-if="kind !== 'chart-of-accounts'" v-model="costCenterId" kind="cost-centers" label="Cost center" empty-label="All cost centers" :options="centerChoices" :disabled="directoryLoading" />
+   <AccountControlPicker v-if="kind === 'general-ledger' || kind === 'journal-register'" v-model="accountId" kind="accounts" label="Account" empty-label="All accounts" :options="accountChoices" :disabled="directoryLoading" />
    <label v-if="kind === 'income-budget'" class="text-sm">Budget basis<select aria-label="Budget basis" v-model="budgetBasis" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="revised">Revised</option><option value="original">Original</option></select></label>
    <template v-if="kind === 'chart-of-accounts'">
     <label class="text-sm">Account type<select aria-label="Account type" v-model="chartType" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="">All types</option><option v-for="(label,index) in ['Asset','Liability','Equity','Revenue','Expense']" :key="label" :value="String(index)">{{ label }}</option></select></label>
@@ -87,6 +114,7 @@ onBeforeUnmount(()=>++generation)
    <p v-if="kind === 'income-budget'" class="text-xs text-slate-500">Select complete calendar months. Approved/closed budgets only. No daily proration.</p>
    <div class="self-end"><button :disabled="loading || !unitId" class="rounded-lg bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white disabled:opacity-40">{{ loading ? 'Generating…' : 'Generate report' }}</button></div>
   </form>
+  <p v-if="directoryError" role="alert" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">{{ directoryError }} <button type="button" class="underline" @click="loadDirectories">Retry filter options</button></p>
   <p v-if="error" role="alert" class="rounded-lg bg-rose-50 p-4 text-sm text-rose-700 dark:bg-rose-950/30 dark:text-rose-300">{{ error }}</p>
   <ul v-if="warnings.length" class="list-inside list-disc rounded-lg bg-amber-50 p-4 text-sm text-amber-900 dark:bg-amber-950/30 dark:text-amber-200"><li v-for="warning in warnings" :key="warning">{{ warning }}</li></ul>
   <ReportViewer v-if="report" :report="report" />

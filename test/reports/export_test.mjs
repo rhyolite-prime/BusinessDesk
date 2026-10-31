@@ -7,7 +7,8 @@ import ts from '../../frontend/node_modules/typescript/lib/typescript.js'
 const transpile=source=>ts.transpileModule(source,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText
 const data=js=>`data:text/javascript;base64,${Buffer.from(js).toString('base64')}`
 const require=createRequire(new URL('../../frontend/package.json',import.meta.url))
-const {financialReport,reportCatalog}=await import(data(transpile(await readFile('frontend/app/features/reports/financial-reports.ts','utf8'))))
+const timestampModule=data(transpile(await readFile('frontend/app/features/reports/report-timestamp.ts','utf8')))
+const {financialReport,reportCatalog}=await import(data(transpile(await readFile('frontend/app/features/reports/financial-reports.ts','utf8')).replace("'./report-timestamp'",JSON.stringify(timestampModule))))
 const hierarchy=data(transpile(await readFile('frontend/app/features/reports/report-hierarchy.ts','utf8')))
 let exports=transpile(await readFile('frontend/app/features/reports/report-exports.ts','utf8')).replace("'./report-hierarchy'",JSON.stringify(hierarchy))
 exports=exports.replace(/import\('([^']+)'\)/g,(_,name)=>`import('${pathToFileURL(require.resolve(name))}')`)
@@ -34,6 +35,15 @@ for(const [kind] of reportCatalog){
  assert.ok(book.getWorksheet('Report').headerFooter.oddFooter.includes(`Report printed on ${printedOn}`));checks++
  assert.ok((await zip.file('word/footer1.xml').async('string')).includes(`Report printed on ${printedOn}`));checks++
  assert.equal(reportPdfDefinition(report).pageOrientation,report.landscape?'landscape':'portrait');checks++
+ if(kind==='journal-register'){
+  const body=reportPdfDefinition(report).content[0].table.body
+  assert.equal(body.filter(row=>row[0]?.text==='2026').length,1)
+  assert.equal(body.filter(row=>row[0]?.text==='October 2026').length,1)
+  assert.equal(body.filter(row=>typeof row[1]?.text==='string'&&row[1].text.includes('subtotal (base)')).length,3)
+  assert.ok(body.some(row=>row[0]?.text==='01-Oct-2026'&&row[4]?.text==='GHS / 1.00'))
+  const document=await zip.file('word/document.xml').async('string');assert.match(document,/October 2026 subtotal/)
+  checks+=5
+ }
  if(kind==='trial-balance'){
   const sheet=book.getWorksheet('Report'),last=sheet.getRow(sheet.rowCount)
   assert.equal(sheet.getColumn(1).values.filter(value=>value==='Grand total'||value==='Control totals').length,0);assert.equal(sheet.getColumn(2).values.filter(value=>value==='GRAND TOTAL').length,1);assert.equal(last.getCell(2).value,'GRAND TOTAL');assert.equal(last.getCell(3).value,'25.1235');assert.equal(last.getCell(4).value,'25.1235');assert.equal(last.getCell(3).font.bold,true)
