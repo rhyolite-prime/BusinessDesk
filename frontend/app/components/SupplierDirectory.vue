@@ -111,6 +111,10 @@ function chooseCredit(option: { unitId?: string }) {
 }
 async function save() {
   if (busy.value || readOnly.value) return
+  if (!props.group && supplierAccountFields.some(field => !form[field.key])) {
+    formError.value = 'Select all four GL posting accounts before saving.'
+    return
+  }
   const current = generation,
     who = identity(),
     life = lifecycle

@@ -25,11 +25,14 @@ const request = useRequestFetch(),
   pages = ref(0),
   loading = ref(false),
   error = ref('')
+const isGl = computed(() => props.kind === 'accounts' || props.kind === 'credits')
+const glOptions = computed(() => options.value.map(option => ({ ...option, type: 'GL accounts' })))
 const inputId = useId(),
   initialId = props.modelValue,
   cache = ref<Record<string, Option>>({})
 function choose(value: string) {
-  const option = visible.value.find((o) => o.id === value)
+  const option = (isGl.value ? options.value : visible.value).find((o) => o.id === value)
+  if (isGl.value && !option) return
   if (option) {
     cache.value[value] = option
     emit('selected', option)
@@ -61,34 +64,36 @@ async function load(reset = false) {
   loading.value = true
   error.value = ''
   try {
-    const r = await request<{ data: Option[]; totalPages: number }>(
-      '/api/shared/suppliers/options',
-      {
-        query: {
-          kind: props.kind,
-          accountingUnitId: props.unitId,
-          pageNo: page.value,
-          pageSize: 20,
-        },
-      },
-    )
-    if (current === generation) {
-      options.value = r.data
-      pages.value = r.totalPages
+    const kind = props.kind, accountingUnitId = props.unitId
+    const rows: Option[] = []
+    let totalPages = 0
+    for (let pageNo = isGl.value ? 1 : page.value; ; pageNo++) {
+      if (current !== generation) return
+      if (isGl.value && pageNo > 1000) throw new Error('Too many GL accounts. Please contact your administrator.')
+      const r = await request<{ data: Option[]; totalPages: number }>(
+        '/api/shared/suppliers/options',
+        { query: { kind, accountingUnitId, pageNo, pageSize: isGl.value ? 100 : 20 } },
+      )
+      if (current !== generation) return
+      rows.push(...r.data); totalPages = r.totalPages
+      if (!isGl.value || !r.data.length || pageNo >= r.totalPages) break
     }
+    options.value = rows
+    pages.value = totalPages
   } catch (e: any) {
     if (current === generation) {
       options.value = []
-      error.value = e?.data?.statusMessage || 'Unable to load choices.'
+      error.value = e?.data?.statusMessage || e?.message || 'Unable to load choices.'
     }
   } finally {
     if (current === generation) loading.value = false
   }
 }
 watch(
-  () => props.unitId,
+  () => [props.unitId, props.kind],
   () => {
     options.value = []
+    cache.value = {}
     void load(true)
   },
 )
@@ -99,6 +104,17 @@ onUnmounted(() => {
 </script>
 <template>
   <div class="space-y-1.5">
+    <AccountControlPicker
+      v-if="isGl"
+      kind="accounts"
+      :label="label + ' *'"
+      :model-value="modelValue"
+      :options="glOptions"
+      :unavailable-text="cache[modelValue]?.label || selectedLabel || 'Unavailable account (replace)'"
+      :disabled="disabled || loading"
+      @update:model-value="choose"
+    />
+    <template v-else>
     <label
       :for="inputId"
       class="block text-xs font-semibold text-slate-600 dark:text-slate-300"
@@ -139,6 +155,7 @@ onUnmounted(() => {
         ›
       </button>
     </div>
-    <p v-if="error" role="alert" class="text-xs text-rose-600">{{ error }}</p>
+    </template>
+    <p v-if="error" role="alert" class="text-xs text-rose-600">{{ error }} <button v-if="isGl" type="button" class="underline" :disabled="loading" @click="load(true)">Retry</button></p>
   </div>
 </template>

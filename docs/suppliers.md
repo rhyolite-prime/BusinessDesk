@@ -204,3 +204,17 @@ directory/modal CRUD behavior and customer-group extension.
 
 Apply `023_drop_customer_supplier_rates.sql` after 022 when upgrading. Its rollback
 restores rate columns with default 1, not the dropped values; back up first.
+
+
+### Searchable GL posting defaults
+
+All four supplier GL fields use the Journal Entry `AccountControlPicker` in account
+mode, with search inside the dropdown and keyboard navigation. The existing
+supplier options API remains authoritative for eligible accounts and accounting
+unit IDs. GL lookups collect all pages (100 per request, maximum 100,000 choices;
+errors instead of silent truncation). Groups and currencies keep their paginated
+selectors unchanged. Changing the primary credit account to another unit clears
+debit/VAT/IRS defaults and reloads same-unit options; stale requests are ignored.
+Saved GL labels remain visible on read-only/edit views. All four fields remain
+required in the save handler and backend; account eligibility validation and
+supplier payloads are unchanged.
