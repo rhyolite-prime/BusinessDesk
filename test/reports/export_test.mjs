@@ -44,6 +44,14 @@ for(const [kind] of reportCatalog){
   const document=await zip.file('word/document.xml').async('string');assert.match(document,/October 2026 subtotal/)
   checks+=5
  }
+ if(kind==='trial-balance'||kind==='journal-register'){
+  const body=reportPdfDefinition(report).content[0].table.body,grand=body.find(row=>row.some(cell=>cell.text==='GRAND TOTAL'))
+  assert.ok(grand);assert.ok(grand.filter(cell=>cell.text).every(cell=>cell.decoration==='underline'))
+  const sheet=book.getWorksheet('Report');let totalRow;sheet.eachRow(row=>{if(row.values.includes('GRAND TOTAL'))totalRow=row})
+  assert.ok(totalRow);totalRow.eachCell(cell=>{assert.equal(cell.font.underline,true)})
+  const xml=await zip.file('word/document.xml').async('string'),row=xml.match(/<w:tr[\s\S]*?GRAND TOTAL[\s\S]*?<\/w:tr>/)?.[0]
+  assert.ok(row?.includes('<w:u'));checks+=5
+ }
  if(kind==='trial-balance'){
   const sheet=book.getWorksheet('Report'),last=sheet.getRow(sheet.rowCount)
   assert.equal(sheet.getColumn(1).values.filter(value=>value==='Grand total'||value==='Control totals').length,0);assert.equal(sheet.getColumn(2).values.filter(value=>value==='GRAND TOTAL').length,1);assert.equal(last.getCell(2).value,'GRAND TOTAL');assert.equal(last.getCell(3).value,'25.1235');assert.equal(last.getCell(4).value,'25.1235');assert.equal(last.getCell(3).font.bold,true)

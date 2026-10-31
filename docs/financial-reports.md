@@ -232,3 +232,6 @@ accounts and cost centers from the snapshot are retained if absent from current
 catalogs. Unit changes clear selections and stale directory requests are ignored.
 The selected cost center's name appears in the report title and scope, never its
 UUID. This presentation is shared by preview, PDF/print, Excel and Word.
+
+Grand-total rows are always underlined across PDF/print, Excel and Word, including
+the GRAND TOTAL label and every amount. Ordinary subtotals remain distinct.
