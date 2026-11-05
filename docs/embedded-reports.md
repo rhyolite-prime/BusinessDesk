@@ -131,8 +131,8 @@ report model consumed by preview, printing, PDF, Excel and Word.
 
 ## Posted-ledger financial reports
 
-The posted-ledger report suite is now available at `/ledger/reports/financial`,
-with explicit tenant-admin account classifications at `/ledger/reports/mappings`.
-See [financial-reports.md](financial-reports.md) for the 17 report variants,
-accounting basis, formulas, deployment migration, security and operational limits.
-The existing Chart of Accounts and its hierarchy behavior remain unchanged.
+The unified suite is available at `/ledger/reports`: Chart of Accounts plus 15
+posted-ledger financial variants. Classification uses AccountType only; report
+mappings and unsupported multi-step/EBITDA statements are no longer used.
+See [financial-reports.md](financial-reports.md) for supported reports, Unknown
+account disclosure, accounting basis, security, exports and operational limits.

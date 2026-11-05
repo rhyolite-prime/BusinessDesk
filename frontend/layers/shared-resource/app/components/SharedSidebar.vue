@@ -108,7 +108,6 @@ const ledgerGroups: NavigationGroup[] = [
         icon: 'chart-bar-square',
         children: [
           { label: 'All Reports', to: '/ledger/reports', icon: 'chart-bar-square' },
-          { label: 'Report Mappings', to: '/ledger/reports/mappings', icon: 'adjustments-horizontal' },
         ],
       },
     ],

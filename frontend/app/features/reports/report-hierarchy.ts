@@ -11,7 +11,7 @@ export function reportHierarchyRows(report: EmbeddedReport): ReportHierarchyRow[
     let common = 0
     while (common < path.length && common < previous.length && path[common] === previous[common]) common++
     for (let depth = common; depth < path.length; depth++) result.push({ kind: 'heading', label: path[depth]!, depth, shaded: !section.path })
-    for (const cells of section.rows) result.push({ kind: 'record', cells, depth: path.length, ...(cells.some(cell=>/^grand total\b/i.test(cell.trim())) ? {grandTotal:true} : {}), ...(section.emphasized ? {emphasized:true} : {}), ...(section.title === 'Report notes' ? { fullWidth: true } : {}) })
+    for (const cells of section.rows) result.push({ kind: 'record', cells, depth: path.length, ...(cells.some(cell=>/^grand total\b/i.test(cell.trim())) ? {grandTotal:true} : {}), ...(section.emphasized ? {emphasized:true} : {}), ...(section.fullWidth || section.title === 'Report notes' ? { fullWidth: true } : {}) })
     previous = path
   }
   return result

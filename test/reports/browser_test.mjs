@@ -4,7 +4,7 @@ import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 const uuid=n=>`93000000-0000-4000-8000-${String(n).padStart(12,'0')}`,unit=uuid(1)
-let fail=false,admin=true,delaySnapshot=false
+let fail=false,delaySnapshot=false
 const accounts=[{id:uuid(2),number:'10001',name:'Cash',type:0,category:'current_asset'},{id:uuid(3),number:'40001',name:'Sales',type:3,category:'revenue'}]
 const lines=accounts.map((account,i)=>({id:uuid(10+i),accountId:account.id,accountName:account.name,type:account.type,batchId:uuid(20),batchNumber:'JV-POSTED',date:'2026-10-03',batchDate:'2026-10-03',description:'Posted sale',reference:'REF-1',source:'general_journal',costCenterId:null,costCenter:null,currency:'GHS',rate:'1.0000000000',debit:i?'0.000000':'25.123456',credit:i?'25.123456':'0.000000',transactionDebit:i?'0.000000':'25.123456',transactionCredit:i?'25.123456':'0.000000',opening:false}))
 const snapshot={companyName:'Example Company',unitName:'HQ',currencyCode:'GHS',decimals:4,fiscalMonth:1,generatedAt:'2026-10-28T12:00:00.123456+00:00',through:'2026-10-31',accounts,lines,budgets:[]}
@@ -27,12 +27,7 @@ const upstream=http.createServer(async(req,res)=>{
   return send(200,{data:a?[{id:a.id,accountNumber:a.number,accountName:a.name,accountType:a.type,accountHeaderId:uuid(500+a.type),currencyId:uuid(600),status:'active'}]:[],totalPages:2})
  }
  if(path==='/api/v1/ledger/account-controls')return send(200,{data:[{id:uuid(500),accountHeaderName:'Asset / Bank'},{id:uuid(503),accountHeaderName:'Revenue / Sales'}],totalPages:1})
- if(path==='/api/v1/ledger/financial-reports')return fail?send(503,null,{code:'database_error',message:'PRIVATE SQL'}):send(200,{...snapshot,canManageMappings:admin})
- if(path==='/api/v1/ledger/financial-reports/mappings'){
-  if(!admin)return send(403,null,{code:'forbidden'})
-  for(const change of body)accounts.find(a=>a.id===change.accountId).category=change.category
-  return send(200,{saved:true})
- }
+ if(path==='/api/v1/ledger/financial-reports')return fail?send(503,null,{code:'database_error',message:'PRIVATE SQL'}):send(200,snapshot)
  send(404,null)
 })
 await new Promise(resolve=>upstream.listen(0,'0.0.0.0',resolve))
@@ -61,7 +56,7 @@ try {
   await expect(page).toHaveURL(/\/ledger\/reports\?type=trial-balance$/);checks++
   await expect(page.getByRole('document',{name:/Report page/})).toContainText('GRAND TOTAL');checks++
   check(await page.locator('select[aria-label="Report"] optgroup').count()===9,'grouped report dropdown including legacy placeholders')
-  check(await page.locator('select[aria-label="Report"] option:not([disabled])').count()===18,'all 18 implemented report variants')
+  check(await page.locator('select[aria-label="Report"] option:not([disabled])').count()===16,'all 16 implemented report variants')
   await page.getByLabel('Report',{exact:true}).selectOption('chart-of-accounts');await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);await expect(page.getByLabel('As of',{exact:true})).toHaveCount(0);await expect(page.getByLabel('Cost center',{exact:true})).toHaveCount(0);checks+=3
   await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Cash');await expect(page.getByRole('document',{name:/Report page/})).toContainText('Sales');checks+=2
   await page.getByLabel('Search',{exact:true}).fill('Cash');await expect(page.getByRole('document',{name:/Report page/})).toHaveCount(0);await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Cash');await expect(page.getByRole('document',{name:/Report page/})).not.toContainText('40001');checks+=2
@@ -72,9 +67,9 @@ try {
   const accountPicker=page.getByRole('button',{name:/^Account All accounts/});await accountPicker.click();await page.getByRole('combobox',{name:'Search GL accounts'}).fill('10001');await page.getByRole('option').filter({hasText:'Cash'}).click();checks++
   await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('button',{name:'Export PDF',exact:true})).toBeEnabled();await expect(page.getByRole('document',{name:/Report page/})).toContainText('Operations');await expect(page.getByRole('document',{name:/Report page/})).not.toContainText(uuid(700));checks+=2
   await page.getByRole('button',{name:/^Cost center .*Operations/}).click();await page.getByRole('button',{name:'All cost centers',exact:true}).click();await page.getByRole('button',{name:/^Account 10001/}).click();await page.getByRole('button',{name:'All accounts',exact:true}).click();await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('document',{name:/Report page/})).toContainText('October 2026');await expect(page.getByRole('document',{name:/Report page/})).toContainText('03-Oct-2026');await expect(page.getByRole('document',{name:/Report page/})).toContainText('GHS / 1.00');checks+=3
-  await page.goto(base+'/ledger/reports/mappings',{waitUntil:'networkidle'});const category=page.getByLabel('Classification for 40001 Sales');await category.selectOption('other_income');await page.getByRole('button',{name:'Save 1 changed mappings'}).click();await expect(page.locator('p[role="status"]')).toContainText('Report mappings saved');check(accounts[1].category==='other_income','mapping writes exact account id')
-  check(seen.some(request=>request.path.endsWith('/mappings')&&request.method==='PUT'&&request.body[0].accountId===uuid(3)),'mapping BFF forwards ID and method')
-  admin=false;await page.reload({waitUntil:'networkidle'});await expect(category).toBeDisabled();checks++
+  await page.goto(base+'/ledger/reports/mappings',{waitUntil:'networkidle'});await expect(page).toHaveURL(/\/ledger\/reports$/);await expect(page.getByRole('link',{name:'Report mappings',exact:true})).toHaveCount(0);checks+=2
+  await page.goto(base+'/ledger/reports?type=income-ebitda',{waitUntil:'networkidle'});await expect(page.getByText('Multi-step and EBITDA reports are unavailable',{exact:false})).toBeVisible();checks++
+  const retired=await fetch(base+`/api/ledger/financial-reports/mappings?accountingUnitId=${unit}&through=2026-10-31`,{method:'PUT',headers:{cookie:'bd_access=tenant-token',origin:base,'content-type':'application/json'},body:'[]'});check(retired.status===410,'obsolete mapping mutation endpoint retired');check(!seen.some(request=>request.path.endsWith('/mappings')),'no mapping requests forwarded')
   fail=true;await page.goto(base+'/ledger/reports/financial',{waitUntil:'networkidle'});await page.getByRole('button',{name:'Generate report',exact:true}).click();await expect(page.getByRole('alert')).not.toContainText('PRIVATE SQL');await expect(page.getByRole('alert')).toContainText('unavailable');checks++
   check(!errors.length,'no browser runtime errors: '+errors.join('; '))
   const noSession=await fetch(base+`/api/ledger/financial-reports?accountingUnitId=${unit}&through=2026-10-31`);check(noSession.status===401,'missing session denied')

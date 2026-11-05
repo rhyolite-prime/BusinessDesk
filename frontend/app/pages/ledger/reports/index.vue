@@ -17,7 +17,8 @@ const accountId=ref(''),costCenterId=ref(''),budgetBasis=ref<'original'|'revised
 const snapshot=shallowRef<FinancialSnapshot|null>(null),report=shallowRef<EmbeddedReport|null>(null),warnings=ref<string[]>([])
 const chartType=ref(''),chartStatus=ref(''),search=ref('')
 const loading=ref(false),error=ref('');let generation=0
-function routeKind(){const value=String(route.query.type||'trial-balance');kind.value=reportGroups.flatMap(group=>group.reports).some(([id])=>id===value)?value as LedgerReportKind:'trial-balance'}
+const retiredReport=ref(false)
+function routeKind(){const value=String(route.query.type||'trial-balance');retiredReport.value=['income-multistep','income-ebitda'].includes(value);kind.value=reportGroups.flatMap(group=>group.reports).some(([id])=>id===value)?value as LedgerReportKind:'trial-balance'}
 routeKind();watch(()=>route.query.type,routeKind)
 watch(kind,value=>{if(route.query.type!==value)void navigateTo({path:'/ledger/reports',query:{...route.query,type:value}},{replace:true})})
 const directoryAccounts=ref<AccountDetail[]>([]),directoryCenters=ref<{id:string;name:string;parentId?:string|null}[]>([])
@@ -95,7 +96,9 @@ onBeforeUnmount(()=>{++generation;++directoryGeneration})
 </script>
 <template>
  <div class="space-y-5">
-  <header class="flex flex-wrap items-start justify-between gap-3"><div><h1 class="text-2xl font-semibold">General Ledger reports</h1><p class="mt-2 text-sm text-slate-500">Select a report below. Financial statements use posted ledger entries; Chart of Accounts lists account setup records.</p></div><div class="flex gap-4 text-sm text-brand-700"><NuxtLink to="/ledger/reports/mappings">Report mappings</NuxtLink></div></header>
+  <header class="flex flex-wrap items-start justify-between gap-3"><div><h1 class="text-2xl font-semibold">General Ledger reports</h1><p class="mt-2 text-sm text-slate-500">Select a report below. Financial statements use posted ledger entries; Chart of Accounts lists account setup records.</p></div><div class="flex gap-4 text-sm text-brand-700"></div></header>
+  <p v-if="retiredReport" role="status" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Multi-step and EBITDA reports are unavailable with AccountType-only classification. Select a supported report below.</p>
+  <p class="text-sm text-slate-500">Classification uses AccountType only. Unknown accounts are flagged; current/noncurrent, gross-profit and EBITDA classifications are not inferred.</p>
   <form class="grid gap-4 rounded-xl border border-slate-200 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:grid-cols-2 xl:grid-cols-3" @submit.prevent="generate">
    <label class="text-sm">Report<select aria-label="Report" v-model="kind" class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><optgroup v-for="group in reportGroups" :key="group.label" :label="group.label"><option v-for="[id,label] in group.reports" :key="id" :value="id">{{ label }}</option></optgroup><optgroup v-for="group in plannedReportGroups" :key="group.label" :label="group.label + ' (coming soon)'"><option v-for="label in group.reports" :key="label" disabled>{{ label }} — coming soon</option></optgroup></select></label>
    <label class="text-sm">Accounting unit<select aria-label="Accounting unit" v-model="unitId" required class="mt-1 block h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-sm dark:border-slate-700"><option value="" disabled>Select a unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.name }}</option></select></label>

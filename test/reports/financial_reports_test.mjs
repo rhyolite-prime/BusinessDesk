@@ -31,9 +31,6 @@ const value=(kind,label)=>rows(kind).find(r=>r[0]===label)?.[1]
 let checks=0;const check=(condition,label)=>{assert.ok(condition,label);checks++}
 for(const [kind] of reportCatalog){const result=build(kind);check(result.report.id===kind&&result.report.columns.length>0,'report builds '+kind);for(const section of result.report.sections)for(const row of section.rows)check(row.length===result.report.columns.length,`${kind} export column parity`)}
 check(value('income-basic','Net income / (loss)')==='102.00','income signed calculation')
-check(value('income-multistep','Gross profit')==='150.00','gross profit')
-check(value('income-multistep','Operating profit (EBIT)')==='120.00','EBIT')
-check(value('income-ebitda','EBITDA')==='132.00','EBITDA reconciliation includes other income')
 check(value('balance-sheet','Accounting equation difference (must be zero)')==='0.00','balance sheet reconciles')
 check(value('balance-sheet','Total assets')==='232.00','as of includes prior history')
 check(value('balance-sheet','Unclosed earnings (cumulative revenue less expense)')==='132.00','earnings not lost at year boundary')
@@ -45,8 +42,6 @@ check(build('income-budget',{budgetBasis:'original'}).report.sections.find(s=>s.
 check(build('income-ytd',{from:'2026-01-15'}).report.sections.find(s=>s.title==='Summary').rows.at(-1)[1]==='102.00','YTD fiscal start')
 check(build('income-basic',{costCenterId:'center-b'}).report.sections.find(s=>s.title==='Summary').rows.at(-1)[1]==='0.00','center isolation current period')
 const missing=structuredClone(snapshot);missing.accounts.find(a=>a.id==='cogs').category=''
-assert.throws(()=>build('income-ebitda',{},missing),/requires report mappings/);checks++
-check(build('income-basic',{},missing).warnings.some(w=>w.startsWith('Unmapped income')),'basic reports flag unmapped')
 assert.throws(()=>build('income-budget',{from:'2026-01-02'}),/complete calendar months/);checks++
 assert.throws(()=>build('income-basic',{to:'2026-02-01'}),/within the loaded snapshot/);checks++
 check(build('journal-register',{accountId:'cash'}).report.sections.filter(s=>s.title.includes('Posted')).every(s=>s.rows.filter(r=>r[2]).every(r=>r[2].includes('cash'))),'register account filter')
@@ -113,3 +108,25 @@ assert.ok(build('general-ledger').report.sections[0].rows.some(row=>row[0]==='Op
 assert.ok(build('income-comparative').report.columns.some(column=>column.title.includes('01-Jan-2025–31-Jan-2025')))
 assert.equal(journalLines[0].rate,'1.0050000000')
 console.log('20 journal hierarchy/subtotals/report-date/rate/scope checks passed')
+
+for(const [kind] of reportCatalog){
+ const noMappings={...snapshot,accounts:snapshot.accounts.map(({category,...a})=>a)}
+ assert.deepEqual(build(kind,{},noMappings),build(kind),`legacy categories ignored: ${kind}`)
+}
+assert.throws(()=>build('income-ebitda'),/Unknown financial report/)
+assert.throws(()=>build('income-multistep'),/Unknown financial report/)
+const withUnknown={...snapshot,accounts:[...accounts,{id:'unknown',number:'999',name:'Unclassified',type:-1}],lines:[...lines,{...lines[0],id:'unknown-line',accountId:'unknown',accountName:'Unclassified',type:-1,date:'2026-01-10',debit:'7',credit:'0',opening:false}]}
+for(const [kind] of reportCatalog){
+ const result=build(kind,{},withUnknown)
+ assert.ok(result.warnings.some(w=>w.includes('Unknown AccountType')),kind)
+ if(kind==='trial-balance'){
+  assert.ok(result.report.sections.some(s=>s.title==='Unknown'&&s.rows[0][2]==='7.00'))
+  assert.equal(result.report.sections.at(-1).rows[0][2],'349.00')
+ }
+ if(kind==='balance-sheet')assert.ok(result.report.sections.some(s=>s.title.startsWith('Unknown accounts')))
+ if(kind.startsWith('income-'))assert.ok(result.report.sections.some(s=>s.fullWidth&&s.title.startsWith('Unknown accounts')))
+}
+const malformed={...withUnknown,accounts:withUnknown.accounts.map(a=>a.id==='unknown'?{...a,type:99}:a)}
+assert.deepEqual(build('trial-balance',{},malformed).report.sections,build('trial-balance',{},withUnknown).report.sections)
+assert.equal(build('income-basic',{},withUnknown).report.sections.find(s=>s.title==='Summary').rows.at(-1)[1],'102.00')
+console.log('AccountType-only classification, removed variants and Unknown disclosure checks passed')

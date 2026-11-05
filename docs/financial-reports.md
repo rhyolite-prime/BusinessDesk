@@ -1,237 +1,161 @@
-# Posted-ledger financial reports
+# General Ledger reports — AccountType only
 
-## Deployment and entry points
+## Classification and workflow
 
-Apply `027_financial_report_mappings.sql` before deploying/restarting the updated
-C++ backend and frontend. Prerequisites: existing ledger, cost-center, budget,
-journal/organization-unit, tenant-preferences/reset-registry and company display
-precision migrations (001, 007, 008, 011, 012, 014, 015, 026 and their prerequisites).
-The migration adds account mappings and their audit events, registers both with
-the reviewed tenant-reset registry, and adds a posted-line reporting date index.
-No balances or historical journals are rewritten. A down migration is supplied;
-roll back the application first. New controller sources are picked up by the
-existing controller source scan; the service is explicitly added to CMake.
+All reports use the existing `AccountType` enum as their sole classification:
 
-Open **General Ledger → Reports → Financial Reports & Advanced Statements**
-(`/ledger/reports/financial`). Existing Operating Statement menu entries now link
-to live reports instead of placeholders. **Report Mappings** is alongside them.
-Existing Chart of Accounts remains separate and unchanged.
+| Value | Classification |
+|---|---|
+| -1 | Unknown |
+| 0 | Asset |
+| 1 | Liability |
+| 2 | Equity |
+| 3 | Revenue |
+| 4 | Expense |
 
-## Implemented reports (17 variants)
+No account-name/range heuristics or persisted report mappings are used. Invalid
+or unsupported type values are treated as Unknown. Current live chart types are
+used; historical unavailable accounts retain their posted identity/type. A type
+change between the current chart and posted lines generates a review warning.
 
-| Report | Contents |
-| --- | --- |
-| Journal Register | Posted batches, source, line date, account, reference/description, transaction currency/rate and original/base debit/credit. Totals are base-currency only. |
-| General Ledger / Account Activity | Account opening balance before From, in-period debits/credits, chronological running balance and closing balance. Optional account filter. |
-| Trial Balance | Portrait, classic black-and-white closing balances as of the selected date: separate GL number/name columns, underlined account-type headings, right-aligned debit/credit, totals and zero-difference control. |
-| Balance Sheet | As-of assets, liabilities and equity, current/noncurrent mapped sections, unclassified sections, cumulative unclosed earnings, and accounting-equation reconciliation. |
-| Cost-Center Report | Posted transaction detail grouped by center UUID, including unassigned lines, with debit/credit/net totals. |
-| Basic Income Statement | Revenue, expense detail and net income/loss. |
-| Multi-step Operating Statement | Operating revenue, COGS, gross profit, operating expenses, D&A, EBIT, other income, finance costs, tax and net income. |
-| Budget vs Actual | Actual, original/revised budget, variance, percentage and favorable variance by income/expense account plus net income. |
-| Prior-period Operating Statement | Current range against the immediately preceding range of equal inclusive day count. |
-| Comparative Operating Statement | Current range against the same dates in the preceding year; leap day clamps to Feb 28. |
-| Expenditure Returns | Expense detail and total expenditure; management report, **not** a statutory filing. |
-| Revenue Statement | Revenue detail and total revenue. |
-| Cross-Tab / Cost-Center Comparison | Income/expense account rows by cost-center UUID (unassigned separately), totals and net income. |
-| Monthly Operating Trends | Account activity by calendar month, clipped to the requested dates, plus totals and net income. |
-| Year-to-Date | Fiscal-year start (Company Profile first month) through selected date; From is ignored. |
-| Common-Size | Income statement and each line as percentage of total revenue. |
-| EBITDA | Multi-step statement plus net income + finance costs + income tax + D&A reconciliation and EBITDA margin. Non-GAAP management measure, includes other income, **not cash flow**. |
+`/ledger/reports` is the single rendering page. The grouped Report dropdown
+contains Chart of Accounts plus the 15 financial variants below. The sidebar
+links to All Reports, not individual report pages. Old financial/chart URLs
+redirect here. Switching report/filter invalidates the previous report and
+in-flight generation; exports always represent the generated snapshot.
 
-## Accounting and scope rules
+Financial Report Mappings has been removed from the workflow and navigation.
+Its old page redirects to All Reports. Its old Nuxt PUT endpoint requires the
+usual session/origin checks and responds **410 Gone** without forwarding a write;
+the C++ PUT route and service write path are removed. Snapshot reads neither join
+mapping tables nor return categories/admin mapping capabilities. Historical
+mapping tables, audit rows, ORM models and migration 027 are intentionally retained
+for existing deployments, but are not read or modified by reporting. No destructive
+migration or manual clearing of data is needed. Mapping tables are not required
+for the snapshot query to work.
 
-- Source of truth is live `gl_journal_lines` joined to live `gl_journal_batches`
-  in status **posted**, with matching tenant/unit IDs on both sides. Includes
-  all transaction sources (manual journals, posted vouchers/receipts, etc.), not
-  just general journals. Draft/approved-only/deleted entries are not included.
-- This is a posted-journal reporting suite, not a reconstruction from mutable
-  `gl_account_balances`. Imported beginning balances must exist as posted opening
-  journals. Balance reports include opening entries; period income statements
-  exclude explicitly flagged opening-balance entries.
-- The reporting basis is **line transaction date**, disclosed in every export;
-  header batch date is also shown in the register. No timezone conversion of date
-  columns is performed. As-of statements include all posted history through the
-  selected date. General Ledger opening balances include activity before From.
-- Statements aggregate **base** debits/credits. Register transaction amounts
-  retain their own currency labels. No cross-currency raw-amount totals are made.
-- Raw decimal strings are converted to signed six-decimal `bigint` units, never
-  floating-point money. Presentation uses the Company Profile's display decimals
-  from the same snapshot. Ratios use integer hundredths of a percent; zero
-  denominator displays N/A. Percentage changes use the signed comparison value.
-- Asset and expense amounts are debit-normal. Liability/equity/revenue amounts
-  are credit-normal. Contra balances keep their signs. Income = revenue − expense.
-- Balance Sheet adds **cumulative unclosed revenue less expense** to posted equity
-  explicitly. Existing closing journals naturally reduce remaining P&L balances;
-  profit is not double-counted using an unrelated retained-earnings plug. A
-  nonzero equation difference is shown and warned about, never hidden.
-- Cost-center filtering includes only those lines allocated to the chosen UUID;
-  unassigned is an explicit option. Such a filtered trial balance/balance sheet
-  can legitimately fail to balance when one side lacks that allocation; a warning
-  is exported. Accounts are filterable in register/ledger only, not full statements.
-- Account classifications use the current live chart. Posted lines belonging to
-  deleted/unavailable accounts retain historical identity/type and appear with a
-  warning, rather than dropping posted money. Current-vs-historical account-type
-  differences and incompatible stored mappings are flagged.
-- Monthly budget comparisons require **complete calendar months**. Only live
-  details of approved/closed budgets are included. Revised zero means zero, not
-  "fall back to original". Explicit original/revised basis is exported. Budget
-  amounts are unit-base amounts. Overlapping approved schedules are additive;
-  no daily proration or arbitrary budget-version guess is performed. Missing
-  budgets are shown as zero with a warning, not fabricated.
+## Available reports
 
-## Explicit account classifications
+| Report | Basis |
+|---|---|
+| Journal Register | Posted transactions grouped by transaction year → month → batch, with base-currency batch/month/year subtotals and grand total. |
+| General Ledger / Account Activity | Per-account opening balance before From, chronological activity, running balance and closing balance. |
+| Trial Balance | As-of closing debit/credit balances grouped by Asset, Liability, Equity, Revenue, Expense, Unknown. Ends with one bold, underlined GRAND TOTAL row. No control-difference section. |
+| Balance Sheet | Broad Assets, Liabilities and Equity only, with cumulative unclosed earnings and an explicit accounting-equation reconciliation. |
+| Cost-Center Report | Period posted debit, credit and signed net per center, including unassigned activity. |
+| Basic Income Statement | Revenue, Expenses and net income/loss. |
+| Budget vs Actual | Actual, approved/closed original or revised budget, difference, percentage and favourable variance. |
+| Prior-period Operating Statement | Current period vs the immediately preceding equal day count. |
+| Comparative Operating Statement | Current period vs prior-year dates, with leap-day clamping. |
+| Expenditure Returns | Expense-account activity; a management report, not a statutory/tax filing. |
+| Revenue Statement | Revenue-account activity. |
+| Cross-Tab / Cost-Center Comparison | Income/expense activity and net income across centers. |
+| Monthly Operating Trends | Income/expense activity and net income across calendar months. |
+| Year-to-Date Income Statement | From is replaced by Company Profile's fiscal-year start. |
+| Common-Size Income Statement | Income/expense amounts as a percentage of total revenue; N/A if revenue is zero. |
 
-Tenant administrators can assign only categories compatible with the GL type:
+Chart of Accounts retains its original account/control hierarchy and type, status
+and search filters. It loads all pages of setup accounts and controls, rather
+than posted transactions. Legacy unimplemented Voucher, Imprest, Reconciliation,
+Petty Cash and H/W menu items remain disabled “coming soon” dropdown entries.
 
-- Asset: current asset, noncurrent asset.
-- Liability: current liability, noncurrent liability.
-- Equity: equity.
-- Revenue: operating revenue, other income.
-- Expense: cost of sales, operating expense (excluding D&A), depreciation /
-  amortization, finance cost, income tax.
+### Unsupported classifications and subtotals
 
-Mappings are keyed by tenant, accounting unit and **account UUID**, never by
-name/number. Only changed mappings are submitted; empty category unclassifies a
-row by soft deletion. Saves are atomic (up to 500 accounts), validate live unit,
-user and compatible account type on the backend, serialize against the unit, and
-write an audit event with authenticated actor. All tenant users may read reports;
-only active, unlocked tenant admins may change classifications. Basic reports
-flag unmapped accounts. Multi-step/EBITDA refuse to calculate if an active
-income/expense account with period activity is unclassified. Missing
-balance-sheet mappings remain explicitly named unclassified sections.
+The enum cannot distinguish current/noncurrent assets or liabilities, cost of
+sales vs operating expenses, depreciation, finance costs or income tax. Therefore
+current/noncurrent sections, gross profit, detailed operating profit and EBITDA
+are not inferred. Multi-step and EBITDA are removed from the dropdown and engine;
+old deep links show a notice and a supported-report selector. No replacement
+numbers are manufactured from account names, account-number ranges or old mappings.
 
-## Snapshot, export and operational limits
+### Unknown accounts
 
-`GET /api/v1/ledger/financial-reports?accountingUnitId=<uuid>&through=YYYY-MM-DD`
-returns a single PostgreSQL-statement MVCC snapshot: profile precision/fiscal
-month, unit currency, current accounts/mappings, posted lines through date, and
-approved/closed monthly budgets. UI filters and calculations operate on this
-immutable result. Changing filters clears the old report, and late responses
-cannot replace newer selections. Generate again after postings or mapping changes.
+Unknown accounts remain included in the Trial Balance, ledger and transaction
+reports. The Balance Sheet shows their signed debit-minus-credit balances in a
+separate Unknown section, excluded from Assets/Liabilities/Equity. Income variants
+show a separate full-width Unknown disclosure with signed period activity (and
+comparison-period activity when applicable); it is not placed into a month or
+percentage column or included in income totals. Statements warn that their totals
+may be incomplete. Unknown balances are never plugged into equity, revenue or
+expense. Correct the AccountType in the Chart of Accounts when its purpose is known.
 
-The existing PDF viewer provides pagination, zoom, print, PDF/Excel/Word exports
-and color/monochrome appearance. All formats receive **all snapshot report rows**,
-not just the visible PDF page. Filters, base currency, posted-only basis and
-warnings are included. Wide reports use landscape PDF/Word/Excel output and
-column percentages total 100. Formula-like account descriptions remain literal
-strings, not spreadsheet formulas. Artifacts are generated client-side and are
-not persisted in Git or on the server.
+## Accounting and display rules
 
-Operational guardrails are explicit, never silent truncation:
+- Only live posted batches and live lines are included; drafts, approved-only,
+  voided/unposted entries and archived batches/lines are excluded.
+- Financial dates use transaction-date basis. As-of reports include all posted
+  history through the selected date. Income excludes opening-balance entries.
+- Stored six-decimal monetary strings are calculated with exact BigInt arithmetic,
+  not Number. Company Profile controls display precision only (0–6, default 2).
+- Revenue is credit-minus-debit; expenses are debit-minus-credit. Net income is
+  revenue less expenses. Balance-sheet earnings are cumulative unclosed revenue
+  less expenses; assets minus liabilities minus equity minus earnings is disclosed,
+  never silently plugged. Equity closing journals must be interpreted accordingly.
+- Budget comparisons require complete calendar months, with no daily proration.
+  Revised zero is a real value, not a fallback to original. Overlapping approved
+  budgets are additive. Revenue favourable variance is actual-minus-budget;
+  expense favourable variance is budget-minus-actual.
+- Journal subtotals add base debit/credit only; mixed transaction currencies are
+  never added together. A batch spanning transaction months appears within each
+  applicable month, without duplicating any line.
+- Account/Cost Center use the Journal Entry searchable `AccountControlPicker`.
+  Catalog choices load before first generation, including all account pages;
+  historical snapshot choices are retained. All accounts, All cost centers and
+  Unassigned only remain available. Cross-unit directory responses are ignored.
+- Selected cost centers appear by name in titles and scope, not UUID. Identifiers
+  remain authoritative for filtering, including duplicate names.
+- Report dates, ranges, batch dates, as-of headings, monthly column start dates
+  and footer dates use **dd-MMM-yyyy**. Calendar grouping labels may say October
+  2026. Query/storage dates stay ISO; user-entered descriptions are not rewritten.
+- Exchange rates display two decimals using exact half-up rounding; posting,
+  transaction rounding, stored precision and calculations are unchanged.
+- The printed-on footer uses the accounting unit's timezone and 24-hour hour/minute
+  time, e.g. `30-Oct-2026, 12:34`. Invalid legacy zones fall back to UTC. The label
+  is frozen with the generated report and shared across preview and all exports.
+- All reports use Chart of Accounts font settings. PDF/print, Excel and Word share
+  the report model, warnings and complete rows, not just the current preview page.
+  Grand-total labels and amounts are always bold and underlined.
 
-- At most **50,000 posted lines through the selected date** in a snapshot. All
-  history is required for trustworthy openings/as-of balances; a later From date
-  alone does not reduce that requirement. Larger ledgers need a future
-  server-aggregated/paginated extract rather than silently incomplete reports.
-- Monthly/cost-center cross-tabs allow at most **12 dimension columns**. Narrow
-  the date range or choose a cost center if exceeded.
-- Report mappings permit **500 changed accounts per atomic save**.
+## Security, deployment and limits
 
-The Nuxt BFF derives tenant credentials from the session, uses relative URLs,
-checks mutation origin, forwards bearer auth, applies no-store and sanitizes
-backend errors. The client cannot supply tenant/user/audit IDs. Host sessions
-cannot use tenant report APIs. No report query writes ledger balances.
+The authenticated BFF forwards the session bearer token; backend scope derives
+from the authenticated tenant/user, never client-supplied tenant or admin fields.
+Only active, unlocked tenant users and live active units are accepted. Reads use
+one PostgreSQL MVCC JSON snapshot and no-store responses. Errors are sanitized.
+
+Existing ledger, journal, company profile/display-decimal and budget schema
+prerequisites still apply. No new migration is required for AccountType-only
+reporting. Historical migration 027 remains in upgrade history; it is not a report
+configuration prerequisite. This change does not modify the application database.
+
+- More than **50,000** historical posted lines through the date is rejected,
+  including when a narrow recent From would otherwise hide earlier history.
+- Monthly/cross-tab reports support at most **12** dimensions; excess is rejected,
+  not silently omitted.
+- Setup listings/picker loading has explicit pagination/capacity guards.
+- Cost-center scope can be unbalanced if only one journal side has that center.
 
 ## Validation
 
-- `node test/reports/financial_reports_test.mjs`: all variants, exact money,
-  opening/closing balances, reconciliations, comparisons, missing mappings,
-  budget basis, date/filter rules and immutable snapshots.
-- `test/reports/run_pg.sh`: real PostgreSQL through a coroutine transport seam;
-  tenant/unit/user isolation, posted-only/date/delete predicates, exact decimal
-  strings, mapping validation/audit/rollback, budget status and capacity limits.
-- `node test/reports/export_test.mjs`: actual PDF/Excel/Word generation for every
-  variant (51 files in `/tmp`, not the repository), orientation and structure.
-- `node test/reports/browser_test.mjs` with browser deps: desktop/mobile report
-  generation, precision, downloads, stale-report clearing, mapping save/read-only,
-  sanitized failures, authentication and CSRF. The browser uses a controlled
-  upstream; native Drogon/real PostgreSQL behavior is tested separately above.
-- Existing chart-of-accounts, report export and print regressions remain in place.
+```sh
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+node test/reports/financial_reports_test.mjs
+node test/reports/report_timestamp_test.mjs
+node test/reports/export_test.mjs
+node test/ledger/chart_of_accounts_report_test.mjs
+node test/ledger/report_export_files_test.mjs
+node test/ledger/report_print_test.mjs
+```
 
+`test/reports/browser_test.mjs` exercises the built Nuxt app and authenticated BFF
+against a controlled upstream in desktop/mobile Chromium, including exports,
+filters, redirects, removed variants, retired mapping writes and CSRF. It requires
+external temporary Playwright/Chromium dependencies, documented in the script.
 
-### Traditional trial-balance presentation
-
-The trial balance follows the supplied reference: General Ledger # spans the
-account-number/name headers; Debit and Credit are right aligned; rows are grouped
-in Asset, Liability, Equity, Revenue, Expense order, naturally sorted by account
-number. Contra balances stay on their actual debit/credit side. Zero counterparts
-show using company precision. The view uses closing balances through **As of**;
-From is hidden and ignored (opening/movement detail remains in General Ledger).
-Grand totals, company identity, scope and pagination
-remain in the report. Trial balance is always monochrome/portrait, independent of
-other reports' appearance. All reports use the same font settings as the Chart of Accounts in each output
-format (including Roboto for PDF). Reference templates guide layout only, never
-font selection. Trial Balance has no separate font assets or font overrides.
-Excel retains separate GL-number/name cells with aligned monetary columns.
-No ledger calculations or source queries are changed by this presentation.
-
-
-## Unified General Ledger report page
-
-`/ledger/reports` is the single rendering page for all 18 available reports:
-Chart of Accounts and the 17 financial variants above. The **Report** selector
-is grouped into Account listings, Ledger activity, Financial statements, and
-Income & operating statements. The sidebar now exposes All Reports and Report
-Mappings (a configuration screen, not a report). Existing Voucher, Imprest,
-Reconciliation, Petty Cash and H/W placeholders remain visible in disabled
-“coming soon” dropdown groups; no data or reports are invented for them.
-
-Select a report, accounting unit and relevant filters, then Generate report.
-Chart of Accounts offers account type, status and search instead of dates and
-cost center, uses the original chart report engine, and fetches **all pages** of
-accounts and controls. Changing any filter clears the generated report; generate
-again to get a new snapshot. Switching type invalidates pending requests so old
-results cannot replace the newly selected report. The selected report type is
-reflected in the URL; existing `/ledger/reports/financial?type=…` and
-`/ledger/reports/chart-of-accounts` links redirect to the unified page.
-
-Trial Balance finishes with a bold **GRAND TOTAL** row containing the sum of
-closing debit balances and the sum of closing credit balances, in the selected
-scope and company display precision. It follows any
-report notes, so it is the final report row, including PDF/print, Excel and Word.
-There is no control-totals/difference section or duplicate grand-total heading.
-Totals are never forced equal; an unbalanced scope still produces a warning.
-All reports continue using the Chart of Accounts font settings.
-
-
-### Printed-on footer
-
-Every report uses the Chart of Accounts date/time presentation: `30-Oct-2026,
-12:34` (dd-MMM-yyyy date, 24-hour hour/minute time) in the selected accounting unit's timezone.
-Financial reports format their server snapshot timestamp before rendering; Chart
-of Accounts formats its generation time using the same helper. This immutable
-label is shared by the preview, PDF/print, Excel and Word, rather than changing
-when an export is downloaded. Raw ISO/database timestamps and fractional seconds
-are not displayed. Invalid legacy timezones fall back to UTC; an invalid timestamp
-is labelled `Date/time unavailable` rather than breaking report generation.
-
-
-## Journal Register hierarchy and display conventions
-
-Journal Register is ordered by **transaction year → transaction month → batch**,
-with bold batch, month and year subtotals and one grand total. A batch with line
-transaction dates in different months appears separately inside each applicable
-month; the batch-date label is retained. Subtotals sum base debit/base credit only:
-transaction-currency columns stay blank because mixed currencies must not be added.
-Account and cost-center filters apply before grouping and subtotal calculations.
-
-Report dates, batch dates, opening/closing dates, comparison ranges, monthly column
-start dates, as-of/range headings and footer dates use **dd-MMM-yyyy** (for example,
-`03-Oct-2026`). Year/month grouping labels identify calendar periods, such as
-`2026` and `October 2026`. Query parameters, native date inputs and stored dates
-remain ISO dates. User-entered descriptions/references are not rewritten.
-Exchange rates display exactly **two decimal places**, using exact decimal half-up
-rounding without changing stored rates, monetary precision or calculations.
-
-Cost center and Account use the same searchable, grouped `AccountControlPicker`
-as Journal Entry. Catalog options are available before generating the first
-report; all pages of accounting-unit accounts are loaded. Clear options restore
-All cost centers / All accounts, and Unassigned only remains available. Historical
-accounts and cost centers from the snapshot are retained if absent from current
-catalogs. Unit changes clear selections and stale directory requests are ignored.
-The selected cost center's name appears in the report title and scope, never its
-UUID. This presentation is shared by preview, PDF/print, Excel and Word.
-
-Grand-total rows are always underlined across PDF/print, Excel and Word, including
-the GRAND TOTAL label and every amount. Ordinary subtotals remain distinct.
+`test/reports/run_pg.sh` exercises the real service SQL against disposable PostgreSQL
+using a Drogon transport seam. Supply REPORT_TEST_DATABASE_URL,
+JSONCPP_SOURCE_DIR and LIBPQ_LIB_DIR (plus the library loader path if needed).
+It verifies tenant isolation, posted-only data, exact decimals, budgets, Unknown
+types and successful reads with mapping tables absent. Never target production.
+Native export test artifacts are written outside Git to `/tmp`.

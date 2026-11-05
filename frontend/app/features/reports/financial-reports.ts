@@ -2,13 +2,10 @@ import { formatReportDate, formatReportRate } from './report-timestamp'
 import type { EmbeddedReport, ReportSection, ReportColumn } from './report-types'
 export const reportCatalog = [
  ['journal-register','Journal Register'], ['general-ledger','General Ledger / Account Activity'], ['trial-balance','Trial Balance'], ['balance-sheet','Balance Sheet'], ['cost-center','Cost-Center Report'],
- ['income-basic','Basic Income Statement'], ['income-multistep','Multi-step Operating Statement'], ['income-budget','Budget vs Actual'], ['income-prior','Prior-period Operating Statement'], ['income-comparative','Comparative Operating Statement (prior year)'], ['income-expenditure','Expenditure Returns'], ['income-revenue','Revenue Statement'], ['income-crosstab','Cross-Tab / Cost-Center Comparison'], ['income-monthly','Monthly Operating Trends'], ['income-ytd','Year-to-Date Income Statement'], ['income-common','Common-Size Income Statement'], ['income-ebitda','EBITDA Statement'],
+ ['income-basic','Basic Income Statement'], ['income-budget','Budget vs Actual'], ['income-prior','Prior-period Operating Statement'], ['income-comparative','Comparative Operating Statement (prior year)'], ['income-expenditure','Expenditure Returns'], ['income-revenue','Revenue Statement'], ['income-crosstab','Cross-Tab / Cost-Center Comparison'], ['income-monthly','Monthly Operating Trends'], ['income-ytd','Year-to-Date Income Statement'], ['income-common','Common-Size Income Statement'],
 ] as const
 export type ReportKind = typeof reportCatalog[number][0]
-export const mappingCategories = [
- ['current_asset','Current assets',0],['noncurrent_asset','Noncurrent assets',0],['current_liability','Current liabilities',1],['noncurrent_liability','Noncurrent liabilities',1],['equity','Equity',2],['revenue','Operating revenue',3],['other_income','Other income',3],['cost_of_sales','Cost of sales',4],['operating_expense','Operating expenses',4],['depreciation','Depreciation / amortization',4],['finance_cost','Finance costs',4],['income_tax','Income tax',4],
-] as const
-export interface ReportAccount { id:string; number:string; name:string; type:number; category:string }
+export interface ReportAccount { id:string; number:string; name:string; type:number }
 export interface ReportLine { id:string; accountId:string; accountName:string; type:number; batchId:string; batchNumber:string; date:string; batchDate:string; description:string; reference:string; source:string; costCenterId:string|null; costCenter:string|null; currency:string; rate:string; debit:string; credit:string; transactionDebit:string; transactionCredit:string; opening:boolean }
 export interface ReportBudget { accountId:string; costCenterId:string|null; year:number; month:number; original:string; revised:string }
 export interface FinancialSnapshot { companyName:string; unitName:string; currencyCode:string; decimals:number; fiscalMonth:number; generatedAt:string; through:string; accounts:ReportAccount[]; lines:ReportLine[]; budgets:ReportBudget[] }
@@ -37,9 +34,9 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  const digits=Math.max(0,Math.min(6,snapshot.decimals??2))
  const formatter=new Intl.NumberFormat('en-GH',{minimumFractionDigits:digits,maximumFractionDigits:digits})
  const money=(value:bigint)=>(formatter.format as unknown as (decimal:string)=>string)(decimal(value))
- const incompatible=snapshot.accounts.filter(a=>a.category&&!mappingCategories.some(([id,,type])=>id===a.category&&type===a.type))
- const accounts=new Map(snapshot.accounts.map(a=>[a.id,{...a,category:incompatible.some(item=>item.id===a.id)?'':a.category}]))
- for(const line of snapshot.lines)if(!accounts.has(line.accountId))accounts.set(line.accountId,{id:line.accountId,number:'[historical]',name:line.accountName||'Unavailable account',type:line.type,category:''})
+ const accountType=(value:number)=>Number.isInteger(value)&&value>=0&&value<=4?value:-1
+ const accounts=new Map(snapshot.accounts.map(a=>[a.id,{...a,type:accountType(a.type)}]))
+ for(const line of snapshot.lines)if(!accounts.has(line.accountId))accounts.set(line.accountId,{id:line.accountId,number:'[historical]',name:line.accountName||'Unavailable account',type:accountType(line.type)})
  const accountList=[...accounts.values()].sort((a,b)=>a.type-b.type||a.number.localeCompare(b.number,'en',{numeric:true})||a.id.localeCompare(b.id))
  // Account filtering is meaningful for transactions/ledger, never for complete statements.
  const accountFilter=(kind==='general-ledger'||kind==='journal-register')?filters.accountId:''
@@ -51,14 +48,14 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  const inPeriod=period(from,to)
  const net=(rows:ReportLine[])=>sum(rows.map(l=>micros(l.debit)-micros(l.credit)))
  const warnings:string[]=[]
- if(incompatible.length)warnings.push('Some stored classifications no longer match the current account type and are treated as unclassified. Update Report mappings.')
  if(lines.some(line=>accounts.get(line.accountId)!.type!==line.type))warnings.push('Historical account types differ from the current chart. Statements use the current chart classification; review reclassifications.')
  if(!snapshot.companyName)warnings.push('Company profile is not configured.')
  if(!lines.length)warnings.push('No posted ledger lines match this scope. No draft, approved-only, voided or unposted entry is included.')
  if(filters.costCenterId)warnings.push('Cost-center-filtered statements may not balance if only one side of a journal carries this cost center.')
- if(lines.some(l=>!snapshot.accounts.some(a=>a.id===l.accountId)))warnings.push('Historical deleted/unavailable accounts are included using their posted line identity; classify them before advanced reporting.')
+ if(lines.some(l=>!snapshot.accounts.some(a=>a.id===l.accountId)))warnings.push('Historical deleted/unavailable accounts are included using their posted line identity; review their AccountType in the Chart of Accounts.')
  const title=reportCatalog.find(([id])=>id===kind)?.[1];if(!title)throw Error('Unknown financial report.')
  let columns:ReportColumn[]=[],sections:ReportSection[]=[]
+ let unknownComparison:{from:string;to:string}|null=null
  let trialTotals:{debit:bigint;credit:bigint}|null=null
  const cols=(labels:string[])=>{columns=labels.map((title,i)=>({key:String(i),title,width:labels.length===1?100:i===0?(labels.length>6?14:32):(100-(labels.length>6?14:32))/(labels.length-1)}))}
  const section=(title:string,rows:string[][])=>sections.push({title,rows})
@@ -98,7 +95,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  }else if(kind==='trial-balance'){
   columns=[{key:'number',title:'General Ledger #',width:14},{key:'name',title:'',width:46},{key:'debit',title:'Debit',width:20,alignment:'right'},{key:'credit',title:'Credit',width:20,alignment:'right'}]
   let dr=0n,cr=0n
-  for(const [type,label] of [[0,'Asset'],[1,'Liability'],[2,'Equity'],[3,'Revenue'],[4,'Expense']] as const){
+  for(const [type,label] of [[0,'Asset'],[1,'Liability'],[2,'Equity'],[3,'Revenue'],[4,'Expense'],[-1,'Unknown']] as const){
    const rows:string[][]=[]
    for(const a of accountList.filter(account=>account.type===type)){
     const entries=byAccount.get(a.id)||[];if(!entries.length)continue
@@ -113,10 +110,9 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   cols(['Classification / account','Balance (base)'])
   const balances=new Map(accountList.map(a=>[a.id,net(byAccount.get(a.id)||[])]))
   const typeTotal=(type:number)=>sum(accountList.filter(a=>a.type===type).map(a=>balances.get(a.id)!))
-  for(const type of [0,1,2]){
-   const groups=new Map<string,string[][]>();for(const a of accountList.filter(a=>a.type===type)){const value=balances.get(a.id)!;if(value===0n)continue;const category=mappingCategories.find(([id])=>id===a.category)?.[1]||`Unclassified ${typeNames[type]}`;if(!groups.has(category))groups.set(category,[]);groups.get(category)!.push([accountLabel(a),money(type===0?value:-value)]);if(!a.category)warnings.push(`Missing balance-sheet mapping: ${accountLabel(a)}`)}
-   for(const [category,rows] of groups)section(category,rows)
-  }
+  for(const type of [0,1,2])section(typeNames[type]!,accountList.filter(a=>a.type===type&&balances.get(a.id)!==0n).map(a=>[accountLabel(a),money(type===0?balances.get(a.id)!:-balances.get(a.id)!)]))
+  const unknown=accountList.filter(a=>a.type===-1&&(byAccount.get(a.id)||[]).length)
+  if(unknown.length)section('Unknown accounts (excluded from balance-sheet totals; Dr + / Cr −)',unknown.map(a=>[accountLabel(a),money(balances.get(a.id)!)]))
   const earnings=-typeTotal(3)-typeTotal(4),assets=typeTotal(0),liabilities=-typeTotal(1),equity=-typeTotal(2),difference=assets-liabilities-equity-earnings
   section('Balance-sheet reconciliation',[['Total assets',money(assets)],['Total liabilities',money(liabilities)],['Posted equity',money(equity)],['Unclosed earnings (cumulative revenue less expense)',money(earnings)],['Total equity including unclosed earnings',money(equity+earnings)],['Liabilities and equity',money(liabilities+equity+earnings)],['Accounting equation difference (must be zero)',money(difference)]])
   if(difference!==0n)warnings.push('Balance sheet does not reconcile. This is not silently plugged into equity.')
@@ -129,19 +125,10 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   const incomeRows=(a:string,b:string,center?:string)=>period(a,b).filter(l=>!l.opening&&[3,4].includes(accounts.get(l.accountId)!.type)&&(!center||(l.costCenterId||'unassigned')===center))
   const values=(a:string,b:string,center?:string)=>{const totals=new Map(incomeAccounts.map(account=>[account.id,0n]));for(const line of incomeRows(a,b,center)){const type=accounts.get(line.accountId)!.type;totals.set(line.accountId,totals.get(line.accountId)!+(micros(line.debit)-micros(line.credit))*(type===3?-1n:1n))}return totals}
   const current=values(from,to),priorStart=kind==='income-comparative'?yearBefore(from):shift(from,-Math.round((+day(to)-+day(from))/86400000)-1),priorEnd=kind==='income-comparative'?yearBefore(to):shift(from,-1)
+  if(kind==='income-comparative'||kind==='income-prior')unknownComparison={from:priorStart,to:priorEnd}
   const prior=values(priorStart,priorEnd),revenue=sum(incomeAccounts.filter(a=>a.type===3).map(a=>current.get(a.id)!)),expense=sum(incomeAccounts.filter(a=>a.type===4).map(a=>current.get(a.id)!))
   if(inPeriod.some(l=>l.opening&&[3,4].includes(accounts.get(l.accountId)!.type)))warnings.push('Opening-balance entries are excluded from period income and expense activity.')
-  const activeIncomeIds=new Set(incomeRows(from,to).map(line=>line.accountId))
-  const unmapped=incomeAccounts.filter(a=>!a.category&&activeIncomeIds.has(a.id))
-  if(unmapped.length)warnings.push(`Unmapped income accounts: ${unmapped.slice(0,10).map(accountLabel).join('; ')+(unmapped.length>10?` (+${unmapped.length-10} more)`: '')}`)
-  if(['income-multistep','income-ebitda'].includes(kind)&&unmapped.length)throw Error('Advanced statement requires report mappings for every income/expense account with activity in this period. Configure Report mappings first.')
-  if(kind==='income-multistep'||kind==='income-ebitda'){
-   cols(['Statement line','Amount (base)'])
-   const total=(category:string)=>sum(incomeAccounts.filter(a=>a.category===category).map(a=>current.get(a.id)!))
-   const sales=total('revenue'),cost=total('cost_of_sales'),op=total('operating_expense'),da=total('depreciation'),other=total('other_income'),interest=total('finance_cost'),tax=total('income_tax'),gross=sales-cost,operating=gross-op-da,profit=operating+other-interest-tax,ebitda=profit+interest+tax+da
-   section('Operating statement',[['Operating revenue',money(sales)],['Cost of sales',money(cost)],['Gross profit',money(gross)],['Operating expenses (excluding D&A)',money(op)],['Depreciation / amortization',money(da)],['Operating profit (EBIT)',money(operating)],['Other income',money(other)],['Finance costs',money(interest)],['Profit before tax',money(profit+tax)],['Income tax',money(tax)],['Net income',money(profit)]])
-   if(kind==='income-ebitda'){section('EBITDA reconciliation (non-GAAP)',[['Net income',money(profit)],['Add finance costs',money(interest)],['Add income tax',money(tax)],['Add depreciation / amortization',money(da)],['EBITDA',money(ebitda)],['EBITDA margin',percent(ebitda,revenue)]]);warnings.push('EBITDA is a management/non-GAAP measure: net income + mapped finance costs + income tax + D&A. It includes other income, and is not cash flow.')}
-  }else if(kind==='income-monthly'||kind==='income-crosstab'){
+  if(kind==='income-monthly'||kind==='income-crosstab'){
    const dimensions:{key:string;label:string;values:Map<string,bigint>}[]=[]
    if(kind==='income-monthly'){
     const cursor=day(from);cursor.setUTCDate(1);while(iso(cursor)<=to){const start=iso(cursor),next=new Date(cursor);next.setUTCMonth(next.getUTCMonth()+1);const end=shift(iso(next),-1);dimensions.push({key:start,label:formatReportDate(start),values:values(start<from?from:start,end>to?to:end)});cursor.setUTCMonth(cursor.getUTCMonth()+1)}
@@ -176,6 +163,15 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   }
  }
  if(!sections.length)section('No matching posted activity',[])
+ if(kind.startsWith('income-')){
+  const unknown=accountList.filter(a=>a.type===-1&&(byAccount.get(a.id)||[]).some(l=>!l.opening&&(l.date>=from||unknownComparison&&l.date>=unknownComparison.from&&l.date<=unknownComparison.to)))
+  if(unknown.length)sections.push({title:'Unknown accounts (excluded from income totals; Dr + / Cr −)',fullWidth:true,rows:unknown.map(a=>{
+   const entries=(byAccount.get(a.id)||[]).filter(l=>!l.opening),currentNet=net(entries.filter(l=>l.date>=from))
+   const comparison=unknownComparison?' · Comparison period net: '+money(net(entries.filter(l=>l.date>=unknownComparison!.from&&l.date<=unknownComparison!.to))):''
+   return [`${accountLabel(a)} · Period net: ${money(currentNet)}${comparison}`,...Array(Math.max(0,columns.length-1)).fill('')]
+  })})
+ }
+ if(lines.some(l=>accounts.get(l.accountId)!.type===-1))warnings.push('Unknown AccountType accounts are shown separately and excluded from financial-statement classifications. Review the Chart of Accounts; reported profit and balance-sheet totals may be incomplete.')
  const centerName=filters.costCenterId==='unassigned'?'Unassigned cost center':filters.costCenterName?.trim()||snapshot.lines.find(line=>line.costCenterId===filters.costCenterId&&line.costCenter)?.costCenter||'Unavailable cost center'
  const uniqueWarnings=[...new Set(warnings)]
  // Warnings are part of the report snapshot and therefore all exported formats.
