@@ -53,7 +53,7 @@ const std::string CoreCurrencyRates::tableName = "\"core_currency_rates\"";
 
 const std::vector<typename CoreCurrencyRates::MetaData> CoreCurrencyRates::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"currency_id","std::string","uuid",0,0,0,1},
 {"rate_type","std::string","character varying",30,0,0,1},
@@ -61,7 +61,7 @@ const std::vector<typename CoreCurrencyRates::MetaData> CoreCurrencyRates::metaD
 {"rate","std::string","numeric",0,0,0,1},
 {"source","std::string","character varying",80,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &CoreCurrencyRates::getColumnName(size_t index) noexcept(false)
@@ -84,7 +84,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Row &r, const ssize_t indexOffset) no
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -161,7 +161,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Row &r, const ssize_t indexOffset) no
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -188,7 +188,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -273,7 +273,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -303,7 +303,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Json::Value &pJson, const std::vector
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -400,7 +400,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Json::Value &pJson, const std::vector
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -423,7 +423,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -520,7 +520,7 @@ CoreCurrencyRates::CoreCurrencyRates(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -548,7 +548,7 @@ void CoreCurrencyRates::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -645,7 +645,7 @@ void CoreCurrencyRates::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[9] = true;
         if(!pJson[pMasqueradingVector[9]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[9]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[9]].asString());
         }
     }
 
@@ -667,7 +667,7 @@ void CoreCurrencyRates::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -764,7 +764,7 @@ void CoreCurrencyRates::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[9] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -797,20 +797,25 @@ const typename CoreCurrencyRates::PrimaryKeyType & CoreCurrencyRates::getPrimary
     return *id_;
 }
 
-const int32_t &CoreCurrencyRates::getValueOfTenantId() const noexcept
+const std::string &CoreCurrencyRates::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &CoreCurrencyRates::getTenantId() const noexcept
+const std::shared_ptr<std::string> &CoreCurrencyRates::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void CoreCurrencyRates::setTenantId(const int32_t &pTenantId) noexcept
+void CoreCurrencyRates::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void CoreCurrencyRates::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -963,20 +968,25 @@ void CoreCurrencyRates::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[8] = true;
 }
 
-const int64_t &CoreCurrencyRates::getValueOfCreatedByUserId() const noexcept
+const std::string &CoreCurrencyRates::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &CoreCurrencyRates::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &CoreCurrencyRates::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void CoreCurrencyRates::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void CoreCurrencyRates::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[9] = true;
+}
+void CoreCurrencyRates::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[9] = true;
 }
 void CoreCurrencyRates::setCreatedByUserIdToNull() noexcept
@@ -1420,7 +1430,7 @@ Json::Value CoreCurrencyRates::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1574,7 +1584,7 @@ Json::Value CoreCurrencyRates::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[9]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[9]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1689,7 +1699,7 @@ Json::Value CoreCurrencyRates::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2133,7 +2143,7 @@ bool CoreCurrencyRates::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2275,7 +2285,7 @@ bool CoreCurrencyRates::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2334,51 +2344,7 @@ void CoreCurrencyRates::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits CoreCurrencyRates::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void CoreCurrencyRates::getTenant(const DbClientPtr &clientPtr,
-                                  const std::function<void(CoreAccountingUnits)> &rcb,
-                                  const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits CoreCurrencyRates::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits CoreCurrencyRates::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -2398,9 +2364,9 @@ CoreAccountingUnits CoreCurrencyRates::getAccountingUnit(const DbClientPtr &clie
     return CoreAccountingUnits(r[0]);
 }
 
-void CoreCurrencyRates::getAccountingUnit(const DbClientPtr &clientPtr,
-                                          const std::function<void(CoreAccountingUnits)> &rcb,
-                                          const ExceptionCallback &ecb) const
+void CoreCurrencyRates::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                               const std::function<void(CoreAccountingUnits)> &rcb,
+                                               const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

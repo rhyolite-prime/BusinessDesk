@@ -1,0 +1,42 @@
+#pragma once
+#include <array>
+namespace business_desk::dto::company_profile {
+struct Field { const char* name; const char* column; const char* sqlType; char kind; int limit; };
+inline constexpr std::array<Field,35> fields{{
+ {"displayDecimals","display_decimals","integer",'i',6},
+ {"companyName","company_name","varchar(200)",'s',200},
+ {"countryName","country_name","varchar(100)",'s',100},
+ {"cityName","city_name","varchar(160)",'s',160},
+ {"phoneNo","phone_no","varchar(50)",'s',50},
+ {"address","address","varchar(1000)",'s',1000},
+ {"companyTin","company_tin","varchar(100)",'s',100},
+ {"email","email","varchar(254)",'s',254},
+ {"firstMonthOfFiscalYear","first_month_of_fiscal_year","integer",'i',12},
+ {"vatNo","vat_no","varchar(100)",'s',100},
+ {"employerSocialSecurityNo","employer_social_security_no","varchar(100)",'s',100},
+ {"paySocialSecurityFund","pay_social_security_fund","boolean",'b',0},
+ {"socialSecurityFundEmployeeRate","social_security_fund_employee_rate","numeric(9,6)",'r',100},
+ {"socialSecurityFundEmployerRate","social_security_fund_employer_rate","numeric(9,6)",'r',100},
+ {"payProvidentFund","pay_provident_fund","boolean",'b',0},
+ {"providentFundEmployeeRate","provident_fund_employee_rate","numeric(9,6)",'r',100},
+ {"providentFundEmployerRate","provident_fund_employer_rate","numeric(9,6)",'r',100},
+ {"providentFundTreatAsSocialSecurityFund","provident_fund_treat_as_social_security_fund","boolean",'b',0},
+ {"providentFundTaxEmployerPortion","provident_fund_tax_employer_portion","boolean",'b',0},
+ {"paySecondProvidentOrOthers","pay_second_provident_or_others","boolean",'b',0},
+ {"secondProvidentEmployeeRate","second_provident_employee_rate","numeric(9,6)",'r',100},
+ {"secondProvidentEmployerRate","second_provident_employer_rate","numeric(9,6)",'r',100},
+ {"treatSecondProvidentAsSsf","treat_second_provident_as_ssf","boolean",'b',0},
+ {"secondProvidentTaxEmployerPortion","second_provident_tax_employer_portion","boolean",'b',0},
+ {"overtimePercentageOnBasicSalary","overtime_percentage_on_basic_salary","boolean",'b',0},
+ {"overtimePercentageOnDailyWage","overtime_percentage_on_daily_wage","boolean",'b',0},
+ {"defaultCurrencyId","default_currency_id","uuid",'u',0},
+ {"mailHostName","mail_host_name","varchar(255)",'s',255},
+ {"isSslEnabled","is_ssl_enabled","boolean",'b',0},
+ {"portNumber","port_number","integer",'i',65535},
+ {"primaryEmailAddress","primary_email_address","varchar(254)",'s',254},
+ {"isTaxLeviesInclusive","is_tax_levies_inclusive","boolean",'b',0},
+ {"approveInvoiceBeforePayment","approve_invoice_before_payment","boolean",'b',0},
+ {"companyLogoUrl","company_logo_url","text",'s',349551},
+ {"enforceOu","enforce_ou","boolean",'b',0},
+}};
+}

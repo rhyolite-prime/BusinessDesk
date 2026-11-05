@@ -10,6 +10,12 @@
 
 #include "CoreAccountingUnits.h"
 
+#include "GlAccounts.h"
+
+#include "GlBankAccounts.h"
+
+#include "GlImprestCategories.h"
+
 #include <drogon/utils/Utilities.h>
 
 #include <string>
@@ -129,7 +135,7 @@ const std::string GlDefaultAccounts::tableName = "\"gl_default_accounts\"";
 
 const std::vector<typename GlDefaultAccounts::MetaData> GlDefaultAccounts::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"accounts_payables_bank_account_id","std::string","uuid",0,0,0,0},
 {"payroll_bank_account_id","std::string","uuid",0,0,0,0},
@@ -171,12 +177,12 @@ const std::vector<typename GlDefaultAccounts::MetaData> GlDefaultAccounts::metaD
 {"social_security_employer_liability_account_id","std::string","uuid",0,0,0,0},
 {"social_security_employee_liability_account_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlDefaultAccounts::getColumnName(size_t index) noexcept(false)
@@ -199,7 +205,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -510,7 +516,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -541,7 +547,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -579,7 +585,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -606,7 +612,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -959,7 +965,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -992,7 +998,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -1033,7 +1039,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Row &r, const ssize_t indexOffset) no
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -1063,7 +1069,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson, const std::vector
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1460,7 +1466,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson, const std::vector
         dirtyFlag_[43] = true;
         if(!pJson[pMasqueradingVector[43]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[43]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[43]].asString());
         }
     }
 
@@ -1497,7 +1503,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson, const std::vector
         dirtyFlag_[45] = true;
         if(!pJson[pMasqueradingVector[45]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[45]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[45]].asString());
         }
     }
 
@@ -1543,7 +1549,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson, const std::vector
         dirtyFlag_[48] = true;
         if(!pJson[pMasqueradingVector[48]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[48]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[48]].asString());
         }
     }
 
@@ -1566,7 +1572,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1963,7 +1969,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[43]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -2000,7 +2006,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[45]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -2046,7 +2052,7 @@ GlDefaultAccounts::GlDefaultAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[48]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -2074,7 +2080,7 @@ void GlDefaultAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -2471,7 +2477,7 @@ void GlDefaultAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[43] = true;
         if(!pJson[pMasqueradingVector[43]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[43]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[43]].asString());
         }
     }
 
@@ -2508,7 +2514,7 @@ void GlDefaultAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[45] = true;
         if(!pJson[pMasqueradingVector[45]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[45]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[45]].asString());
         }
     }
 
@@ -2554,7 +2560,7 @@ void GlDefaultAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[48] = true;
         if(!pJson[pMasqueradingVector[48]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[48]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[48]].asString());
         }
     }
 
@@ -2576,7 +2582,7 @@ void GlDefaultAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -2973,7 +2979,7 @@ void GlDefaultAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[43] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -3010,7 +3016,7 @@ void GlDefaultAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[45] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -3056,7 +3062,7 @@ void GlDefaultAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[48] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -3089,20 +3095,25 @@ const typename GlDefaultAccounts::PrimaryKeyType & GlDefaultAccounts::getPrimary
     return *id_;
 }
 
-const int32_t &GlDefaultAccounts::getValueOfTenantId() const noexcept
+const std::string &GlDefaultAccounts::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlDefaultAccounts::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlDefaultAccounts::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlDefaultAccounts::setTenantId(const int32_t &pTenantId) noexcept
+void GlDefaultAccounts::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlDefaultAccounts::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -4193,20 +4204,25 @@ void GlDefaultAccounts::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[42] = true;
 }
 
-const int64_t &GlDefaultAccounts::getValueOfCreatedByUserId() const noexcept
+const std::string &GlDefaultAccounts::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlDefaultAccounts::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlDefaultAccounts::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlDefaultAccounts::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlDefaultAccounts::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[43] = true;
+}
+void GlDefaultAccounts::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[43] = true;
 }
 void GlDefaultAccounts::setCreatedByUserIdToNull() noexcept
@@ -4237,20 +4253,25 @@ void GlDefaultAccounts::setLastModifiedAtToNull() noexcept
     dirtyFlag_[44] = true;
 }
 
-const int64_t &GlDefaultAccounts::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlDefaultAccounts::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlDefaultAccounts::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlDefaultAccounts::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlDefaultAccounts::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlDefaultAccounts::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[45] = true;
+}
+void GlDefaultAccounts::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[45] = true;
 }
 void GlDefaultAccounts::setLastModifiedByUserIdToNull() noexcept
@@ -4298,20 +4319,25 @@ void GlDefaultAccounts::setDeletedAtToNull() noexcept
     dirtyFlag_[47] = true;
 }
 
-const int64_t &GlDefaultAccounts::getValueOfDeletedByUserId() const noexcept
+const std::string &GlDefaultAccounts::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlDefaultAccounts::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlDefaultAccounts::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlDefaultAccounts::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlDefaultAccounts::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[48] = true;
+}
+void GlDefaultAccounts::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[48] = true;
 }
 void GlDefaultAccounts::setDeletedByUserIdToNull() noexcept
@@ -6299,7 +6325,7 @@ Json::Value GlDefaultAccounts::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -6321,7 +6347,7 @@ Json::Value GlDefaultAccounts::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -6354,7 +6380,7 @@ Json::Value GlDefaultAccounts::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -6984,7 +7010,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[43]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[43]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -7012,7 +7038,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[45]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[45]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -7054,7 +7080,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[48]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[48]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -7543,7 +7569,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -7565,7 +7591,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -7598,7 +7624,7 @@ Json::Value GlDefaultAccounts::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -9098,7 +9124,7 @@ bool GlDefaultAccounts::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -9731,7 +9757,7 @@ bool GlDefaultAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -9761,7 +9787,7 @@ bool GlDefaultAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -9807,7 +9833,7 @@ bool GlDefaultAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -9822,51 +9848,7 @@ bool GlDefaultAccounts::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlDefaultAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlDefaultAccounts::getTenant(const DbClientPtr &clientPtr,
-                                  const std::function<void(CoreAccountingUnits)> &rcb,
-                                  const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlDefaultAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlDefaultAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -9886,9 +9868,9 @@ CoreAccountingUnits GlDefaultAccounts::getAccountingUnit(const DbClientPtr &clie
     return CoreAccountingUnits(r[0]);
 }
 
-void GlDefaultAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                          const std::function<void(CoreAccountingUnits)> &rcb,
-                                          const ExceptionCallback &ecb) const
+void GlDefaultAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                               const std::function<void(CoreAccountingUnits)> &rcb,
+                                               const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -9905,6 +9887,1678 @@ void GlDefaultAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(CoreAccountingUnits(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlBankAccounts GlDefaultAccounts::getAccountsPayablesBankAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *accountsPayablesBankAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlBankAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAccountsPayablesBankAccount(const DbClientPtr &clientPtr,
+                                                       const std::function<void(GlBankAccounts)> &rcb,
+                                                       const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    *clientPtr << sql
+               << *accountsPayablesBankAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlBankAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlBankAccounts GlDefaultAccounts::getPayrollBankAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *payrollBankAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlBankAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getPayrollBankAccount(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlBankAccounts)> &rcb,
+                                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    *clientPtr << sql
+               << *payrollBankAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlBankAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlBankAccounts GlDefaultAccounts::getSalesBankAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *salesBankAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlBankAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSalesBankAccount(const DbClientPtr &clientPtr,
+                                            const std::function<void(GlBankAccounts)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    *clientPtr << sql
+               << *salesBankAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlBankAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlBankAccounts GlDefaultAccounts::getAccountsReceivableBankAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *accountsReceivableBankAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlBankAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAccountsReceivableBankAccount(const DbClientPtr &clientPtr,
+                                                         const std::function<void(GlBankAccounts)> &rcb,
+                                                         const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    *clientPtr << sql
+               << *accountsReceivableBankAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlBankAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlBankAccounts GlDefaultAccounts::getPurchasesBankAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *purchasesBankAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlBankAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getPurchasesBankAccount(const DbClientPtr &clientPtr,
+                                                const std::function<void(GlBankAccounts)> &rcb,
+                                                const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_bank_accounts where id = $1";
+    *clientPtr << sql
+               << *purchasesBankAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlBankAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlImprestCategories GlDefaultAccounts::getGlImprestCategories(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_imprest_categories where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *imprestCategoryId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlImprestCategories(r[0]);
+}
+
+void GlDefaultAccounts::getGlImprestCategories(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlImprestCategories)> &rcb,
+                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_imprest_categories where id = $1";
+    *clientPtr << sql
+               << *imprestCategoryId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlImprestCategories(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getImprestGlAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *imprestGlAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getImprestGlAccount(const DbClientPtr &clientPtr,
+                                            const std::function<void(GlAccounts)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *imprestGlAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getPettyCashGlAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *pettyCashGlAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getPettyCashGlAccount(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlAccounts)> &rcb,
+                                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *pettyCashGlAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getAccountsReceivableAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *accountsReceivableAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAccountsReceivableAccount(const DbClientPtr &clientPtr,
+                                                     const std::function<void(GlAccounts)> &rcb,
+                                                     const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *accountsReceivableAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getAccountsPayableAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *accountsPayableAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAccountsPayableAccount(const DbClientPtr &clientPtr,
+                                                  const std::function<void(GlAccounts)> &rcb,
+                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *accountsPayableAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCreditPurchasesAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *creditPurchasesAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCreditPurchasesAccount(const DbClientPtr &clientPtr,
+                                                  const std::function<void(GlAccounts)> &rcb,
+                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *creditPurchasesAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getAdvanceFromCustomerAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *advanceFromCustomerAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAdvanceFromCustomerAccount(const DbClientPtr &clientPtr,
+                                                      const std::function<void(GlAccounts)> &rcb,
+                                                      const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *advanceFromCustomerAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getInventoryAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *inventoryAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getInventoryAccount(const DbClientPtr &clientPtr,
+                                            const std::function<void(GlAccounts)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *inventoryAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getSalesRevenueAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *salesRevenueAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSalesRevenueAccount(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlAccounts)> &rcb,
+                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *salesRevenueAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getStockPurchasesAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *stockPurchasesAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getStockPurchasesAccount(const DbClientPtr &clientPtr,
+                                                 const std::function<void(GlAccounts)> &rcb,
+                                                 const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *stockPurchasesAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCurrentEarningsAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *currentEarningsAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCurrentEarningsAccount(const DbClientPtr &clientPtr,
+                                                  const std::function<void(GlAccounts)> &rcb,
+                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *currentEarningsAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getRetainedEarningsAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *retainedEarningsAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getRetainedEarningsAccount(const DbClientPtr &clientPtr,
+                                                   const std::function<void(GlAccounts)> &rcb,
+                                                   const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *retainedEarningsAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getAdvanceToSupplierAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *advanceToSupplierAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getAdvanceToSupplierAccount(const DbClientPtr &clientPtr,
+                                                    const std::function<void(GlAccounts)> &rcb,
+                                                    const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *advanceToSupplierAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getGoodsInTransitAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *goodsInTransitAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getGoodsInTransitAccount(const DbClientPtr &clientPtr,
+                                                 const std::function<void(GlAccounts)> &rcb,
+                                                 const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *goodsInTransitAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getWithholdingTaxAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *withholdingTaxAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getWithholdingTaxAccount(const DbClientPtr &clientPtr,
+                                                 const std::function<void(GlAccounts)> &rcb,
+                                                 const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *withholdingTaxAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getVatReceivedAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *vatReceivedAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getVatReceivedAccount(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlAccounts)> &rcb,
+                                              const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *vatReceivedAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getVatPaidAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *vatPaidAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getVatPaidAccount(const DbClientPtr &clientPtr,
+                                          const std::function<void(GlAccounts)> &rcb,
+                                          const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *vatPaidAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCovidTaxReceivedAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *covidTaxReceivedAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCovidTaxReceivedAccount(const DbClientPtr &clientPtr,
+                                                   const std::function<void(GlAccounts)> &rcb,
+                                                   const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *covidTaxReceivedAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCovidTaxPaidAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *covidTaxPaidAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCovidTaxPaidAccount(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlAccounts)> &rcb,
+                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *covidTaxPaidAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCommunicationsServiceTaxReceivedAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *communicationsServiceTaxReceivedAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCommunicationsServiceTaxReceivedAccount(const DbClientPtr &clientPtr,
+                                                                   const std::function<void(GlAccounts)> &rcb,
+                                                                   const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *communicationsServiceTaxReceivedAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getCommunicationsServiceTaxPaidAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *communicationsServiceTaxPaidAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getCommunicationsServiceTaxPaidAccount(const DbClientPtr &clientPtr,
+                                                               const std::function<void(GlAccounts)> &rcb,
+                                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *communicationsServiceTaxPaidAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getGetflReceivedAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *getflReceivedAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getGetflReceivedAccount(const DbClientPtr &clientPtr,
+                                                const std::function<void(GlAccounts)> &rcb,
+                                                const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *getflReceivedAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getGetflPaidAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *getflPaidAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getGetflPaidAccount(const DbClientPtr &clientPtr,
+                                            const std::function<void(GlAccounts)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *getflPaidAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getNhilReceivedAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *nhilReceivedAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getNhilReceivedAccount(const DbClientPtr &clientPtr,
+                                               const std::function<void(GlAccounts)> &rcb,
+                                               const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *nhilReceivedAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getNhilPaidAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *nhilPaidAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getNhilPaidAccount(const DbClientPtr &clientPtr,
+                                           const std::function<void(GlAccounts)> &rcb,
+                                           const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *nhilPaidAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getSocialSecurityEmployerExpenseAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *socialSecurityEmployerExpenseAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSocialSecurityEmployerExpenseAccount(const DbClientPtr &clientPtr,
+                                                                const std::function<void(GlAccounts)> &rcb,
+                                                                const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *socialSecurityEmployerExpenseAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getSocialSecurityEmployeeExpenseAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *socialSecurityEmployeeExpenseAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSocialSecurityEmployeeExpenseAccount(const DbClientPtr &clientPtr,
+                                                                const std::function<void(GlAccounts)> &rcb,
+                                                                const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *socialSecurityEmployeeExpenseAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getSocialSecurityEmployerLiabilityAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *socialSecurityEmployerLiabilityAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSocialSecurityEmployerLiabilityAccount(const DbClientPtr &clientPtr,
+                                                                  const std::function<void(GlAccounts)> &rcb,
+                                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *socialSecurityEmployerLiabilityAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getSocialSecurityEmployeeLiabilityAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *socialSecurityEmployeeLiabilityAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getSocialSecurityEmployeeLiabilityAccount(const DbClientPtr &clientPtr,
+                                                                  const std::function<void(GlAccounts)> &rcb,
+                                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *socialSecurityEmployeeLiabilityAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getUnrealizedFxLossAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *unrealizedFxLossAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getUnrealizedFxLossAccount(const DbClientPtr &clientPtr,
+                                                   const std::function<void(GlAccounts)> &rcb,
+                                                   const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *unrealizedFxLossAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getUnrealizedFxGainAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *unrealizedFxGainAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getUnrealizedFxGainAccount(const DbClientPtr &clientPtr,
+                                                   const std::function<void(GlAccounts)> &rcb,
+                                                   const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *unrealizedFxGainAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getRealizedFxLossAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *realizedFxLossAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getRealizedFxLossAccount(const DbClientPtr &clientPtr,
+                                                 const std::function<void(GlAccounts)> &rcb,
+                                                 const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *realizedFxLossAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlAccounts GlDefaultAccounts::getRealizedFxGainAccount(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *realizedFxGainAccountId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlAccounts(r[0]);
+}
+
+void GlDefaultAccounts::getRealizedFxGainAccount(const DbClientPtr &clientPtr,
+                                                 const std::function<void(GlAccounts)> &rcb,
+                                                 const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_accounts where id = $1";
+    *clientPtr << sql
+               << *realizedFxGainAccountId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlAccounts(r[0]));
                     }
                }
                >> ecb;

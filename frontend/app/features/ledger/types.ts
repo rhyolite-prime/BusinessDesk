@@ -74,47 +74,7 @@ export interface CreateAccountInput {
   status?: 'Active' | 'Inactive'
 }
 
-export interface CreateJournalDraftInput {
-  batchDate: string
-  description: string
-  organizationUnitId?: string
-  isMultiCurrency?: boolean
-  lines: Array<{
-    accountId: string
-    accountName: string
-    referenceNumber?: string
-    description: string
-    organizationUnitId?: string
-    transactionDate?: string
-    chequeNumber?: string
-    currencyCode?: string
-    currencyName?: string
-    exchangeRate?: string
-    foreignDebit?: string
-    foreignCredit?: string
-    debit: string
-    credit: string
-  }>
-}
-
-export interface JournalValidationResponse {
-  valid: boolean
-  balanced: boolean
-  debitTotal: string
-  creditTotal: string
-  errors: string[]
-}
-
 export interface AccountsResponse {
   items: LedgerAccount[]
   total: number
-}
-
-export interface JournalsResponse {
-  items: JournalSummary[]
-  total: number
-}
-
-export interface JournalBatchNumberResponse {
-  batchNumber: string
 }

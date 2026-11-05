@@ -162,11 +162,12 @@ class GlImprests
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -450,11 +451,12 @@ class GlImprests
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
     /**  For column last_modified_at  */
@@ -468,11 +470,12 @@ class GlImprests
 
     /**  For column last_modified_by_user_id  */
     ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfLastModifiedByUserId() const noexcept;
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getLastModifiedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
     ///Set the value of the column last_modified_by_user_id
-    void setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
     void setLastModifiedByUserIdToNull() noexcept;
 
     /**  For column is_deleted  */
@@ -494,11 +497,12 @@ class GlImprests
 
     /**  For column deleted_by_user_id  */
     ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfDeletedByUserId() const noexcept;
+    const std::string &getValueOfDeletedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getDeletedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
     ///Set the value of the column deleted_by_user_id
-    void setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
 
@@ -516,40 +520,15 @@ class GlImprests
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestCategories getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlImprestCategories)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestCategories getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlImprestCategories)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestCategories getImprestCategory(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getImprestCategory(const drogon::orm::DbClientPtr &clientPtr,
-                            const std::function<void(GlImprestCategories)> &rcb,
-                            const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    GlImprestCategories getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlImprestCategories)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
     GlAccounts getDebitAccount(const drogon::orm::DbClientPtr &clientPtr) const;
     void getDebitAccount(const drogon::orm::DbClientPtr &clientPtr,
@@ -561,20 +540,10 @@ class GlImprests
                           const std::function<void(GlAccounts)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlJournalBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getJournalBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getJournalBatch(const drogon::orm::DbClientPtr &clientPtr,
-                         const std::function<void(GlJournalBatches)> &rcb,
-                         const drogon::orm::ExceptionCallback &ecb) const;
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImprests>;
@@ -592,7 +561,7 @@ class GlImprests
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> employeeId_;
     std::shared_ptr<std::string> employeeIdentifier_;
@@ -623,12 +592,12 @@ class GlImprests
     std::shared_ptr<bool> postedToGl_;
     std::shared_ptr<std::string> journalBatchId_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
     std::shared_ptr<::trantor::Date> lastModifiedAt_;
-    std::shared_ptr<int64_t> lastModifiedByUserId_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
-    std::shared_ptr<int64_t> deletedByUserId_;
+    std::shared_ptr<std::string> deletedByUserId_;
 
     struct MetaData
     {

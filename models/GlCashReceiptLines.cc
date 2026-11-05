@@ -55,7 +55,7 @@ const std::string GlCashReceiptLines::tableName = "\"gl_cash_receipt_lines\"";
 
 const std::vector<typename GlCashReceiptLines::MetaData> GlCashReceiptLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"cash_receipt_id","std::string","uuid",0,0,0,1},
 {"offset_account_id","std::string","uuid",0,0,0,1},
@@ -64,7 +64,7 @@ const std::vector<typename GlCashReceiptLines::MetaData> GlCashReceiptLines::met
 {"line_description","std::string","character varying",300,0,0,0},
 {"amount","std::string","numeric",0,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0}
+{"created_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlCashReceiptLines::getColumnName(size_t index) noexcept(false)
@@ -87,7 +87,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Row &r, const ssize_t indexOffset) 
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -167,7 +167,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Row &r, const ssize_t indexOffset) 
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -194,7 +194,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Row &r, const ssize_t indexOffset) 
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -283,7 +283,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Row &r, const ssize_t indexOffset) 
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -313,7 +313,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Json::Value &pJson, const std::vect
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -413,7 +413,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Json::Value &pJson, const std::vect
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -436,7 +436,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -536,7 +536,7 @@ GlCashReceiptLines::GlCashReceiptLines(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -564,7 +564,7 @@ void GlCashReceiptLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -664,7 +664,7 @@ void GlCashReceiptLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[10] = true;
         if(!pJson[pMasqueradingVector[10]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[10]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[10]].asString());
         }
     }
 
@@ -686,7 +686,7 @@ void GlCashReceiptLines::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -786,7 +786,7 @@ void GlCashReceiptLines::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[10] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -819,20 +819,25 @@ const typename GlCashReceiptLines::PrimaryKeyType & GlCashReceiptLines::getPrima
     return *id_;
 }
 
-const int32_t &GlCashReceiptLines::getValueOfTenantId() const noexcept
+const std::string &GlCashReceiptLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlCashReceiptLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceiptLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlCashReceiptLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlCashReceiptLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlCashReceiptLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1022,20 +1027,25 @@ void GlCashReceiptLines::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcep
     dirtyFlag_[9] = true;
 }
 
-const int64_t &GlCashReceiptLines::getValueOfCreatedByUserId() const noexcept
+const std::string &GlCashReceiptLines::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlCashReceiptLines::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceiptLines::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlCashReceiptLines::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlCashReceiptLines::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[10] = true;
+}
+void GlCashReceiptLines::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[10] = true;
 }
 void GlCashReceiptLines::setCreatedByUserIdToNull() noexcept
@@ -1520,7 +1530,7 @@ Json::Value GlCashReceiptLines::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -1688,7 +1698,7 @@ Json::Value GlCashReceiptLines::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[10]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[10]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -1814,7 +1824,7 @@ Json::Value GlCashReceiptLines::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2286,7 +2296,7 @@ bool GlCashReceiptLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2434,7 +2444,7 @@ bool GlCashReceiptLines::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2449,95 +2459,7 @@ bool GlCashReceiptLines::validJsonOfField(size_t index,
     return true;
 }
 
-GlCashReceipts GlCashReceiptLines::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_cash_receipts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlCashReceipts(r[0]);
-}
-
-void GlCashReceiptLines::getTenant(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlCashReceipts)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_cash_receipts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlCashReceipts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlCashReceipts GlCashReceiptLines::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_cash_receipts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlCashReceipts(r[0]);
-}
-
-void GlCashReceiptLines::getAccountingUnit(const DbClientPtr &clientPtr,
-                                           const std::function<void(GlCashReceipts)> &rcb,
-                                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_cash_receipts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlCashReceipts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlCashReceipts GlCashReceiptLines::getCashReceipt(const DbClientPtr &clientPtr) const {
+GlCashReceipts GlCashReceiptLines::getGlCashReceipts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_cash_receipts where id = $1";
     Result r(nullptr);
     {
@@ -2557,9 +2479,9 @@ GlCashReceipts GlCashReceiptLines::getCashReceipt(const DbClientPtr &clientPtr) 
     return GlCashReceipts(r[0]);
 }
 
-void GlCashReceiptLines::getCashReceipt(const DbClientPtr &clientPtr,
-                                        const std::function<void(GlCashReceipts)> &rcb,
-                                        const ExceptionCallback &ecb) const
+void GlCashReceiptLines::getGlCashReceipts(const DbClientPtr &clientPtr,
+                                           const std::function<void(GlCashReceipts)> &rcb,
+                                           const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_cash_receipts where id = $1";
     *clientPtr << sql
@@ -2581,95 +2503,7 @@ void GlCashReceiptLines::getCashReceipt(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccounts GlCashReceiptLines::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlCashReceiptLines::getTenant(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccounts)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlCashReceiptLines::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlCashReceiptLines::getAccountingUnit(const DbClientPtr &clientPtr,
-                                           const std::function<void(GlAccounts)> &rcb,
-                                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlCashReceiptLines::getOffsetAccount(const DbClientPtr &clientPtr) const {
+GlAccounts GlCashReceiptLines::getGlAccounts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_accounts where id = $1";
     Result r(nullptr);
     {
@@ -2689,9 +2523,9 @@ GlAccounts GlCashReceiptLines::getOffsetAccount(const DbClientPtr &clientPtr) co
     return GlAccounts(r[0]);
 }
 
-void GlCashReceiptLines::getOffsetAccount(const DbClientPtr &clientPtr,
-                                          const std::function<void(GlAccounts)> &rcb,
-                                          const ExceptionCallback &ecb) const
+void GlCashReceiptLines::getGlAccounts(const DbClientPtr &clientPtr,
+                                       const std::function<void(GlAccounts)> &rcb,
+                                       const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_accounts where id = $1";
     *clientPtr << sql

@@ -1,32 +1,38 @@
-/**
- * Step 1 of login — username/password. Returns the 2FA challenge.
- * Demo credentials: any seeded user (e.g. a.mensah / demo1234).
- */
+import QRCode from 'qrcode'
+import { checkAuthOrigin, clearTenantSession, tenantAuthRequest, completeTenantLogin, authCookieOptions } from '../../utils/tenant-auth'
+import { otpauthUrl } from '../../utils/totp'
+
 export default defineEventHandler(async (event) => {
-  const d = db()
-  const body = await readBody<{ username?: string; password?: string }>(event)
-  const username = (body.username ?? '').trim().toLowerCase()
-  const password = body.password ?? ''
-
-  const user = d.users.find(u => u.username.toLowerCase() === username)
-  const pass = authStore().passwords.get(username)
-  const demoPassword = pass ?? 'demo1234'
-  if (!user || password !== demoPassword) {
-    logAudit(d, 'Auth', 'LOGIN', 0, username, 'Invalid credentials', 'failure')
-    throw badRequest('Invalid username or password.')
+  checkAuthOrigin(event)
+  const body = await readBody(event)
+  if (!body || !['accountId', 'usernameOrEmail'].every(key => typeof body[key] === 'string' && body[key].trim()) || typeof body.password !== 'string' || !body.password) {
+    throw createError({ statusCode: 400, statusMessage: 'Account ID, username/email and password are required.' })
   }
-  if (user.status === 'disabled') throw badRequest('This account has been disabled. Contact your administrator.')
-
-  // issue a short-lived challenge token for the 2FA step
-  const challengeId = crypto.randomUUID()
-  authStore().pendingLogin.set(challengeId, { username, createdAt: Date.now() })
-  logAudit(d, 'Auth', 'LOGIN_STEP1', user.id, `${user.firstname} ${user.lastname}`, 'Password OK — 2FA challenge')
-
-  return {
-    challenge: '2fa-required',
-    challengeId,
-    username: user.username,
-    displayName: `${user.firstname} ${user.lastname}`,
-    message: 'Password accepted — enter your authenticator code.',
+  clearTenantSession(event)
+  const result = await tenantAuthRequest(event, 'tenant-login', {
+    accountId: body.accountId.trim(), usernameOrEmail: body.usernameOrEmail.trim(), password: body.password,
+  })
+  if (result.requiresTwoFactorAuth === false && result.token) return completeTenantLogin(event, result)
+  if (result.requiresTwoFactorAuth !== true || result.token || typeof result.challengeId !== 'string' || !/^[a-f0-9]{64}$/.test(result.challengeId) ||
+      !Number.isFinite(result.expiresIn) || Number(result.expiresIn) <= 0 || typeof result.enrollmentRequired !== 'boolean') {
+    throw createError({ statusCode: 503, statusMessage: 'Incomplete second-factor challenge.' })
   }
+  const enrollment = result.enrollmentRequired
+    ? await buildEnrollment(result.secret, result.issuer, result.accountLabel)
+    : null
+  setCookie(event, 'bd_challenge', result.challengeId, { ...authCookieOptions(event), maxAge: Math.min(Number(result.expiresIn), 300) })
+  // JWT and challenge ID stay in httpOnly cookies, never in browser storage.
+  return { authenticated: false, requiresTwoFactorAuth: true, expiresIn: result.expiresIn, enrollment }
 })
+
+async function buildEnrollment(secret?: string, issuer?: string, account?: string) {
+  if (!secret || !/^[A-Z2-7]{32}$/.test(secret) || !issuer || !account) {
+    throw createError({ statusCode: 503, statusMessage: 'Authenticator enrollment unavailable.' })
+  }
+  const uri = otpauthUrl(secret, issuer, account)
+  return {
+    secret, issuer, account,
+    // Genuine locally encoded QR. Four-module quiet zone, no external QR service.
+    qr: await QRCode.toDataURL(uri, { width: 320, margin: 4, errorCorrectionLevel: 'M', color: { dark: '#000000', light: '#ffffff' } }),
+  }
+}

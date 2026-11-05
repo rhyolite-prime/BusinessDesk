@@ -75,7 +75,7 @@ const std::string GlAccounts::tableName = "\"gl_accounts\"";
 
 const std::vector<typename GlAccounts::MetaData> GlAccounts::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"account_header_id","std::string","uuid",0,0,0,0},
 {"account_group_id","std::string","uuid",0,0,0,1},
@@ -87,12 +87,12 @@ const std::vector<typename GlAccounts::MetaData> GlAccounts::metaData_={
 {"allow_manual_posting","bool","boolean",1,0,0,1},
 {"is_control_account","bool","boolean",1,0,0,1},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlAccounts::getColumnName(size_t index) noexcept(false)
@@ -115,7 +115,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -216,7 +216,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -247,7 +247,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -285,7 +285,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -312,7 +312,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -425,7 +425,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -458,7 +458,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -499,7 +499,7 @@ GlAccounts::GlAccounts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -529,7 +529,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson, const std::vector<std::string> 
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -656,7 +656,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson, const std::vector<std::string> 
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -693,7 +693,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson, const std::vector<std::string> 
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[15]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
         }
     }
 
@@ -739,7 +739,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson, const std::vector<std::string> 
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[18]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -762,7 +762,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -889,7 +889,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[13]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -926,7 +926,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[15]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -972,7 +972,7 @@ GlAccounts::GlAccounts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[18]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1000,7 +1000,7 @@ void GlAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1127,7 +1127,7 @@ void GlAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -1164,7 +1164,7 @@ void GlAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[15] = true;
         if(!pJson[pMasqueradingVector[15]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[15]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[15]].asString());
         }
     }
 
@@ -1210,7 +1210,7 @@ void GlAccounts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[18] = true;
         if(!pJson[pMasqueradingVector[18]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[18]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[18]].asString());
         }
     }
 
@@ -1232,7 +1232,7 @@ void GlAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1359,7 +1359,7 @@ void GlAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[13] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1396,7 +1396,7 @@ void GlAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[15] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1442,7 +1442,7 @@ void GlAccounts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[18] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1475,20 +1475,25 @@ const typename GlAccounts::PrimaryKeyType & GlAccounts::getPrimaryKey() const
     return *id_;
 }
 
-const int32_t &GlAccounts::getValueOfTenantId() const noexcept
+const std::string &GlAccounts::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlAccounts::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlAccounts::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlAccounts::setTenantId(const int32_t &pTenantId) noexcept
+void GlAccounts::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlAccounts::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1724,20 +1729,25 @@ void GlAccounts::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[12] = true;
 }
 
-const int64_t &GlAccounts::getValueOfCreatedByUserId() const noexcept
+const std::string &GlAccounts::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccounts::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccounts::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlAccounts::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlAccounts::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[13] = true;
+}
+void GlAccounts::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[13] = true;
 }
 void GlAccounts::setCreatedByUserIdToNull() noexcept
@@ -1768,20 +1778,25 @@ void GlAccounts::setLastModifiedAtToNull() noexcept
     dirtyFlag_[14] = true;
 }
 
-const int64_t &GlAccounts::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlAccounts::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccounts::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccounts::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlAccounts::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlAccounts::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[15] = true;
+}
+void GlAccounts::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[15] = true;
 }
 void GlAccounts::setLastModifiedByUserIdToNull() noexcept
@@ -1829,20 +1844,25 @@ void GlAccounts::setDeletedAtToNull() noexcept
     dirtyFlag_[17] = true;
 }
 
-const int64_t &GlAccounts::getValueOfDeletedByUserId() const noexcept
+const std::string &GlAccounts::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccounts::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccounts::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlAccounts::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlAccounts::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[18] = true;
+}
+void GlAccounts::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[18] = true;
 }
 void GlAccounts::setDeletedByUserIdToNull() noexcept
@@ -2600,7 +2620,7 @@ Json::Value GlAccounts::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2622,7 +2642,7 @@ Json::Value GlAccounts::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2655,7 +2675,7 @@ Json::Value GlAccounts::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -2865,7 +2885,7 @@ Json::Value GlAccounts::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[13]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[13]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2893,7 +2913,7 @@ Json::Value GlAccounts::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[15]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[15]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2935,7 +2955,7 @@ Json::Value GlAccounts::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[18]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[18]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3094,7 +3114,7 @@ Json::Value GlAccounts::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3116,7 +3136,7 @@ Json::Value GlAccounts::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3149,7 +3169,7 @@ Json::Value GlAccounts::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3857,7 +3877,7 @@ bool GlAccounts::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4070,7 +4090,7 @@ bool GlAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4100,7 +4120,7 @@ bool GlAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4146,7 +4166,7 @@ bool GlAccounts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4205,51 +4225,7 @@ void GlAccounts::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -4269,9 +4245,9 @@ CoreAccountingUnits GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) 
     return CoreAccountingUnits(r[0]);
 }
 
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(CoreAccountingUnits)> &rcb,
-                                   const ExceptionCallback &ecb) const
+void GlAccounts::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                        const std::function<void(CoreAccountingUnits)> &rcb,
+                                        const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -4293,95 +4269,7 @@ void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccountControls GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountControls(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountControls)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountControls(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountControls GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountControls(r[0]);
-}
-
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccountControls)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_controls where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountControls(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountControls GlAccounts::getAccountHeader(const DbClientPtr &clientPtr) const {
+GlAccountControls GlAccounts::getGlAccountControls(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_account_controls where id = $1";
     Result r(nullptr);
     {
@@ -4401,9 +4289,9 @@ GlAccountControls GlAccounts::getAccountHeader(const DbClientPtr &clientPtr) con
     return GlAccountControls(r[0]);
 }
 
-void GlAccounts::getAccountHeader(const DbClientPtr &clientPtr,
-                                  const std::function<void(GlAccountControls)> &rcb,
-                                  const ExceptionCallback &ecb) const
+void GlAccounts::getGlAccountControls(const DbClientPtr &clientPtr,
+                                      const std::function<void(GlAccountControls)> &rcb,
+                                      const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_account_controls where id = $1";
     *clientPtr << sql
@@ -4425,95 +4313,7 @@ void GlAccounts::getAccountHeader(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccountGroups GlAccounts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountGroups(r[0]);
-}
-
-void GlAccounts::getTenant(const DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountGroups)> &rcb,
-                           const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountGroups(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountGroups GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccountGroups(r[0]);
-}
-
-void GlAccounts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                   const std::function<void(GlAccountGroups)> &rcb,
-                                   const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_account_groups where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccountGroups(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccountGroups GlAccounts::getAccountGroup(const DbClientPtr &clientPtr) const {
+GlAccountGroups GlAccounts::getGlAccountGroups(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_account_groups where id = $1";
     Result r(nullptr);
     {
@@ -4533,9 +4333,9 @@ GlAccountGroups GlAccounts::getAccountGroup(const DbClientPtr &clientPtr) const 
     return GlAccountGroups(r[0]);
 }
 
-void GlAccounts::getAccountGroup(const DbClientPtr &clientPtr,
-                                 const std::function<void(GlAccountGroups)> &rcb,
-                                 const ExceptionCallback &ecb) const
+void GlAccounts::getGlAccountGroups(const DbClientPtr &clientPtr,
+                                    const std::function<void(GlAccountGroups)> &rcb,
+                                    const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_account_groups where id = $1";
     *clientPtr << sql

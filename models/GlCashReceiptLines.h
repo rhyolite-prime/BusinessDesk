@@ -129,11 +129,12 @@ class GlCashReceiptLines
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -211,11 +212,12 @@ class GlCashReceiptLines
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
 
@@ -228,35 +230,15 @@ class GlCashReceiptLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlCashReceipts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlCashReceipts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlCashReceipts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
+    GlCashReceipts getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr,
                            const std::function<void(GlCashReceipts)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlCashReceipts getCashReceipt(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getCashReceipt(const drogon::orm::DbClientPtr &clientPtr,
-                        const std::function<void(GlCashReceipts)> &rcb,
-                        const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccounts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccounts getOffsetAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getOffsetAccount(const drogon::orm::DbClientPtr &clientPtr,
-                          const std::function<void(GlAccounts)> &rcb,
-                          const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlAccounts)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlCashReceiptLines>;
@@ -274,7 +256,7 @@ class GlCashReceiptLines
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> cashReceiptId_;
     std::shared_ptr<std::string> offsetAccountId_;
@@ -283,7 +265,7 @@ class GlCashReceiptLines
     std::shared_ptr<std::string> lineDescription_;
     std::shared_ptr<std::string> amount_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
 
     struct MetaData
     {

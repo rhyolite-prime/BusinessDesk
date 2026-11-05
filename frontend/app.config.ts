@@ -5,8 +5,8 @@
 export default defineAppConfig({
   brand: {
     productName: 'BusinessDesk 720',
-    institutionName: 'BusinessDesk',
-    institutionShort: 'BusinessDesk',
+    institutionName: 'RhyolitePrime',
+    institutionShort: 'RhyolitePrime',
     tagline: 'One workspace for finance and operations',
     theme: {
       primary: '#1B4B42',

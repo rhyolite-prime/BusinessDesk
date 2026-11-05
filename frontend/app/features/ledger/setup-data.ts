@@ -1,3 +1,6 @@
+import { useImprestCategories } from './useImprestCategories'
+import { useBankAccounts } from './useBankAccounts'
+import { useDefaultGlNumbers } from './useDefaultGlNumbers'
 export type StandardAccountType = 'Asset' | 'Liability' | 'Equity' | 'Revenue' | 'Expense'
 
 export interface LedgerAccountHead {
@@ -146,88 +149,23 @@ const accountControlSeed: LedgerAccountControl[] = [
   { id: ledgerSetupIds.fxControl, accountGroupId: ledgerSetupIds.expenses, parentAccountHeaderId: null, accountHeaderName: 'Foreign exchange loss', minAccount: 5100, maxAccount: 5199, isActive: true },
 ]
 
-const bankAccountSeed: LedgerBankAccount[] = [
-  {
-    id: 'bank-account-demo-1', bankName: 'GCB Bank PLC', bankBranchName: 'Accra Main', accountId: 'acc-1010',
-    accountNumber: 'BD-DEMO-001', accountType: 'Current Account', currency: 'GHS', dateOpened: '2023-06-12',
-    location: 'Accra', address: 'Independence Avenue, Accra', contactPerson: 'Ama Owusu', contactNumber: '+233 20 000 0101',
-    chequeBookStart: '00012001', chequeBookEnd: '00012100', isActive: true,
-  },
-  {
-    id: 'bank-account-demo-2', bankName: 'Ecobank Ghana PLC', bankBranchName: 'Airport City', accountId: 'acc-1020',
-    accountNumber: 'BD-DEMO-002', accountType: 'Current Account', currency: 'USD', dateOpened: '2024-01-08',
-    location: 'Accra', address: 'Airport City, Accra', contactPerson: 'Kwame Osei', contactNumber: '+233 24 000 0202',
-    chequeBookStart: '00034001', chequeBookEnd: '00034100', isActive: true,
-  },
-]
-
-const imprestCategorySeed: LedgerImprestCategory[] = [
-  { id: 'imprest-category-travel', name: 'Travel advance' },
-  { id: 'imprest-category-field', name: 'Field operations' },
-  { id: 'imprest-category-training', name: 'Training expenses' },
-  { id: 'imprest-category-emergency', name: 'Emergency support' },
-]
-
 const pettyCashRecipientSeed: LedgerPettyCashRecipient[] = [
   { id: 'petty-cash-recipient-ama', recipient: 'Ama Owusu', phoneNo: '+233 24 555 0101', email: 'ama.owusu@example.com' },
   { id: 'petty-cash-recipient-kwame', recipient: 'Kwame Osei', phoneNo: '+233 20 555 0202', email: 'kwame.osei@example.com' },
   { id: 'petty-cash-recipient-abena', recipient: 'Abena Mensah', phoneNo: '+233 50 555 0303', email: 'abena.mensah@example.com' },
 ]
 
-const defaultGlNumbersSeed: LedgerDefaultGlNumbers = {
-  id: 'default-gl-demo',
-  accountPayablesBankAccountId: 'bank-account-demo-1',
-  payrollBankAccountId: 'bank-account-demo-1',
-  salesBankAccountId: 'bank-account-demo-1',
-  accountsReceivableBankAccountId: 'bank-account-demo-2',
-  accountsReceivableAccountId: 'acc-1100',
-  accountsPayableAccountId: 'acc-2000',
-  withholdingTaxAccountId: 'acc-2200',
-  imprestCategoryId: 'imprest-category-travel',
-  creditPurchasesAccountId: 'acc-5000',
-  advanceFromCustomerAccountId: 'acc-2000',
-  covidTaxReceivedAccountId: 'acc-2200',
-  communicationsServiceTaxReceivedAccountId: 'acc-2200',
-  inventoryAccountId: 'acc-1500',
-  salesRevenueAccountId: 'acc-4000',
-  stockPurchasesAccountId: 'acc-5000',
-  currentEarningsAccountId: 'acc-3000',
-  retainedEarningsAccountId: 'acc-3000',
-  vatReceivedAccountId: 'acc-2200',
-  vatRate: 0.15,
-  imprestGlAccountId: 'acc-1000',
-  pettyCashGlAccountId: 'acc-12307',
-  purchasesBankAccountId: 'bank-account-demo-1',
-  advanceToSupplierAccountId: 'acc-1100',
-  covidTaxPaidAccountId: 'acc-5000',
-  communicationsServiceTaxPaidAccountId: 'acc-5000',
-  goodsInTransitAccountId: 'acc-1500',
-  unrealizedFxLossAccountId: 'acc-5100',
-  unrealizedFxGainAccountId: 'acc-4000',
-  realizedFxLossAccountId: 'acc-5100',
-  realizedFxGainAccountId: 'acc-4000',
-  vatPaidAccountId: 'acc-5000',
-  getflReceivedAccountId: 'acc-2200',
-  getflPaidAccountId: 'acc-5000',
-  nhilReceivedAccountId: 'acc-2200',
-  nhilPaidAccountId: 'acc-5000',
-  socialSecurityEmployerPortionDefaultExpenseGl: 'acc-5000',
-  socialSecurityEmployeePortionDefaultExpenseGl: 'acc-5000',
-  socialSecurityEmployerPortionDefaultLiabilityGl: 'acc-2200',
-  socialSecurityEmployeePortionDefaultLiabilityGl: 'acc-2200',
-}
-
 function makeId(prefix: string) {
   return `${prefix}-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`
 }
 
 export function useLedgerSetup() {
+  const { defaultGlNumbers } = useDefaultGlNumbers()
   const accountHeads = useState<LedgerAccountHead[]>('ledger-setup-account-heads', () => accountHeadSeed.map((head) => ({ ...head })))
   const accountControls = useState<LedgerAccountControl[]>('ledger-setup-account-controls', () => accountControlSeed.map((control) => ({ ...control })))
-  const bankAccounts = useState<LedgerBankAccount[]>('ledger-setup-bank-accounts', () => bankAccountSeed.map((account) => ({ ...account })))
-  const imprestCategories = useState<LedgerImprestCategory[]>('ledger-setup-imprest-categories', () => imprestCategorySeed.map((category) => ({ ...category })))
+  const { bankAccounts } = useBankAccounts()
+  const { categories: imprestCategories } = useImprestCategories()
   const pettyCashRecipients = useState<LedgerPettyCashRecipient[]>('ledger-setup-petty-cash-recipients', () => pettyCashRecipientSeed.map((recipient) => ({ ...recipient })))
-  const defaultGlNumbers = useState<LedgerDefaultGlNumbers | null>('ledger-setup-default-gl-numbers', () => ({ ...defaultGlNumbersSeed }))
 
   function accountHeadPath(id: string | null | undefined) {
     const path: string[] = []
@@ -289,36 +227,6 @@ export function useLedgerSetup() {
     return true
   }
 
-  function saveBankAccount(input: LedgerBankAccount) {
-    const index = bankAccounts.value.findIndex((account) => account.id === input.id)
-    if (index >= 0) {
-      bankAccounts.value[index] = { ...input }
-      return bankAccounts.value[index]
-    }
-    const account = { ...input, id: input.id || makeId('bank-account') }
-    bankAccounts.value.unshift(account)
-    return account
-  }
-
-  function removeBankAccount(id: string) {
-    bankAccounts.value = bankAccounts.value.filter((account) => account.id !== id)
-  }
-
-  function saveImprestCategory(input: Omit<LedgerImprestCategory, 'id'> & { id?: string }) {
-    const id = input.id || makeId('imprest-category')
-    const category = { id, name: input.name.trim() }
-    const index = imprestCategories.value.findIndex((item) => item.id === id)
-    if (index >= 0) imprestCategories.value[index] = category
-    else imprestCategories.value.unshift(category)
-    return category
-  }
-
-  function removeImprestCategory(id: string) {
-    if (defaultGlNumbers.value?.imprestCategoryId === id) return false
-    imprestCategories.value = imprestCategories.value.filter((category) => category.id !== id)
-    return true
-  }
-
   function savePettyCashRecipient(input: Omit<LedgerPettyCashRecipient, 'id'> & { id?: string }) {
     const id = input.id || makeId('petty-cash-recipient')
     const recipient = {
@@ -337,17 +245,6 @@ export function useLedgerSetup() {
     pettyCashRecipients.value = pettyCashRecipients.value.filter((recipient) => recipient.id !== id)
   }
 
-  function saveDefaultGlNumbers(input: Omit<LedgerDefaultGlNumbers, 'id'> & { id?: string }) {
-    const id = input.id || defaultGlNumbers.value?.id || makeId('default-gl')
-    const saved = { ...input, id }
-    defaultGlNumbers.value = saved
-    return saved
-  }
-
-  function removeDefaultGlNumbers(id: string) {
-    if (defaultGlNumbers.value?.id === id) defaultGlNumbers.value = null
-  }
-
   return {
     accountHeads,
     accountControls,
@@ -361,13 +258,7 @@ export function useLedgerSetup() {
     removeAccountHead,
     saveAccountControl,
     removeAccountControl,
-    saveBankAccount,
-    removeBankAccount,
-    saveImprestCategory,
-    removeImprestCategory,
     savePettyCashRecipient,
     removePettyCashRecipient,
-    saveDefaultGlNumbers,
-    removeDefaultGlNumbers,
   }
 }

@@ -1,101 +1,505 @@
 <script setup lang="ts">
-import { Download, Plus, Search, SlidersHorizontal, ChevronDown, CheckCheck, Clock3, FilePenLine, ListFilter } from '@lucide/vue'
-import type { JournalsResponse } from '../../../features/ledger/types'
-import { useLedgerApi } from '../../../features/ledger/useLedgerApi'
+import { journalRateDisplay } from '../../../features/ledger/journal-rate-display'
+import {
+  Plus,
+  CircleCheck,
+  Pencil,
+  Trash2,
+  ChevronDown,
+  ChevronRight,
+  Send,
+  X,
+} from '@lucide/vue'
+import type { Journal } from '../../../features/ledger/journal-types'
+import { emptyJournalOptions } from '../../../features/ledger/journal-types'
+import { useJournals } from '../../../features/ledger/useJournals'
 
+const displayBudgetAmount = (value: string | undefined) => value === undefined ? '—' : formatDecimalAmount(value)
 definePageMeta({ layout: 'admin-ledger' })
-
-const api = useLedgerApi()
-const search = ref('')
-const statusFilter = ref('')
-const { data, pending, error, refresh } = await useAsyncData<JournalsResponse>(
-  'ledger-journals',
-  () => api.journals({ search: search.value, status: statusFilter.value }),
-  { watch: [search, statusFilter] },
+useHead({ title: 'Journals' })
+const api = useJournals(),
+  { unitId } = api
+const units = ref<Awaited<ReturnType<typeof api.units>>>([]),
+  rows = ref<Journal[]>([]),
+  options = ref(emptyJournalOptions())
+const loading = ref(false),
+  loaded = ref(false),
+  saving = ref(false),
+  error = ref(''),
+  actionError = ref(''),
+  search = ref(''),
+  status = ref(''),
+  expanded = ref('')
+const target = ref<Journal | null>(null),
+  action = ref<'post' | 'delete'>('post'),
+  periodId = ref(''),
+  periodLoading = ref(false)
+let version = 0
+const message = (e: any) =>
+  e?.data?.statusMessage || 'Request failed. Please retry.'
+const visible = computed(() =>
+  rows.value.filter(
+    (r) =>
+      (!status.value || r.status === status.value) &&
+      (!search.value ||
+        `${r.batchNumber} ${r.description}`
+          .toLowerCase()
+          .includes(search.value.trim().toLowerCase())),
+  ),
 )
-const journals = computed(() => data.value?.items ?? [])
-const expandedJournalId = ref('')
-const pendingCount = computed(() => journals.value.filter((journal) => journal.status === 'Pending approval').length)
-const draftCount = computed(() => journals.value.filter((journal) => journal.status === 'Draft').length)
-const postedCount = computed(() => journals.value.filter((journal) => journal.status === 'Posted').length)
-
-function statusClass(status: string) {
-  if (status === 'Posted') return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300'
-  if (status === 'Pending approval') return 'bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300'
-  if (status === 'Approved') return 'bg-blue-50 text-blue-700 dark:bg-blue-900/25 dark:text-blue-300'
-  if (status === 'Reversed') return 'bg-slate-100 text-slate-600 dark:bg-slate-800 dark:text-slate-300'
-  return 'bg-violet-50 text-violet-700 dark:bg-violet-900/25 dark:text-violet-300'
+async function load() {
+  const current = ++version,
+    unit = unitId.value
+  rows.value = []
+  options.value = emptyJournalOptions()
+  loaded.value = false
+  target.value = null
+  error.value = ''
+  if (!unit) {
+    loading.value = false
+    return
+  }
+  loading.value = true
+  try {
+    const [r, o] = await Promise.all([api.list(unit), api.options(unit)])
+    if (current !== version) return
+    rows.value = r.items
+    options.value = o
+    loaded.value = true
+  } catch (e) {
+    if (current === version) error.value = message(e)
+  } finally {
+    if (current === version) loading.value = false
+  }
 }
-
-function toggleDetails(id: string) {
-  expandedJournalId.value = expandedJournalId.value === id ? '' : id
+onMounted(async () => {
+  try {
+    units.value = await api.units()
+    if (!units.value.some((u) => u.id === unitId.value)) unitId.value = ''
+    if (unitId.value) await load()
+  } catch (e) {
+    error.value = message(e)
+  }
+})
+watch(unitId, load)
+onUnmounted(() => version++)
+const eligiblePeriods = computed(() =>
+  !target.value
+    ? []
+    : options.value.periods.filter(
+        (p) =>
+          target.value!.batchDate >= p.beginDate &&
+          target.value!.batchDate <= p.endDate &&
+          target.value!.lines.every(
+            (line) =>
+              line.transactionDate >= p.beginDate &&
+              line.transactionDate <= p.endDate,
+          ),
+      ),
+)
+let periodRequest = 0
+async function refreshPostingPeriods() {
+  if (!target.value || action.value !== 'post') return
+  const current = version,
+    row = target.value,
+    request = ++periodRequest
+  periodLoading.value = true
+  actionError.value = ''
+  periodId.value = ''
+  options.value.periods = []
+  try {
+    const fresh = await api.options(unitId.value)
+    if (
+      current !== version ||
+      request !== periodRequest ||
+      target.value !== row ||
+      action.value !== 'post'
+    )
+      return
+    options.value.periods = fresh.periods
+    if (eligiblePeriods.value.some((p) => p.id === row.periodId))
+      periodId.value = row.periodId!
+    else if (eligiblePeriods.value.length === 1)
+      periodId.value = eligiblePeriods.value[0]!.id
+  } catch (e) {
+    if (
+      current === version &&
+      request === periodRequest &&
+      target.value === row
+    )
+      actionError.value = message(e)
+  } finally {
+    if (request === periodRequest) periodLoading.value = false
+  }
+}
+function confirm(row: Journal, kind: 'post' | 'delete') {
+  target.value = row
+  action.value = kind
+  actionError.value = ''
+  periodId.value = ''
+  periodRequest++
+  periodLoading.value = false
+  if (kind === 'post') void refreshPostingPeriods()
+}
+async function execute() {
+  if (
+    !target.value ||
+    saving.value ||
+    periodLoading.value ||
+    (action.value === 'post' &&
+      !eligiblePeriods.value.some((p) => p.id === periodId.value))
+  )
+    return
+  const row = target.value,
+    current = version
+  saving.value = true
+  actionError.value = ''
+  try {
+    if (action.value === 'post') {
+      const saved = await api.request<Journal>(
+        `/api/ledger/journals/${row.id}/post`,
+        {
+          method: 'POST',
+          body: {
+            accountingUnitId: unitId.value,
+            version: row.version,
+            periodId: periodId.value,
+          },
+        },
+      )
+      if (current !== version) return
+      rows.value = rows.value.map((r) => (r.id === row.id ? saved : r))
+    } else {
+      await api.request(`/api/ledger/journals/${row.id}`, {
+        method: 'DELETE',
+        query: { accountingUnitId: unitId.value, version: row.version },
+      })
+      if (current !== version) return
+      rows.value = rows.value.filter((r) => r.id !== row.id)
+    }
+    target.value = null
+  } catch (e) {
+    if (current === version) actionError.value = message(e)
+  } finally {
+    saving.value = false
+  }
 }
 </script>
-
 <template>
-  <div class="space-y-6">
-    <section class="flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
+  <div class="space-y-5">
+    <header class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <div class="mb-2 text-xs font-medium text-slate-400">General Ledger <span class="mx-1 text-slate-300">/</span> Transactions</div>
-        <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">Journal entries</h1>
-        <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">Prepare, review, and track journal batches through the ledger workflow.</p>
+        <p class="text-xs text-slate-400">General Ledger / Transactions</p>
+        <h1 class="mt-2 text-3xl font-semibold">Journals</h1>
+        <p class="mt-2 text-sm text-slate-500">
+          Single- and multi-currency drafts. Final posting updates ledger
+          balances atomically.
+        </p>
       </div>
-      <div class="flex flex-wrap items-center gap-2">
-        <button class="inline-flex h-10 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300 dark:hover:bg-slate-800"><Download :size="14" /> Export</button>
-        <NuxtLink to="/ledger/journals/new" class="inline-flex h-10 items-center gap-2 rounded-lg bg-brand-700 px-4 text-xs font-semibold text-white shadow-sm shadow-brand-900/15 hover:bg-brand-800"><Plus :size="15" /> New journal</NuxtLink>
-      </div>
+      <NuxtLink
+        v-if="loaded"
+        to="/ledger/journals/new"
+        class="inline-flex items-center gap-2 rounded-lg bg-brand-700 px-4 py-2.5 text-xs font-semibold text-white"
+        ><Plus :size="15" />New journal</NuxtLink
+      >
+    </header>
+    <section
+      class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#15201e]"
+    >
+      <label class="text-xs font-semibold"
+        >Accounting unit<select
+          v-model="unitId"
+          :disabled="loading || saving"
+          class="mt-2 block h-10 rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+        >
+          <option value="">Select an accounting unit</option>
+          <option v-for="u in units" :key="u.id" :value="u.id">
+            {{ u.code }} · {{ u.name }}
+          </option>
+        </select></label
+      ><input
+        v-model="search"
+        type="search"
+        aria-label="Search journals"
+        placeholder="Search journal…"
+        class="h-10 rounded-lg border border-slate-200 bg-transparent px-3 text-xs dark:border-slate-700"
+      /><select
+        v-model="status"
+        aria-label="Filter by status"
+        class="h-10 rounded-lg border border-slate-200 bg-transparent px-3 text-xs dark:border-slate-700"
+      >
+        <option value="">All statuses</option>
+        <option
+          v-for="s in [
+            'draft',
+            'posted',
+            'pending_approval',
+            'approved',
+            'rejected',
+            'voided',
+            'reversed',
+          ]"
+          :key="s"
+        >
+          {{ s }}
+        </option></select
+      ><button
+        :disabled="loading || saving || !unitId"
+        class="h-10 rounded-lg border border-slate-200 px-3 text-xs dark:border-slate-700"
+        @click="load"
+      >
+        Refresh
+      </button>
     </section>
-
-    <div v-if="error" class="flex items-center justify-between rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-800 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200"><span>Journal entries could not be loaded.</span><button class="font-semibold underline" @click="refresh()">Retry</button></div>
-
-    <section class="grid gap-3 sm:grid-cols-3">
-      <div class="flex items-center gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-violet-50 text-violet-700 dark:bg-violet-900/25 dark:text-violet-300"><FilePenLine :size="18" /></span><span><span class="block text-[11px] text-slate-500">Drafts in view</span><span class="mt-1 block text-xl font-semibold text-slate-900 dark:text-white">{{ draftCount }}</span></span></div>
-      <div class="flex items-center gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300"><Clock3 :size="18" /></span><span><span class="block text-[11px] text-slate-500">Awaiting approval in view</span><span class="mt-1 block text-xl font-semibold text-slate-900 dark:text-white">{{ pendingCount }}</span></span></div>
-      <div class="flex items-center gap-4 rounded-xl border border-slate-200/80 bg-white px-5 py-4 dark:border-slate-800 dark:bg-[#15201e]"><span class="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50 text-emerald-700 dark:bg-emerald-900/25 dark:text-emerald-300"><CheckCheck :size="18" /></span><span><span class="block text-[11px] text-slate-500">Posted in view</span><span class="mt-1 block text-xl font-semibold text-slate-900 dark:text-white">{{ postedCount }}</span></span></div>
-    </section>
-
-    <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white shadow-[0_1px_2px_rgba(15,23,42,0.03)] dark:border-slate-800 dark:bg-[#15201e]">
-      <div class="flex flex-col justify-between gap-3 border-b border-slate-100 p-4 sm:flex-row sm:items-center sm:px-5 dark:border-slate-800">
-        <div class="relative w-full sm:max-w-[340px]"><Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input v-model="search" type="search" placeholder="Search batch, description, preparer…" class="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" /></div>
-        <div class="flex items-center gap-2">
-          <label class="relative"><SlidersHorizontal :size="14" class="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><select v-model="statusFilter" class="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-9 pr-8 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="">All statuses</option><option value="draft">Draft</option><option value="pending">Pending approval</option><option value="approved">Approved</option><option value="posted">Posted</option><option value="reversed">Reversed</option></select><ChevronDown :size="13" class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" /></label>
-          <button class="hidden h-10 items-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-medium text-slate-600 hover:bg-slate-50 sm:inline-flex dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800"><ListFilter :size="14" /> Filters</button>
-        </div>
-      </div>
-      <div class="overflow-x-auto">
-        <table class="w-full min-w-[1120px] text-left">
-          <thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="px-5 py-3">Batch number</th><th class="px-4 py-3">Description</th><th class="px-4 py-3">Date</th><th class="px-4 py-3">Source</th><th class="px-4 py-3">Organizational unit</th><th class="px-4 py-3">Preparer</th><th class="px-4 py-3 text-right">Debit / credit</th><th class="px-4 py-3">Status</th><th class="w-8 px-4 py-3" /></tr></thead>
-          <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-if="pending"><td colspan="9" class="px-5 py-12 text-center text-xs text-slate-400">Loading journal batches…</td></tr>
-            <template v-for="journal in journals" :key="journal.id">
-            <tr class="group transition hover:bg-slate-50/60 dark:hover:bg-slate-900/40">
-              <td class="px-5 py-4 font-mono text-[11px] font-semibold text-brand-700 dark:text-brand-300">{{ journal.batchNumber }}</td>
-              <td class="max-w-[250px] px-4 py-4"><span class="block truncate text-xs font-medium text-slate-800 dark:text-slate-200">{{ journal.description }}</span><span class="mt-1 block text-[10px] text-slate-400">{{ journal.lineCount ? `${journal.lineCount} lines · ` : '' }}{{ journal.isMultiCurrency ? 'Multi-currency · ' : '' }}{{ journal.id }}</span></td>
-              <td class="px-4 py-4 text-xs text-slate-500">{{ formatDate(journal.date) }}</td>
-              <td class="px-4 py-4 text-xs text-slate-500 dark:text-slate-400">{{ journal.source }}</td>
-              <td class="max-w-[180px] px-4 py-4 text-xs text-slate-500 dark:text-slate-400"><span class="block truncate">{{ journal.organizationUnitName || '—' }}</span></td>
-              <td class="px-4 py-4 text-xs text-slate-500 dark:text-slate-400">{{ journal.preparer }}</td>
-              <td class="px-4 py-4 text-right"><span class="block text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(journal.debit, 'GHS') }}</span><span class="mt-1 block text-[10px] tabular-nums text-slate-400">{{ formatCurrency(journal.credit, 'GHS') }}</span></td>
-              <td class="px-4 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="statusClass(journal.status)">{{ journal.status }}</span></td>
-              <td class="px-4 py-4 text-right"><button type="button" class="rounded-md p-2 text-slate-400 transition hover:bg-slate-100 hover:text-brand-700 dark:hover:bg-slate-800 dark:hover:text-brand-300" :aria-label="`${expandedJournalId === journal.id ? 'Hide' : 'View'} details for ${journal.batchNumber}`" :aria-expanded="expandedJournalId === journal.id" @click="toggleDetails(journal.id)"><ChevronDown :size="15" class="transition-transform" :class="expandedJournalId === journal.id ? 'rotate-180 text-brand-600' : ''" /></button></td>
-            </tr>
-            <tr v-if="expandedJournalId === journal.id" class="bg-slate-50/60 dark:bg-slate-900/30">
-              <td colspan="9" class="px-5 py-4">
-                <div v-if="journal.lines?.length" class="overflow-x-auto rounded-lg border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15201e]">
-                  <table :class="['w-full text-left text-xs', journal.isMultiCurrency ? 'min-w-[1500px]' : 'min-w-[1000px]']">
-                    <thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-900/60"><tr><th class="px-3 py-2.5">Reference</th><th class="px-3 py-2.5">Account</th><th class="px-3 py-2.5">Description</th><th class="px-3 py-2.5">Organizational unit</th><th class="px-3 py-2.5">Transaction date</th><th class="px-3 py-2.5">Cheque no.</th><th v-if="journal.isMultiCurrency" class="px-3 py-2.5">Currency</th><th v-if="journal.isMultiCurrency" class="px-3 py-2.5 text-right">Rate to GHS</th><th v-if="journal.isMultiCurrency" class="px-3 py-2.5 text-right">Txn debit</th><th v-if="journal.isMultiCurrency" class="px-3 py-2.5 text-right">Txn credit</th><th class="px-3 py-2.5 text-right">Debit · GHS</th><th class="px-3 py-2.5 text-right">Credit · GHS</th></tr></thead>
-                    <tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in journal.lines" :key="line.id || `${journal.id}-line-${index}`"><td class="px-3 py-3 font-mono text-[10px] text-slate-500">{{ line.referenceNumber || '—' }}</td><td class="px-3 py-3 text-slate-700 dark:text-slate-300">{{ line.accountNumber ? `${line.accountNumber} — ` : '' }}{{ line.accountName || line.accountId }}</td><td class="px-3 py-3 text-slate-500">{{ line.description || '—' }}</td><td class="px-3 py-3 text-slate-500">{{ line.organizationUnitName || '—' }}</td><td class="px-3 py-3 text-slate-500">{{ formatDate(line.transactionDate || journal.date) }}</td><td class="px-3 py-3 text-slate-500">{{ line.chequeNumber || '—' }}</td><td v-if="journal.isMultiCurrency" class="px-3 py-3 text-slate-600 dark:text-slate-300">{{ line.currencyCode || 'GHS' }}</td><td v-if="journal.isMultiCurrency" class="px-3 py-3 text-right tabular-nums text-slate-500">{{ line.exchangeRate || '1.0000000000' }}</td><td v-if="journal.isMultiCurrency" class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ line.foreignDebit && line.foreignDebit !== '0.000000' ? formatCurrency(line.foreignDebit, line.currencyCode || 'GHS') : '—' }}</td><td v-if="journal.isMultiCurrency" class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ line.foreignCredit && line.foreignCredit !== '0.000000' ? formatCurrency(line.foreignCredit, line.currencyCode || 'GHS') : '—' }}</td><td class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ line.debit === '0' || line.debit === '0.000000' ? '—' : formatCurrency(line.debit, 'GHS') }}</td><td class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ line.credit === '0' || line.credit === '0.000000' ? '—' : formatCurrency(line.credit, 'GHS') }}</td></tr></tbody>
-                  </table>
+    <p v-if="loading" role="status" class="text-sm text-slate-400">
+      Loading journals…
+    </p>
+    <p
+      v-if="error"
+      role="alert"
+      class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700"
+    >
+      {{ error }}
+    </p>
+    <section
+      class="overflow-x-auto rounded-xl border border-slate-200 bg-white dark:border-slate-800 dark:bg-[#15201e]"
+    >
+      <table class="w-full min-w-[850px] text-left text-xs">
+        <thead
+          class="bg-slate-50 text-[10px] uppercase text-slate-400 dark:bg-slate-900"
+        >
+          <tr>
+            <th class="p-4">Journal</th>
+            <th>Date / mode</th>
+            <th class="text-right">Base debit</th>
+            <th class="text-right">Base credit</th>
+            <th class="px-4">Status</th>
+            <th class="p-4 text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
+          <tr v-if="!loading && !visible.length">
+            <td colspan="6" class="p-12 text-center text-slate-400">
+              {{
+                unitId
+                  ? 'No journals found'
+                  : 'Select an accounting unit to view journals'
+              }}
+            </td>
+          </tr>
+          <template v-for="row in visible" :key="row.id"
+            ><tr>
+              <td class="p-4">
+                <button
+                  :aria-expanded="expanded === row.id"
+                  class="flex items-center gap-2 font-semibold"
+                  @click="expanded = expanded === row.id ? '' : row.id"
+                >
+                  <ChevronDown
+                    v-if="expanded === row.id"
+                    :size="14"
+                  /><ChevronRight v-else :size="14" />{{ row.batchNumber }}
+                </button>
+                <p class="ml-5 mt-1 text-slate-400">{{ row.description }}</p>
+              </td>
+              <td>
+                {{ row.batchDate }}
+                <p class="mt-1 text-slate-400">
+                  {{
+                    row.isMultiCurrency ? 'Multi-currency' : 'Single currency'
+                  }}
+                </p>
+              </td>
+              <td class="text-right font-mono">
+                {{ displayBudgetAmount(row.totalDebit) }}
+              </td>
+              <td class="text-right font-mono">
+                {{ displayBudgetAmount(row.totalCredit) }}
+              </td>
+              <td class="px-4">
+                <span
+                  class="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full px-2.5 py-1 text-[11px] font-semibold leading-4 ring-1 ring-inset"
+                  :class="row.status === 'posted'
+                    ? 'bg-emerald-50 text-emerald-700 ring-emerald-600/20 dark:bg-emerald-500/10 dark:text-emerald-300 dark:ring-emerald-400/25'
+                    : 'bg-amber-50 text-amber-800 ring-amber-600/20 dark:bg-amber-500/10 dark:text-amber-300 dark:ring-amber-400/25'"
+                  :title="row.status === 'posted' ? 'Posted to the ledger; read-only' : 'Saved draft; not yet posted to the ledger'"
+                  :aria-label="`Journal status: ${row.status === 'posted' ? 'Posted' : 'Draft'}`"
+                >
+                  <CircleCheck v-if="row.status === 'posted'" :size="12" aria-hidden="true" />
+                  <Pencil v-else :size="12" aria-hidden="true" />
+                  {{ row.status === 'posted' ? 'Posted' : 'Draft' }}
+                </span>
+              </td>
+              <td class="p-4 text-right">
+                <div class="flex justify-end gap-2">
+                  <NuxtLink
+                    :to="{
+                      path: '/ledger/journals/new',
+                      query: { id: row.id, accountingUnitId: unitId },
+                    }"
+                    class="inline-flex items-center gap-1 rounded-lg border border-slate-200 px-2 py-2 dark:border-slate-700"
+                    ><Pencil :size="12" />{{
+                      row.status === 'draft' ? 'Edit draft' : 'View'
+                    }}</NuxtLink
+                  ><button
+                    :disabled="saving || row.status !== 'draft'"
+                    aria-label="Post journal"
+                    class="p-2 text-brand-700 disabled:opacity-30"
+                    @click="confirm(row, 'post')"
+                  >
+                    <Send :size="15" /></button
+                  ><button
+                    :disabled="saving || row.status !== 'draft'"
+                    aria-label="Delete journal"
+                    class="p-2 text-rose-500 disabled:opacity-30"
+                    @click="confirm(row, 'delete')"
+                  >
+                    <Trash2 :size="15" />
+                  </button>
                 </div>
-                <p v-else class="rounded-lg border border-slate-200 bg-white px-4 py-3 text-xs text-slate-500 dark:border-slate-800 dark:bg-[#15201e] dark:text-slate-400">Line-level details are not available for this summary.</p>
               </td>
             </tr>
-            </template>
-            <tr v-if="!pending && !journals.length"><td colspan="9" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No journal entries match</p><p class="mt-1 text-xs text-slate-400">Adjust the filters or create a new journal batch.</p></td></tr>
-          </tbody>
-        </table>
-      </div>
-      <div class="flex items-center justify-between border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 dark:border-slate-800"><span>Showing {{ journals.length }} of {{ data?.total ?? 0 }} entries</span><span>Posted entries are locked; corrections require a reversal.</span></div>
+            <tr v-if="expanded === row.id">
+              <td colspan="6" class="bg-slate-50/50 p-5 dark:bg-slate-900/30">
+                <table class="w-full text-xs">
+                  <thead class="text-left text-slate-400">
+                    <tr>
+                      <th>Account / detail</th>
+                      <th>Date</th>
+                      <th>Currency / rate</th>
+                      <th class="text-right">Debit (transaction / base)</th>
+                      <th class="text-right">Credit (transaction / base)</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr v-for="l in row.lines" :key="l.id">
+                      <td class="py-2">
+                        {{ l.accountNumber }} · {{ l.accountName }}
+                        <p class="text-[10px] text-slate-400">
+                          {{ l.referenceNumber }} {{ l.description }}
+                        </p>
+                      </td>
+                      <td>{{ l.transactionDate }}</td>
+                      <td>
+                        {{ l.currencyCode }} /
+                        {{ journalRateDisplay(l.exchangeRate) }}
+                      </td>
+                      <td class="text-right font-mono">
+                        {{ displayBudgetAmount(l.debit) }} / {{ displayBudgetAmount(l.baseDebit) }}
+                      </td>
+                      <td class="text-right font-mono">
+                        {{ displayBudgetAmount(l.credit) }} / {{ displayBudgetAmount(l.baseCredit) }}
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+              </td>
+            </tr></template
+          >
+        </tbody>
+      </table>
     </section>
+    <div
+      v-if="target"
+      class="fixed inset-0 z-[90] grid place-items-center bg-slate-950/50 p-4"
+      @click.self="!saving && (target = null)"
+    >
+      <section
+        role="dialog"
+        aria-modal="true"
+        :aria-label="action === 'post' ? 'Post journal' : 'Delete journal'"
+        class="w-full max-w-lg rounded-xl bg-white p-5 shadow-xl dark:bg-[#15201e]"
+      >
+        <header class="flex justify-between">
+          <h2 class="font-semibold">
+            {{ action === 'post' ? 'Final posting' : 'Delete draft' }} ·
+            {{ target.batchNumber }}
+          </h2>
+          <button :disabled="saving" aria-label="Close" @click="target = null">
+            <X :size="16" />
+          </button>
+        </header>
+        <p class="mt-3 text-xs text-slate-500">
+          {{
+            action === 'post'
+              ? 'Posting is final: the journal becomes read-only and updates ledger balances.'
+              : 'The draft and its lines will be soft-deleted; audit history is retained.'
+          }}
+        </p>
+        <label v-if="action === 'post'" class="mt-4 block text-xs"
+          >Posting period<select
+            v-model="periodId"
+            :disabled="periodLoading || saving"
+            class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"
+          >
+            <option value="">Select an open period</option>
+            <option v-for="p in eligiblePeriods" :key="p.id" :value="p.id">
+              {{ p.period }} · {{ p.beginDate }} — {{ p.endDate }}
+            </option></select
+          ><span
+            v-if="!periodLoading && !eligiblePeriods.length"
+            class="mt-2 block text-amber-600"
+            >No open period covers the batch date and every line date. Create or
+            open an eligible period before posting.</span
+          ></label
+        >
+        <div v-if="action === 'post'" class="mt-3 space-y-2 text-xs">
+          <p v-if="periodLoading" role="status" class="text-slate-400">
+            Refreshing open periods…
+          </p>
+          <p class="font-mono">
+            Local debit {{ displayBudgetAmount(target.totalDebit) }} · Local credit
+            {{ displayBudgetAmount(target.totalCredit) }}
+          </p>
+          <div class="flex flex-wrap gap-3">
+            <NuxtLink
+              :to="{
+                path: '/ledger/accounting-periods',
+                query: { year: target.batchDate.slice(0, 4) },
+              }"
+              class="text-brand-700 underline"
+              >Manage accounting periods</NuxtLink
+            >
+            <button
+              type="button"
+              :disabled="periodLoading || saving"
+              class="text-brand-700 underline"
+              @click="refreshPostingPeriods"
+            >
+              Refresh open periods
+            </button>
+          </div>
+        </div>
+        <p v-if="actionError" role="alert" class="mt-3 text-xs text-rose-600">
+          {{ actionError }}
+        </p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button
+            :disabled="saving"
+            class="rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700"
+            @click="target = null"
+          >
+            Cancel</button
+          ><button
+            :disabled="
+              saving ||
+              periodLoading ||
+              (action === 'post' &&
+                !eligiblePeriods.some((p) => p.id === periodId))
+            "
+            class="rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white disabled:opacity-40"
+            @click="execute"
+          >
+            {{
+              saving
+                ? 'Saving…'
+                : action === 'post'
+                  ? 'Confirm final posting'
+                  : 'Delete draft'
+            }}
+          </button>
+        </div>
+      </section>
+    </div>
   </div>
 </template>
