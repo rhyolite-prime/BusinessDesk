@@ -77,8 +77,26 @@ try{
   // Keep posting dates deterministic even when this suite runs in a later month.
   await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'))
   const picker=name=>page.getByRole('button',{name:new RegExp(`^${name}`)})
+  async function openPicker(name){
+    const button=picker(name), inTable=/^(Debit GL|Organizational unit)/.test(name)
+    await button.scrollIntoViewIfNeeded()
+    const geometry=()=>button.evaluate(el=>{
+      const row=el.closest('tr'), box=row.getBoundingClientRect()
+      return {height:box.height,cells:[...row.cells].map(cell=>cell.getBoundingClientRect().width),invoiceOffset:row.querySelector('input').getBoundingClientRect().top-box.top}
+    })
+    const before=inTable?await geometry():null
+    await button.click()
+    if(inTable){
+      const after=await geometry()
+      check(Math.abs(before.height-after.height)<1&&Math.abs(before.invoiceOffset-after.invoiceOffset)<1&&before.cells.every((w,i)=>Math.abs(w-after.cells[i])<1),`${name}: opening menu never stretches or realigns the row`)
+      check(await page.getByRole('listbox').evaluate(el=>{
+        const panel=el.parentElement, rect=panel.getBoundingClientRect()
+        return panel.parentElement===document.body&&getComputedStyle(panel).position==='fixed'&&rect.left>=0&&rect.right<=innerWidth&&rect.top>=0&&rect.bottom<=innerHeight
+      }),`${name}: floating menu escapes table clipping and fits viewport`)
+    }
+  }
   async function choose(name,search,text,option,keyboard=false){
-    await picker(name).click();const input=page.getByRole('combobox',{name:search,exact:true});await input.fill(text)
+    await openPicker(name);const input=page.getByRole('combobox',{name:search,exact:true});await input.fill(text)
     if(keyboard)await input.press('Enter');else await page.getByRole('listbox').getByRole('option',{name:option,exact:true}).click()
   }
   let quoteCalls=0
@@ -100,18 +118,48 @@ try{
   check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===102,'bank picker loads all account pages and excludes inactive/foreign accounts')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).fill('1010')
   await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option',{name:'1010 — API Operating Bank',exact:true}).click()
-  await picker('Debit GL line 1').click()
+  await openPicker('Debit GL line 1')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).fill('1010')
   check(await page.getByText('No matching GL accounts.',{exact:true}).isVisible(),'debit choices exclude selected bank GL')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).fill('2100')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).press('Enter')
   await choose('Organizational unit line 1','Search cost centers','head operations','API Operations Head office')
-  await picker('Organizational unit line 1').click();await page.getByRole('button',{name:'No unit',exact:true}).click()
+  await openPicker('Organizational unit line 1');await page.getByRole('button',{name:'No unit',exact:true}).click()
   check((await picker('Organizational unit line 1').innerText()).includes('No unit'),'optional organization can be cleared')
   await page.setViewportSize({width:390,height:844})
   await choose('Organizational unit line 1','Search cost centers','head operations','API Operations Head office')
   check((await picker('Organizational unit line 1').innerText()).includes('Head office / API Operations'),'mobile table picker selects hierarchy without clipping')
+  await choose('Debit GL line 1','Search GL accounts','2100','2100 — API Payables',true)
   await page.setViewportSize({width:1280,height:900})
+  await openPicker('Debit GL line 1')
+  const search=page.getByRole('combobox',{name:'Search GL accounts',exact:true})
+  const menu=page.getByRole('listbox',{name:'GL accounts',exact:true}).locator('..')
+  const anchored=()=>page.waitForFunction(()=>{
+    const button=[...document.querySelectorAll('button[aria-expanded="true"]')].find(el=>el.textContent.includes('API Payables'))
+    const panel=document.querySelector('[role="listbox"][aria-label="GL accounts"]')?.parentElement
+    if(!button||!panel)return false
+    const a=button.getBoundingClientRect(),b=panel.getBoundingClientRect()
+    return Math.abs(b.left-Math.max(8,Math.min(a.left,innerWidth-8-b.width)))<1&&(Math.abs(b.top-a.bottom-8)<1||Math.abs(a.top-b.bottom-8)<1)
+  })
+  await picker('Debit GL line 1').evaluate(el=>{el.closest('table').parentElement.scrollLeft+=30})
+  await anchored();check(true,'floating menu follows horizontal table scrolling')
+  await page.evaluate(()=>window.scrollBy(0,24));await anchored();check(true,'floating menu follows page scrolling')
+  await page.setViewportSize({width:1100,height:750});await anchored();check(true,'floating menu repositions on viewport resize')
+  await search.press('Escape')
+  // Put the trigger near the bottom to exercise above-trigger placement.
+  await picker('Debit GL line 1').evaluate(el=>window.scrollBy(0,el.getBoundingClientRect().bottom-(innerHeight-24)))
+  await openPicker('Debit GL line 1')
+  check((await menu.boundingBox()).y+(await menu.boundingBox()).height<=(await picker('Debit GL line 1').boundingBox()).y,'menu flips above a trigger near the viewport bottom')
+  await page.setViewportSize({width:1280,height:900});await anchored()
+
+  await search.press('ArrowDown');await search.press('Escape')
+  check(await picker('Debit GL line 1').evaluate(el=>el===document.activeElement),'Escape returns focus from floating panel to its trigger')
+  await openPicker('Debit GL line 1')
+  await search.press('Tab')
+  check(await picker('Debit GL line 1').getAttribute('aria-expanded')==='false'&&await page.getByPlaceholder('Line details',{exact:true}).evaluate(el=>el===document.activeElement),'Tab closes floating panel and advances to next row field')
+  await openPicker('Debit GL line 1')
+  await page.getByPlaceholder('Invoice',{exact:true}).click()
+  check(await picker('Debit GL line 1').getAttribute('aria-expanded')==='false','outside click dismisses floating panel')
   check(seen.some(x=>x.p==='/api/v1/ledger/accounts'&&x.query.includes('pageNo=2')),'chart pagination reaches second page')
   await page.getByRole('button',{name:'Add line',exact:true}).click()
   check((await picker('Organizational unit line 2').innerText()).includes('No unit'),'new supplier allocation retains optional organization behavior')
@@ -151,6 +199,7 @@ try{
   check(savedInput.payeeId===supplier&&savedInput.bankGlAccountId===bank&&savedInput.bankAccountId===id(8)&&savedInput.lines[0].accountId===debit&&savedInput.lines[0].organizationUnitId===center,'searchable fields preserve posting IDs and linked bank configuration')
   await page.goto(base+`/ledger/vouchers/new/supplier-payment?id=${id(21)}`)
   await picker('Supplier / payee').filter({hasText:'API Supplier'}).waitFor()
+  await picker('Bank / cash G/L').filter({hasText:'API Operating Bank'}).waitFor()
   check((await picker('Bank / cash G/L').innerText()).includes('API Operating Bank')&&(await picker('Debit GL line 1').innerText()).includes('API Payables')&&(await picker('Organizational unit line 1').innerText()).includes('API Operations'),'saved supplier draft restores all searchable labels')
   let result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie,'https://untrusted.invalid')
   check(result.response.status===403,'voucher mutations reject a cross-origin request')

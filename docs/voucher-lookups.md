@@ -34,8 +34,10 @@ bank selection still resolves the linked bank record; the debit list excludes
 the selected bank GL. Organizational unit remains optional with **No unit** to
 clear. Changing accounting unit clears dependent selections. Pickers are disabled
 while loading/saving, on lookup failure, and for non-draft vouchers. Saved drafts
-restore their selections. Table-cell menus expand inline so the horizontal table
-scroll container does not clip their options on narrow screens. Other voucher
+restore their selections. Table-cell menus float in a viewport-positioned overlay outside the table,
+so opening them does not stretch rows or get clipped by the horizontal scroll
+container. Menus fit the viewport, open above when needed, and track scrolling
+and resizing. Other voucher
 workflows and tax/retention fields retain their existing controls and behavior.
 
 Every existing proxy verifies the session and forwards its bearer token. Lookup
