@@ -919,7 +919,6 @@ async function saveDraft() {
         <h1 class="text-[26px] font-semibold tracking-tight text-slate-900 dark:text-white sm:text-[30px]">{{ editing ? `Edit ${typeInfo.shortLabel.toLowerCase()}` : typeInfo.label }}</h1>
         <p class="mt-1.5 text-sm text-slate-500 dark:text-slate-400">{{ typeInfo.description }}</p>
       </div>
-      <span class="inline-flex w-fit items-center gap-2 rounded-full bg-violet-50 px-3 py-1.5 text-[10px] font-semibold text-violet-700 dark:bg-violet-900/25 dark:text-violet-300"><span class="h-1.5 w-1.5 rounded-full bg-violet-500" /> Draft</span>
     </section>
 
     <div class="flex flex-wrap items-end gap-3">
