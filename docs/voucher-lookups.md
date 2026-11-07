@@ -20,6 +20,24 @@ No migration is needed beyond existing migrations through 016.
 - Organizational unit: tenant cost centers from `/api/shared/cost-centers`, with
   hierarchy paths and no default demo organization. Empty selection is allowed.
 
+### Searchable supplier-payment fields
+
+The supplier payment form reuses Journal Entry's `AccountControlPicker` for
+**Supplier / payee**, **Bank / cash G/L**, each **Debit G/L** allocation and each
+**Organizational unit**. Search matches supplier name/number, GL number/name or
+organization hierarchy. Keyboard navigation, Enter selection, Escape dismissal,
+selected labels and empty-result messages use the shared picker behavior.
+
+Existing authenticated, fully paginated catalogs and accounting-unit scope are
+unchanged. Supplier selection still defaults an empty allocation and currency;
+bank selection still resolves the linked bank record; the debit list excludes
+the selected bank GL. Organizational unit remains optional with **No unit** to
+clear. Changing accounting unit clears dependent selections. Pickers are disabled
+while loading/saving, on lookup failure, and for non-draft vouchers. Saved drafts
+restore their selections. Table-cell menus expand inline so the horizontal table
+scroll container does not clip their options on narrow screens. Other voucher
+workflows and tax/retention fields retain their existing controls and behavior.
+
 Every existing proxy verifies the session and forwards its bearer token. Lookup
 failures are displayed with Retry, selections remain empty and saving is blocked;
 there is no demo fallback. Account lists reset when scope changes. Tenant/session
