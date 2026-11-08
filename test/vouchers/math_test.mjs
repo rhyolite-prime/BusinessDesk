@@ -3,10 +3,15 @@ import { spawnSync } from 'node:child_process'
 import { calculateVoucher, defaultVoucherTaxes } from '../../frontend/app/features/ledger/voucher-tax.ts'
 const base = () => ({ taxes: defaultVoucherTaxes(), lines: [{ localAmount: '120', foreignAmount: '10', isWithhold: true }], retentions: [], multiCurrency: false, exchangeRate: '12' })
 const cases = []
+assert.deepEqual(defaultVoucherTaxes().incomeWithholding, { enabled: false, rate: '5', accountId: null })
+assert.deepEqual(defaultVoucherTaxes().vatWithholding, { enabled: false, rate: '7', accountId: null })
 let b = base()
-for (const [k, rate] of [['nhil', '2.5'], ['getfund', '2.5'], ['vat', '15'], ['incomeWithholding', '5'], ['vatWithholding', '7']]) Object.assign(b.taxes[k], { enabled: true, rate })
+for (const [k, rate] of [['nhil', '2.5'], ['getfund', '2.5'], ['vat', '15']]) Object.assign(b.taxes[k], { enabled: true, rate })
+b.taxes.incomeWithholding.enabled = true
+b.taxes.vatWithholding.enabled = true
 b.retentions.push({ value: '10', isPercentage: true }); cases.push(structuredClone(b))
 assert.equal(calculateVoucher(b).net, '96.000000')
+cases.push({ lines: [{ localAmount: '100', foreignAmount: '0', isWithhold: true }], retentions: [], multiCurrency: false, exchangeRate: '1' })
 for (const key of ['cst', 'covid']) { const x = structuredClone(b); Object.assign(x.taxes[key], { enabled: true, rate: key === 'cst' ? '5' : '1' }); cases.push(x) }
 for (const [key, rate, gross] of [['cst', '5', '125'], ['covid', '1', '121']]) {
  const x = structuredClone(b); x.lines[0].localAmount = gross; Object.assign(x.taxes[key], { enabled: true, rate });

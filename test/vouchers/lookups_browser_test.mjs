@@ -192,11 +192,13 @@ try{
 
   await page.getByPlaceholder('0.00',{exact:true}).fill('96')
   await page.getByLabel('Withholding applies to line 1',{exact:true}).check()
+  check(await page.getByLabel('Income withholding rate',{exact:true}).inputValue()==='5'&&await page.getByLabel('VAT withholding rate',{exact:true}).inputValue()==='7','income withholding defaults to 5% and VAT withholding defaults to 7%')
   check(await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'withholding credit account pickers start disabled until enabled')
-  for(const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5']]) {
+  for(const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15']]) {
     await page.getByLabel(`Enable ${label}`,{exact:true}).check()
     await page.getByLabel(`${label} rate`,{exact:true}).fill(rate)
   }
+  await page.getByLabel('Enable Income withholding',{exact:true}).check()
   check(!await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'enabling income withholding enables only its credit account picker')
   await openPicker('Income withholding credit account')
   check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===102,'withholding credit picker loads all active base-currency account pages')
@@ -206,7 +208,6 @@ try{
   check(await picker('Income withholding credit account').getAttribute('aria-expanded')==='false','Escape closes withholding credit picker')
   await choose('Income withholding credit account','Search GL accounts','3098','3098 — Extra GL 98',true)
   await page.getByLabel('Enable VAT withholding',{exact:true}).check()
-  await page.getByLabel('VAT withholding rate',{exact:true}).fill('7')
   await page.setViewportSize({width:390,height:844})
   await choose('Income withholding credit account','Search GL accounts','3098','3098 — Extra GL 98')
   await choose('VAT withholding credit account','Search GL accounts','2100','2100 — API Payables')
@@ -223,7 +224,7 @@ try{
   await page.getByLabel('Enable COVID levy',{exact:true}).uncheck()
   await page.getByRole('button',{name:'Save draft',exact:true}).click()
   await page.waitForURL('**/ledger/vouchers');await page.getByText('SPV-TEST',{exact:true}).first().waitFor()
-  check(savedInput.taxes.vatWithholding.rate==='7'&&savedInput.taxes.incomeWithholding.accountId===id(1098)&&savedInput.taxes.vatWithholding.accountId===debit&&savedInput.periodId===id(20)&&savedInput.requestId,'save forwards tax configuration, withholding account IDs, period and stable request ID to live API')
+  check(savedInput.taxes.incomeWithholding.rate==='5'&&savedInput.taxes.vatWithholding.rate==='7'&&savedInput.taxes.incomeWithholding.accountId===id(1098)&&savedInput.taxes.vatWithholding.accountId===debit&&savedInput.periodId===id(20)&&savedInput.requestId,'save forwards tax configuration, withholding account IDs, period and stable request ID to live API')
   check(stored.netAmount==='96.000000'&&stored.taxSummary.base==='100.000000','live BFF response exposes full calculated totals without demo replacement')
   check(savedInput.payeeId===supplier&&savedInput.bankGlAccountId===bank&&savedInput.bankAccountId===id(8)&&savedInput.lines[0].accountId===debit&&savedInput.lines[0].organizationUnitId===center,'searchable fields preserve posting IDs and linked bank configuration')
   stored.exchangeRate='1.2500123456'
@@ -297,9 +298,9 @@ try{
   await page.getByPlaceholder('0.00',{exact:true}).fill('120')
   await page.getByLabel('Imprest applies to line 1',{exact:true}).check()
   await page.getByLabel('Withholding tax type',{exact:true}).fill('Professional services')
-  for(const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5'],['VAT withholding','7']]) {
+  check(await page.getByLabel('Income withholding rate',{exact:true}).inputValue()==='5'&&await page.getByLabel('VAT withholding rate',{exact:true}).inputValue()==='7','employee payment also defaults income withholding to 5% and VAT withholding to 7%')
+  for(const label of ['NHIL','GETFund levy','VAT','Income withholding','VAT withholding']) {
     await page.getByLabel(`Enable ${label}`,{exact:true}).check()
-    await page.getByLabel(`${label} rate`,{exact:true}).fill(rate)
   }
   await page.getByLabel('Income withholding credit account',{exact:true}).selectOption(debit)
   await page.getByLabel('VAT withholding credit account',{exact:true}).selectOption(debit)
