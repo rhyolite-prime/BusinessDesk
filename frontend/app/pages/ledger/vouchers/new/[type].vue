@@ -270,6 +270,9 @@ const supplierChoices = computed(() => payees.value.map(payee => ({
 const bankGlChoices = computed(() => bankOptions.value.map(account => ({
   id: account.id, label: `${account.accountNumber} — ${account.name}`, type: 'GL accounts',
 })))
+const withholdingGlChoices = computed(() => activeAccounts.value.map(account => ({
+  id: account.id, label: `${account.accountNumber} — ${account.name}`, type: 'GL accounts',
+})))
 const debitGlChoices = computed(() => lineAccounts.value.map(account => ({
   id: account.id, label: `${account.accountNumber} — ${account.name}`, type: 'GL accounts',
 })))
@@ -427,6 +430,8 @@ function onUnitChange() {
   form.exchangeRate = '1.0000000000'
   lines.value = [makeLine()]
   retentions.value = []
+  taxes.incomeWithholding.accountId = null
+  taxes.vatWithholding.accountId = null
   rateMessage.value = ''
   ratePending.value = false
 }
@@ -442,6 +447,7 @@ watch(
   () => `${voucherUser.value?.accountId}:${voucherUser.value?.username}`,
   () => {
     onUnitChange()
+    Object.assign(taxes, defaultVoucherTaxes())
     form.description = ''
     existingVoucher.value = null
     saveError.value = ''
@@ -1009,7 +1015,8 @@ async function saveDraft() {
         <div v-for="key in taxKeys" :key="key" class="space-y-2 rounded-lg border border-slate-100 p-3 dark:border-slate-700">
           <label class="flex items-center gap-2 text-xs font-medium"><input type="checkbox" :checked="taxes[key].enabled" :aria-label="`Enable ${taxLabels[key]}`" @change="setTaxEnabled(key, ($event.target as HTMLInputElement).checked)" />{{ taxLabels[key] }}</label>
           <label class="flex items-center gap-2 text-xs text-slate-500">Rate %<input v-model="taxes[key].rate" :disabled="!taxes[key].enabled" :aria-label="`${taxLabels[key]} rate`" inputmode="decimal" class="h-9 w-32 rounded-md border border-slate-200 bg-transparent px-2 text-right text-xs dark:border-slate-700" /></label>
-          <select v-if="key === 'incomeWithholding' || key === 'vatWithholding'" v-model="taxes[key].accountId" :disabled="!taxes[key].enabled" :aria-label="`${taxLabels[key]} credit account`" class="h-9 w-full rounded-md border border-slate-200 bg-transparent px-2 text-xs dark:border-slate-700"><option :value="null">Select credit G/L</option><option v-for="account in activeAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select>
+          <AccountControlPicker v-if="(key === 'incomeWithholding' || key === 'vatWithholding') && type === 'supplier-payment'" kind="accounts" :label="`${taxLabels[key]} credit account`" :model-value="taxes[key].accountId || ''" :options="withholdingGlChoices" :disabled="!taxes[key].enabled || supplierPickersDisabled" @update:model-value="value => { taxes[key].accountId = value || null }" />
+          <select v-else-if="key === 'incomeWithholding' || key === 'vatWithholding'" v-model="taxes[key].accountId" :disabled="!taxes[key].enabled" :aria-label="`${taxLabels[key]} credit account`" class="h-9 w-full rounded-md border border-slate-200 bg-transparent px-2 text-xs dark:border-slate-700"><option :value="null">Select credit G/L</option><option v-for="account in activeAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select>
         </div>
       </div>
       <div v-if="calculation.value" class="grid grid-cols-2 gap-3 text-xs sm:grid-cols-4">
