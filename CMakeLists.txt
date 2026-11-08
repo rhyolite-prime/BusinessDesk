@@ -67,6 +67,12 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         dto/PasskeyLoginDto.h
         domain_services/permissions/PermissionService.h
         domain_services/permissions/PermissionService.cc
+        domain_services/inventory/InventoryService.h
+        domain_services/inventory/InventoryInternal.h
+        domain_services/inventory/InventoryService.cc
+        domain_services/inventory/InventoryStock.cc
+        domain_services/supply_chain/SupplyChainService.h
+        domain_services/supply_chain/SupplyChainService.cc
 )
 
 # ##############################################################################

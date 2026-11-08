@@ -1,0 +1,60 @@
+-- Rollback for 034_procurement_receipts_logistics.sql. Destroys every receipt,
+-- shipment, shipment tracking event and carrier. Back up first and stop
+-- application writes: procurement and logistics history is not recoverable
+-- afterwards.
+BEGIN;
+DELETE FROM core_tenant_reset_registry WHERE table_name IN
+ ('scm_shipment_events','scm_shipment_lines','scm_shipments','scm_purchase_receipt_lines','scm_purchase_receipts','scm_carriers');
+DROP INDEX ix_scm_purchase_orders_carrier;
+ALTER TABLE scm_purchase_orders DROP CONSTRAINT fk_scm_purchase_orders_carrier;
+ALTER TABLE scm_purchase_orders DROP COLUMN carrier_id;
+DROP TRIGGER protect_scm_shipment_event_delete ON scm_shipment_events;
+DROP TRIGGER protect_scm_shipment_event_update ON scm_shipment_events;
+DROP FUNCTION protect_scm_shipment_event();
+DROP INDEX ix_scm_shipment_events_scope;
+DROP TABLE scm_shipment_events;
+DROP TRIGGER protect_scm_shipment_line ON scm_shipment_lines;
+DROP FUNCTION protect_scm_shipment_line();
+DROP INDEX ix_scm_shipment_lines_container;
+DROP INDEX ix_scm_shipment_lines_item;
+DROP INDEX ix_scm_shipment_lines_document;
+DROP TABLE scm_shipment_lines;
+DROP TRIGGER protect_scm_shipment ON scm_shipments;
+DROP FUNCTION protect_scm_shipment();
+DROP TRIGGER check_scm_shipment_transition ON scm_shipments;
+DROP FUNCTION check_scm_shipment_transition();
+DROP TRIGGER check_scm_shipment_scope ON scm_shipments;
+DROP FUNCTION check_scm_shipment_scope();
+DROP INDEX ix_scm_shipments_order;
+DROP INDEX ix_scm_shipments_status;
+DROP INDEX ix_scm_shipments_scope;
+DROP INDEX uq_scm_shipments_request;
+DROP INDEX uq_scm_shipments_number;
+DROP TABLE scm_shipments;
+DROP TRIGGER protect_scm_receipt_line ON scm_purchase_receipt_lines;
+DROP FUNCTION protect_scm_receipt_line();
+DROP TRIGGER check_scm_receipt_line ON scm_purchase_receipt_lines;
+DROP FUNCTION check_scm_receipt_line();
+DROP INDEX ix_scm_receipt_lines_item;
+DROP INDEX ix_scm_receipt_lines_order_line;
+DROP INDEX ix_scm_receipt_lines_document;
+DROP TABLE scm_purchase_receipt_lines;
+DROP TRIGGER protect_scm_receipt ON scm_purchase_receipts;
+DROP FUNCTION protect_scm_receipt();
+DROP TRIGGER check_scm_receipt_transition ON scm_purchase_receipts;
+DROP FUNCTION check_scm_receipt_transition();
+DROP TRIGGER check_scm_receipt_scope ON scm_purchase_receipts;
+DROP FUNCTION check_scm_receipt_scope();
+DROP INDEX ix_scm_receipts_order;
+DROP INDEX ix_scm_receipts_scope;
+DROP INDEX uq_scm_receipts_journal;
+DROP INDEX uq_scm_receipts_inv_document;
+DROP INDEX uq_scm_receipts_request;
+DROP INDEX uq_scm_receipts_number;
+DROP TABLE scm_purchase_receipts;
+DROP TRIGGER protect_scm_carrier ON scm_carriers;
+DROP FUNCTION protect_scm_carrier();
+DROP INDEX uq_scm_carriers_live_name;
+DROP INDEX uq_scm_carriers_live_code;
+DROP TABLE scm_carriers;
+COMMIT;
