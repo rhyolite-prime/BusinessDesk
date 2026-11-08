@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers'; inline?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers'; portal?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
 const copy = computed(() => props.kind === 'suppliers' ? {
   label: 'Supplier / payee', plural: 'suppliers', search: 'Search suppliers',
   placeholder: 'Select a supplier', unavailable: 'Unavailable supplier (replace)',
@@ -31,9 +31,41 @@ const optionLabel = (option: ControlOption) => option.min !== undefined && optio
   ? `${option.label} (${option.min}–${option.max})` : option.label
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null)
-// Inline menus stay inside horizontally scrollable allocation tables without clipping.
-const floating = computed(() => !props.inline && ['cost-centers', 'accounts', 'suppliers'].includes(props.kind || ''))
+// Table-cell menus can escape overflow containers without participating in row layout.
+const floating = computed(() => !props.portal && ['cost-centers', 'accounts', 'suppliers'].includes(props.kind || ''))
 const open = ref(false), query = ref(''), active = ref(-1)
+const panel = ref<HTMLElement | null>(null)
+const portalStyle = ref<Record<string, string>>({})
+function positionPanel() {
+  if (!props.portal || !open.value || !trigger.value) return
+  const rect = trigger.value.getBoundingClientRect(), viewport = window.visualViewport
+  const edge = 8, gap = 8, left = (viewport?.offsetLeft || 0) + edge, top = (viewport?.offsetTop || 0) + edge
+  const right = left + (viewport?.width || window.innerWidth) - edge * 2
+  const bottom = top + (viewport?.height || window.innerHeight) - edge * 2
+  // Dismiss when scrolling the anchor out of view, rather than leave a detached menu.
+  if (rect.bottom <= top || rect.top >= bottom || rect.right <= left || rect.left >= right) {
+    open.value = false
+    return
+  }
+  const below = bottom - rect.bottom - gap, above = rect.top - top - gap
+  const downward = below >= 360 || below >= above
+  const width = Math.min(Math.max(rect.width, 320), right - left)
+  portalStyle.value = {
+    position: 'fixed', width: `${width}px`,
+    left: `${Math.max(left, Math.min(rect.left, right - width))}px`,
+    maxHeight: `${Math.max(0, Math.min(420, downward ? below : above))}px`,
+    ...(downward ? { top: `${rect.bottom + gap}px` } : { bottom: `${window.innerHeight - rect.top + gap}px` }),
+  }
+}
+function contains(target: EventTarget | null) {
+  return target instanceof Node && (root.value?.contains(target) || panel.value?.contains(target))
+}
+function focusout(event: FocusEvent) { if (!contains(event.relatedTarget)) open.value = false }
+function reposition(event: Event) {
+  // Scrolling search results must not reposition the menu or move the page.
+  if (panel.value?.contains(event.target as Node)) return
+  positionPanel()
+}
 const fieldLabel = computed(() => props.label || copy.value.label)
 const optionGroupKey = (option: ControlOption) => props.kind === 'cost-centers' ? option.groupKey || option.type : option.type
 const groupDefinitions = computed(() => {
@@ -54,15 +86,24 @@ async function expand() {
   if (props.disabled) return
   open.value = true; query.value = ''
   active.value = Math.max(0, filtered.value.findIndex(option => option.id === props.modelValue))
-  await nextTick(); searchInput.value?.focus(); scrollActive()
+  await nextTick(); positionPanel(); await nextTick(); searchInput.value?.focus({ preventScroll: !!props.portal }); scrollActive()
 }
-function close() { open.value = false; trigger.value?.focus() }
+function close() { open.value = false; trigger.value?.focus({ preventScroll: !!props.portal }) }
 function chooseTopLevel() { emit('update:modelValue', ''); close() }
 function choose(option: ControlOption) { emit('update:modelValue', option.id); close() }
-function scrollActive() { root.value?.querySelector(`[data-index="${active.value}"]`)?.scrollIntoView({ block: 'nearest' }) }
+function scrollActive() {
+  const option = panel.value?.querySelector<HTMLElement>(`[data-index="${active.value}"]`)
+  const list = panel.value?.querySelector<HTMLElement>('[role="listbox"]')
+  if (!option || !list) return
+  // Scroll only the results, not the table/page containing the trigger.
+  const item = option.getBoundingClientRect(), box = list.getBoundingClientRect()
+  const headingHeight = option.parentElement?.firstElementChild?.getBoundingClientRect().height || 0
+  if (item.top < box.top + headingHeight) list.scrollTop += item.top - box.top - headingHeight
+  else if (item.bottom > box.bottom) list.scrollTop += item.bottom - box.bottom
+}
 function keydown(event: KeyboardEvent) {
   if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close() }
-  if (event.key === 'Tab') open.value = false
+  if (event.key === 'Tab') { if (props.portal) trigger.value?.focus({ preventScroll: true }); open.value = false }
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
     active.value = Math.max(0, Math.min(filtered.value.length - 1, active.value + (event.key === 'ArrowDown' ? 1 : -1)))
@@ -70,29 +111,44 @@ function keydown(event: KeyboardEvent) {
   }
   if (event.key === 'Enter') { event.preventDefault(); const option = filtered.value[active.value]; if (option) choose(option) }
 }
-function outside(event: PointerEvent) { if (!root.value?.contains(event.target as Node)) open.value = false }
+function outside(event: PointerEvent) { if (!contains(event.target)) open.value = false }
 watch(query, () => { active.value = 0 })
 watch(() => props.disabled, disabled => { if (disabled) open.value = false })
-onMounted(() => document.addEventListener('pointerdown', outside))
-onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
+onMounted(() => {
+  document.addEventListener('pointerdown', outside)
+  if (props.portal) {
+    window.addEventListener('scroll', reposition, true)
+    window.addEventListener('resize', positionPanel)
+    window.visualViewport?.addEventListener('resize', positionPanel)
+    window.visualViewport?.addEventListener('scroll', positionPanel)
+  }
+})
+onBeforeUnmount(() => {
+  document.removeEventListener('pointerdown', outside)
+  window.removeEventListener('scroll', reposition, true)
+  window.removeEventListener('resize', positionPanel)
+  window.visualViewport?.removeEventListener('resize', positionPanel)
+  window.visualViewport?.removeEventListener('scroll', positionPanel)
+})
 </script>
 
 <template>
-  <div ref="root" class="relative min-w-0" :class="open && floating ? 'z-40' : ''" @focusout="event => { if (!root?.contains(event.relatedTarget as Node)) open = false }">
+  <div ref="root" class="relative min-w-0" :class="open && floating ? 'z-40' : ''" @focusout="focusout">
     <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ fieldLabel }}</span>
     <button ref="trigger" type="button" :disabled="disabled" :aria-labelledby="`${id}-label ${id}-value`" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="`${id}-list`"
       class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900" @click="open ? close() : expand()" @keydown.down.prevent="expand">
       <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : emptyLabel || copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
     </button>
-    <div v-if="open" :class="floating ? 'absolute left-0 right-0 top-full z-50' : ''" class="mt-2 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-      <button v-if="emptyLabel || kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
+    <Teleport to="body" :disabled="!portal">
+    <div v-if="open" ref="panel" :style="portal ? portalStyle : undefined" @focusout="focusout" :class="portal ? 'z-[100] flex flex-col' : floating ? 'absolute left-0 right-0 top-full z-50 mt-2' : 'mt-2'" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
+      <button v-if="emptyLabel || kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
         <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ emptyLabel || (kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)') }}
       </button>
-      <div class="relative border-b border-slate-100 p-2 dark:border-slate-800">
+      <div class="relative shrink-0 border-b border-slate-100 p-2 dark:border-slate-800">
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
-      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'suppliers' ? 'Suppliers' : kind === 'accounts' ? 'GL accounts' : kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="max-h-64 overflow-y-auto overscroll-contain">
+      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'suppliers' ? 'Suppliers' : kind === 'accounts' ? 'GL accounts' : kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="min-h-0 max-h-64 overflow-y-auto overscroll-contain">
         <div v-for="group in groups" :key="group.key" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"
@@ -104,7 +160,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', outside))
         </div>
         <p v-if="!filtered.length" role="status" class="p-5 text-center text-sm text-slate-500">{{ copy.empty }}</p>
       </div>
-      <p class="border-t border-slate-100 px-3 py-2 text-[10px] text-slate-500 dark:border-slate-800">{{ filtered.length }} of {{ options.length }} {{ copy.plural }} · ↑ ↓ to navigate · Enter to select</p>
+      <p class="shrink-0 border-t border-slate-100 px-3 py-2 text-[10px] text-slate-500 dark:border-slate-800">{{ filtered.length }} of {{ options.length }} {{ copy.plural }} · ↑ ↓ to navigate · Enter to select</p>
     </div>
+    </Teleport>
   </div>
 </template>
