@@ -1,6 +1,18 @@
 # Created by https://www.toptal.com/developers/gitignore/api/intellij+all,visualstudio,visualstudiocode,cmake,c,c++
 # Edit at https://www.toptal.com/developers/gitignore?templates=intellij+all,visualstudio,visualstudiocode,cmake,c,c++
 
+# Local runtime configuration may contain credentials
+/config.local.json
+
+# Build directory
+/build/
+.DS_Store
+
+# Nuxt-generated output and JavaScript dependencies
+**/node_modules/
+**/.nuxt/
+**/.output/
+
 ### C ###
 # Prerequisites
 *.d

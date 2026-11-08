@@ -1,0 +1,293 @@
+# Supplier groups and suppliers
+
+## Deployment
+
+Apply migrations in order through **028_supplier_optional_gl_defaults.sql** to the backend database/schema,
+then rebuild/restart C++ and Nuxt. Apply migrations in order, using an explicit
+matching `search_path` for custom schemas. The API fails closed with
+`schema_not_ready` / 503 if prerequisite tables are missing, or
+`supplier_optional_gl_schema` / 503 if the four defaults are still NOT NULL.
+Nuxt displays the migration to apply.
+No runtime table creation or demo persistence is used.
+
+```sh
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/028_supplier_optional_gl_defaults.sql
+```
+
+The **016** down migration drops supplier data, indexes, triggers, voucher FK and reset
+registry entries. Back up first and stop application writes before downgrading.
+It must run before downgrading migration 015.
+
+The existing `gl_payment_vouchers.supplier_id` receives a composite, tenant-scoped
+FK **NOT VALID**: existing legacy supplier IDs are not rewritten or removed.
+New/changed references are enforced. Review unmatched legacy voucher references
+before manually validating `fk_payment_voucher_supplier`. A trigger additionally
+requires new/changed voucher supplier links to be live. After migration 028,
+any configured defaults must be active and belong to the voucher's accounting
+unit; a supplier without defaults is available across the tenant's units. Changes
+to a voucher's accounting unit are checked too. Actual voucher posting accounts
+remain mandatory and validated independently. NULL supplier links remain supported.
+
+## Frontend
+
+Under **General Ledger → Shared config**:
+
+- `/ledger/shared-config/supplier-groups`: search, paginate, create, view, edit and
+  confirm soft deletion of groups.
+- `/ledger/shared-config/suppliers`: search name/account number/email, paginate,
+  view complete details, create/edit contacts, tax information, status, currency,
+  credit limit and four GL defaults; confirm soft deletion.
+
+Both use the existing `PageHeader`, `BaseButton`, `FormField`, `TextInput` and
+`Pagination` design system and shared color tokens. Dialogs support focus
+trapping, Escape, focus restoration, scrolling, small screens and dark mode.
+Busy state prevents accidental resubmission/dismissal. Lookup choices have
+server search and pagination rather than silently showing only the first page.
+Errors retain form values. Failed saves do not invent successful local records.
+Identity changes clear rows, forms and stale asynchronous results.
+
+Tenant IDs use the application's existing **UUID** representation, rather than
+the integer TenantId in the supplied ABP example. Tenant/actor/audit values come
+only from the authenticated server context. All live tenant users can perform
+CRUD, matching existing shared bank configuration; host scope is not accepted.
+The backend rechecks live tenant/user status, including lockout and deletion.
+
+## Data rules
+
+- Group: `name` required, trimmed, maximum 200 UTF-8 bytes. Live names are
+  case-insensitively unique per tenant. A group with any live suppliers cannot
+  be deleted. Deleting a group never silently deletes its suppliers.
+- Supplier: `accountNumber` (80 bytes), `name` (200), group, status, currency,
+  credit limit and `isResident` are required. All four GL default IDs are optional.
+- Optional strings default to empty: email/contact email (254), phone/contact
+  phone (50), address (1,000), contact person/tax office (160), TIN/VAT number
+  (80). Emails are validated when supplied. Embedded NUL and unknown fields are
+  rejected. Limits are deliberately checked before database insertion.
+- Status IDs are `active`, `on_hold`, `inactive`; status labels are derived.
+- Group must be a live record in this tenant. Currency must be active in the
+  **global/shared host catalog**, not tenant-owned.
+- Credit/debit/VAT/IRS defaults are independently optional: omitted, JSON `null`,
+  empty or whitespace-only strings are normalized to SQL NULL and returned as
+  empty strings. Updates are full records: omitting a default clears it.
+  Any supplied account must be active, live, tenant-owned and belong to
+  **one active accounting unit**. A supplied credit GL must be **Liability**
+  (`standard_account_type=1`); all account types are allowed for debit/VAT/IRS.
+  Any selected default can establish the unit, even without a credit default.
+  With none configured, `accountingUnitId` is empty (tenant-wide supplier).
+  Existing financial-history restrictions on changing defaults still apply.
+- Relationship names/codes (`supplierGroupName`, account names, currency
+  name/code, status name) are derived by scoped joins, not writable snapshots.
+  Renaming a group or account therefore does not leave stale supplier labels.
+- Directory buying/selling rates were removed by migration 023; these fields are
+  neither displayed nor accepted by CRUD. Currency catalog and voucher FX remain unchanged.
+- `creditLimit` remains a nonnegative exact decimal string (up to 14 integer
+  and 6 fractional digits), stored as `numeric(20,6)`. JSON numbers and exponent
+  notation are rejected to prevent precision loss.
+- `balance` is `numeric(20,6)`, **read-only**, initially zero; ordinary supplier
+  edits never rewrite it. No new AP invoice/posting subsystem or editable opening
+  balance is implied by this master-data CRUD feature.
+- A nonzero balance **or live payment voucher** prevents deletion and changes to
+  account number, currency or posting accounts. Contact/status/terms changes
+  remain possible. Existing GL/currency APIs are also protected by update
+  triggers against deleting/deactivating used accounts/currencies or changing
+  referenced GL identity/classification. Those operations return conflict.
+- Account numbers remain case-insensitively reserved per tenant after ordinary
+  soft deletion, preserving accounting identity. Confirmed business-data
+  initialization physically removes archived suppliers and releases the code.
+- Create/update/delete persist the existing FullAudited-style timestamps and
+  actor IDs. Reads return create/update audit metadata. Updates require the
+  current integer `version` to reject stale edits; create starts at version 1.
+- All ordinary data queries/mutations use `is_deleted=false`. The explicit
+  confirmed-reset exception still includes archived business rows.
+
+Parent relationships and actor/tenant rows are locked during writes. Unit locks
+precede currency/account locks, matching ledger mutation order. Group deletion
+and supplier writes serialize; a new voucher cannot race a supplier deletion.
+Supplier writes run in transactions and only report success after commit
+acknowledgment. SQL parameters carry every request value; dynamic table/column
+fragments are internal constants, never client-provided identifiers.
+
+## API
+
+Backend routes use `TenantJwtAuthFilter` and the standard `BaseApiResponse`:
+
+| Method | Path | Purpose |
+| --- | --- | --- |
+| GET | `/api/v1/shared/supplier-groups` | Paginated group list |
+| POST | `/api/v1/shared/supplier-groups` | Create `{name}` |
+| GET | `/api/v1/shared/supplier-groups/{id}` | Get live group |
+| PUT | `/api/v1/shared/supplier-groups/{id}` | Update `{name, version}` |
+| DELETE | `/api/v1/shared/supplier-groups/{id}` | Audited soft delete |
+| GET | `/api/v1/shared/suppliers` | Paginated supplier list |
+| POST | `/api/v1/shared/suppliers` | Create supplier |
+| GET | `/api/v1/shared/suppliers/{id}` | Get complete live supplier |
+| PUT | `/api/v1/shared/suppliers/{id}` | Full replacement of writable fields plus `version` |
+| DELETE | `/api/v1/shared/suppliers/{id}` | Audited, guarded soft delete |
+| GET | `/api/v1/shared/suppliers/options` | Paged lookup choices |
+
+List query: `pageNo=1&pageSize=20&query=...`; page size 1–100, search up to 200
+bytes, stable name/ID ordering. Result: `{data,totalCount,pageNo,pageSize,totalPages}`.
+Lookups additionally accept `kind=groups|currencies|accounts|credits` and optional
+`accountingUnitId`; options return `{id,label,unitId}` (unitId empty for catalogs).
+No caller-supplied tenant scope is accepted in write JSON.
+
+Example creation (substitute real tenant-owned group/accounts and a global currency):
+
+```json
+{
+  "accountNumber": "SUP-0001",
+  "supplierGroupId": "<group UUID>",
+  "name": "Accra Supplies Ltd",
+  "statusId": "active",
+  "vatAccountId": "<VAT GL UUID>",
+  "creditAccountId": "<AP liability GL UUID>",
+  "debitAccountId": "<debit GL UUID>",
+  "irsAccountId": "<IRS GL UUID>",
+  "currencyId": "<global currency UUID>",
+  "creditLimit": "50000.000000",
+  "isResident": true,
+  "email": "accounts@example.com",
+  "phoneNo": "+233200000000",
+  "address": "Accra",
+  "contactPerson": "Ama Mensah",
+  "contactPersonPhone": "",
+  "contactPersonEmail": "",
+  "tinNumber": "",
+  "vatNumber": "",
+  "taxOffice": "Accra"
+}
+```
+
+Equivalent Nuxt paths omit `/v1`. Every proxy call forwards the bearer token,
+requires a server-validated session, uses `Cache-Control: no-store`, rejects
+cross-origin writes, does not retry mutations and sanitizes backend errors.
+Statuses: 400 invalid data, 401 unauthenticated, 403 inactive/wrong-scope actor,
+404 missing/deleted/foreign record, 409 duplicate/reserved identity, stale
+version or protected references, 503 unavailable schema/database/failed commit.
+
+## Reset integration
+
+Migration 016 registers both new tables in the reviewed **Suppliers** module.
+The reset engine expands groups to suppliers, and suppliers to payment vouchers
+and the coupled financial transaction/balance group. **Initializing supplier
+masters can therefore clear the whole tenant's financial transaction group**, not
+only that supplier's payments. The administrator must review the complete
+expanded preview and counts before the existing password/typed confirmation.
+Other tenants, company profile, users/access, security, global currencies,
+preferences and reset audit remain preserved. This is separate from ordinary
+soft deletion and follows all safeguards in [Preferences](preferences.md).
+
+## Verification
+
+```sh
+npm --prefix frontend run typecheck
+npm --prefix frontend run build
+SUPPLIERS_TEST_DATABASE_URL='postgresql://...' \
+  SUPPLIERS_PG_DEPS='/path/to/pg-npm-install' \
+  JSONCPP_SOURCE_DIR='/path/to/jsoncpp-with-dist' LIBPQ_LIB_DIR='/path/to/libpq' \
+  SUPPLIERS_TEST_SANITIZERS='-fsanitize=address,undefined -fno-omit-frame-pointer' \
+  bash test/suppliers/run_pg.sh
+SUPPLIERS_BROWSER_DEPS='/path/to/playwright-core-and-@sparticuz/chromium' \
+  node test/suppliers/http_browser_test.mjs
+```
+
+Use a disposable database: setup drops/recreates **suppliers_test**. The native
+suite compiles production SupplierService with the synchronous coroutine/libpq
+transport seam, real PostgreSQL, real migrations (up/down/up), exact financial
+values, actual locks and commit-failure injection. It checks CRUD, foreign scope,
+read-only fields, statuses, parent validity, archived visibility, balance/voucher
+protection, full audit, optimistic concurrency, lookup scope and actual confirmed
+reset with archived records and cross-tenant preservation. New service/controller
+also pass syntax checks against real current Drogon/Trantor/JsonCpp headers;
+this is not a full production backend link or deployed integration test.
+
+The separate browser suite runs built Nuxt and real Chromium against a controlled
+mock upstream, checking authentication, bearer forwarding, no-store, CSRF,
+sanitized migration/error responses, actual forms/CRUD transport, stale edits,
+read-only views, cancellation, references, mobile layout, pagination and lookups.
+PostgreSQL behavior is covered separately, not inferred from the mock upstream.
+
+Supplier and supplier-group deletes from the UI now send `{ version }`; supplied
+versions are checked to reject stale deletion. Legacy bodyless supplier DELETE
+calls remain supported. See [customer-crud.md](customer-crud.md) for the shared
+directory/modal CRUD behavior and customer-group extension.
+
+Apply `023_drop_customer_supplier_rates.sql` after 022 when upgrading. Its rollback
+restores rate columns with default 1, not the dropped values; back up first.
+
+
+### Searchable GL posting defaults
+
+All four supplier GL fields use the Journal Entry `AccountControlPicker` in account
+mode, with search inside the dropdown and keyboard navigation. The existing
+supplier options API remains authoritative for eligible accounts and accounting
+unit IDs. GL lookups collect all pages (100 per request, maximum 100,000 choices;
+errors instead of silent truncation). Groups and currencies keep their paginated
+selectors unchanged. All four controls are enabled independently and marked
+optional. Choose **Not configured** to clear a default. The first populated
+control anchors the unit; changing that anchor to another unit clears the other
+defaults and reloads same-unit options. Clearing all defaults resets the unit.
+Stale requests are ignored; saved labels remain visible on read-only/edit views.
+
+Migration **028** drops NOT NULL on only the four supplier GL columns and updates
+the voucher supplier-scope trigger. It does not change customer defaults or
+backfill invented accounts. Its down migration intentionally fails if **any** row,
+including archived suppliers, lacks any default. Restore genuine valid defaults
+before rollback; stop writes and back up first.
+
+
+## Automatic new-supplier account numbers
+
+The New supplier modal makes Account number read-only and displays the **next
+available number** from the authenticated, no-store `/api/shared/suppliers/next-number`
+endpoint. This preview is not a reservation and does not advance the counter. Saving sends a blank account number; the backend allocates it from the
+current tenant's live System numbers entry with key `supplier-account-id`
+(case-insensitive). It uses `lastNo + 1`, minimum numeric `padding`, and the
+configured `{NO}`, `{PREFIX}`, `{SUFFIX}` format and literal separators. For
+example, prefix `SUP-`, suffix `-GH`, padding `4`, lastNo `40`, and format
+`{PREFIX}{NO}{SUFFIX}` produce `SUP-0041-GH`.
+
+Configure/sync this entry in **Shared config → System numbers** before creating
+suppliers. Exactly one live entry with this key is required across modules;
+there is no guessed module ID, seeded fallback or use of a host/other tenant's
+counter. Missing/archived/ambiguous entries, invalid formats, exhausted counters,
+outputs longer than 80 characters fail with an actionable configuration error.
+Preview and save both skip numbers used by live or archived suppliers. Saving
+rechecks under the counter lock; if another writer takes the candidate during
+insertion, it retries the next number without overwriting the existing supplier.
+The success notice shows the actual saved account number, even if it differs
+from the preview. Candidate search is bounded at 10,000 numbers, insertion-race
+retries at 100; exhaustion fails safely without consuming a number.
+
+Allocation is server-side in the same transaction as supplier insertion, with a
+row lock on the tenant counter and authenticated modification audit. Concurrent
+allocations serialize, and validation/insert/read/commit failures roll back the
+counter. Opening or cancelling the modal does not allocate anything. Edit/view
+continues to show the persisted account number and does not consume a number.
+Existing explicit-number API integrations remain supported; the new modal always
+requests automatic allocation. No new migration or application-database change
+is required (existing System numbers migration 006 remains a prerequisite).
+
+Validation is covered by `test/suppliers/service_pg_test.cc` against disposable
+PostgreSQL, including a second-connection lock probe, rollback, tenant isolation,
+formatting, collisions, archive handling and missing/ambiguous configuration.
+Browser coverage in `test/suppliers/http_browser_test.mjs` checks read-only number
+preview, safe configuration errors, allocation after a preview is taken and edit/cancel
+behavior using the real Nuxt BFF with a controlled upstream.
+
+### Add supplier fails before the form opens
+
+Add supplier first calls `GET /api/shared/suppliers/next-number`, which proxies
+`GET /api/v1/shared/suppliers/next-number`. No supplier fields are submitted at
+this stage. A 400/404/405 response from that upstream endpoint can indicate an
+older backend or a route/deployment mismatch (an old supplier-ID route may
+interpret `next-number` as an invalid UUID). Rebuild/restart the C++ backend with
+the latest SupplierController and SupplierService and verify that the configured
+frontend API base targets that instance. This is not a reason to change the
+supplier's GL classifications or fill fields in a form that has not opened.
+
+Preview errors now have their own safe messages, preserving separate session,
+System numbers configuration and schema errors. Invalid successful preview
+payloads fail explicitly; the UI never fabricates or falls back to a number.
+Run `node test/suppliers/preview_http_test.mjs` after a frontend build to verify
+these BFF failure modes with a controlled upstream (no browser required).
