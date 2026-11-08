@@ -217,7 +217,7 @@ export const businessModules: BusinessModule[] = [
     domain: 'Operations',
     category: 'Stock & warehouse',
     description: 'Track stock on hand, warehouse movements, cycle counts, and replenishment across locations.',
-    readiness: 'preview',
+    readiness: 'live',
     icon: Boxes,
     metrics: [
       { label: 'Stock on hand', context: 'Inventory balance' },
@@ -236,7 +236,7 @@ export const businessModules: BusinessModule[] = [
     domain: 'Operations',
     category: 'Procurement & logistics',
     description: 'Coordinate suppliers, purchase orders, inbound logistics, deliveries, and supply planning.',
-    readiness: 'preview',
+    readiness: 'live',
     icon: Truck,
     metrics: [
       { label: 'Open purchase orders', context: 'Procurement pipeline' },
@@ -357,5 +357,7 @@ export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string)
   const moduleId = requestedId === 'payroll-js' ? 'payroll' : requestedId
   if (moduleId === 'general-ledger') return '/ledger'
   if (moduleId === 'payroll') return '/payroll'
+  if (moduleId === 'inventory') return '/inventory'
+  if (moduleId === 'supply-chain') return '/supply-chain'
   return `/modules/${moduleId}`
 }
