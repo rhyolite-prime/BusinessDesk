@@ -15,7 +15,7 @@ const upstream=http.createServer(async(req,res)=>{
  if(p==='/api/v1/auth/me')return send(200,{userId:id(99),username:'admin',accountId:'acme'})
  if(req.headers.authorization!=='Bearer tenant-token')return send(401,null)
  if(p==='/api/v1/ledger/journals/options')return send(200,{periods:[{id:id(20),period:202610,beginDate:'2026-10-01',endDate:'2026-10-31'}]})
- if(p==='/api/v1/ledger/vouchers'&&req.method==='POST'){
+ if((p==='/api/v1/ledger/vouchers'&&req.method==='POST')||(p===`/api/v1/ledger/vouchers/${id(21)}`&&req.method==='PUT')){
   let raw='';for await(const chunk of req)raw+=chunk;savedInput=JSON.parse(raw)
   const summary=calculateVoucher(savedInput)
   stored={...savedInput,id:id(21),voucherNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',batchNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',payeeName:'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
@@ -73,7 +73,7 @@ try{
  const require=createRequire((process.env.VOUCHER_BROWSER_DEPS||'/tmp/supplier-tools')+'/package.json'),{chromium}=require('playwright-core'),binary=require('@sparticuz/chromium').default||require('@sparticuz/chromium')
  const browser=await chromium.launch({args:binary.args.filter(x=>x!=='--single-process'),executablePath:await binary.executablePath(),headless:true})
  try{
-  const ctx=await browser.newContext();await ctx.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(5000)
+  const ctx=await browser.newContext();await ctx.addCookies([{name:'bd_access',value:'tenant-token',url:base,httpOnly:true}]);const page=await ctx.newPage(),errors=[];page.on('pageerror',e=>errors.push(e.message));page.setDefaultTimeout(15000)
   // Keep posting dates deterministic even when this suite runs in a later month.
   await page.clock.setFixedTime(new Date('2026-10-22T12:00:00Z'))
   const picker=name=>page.getByRole('button',{name:new RegExp(`^${name}`)})
@@ -100,7 +100,7 @@ try{
     if(keyboard)await input.press('Enter');else await page.getByRole('listbox').getByRole('option',{name:option,exact:true}).click()
   }
   let quoteCalls=0
-  await page.route('**/api/ledger/vouchers/exchange-rate?**',async route=>{quoteCalls++;await new Promise(r=>setTimeout(r,100));await route.fulfill({json:{rate:'1.2500000000',date:'2026-10-22',source:'test indicative'}})})
+  await page.route('**/api/ledger/vouchers/exchange-rate?**',async route=>{quoteCalls++;await new Promise(r=>setTimeout(r,100));await route.fulfill({json:{rate:'1.2500123456',date:'2026-10-22',source:'test indicative'}})})
   await page.goto(base+'/ledger/vouchers/new/supplier-payment')
   await picker('Supplier / payee').click()
   check(await page.getByRole('listbox',{name:'Suppliers',exact:true}).getByRole('option').count()===1,'supplier options are scoped to posting unit and include later API pages')
@@ -111,9 +111,16 @@ try{
   check(await page.getByLabel('Accounting unit',{exact:true}).inputValue()===unit,'live accounting unit selected')
   check(await page.getByLabel('Transaction currency',{exact:true}).inputValue()==='USD','base currency comes from API unit, not GHS constant')
   await choose('Supplier / payee','Search suppliers','api-s001','API Supplier · API-S001',true)
-  await page.waitForFunction(()=>document.querySelector('input[aria-label="Exchange rate"]').value==='1.2500000000')
+  await page.waitForFunction(()=>document.querySelector('input[aria-label="Exchange rate"]').value==='1.2500')
   check(quoteCalls===1,'supplier currency selection fetches foreign-to-base quote')
   check((await picker('Debit GL line 1').innerText()).includes('2100 — API Payables'),'supplier AP liability default is an actual chart account')
+  for(const name of ['Debit GL line 1','Organizational unit line 1']) {
+    check(await picker(name).evaluate(el=>document.getElementById(el.getAttribute('aria-labelledby').split(' ')[0]).classList.contains('sr-only')),`${name}: no duplicate visible label, accessible name retained`)
+  }
+  for(const name of ['Supplier / payee','Bank / cash G/L']) {
+    check(await picker(name).evaluate(el=>!document.getElementById(el.getAttribute('aria-labelledby').split(' ')[0]).classList.contains('sr-only')),`${name}: header opts into a visible label`)
+  }
+
   await picker('Bank / cash G/L').click()
   check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===102,'bank picker loads all account pages and excludes inactive/foreign accounts')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).fill('1010')
@@ -171,10 +178,18 @@ try{
   const description=await page.getByLabel('Voucher description',{exact:true}).inputValue();check(description.includes('API Supplier')&&description.includes('INV-42')&&description.includes('PO-19')&&description.includes('EUR 10.000000'),'description includes supplier, amounts, currency and references')
   await page.getByLabel('Voucher description',{exact:true}).fill('My custom purpose');await page.getByPlaceholder('Reference',{exact:true}).fill('PO-20');check(await page.getByLabel('Voucher description',{exact:true}).inputValue()==='My custom purpose','manual description is preserved')
   await page.getByRole('button',{name:'Use suggested description',exact:true}).click();check((await page.getByLabel('Voucher description',{exact:true}).inputValue()).includes('PO-20'),'suggestion can be explicitly regenerated')
-  await page.getByLabel('Transaction currency',{exact:true}).selectOption('USD');check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.0000000000','returning to base currency restores exact rate one')
-  await page.getByLabel('Transaction currency',{exact:true}).selectOption('EUR');await page.getByLabel('Exchange rate',{exact:true}).fill('1.4000000000');await page.waitForTimeout(200);check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.4000000000','late quote never overwrites a manual rate')
-  await page.route('**/api/ledger/vouchers/exchange-rate?**',route=>route.fulfill({status:503,json:{statusMessage:'Unavailable'}}));await page.getByRole('button',{name:'Refresh rate',exact:true}).click();await page.getByText('Rate unavailable. Enter a verified exchange rate manually; no fallback rate has been assumed.',{exact:true}).waitFor();check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='','failed quote never reuses an unrelated rate')
-  await page.getByLabel('Exchange rate',{exact:true}).fill('1.2500000000')
+  await page.getByLabel('Transaction currency',{exact:true}).selectOption('USD');check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.0000','returning to base currency restores exact rate one')
+  await page.getByLabel('Transaction currency',{exact:true}).selectOption('EUR');await page.getByLabel('Exchange rate',{exact:true}).fill('1.4000000000');await page.waitForTimeout(200);check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='1.4000','late quote never overwrites a manual rate')
+  await page.route('**/api/ledger/vouchers/exchange-rate?**',route=>route.fulfill({status:503,json:{statusMessage:'Unavailable'}}));await page.getByLabel('Transaction currency',{exact:true}).selectOption('USD');await Promise.all([page.waitForResponse(r=>r.url().includes('/api/ledger/vouchers/exchange-rate?')&&r.status()===503),page.getByLabel('Transaction currency',{exact:true}).selectOption('EUR')]);check(await page.getByLabel('Exchange rate',{exact:true}).inputValue()==='','failed quote never reuses an unrelated rate')
+
+  const rateInput=page.getByLabel('Exchange rate',{exact:true})
+  await rateInput.fill('1.2345678901')
+  check(await rateInput.inputValue()==='1.2346','pasted manual rate rounds exactly to four decimal places')
+  await rateInput.fill('invalid')
+  check(await rateInput.inputValue()==='1.2346','invalid rate input does not silently corrupt the previous rate')
+  await rateInput.fill('');await rateInput.pressSequentially('1.25');await rateInput.blur()
+  check(await rateInput.inputValue()==='1.2500','incremental manual entry is padded to four decimals on blur')
+
   await page.getByPlaceholder('0.00',{exact:true}).fill('96')
   await page.getByLabel('Withholding applies to line 1',{exact:true}).check()
   for(const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5'],['VAT withholding','7']]) {
@@ -197,10 +212,17 @@ try{
   check(savedInput.taxes.vatWithholding.rate==='7'&&savedInput.periodId===id(20)&&savedInput.requestId,'save forwards tax configuration, period and stable request ID to live API')
   check(stored.netAmount==='96.000000'&&stored.taxSummary.base==='100.000000','live BFF response exposes full calculated totals without demo replacement')
   check(savedInput.payeeId===supplier&&savedInput.bankGlAccountId===bank&&savedInput.bankAccountId===id(8)&&savedInput.lines[0].accountId===debit&&savedInput.lines[0].organizationUnitId===center,'searchable fields preserve posting IDs and linked bank configuration')
+  stored.exchangeRate='1.2500123456'
   await page.goto(base+`/ledger/vouchers/new/supplier-payment?id=${id(21)}`)
   await picker('Supplier / payee').filter({hasText:'API Supplier'}).waitFor()
   await picker('Bank / cash G/L').filter({hasText:'API Operating Bank'}).waitFor()
   check((await picker('Bank / cash G/L').innerText()).includes('API Operating Bank')&&(await picker('Debit GL line 1').innerText()).includes('API Payables')&&(await picker('Organizational unit line 1').innerText()).includes('API Operations'),'saved supplier draft restores all searchable labels')
+
+  check(await rateInput.inputValue()==='1.2500','saved high-precision draft displays four decimals')
+  await rateInput.focus();await rateInput.blur()
+  await page.getByRole('button',{name:'Update draft',exact:true}).click()
+  await page.waitForURL('**/ledger/vouchers')
+  check(savedInput.exchangeRate==='1.2500123456','focusing and saving a draft does not round its stored rate')
   let result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie,'https://untrusted.invalid')
   check(result.response.status===403,'voucher mutations reject a cross-origin request')
   result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
@@ -226,6 +248,7 @@ try{
   await employeeSelect.locator('option').filter({hasText:'Database Employee Two'}).waitFor({state:'attached'})
   check(await employeeSelect.locator('option').count()===3,'employee dropdown loads all API pages without demo employees')
   check(seen.some(x=>x.p==='/api/v1/shared/employees/options'&&x.query.includes('pageNo=2')),'employee totalCount pagination loads the second page')
+  check(await rateInput.inputValue()==='1.0000','employee voucher base rate displays four decimals')
   await employeeSelect.selectOption(id(62))
   check((await employeeSelect.locator('option:checked').innerText()).includes('DB-EMP-002'),'employee identifier and database name are shown')
   check(await page.getByRole('heading',{name:'Retentions',exact:true}).count()===0&&await page.getByRole('button',{name:'Add retention',exact:true}).count()===0,'employee vouchers have no retention controls')
@@ -281,6 +304,7 @@ try{
   await customerSelect.locator('option').filter({hasText:'Live Customer'}).waitFor({state:'attached'})
   check(await customerSelect.locator('option').count()===2,'receipt customers are live, active, paginated and posting-unit scoped without demos')
   check(seen.some(x=>x.p==='/api/v1/shared/customers'&&x.query.includes('pageNo=2')),'customer catalog follows pagination')
+  check(await rateInput.inputValue()==='1.0000','customer receipt base rate displays four decimals')
   await customerSelect.selectOption(id(71))
   check(await page.getByLabel('Credit GL line 1',{exact:true}).inputValue()===debit,'customer selection defaults the mapped receivable GL')
   check(await page.getByRole('heading',{name:'Taxes & withholding',exact:true}).count()===0&&await page.getByRole('heading',{name:'Retentions',exact:true}).count()===0&&await page.getByRole('columnheader',{name:'Withhold?',exact:true}).count()===0,'receipt has no tax, withholding, imprest or retention controls')
@@ -300,6 +324,8 @@ try{
   check(savedInput.lines.every(l=>!l.isWithhold&&!Object.hasOwn(l,'isImprest'))&&Object.values(savedInput.taxes).every(t=>!t.enabled),'receipt payload never carries hidden payment flags or enabled taxes')
   await page.goto(base+`/ledger/vouchers/new/customer-receipt?id=${id(21)}`)
   await page.getByText('Net received · USD',{exact:true}).locator('..').filter({hasText:'120.00'}).waitFor()
+  await page.getByLabel('Credit GL line 2',{exact:true}).locator(`option[value="${debit}"]`).waitFor({state:'attached'})
+  await customerSelect.locator(`option[value="${id(71)}"]`).waitFor({state:'attached'})
   check(await customerSelect.inputValue()===id(71)&&await page.getByLabel('Credit GL line 2',{exact:true}).inputValue()===debit,'receipt customer and all allocations restore for editing')
   result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
   check(result.response.status===200&&result.body.status==='Posted','receipt posting BFF forwards live server response')

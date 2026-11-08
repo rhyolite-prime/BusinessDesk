@@ -217,7 +217,7 @@ async function remove() {
           <button :disabled="saving" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" @click="showForm = false"><X :size="17" /></button>
         </div>
         <form class="mt-5 space-y-4" @submit.prevent="save"><fieldset :disabled="saving" class="space-y-4">
-          <AccountControlPicker v-model="form.accountHeaderId" :options="controlOptions" :disabled="saving || loading" />
+          <AccountControlPicker show-label v-model="form.accountHeaderId" :options="controlOptions" :disabled="saving || loading" />
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account number</span><input v-model="form.accountNumber" required maxlength="80" inputmode="numeric" pattern="[0-9]+" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" /><span v-if="selectedControl" class="mt-1 block text-[10px] text-slate-400">Allowed range: {{ selectedControl.minAccount }}–{{ selectedControl.maxAccount }}. Leading zeros are normalized.</span></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><input :value="selectedType" readonly class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800" /></label>

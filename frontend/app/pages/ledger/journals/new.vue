@@ -654,7 +654,7 @@ async function save() {
           /></label>
            
           <div class="min-w-0">
-            <AccountControlPicker :model-value="header.costCenterId || ''" kind="cost-centers" label="Header cost center" :options="centerChoices" :disabled="loading || saving || readonly" :unavailable-text="header.costCenterId === mixedCostCenters ? 'Mixed cost centers — choose to apply to all' : undefined" @update:model-value="value => { header.costCenterId = value || null; applyHeaderCostCenter() }" />
+            <AccountControlPicker show-label :model-value="header.costCenterId || ''" kind="cost-centers" label="Header cost center" :options="centerChoices" :disabled="loading || saving || readonly" :unavailable-text="header.costCenterId === mixedCostCenters ? 'Mixed cost centers — choose to apply to all' : undefined" @update:model-value="value => { header.costCenterId = value || null; applyHeaderCostCenter() }" />
             <span class="mt-1 block text-[10px] font-normal text-slate-400"> </span>
           </div>
           <label class="flex items-center gap-2 text-xs"
@@ -707,7 +707,7 @@ async function save() {
             <div
               class="journal-amount-fields grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
-              <AccountControlPicker
+              <AccountControlPicker show-label
                 class="min-w-0 xl:col-span-3"
                 kind="accounts"
                 label="GL account"
@@ -877,7 +877,7 @@ async function save() {
               class="journal-detail-fields mt-3 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
               <div class="min-w-0 xl:col-span-2">
-                <AccountControlPicker :model-value="l.costCenterId || ''" kind="cost-centers" :options="centerChoices" :disabled="loading || saving || readonly" @update:model-value="value => l.costCenterId = value || null" />
+                <AccountControlPicker show-label :model-value="l.costCenterId || ''" kind="cost-centers" :options="centerChoices" :disabled="loading || saving || readonly" @update:model-value="value => l.costCenterId = value || null" />
               </div>
               <label class="min-w-0 text-[11px]"
                 >Reference
