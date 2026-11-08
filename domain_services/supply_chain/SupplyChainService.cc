@@ -181,6 +181,20 @@ FROM scm_procurement_events e LEFT JOIN users u ON u.id=e.created_by_user_id
 WHERE e.tenant_id=$1 AND e.entity_type=$3 AND e.entity_id=$2::uuid AND e.is_deleted=false
 ORDER BY e.version)";
 }
+// Field-level UUID validation used by the payload validators below. Returns an
+// empty string when the field checks out, otherwise the client-visible problem
+// message. Optional fields tolerate missing/null/empty-string values; present
+// values are trimmed back into the payload for storage.
+std::string requireUuid(Json::Value &b, const char *field, bool optional) {
+  const auto &v = b[field];
+  const std::string raw = v.isString() ? trim(v.asString()) : "";
+  if (raw.empty())
+    return optional ? "" : std::string(field) + " is required.";
+  if (!uuid(raw))
+    return std::string(field) + " must be a valid UUID.";
+  b[field] = raw;
+  return "";
+}
 std::string validateRequisition(Json::Value &b, bool update) {
   if (!b.isObject())
     return "Expected a requisition object.";
