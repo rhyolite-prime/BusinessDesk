@@ -28,6 +28,11 @@ The supplier payment form reuses Journal Entry's `AccountControlPicker` for
 organization hierarchy. Keyboard navigation, Enter selection, Escape dismissal,
 selected labels and empty-result messages use the shared picker behavior.
 
+Picker labels are visually hidden by default while retaining accessible names.
+Use `show-label` to opt into visible labels, as the voucher header, journal,
+setup screens and report filters do. The voucher line table relies on its column
+headings instead of repeating GL/organization labels within each row.
+
 Existing authenticated, fully paginated catalogs and accounting-unit scope are
 unchanged. Supplier selection still defaults an empty allocation and currency;
 bank selection still resolves the linked bank record; the debit list excludes
@@ -54,6 +59,14 @@ USD/EUR/GBP rates. Stale requests cannot overwrite a different currency, and lat
 responses cannot overwrite a rate already entered manually. Money conversion
 continues to use the existing fixed-point BigInt helpers.
 
+All voucher entry forms display exchange rates to **four decimal places**, with
+exact half-up rounding. Manual entries accept at most four fractional digits;
+excess precision is rounded, including pasted values. Invalid syntax is rejected,
+and blur pads valid values to four decimals. Fetched rates and saved drafts retain
+their full precision for calculation and saving until the user edits the rate;
+merely opening, focusing or saving a draft does not round its stored value. The
+base-currency rate displays `1.0000`. No storage or posting precision is changed.
+
 Description suggestions include workflow, payee, payment mode/date, transaction
 currency/amount and unique invoice/reference keywords, capped at 300 characters.
 Automatic suggestions update while untouched. A manual description is preserved;
@@ -73,6 +86,7 @@ Verification:
 npm --prefix frontend run typecheck
 npm --prefix frontend run build
 node --experimental-strip-types test/vouchers/description_test.mjs
+node --experimental-strip-types test/vouchers/rate_input_test.mjs
 VOUCHER_BROWSER_DEPS=/path/to/playwright-core-and-@sparticuz/chromium \
   node test/vouchers/lookups_browser_test.mjs
 ```

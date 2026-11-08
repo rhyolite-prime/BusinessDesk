@@ -104,7 +104,7 @@ onUnmounted(() => {
 </script>
 <template>
   <div class="space-y-1.5">
-    <AccountControlPicker
+    <AccountControlPicker show-label
       v-if="isGl"
       kind="accounts"
       :label="label + ' *'"

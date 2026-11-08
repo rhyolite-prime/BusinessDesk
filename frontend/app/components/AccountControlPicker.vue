@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers'; portal?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers'; portal?: boolean; showLabel?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
 const copy = computed(() => props.kind === 'suppliers' ? {
   label: 'Supplier / payee', plural: 'suppliers', search: 'Search suppliers',
   placeholder: 'Select a supplier', unavailable: 'Unavailable supplier (replace)',
@@ -134,7 +134,7 @@ onBeforeUnmount(() => {
 
 <template>
   <div ref="root" class="relative min-w-0" :class="open && floating ? 'z-40' : ''" @focusout="focusout">
-    <span :id="`${id}-label`" class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ fieldLabel }}</span>
+    <span :id="`${id}-label`" :class="showLabel ? 'mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300' : 'sr-only'">{{ fieldLabel }}</span>
     <button ref="trigger" type="button" :disabled="disabled" :aria-labelledby="`${id}-label ${id}-value`" aria-haspopup="listbox" :aria-expanded="open" :aria-controls="`${id}-list`"
       class="flex min-h-10 w-full items-center justify-between gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-left text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900" @click="open ? close() : expand()" @keydown.down.prevent="expand">
       <span :id="`${id}-value`" class="min-w-0 break-words">{{ selected ? optionLabel(selected) : modelValue ? unavailableText || copy.unavailable : emptyLabel || copy.placeholder }}</span><ChevronDown :size="16" class="shrink-0 text-slate-400" />
