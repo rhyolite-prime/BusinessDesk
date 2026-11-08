@@ -995,16 +995,16 @@ drogon::Task<dto::BaseApiResponse> runDashboard(DbClientPtr db, const std::strin
       "SELECT jsonb_build_object("
       "'items',(SELECT count(*) FROM inv_items i WHERE i.tenant_id=$1 AND i.is_deleted=false),"
       "'activeWarehouses',(SELECT count(*) FROM inv_warehouses w WHERE w.tenant_id=$1 AND w.is_deleted=false AND w.is_active=true" +
-      (scoped ? " AND w.accounting_unit_id=$2::uuid" : "") + "),"
+      (scoped ? std::string(" AND w.accounting_unit_id=$2::uuid") : std::string()) + "),"
       "'batchesExpiring30d',(SELECT count(*) FROM inv_batches bt WHERE bt.tenant_id=$1 AND bt.is_deleted=false "
       "AND bt.is_active AND bt.expiry_date IS NOT NULL AND bt.expiry_date>=CURRENT_DATE "
       "AND bt.expiry_date<=CURRENT_DATE+30),"
       "'pendingDocuments',(SELECT count(*) FROM inv_stock_documents d WHERE d.tenant_id=$1 AND d.is_deleted=false "
       "AND d.status IN('submitted','approved')" +
-      (scoped ? " AND d.accounting_unit_id=$2::uuid" : "") + "),"
+      (scoped ? std::string(" AND d.accounting_unit_id=$2::uuid") : std::string()) + "),"
       "'movements30d',(SELECT count(*) FROM inv_stock_transactions t WHERE t.tenant_id=$1 AND "
       "t.transaction_date>=CURRENT_DATE-30" +
-      (scoped ? " AND t.accounting_unit_id=$2::uuid" : "") + "),"
+      (scoped ? std::string(" AND t.accounting_unit_id=$2::uuid") : std::string()) + "),"
       "'lowStockItems',(SELECT count(*) FROM inv_items i WHERE i.tenant_id=$1 AND i.is_deleted=false "
       "AND i.reorder_point>0 AND COALESCE((SELECT sum(b.quantity_on_hand) FROM inv_stock_balances b "
       "JOIN inv_warehouses w ON w.tenant_id=b.tenant_id AND w.id=b.warehouse_id "
