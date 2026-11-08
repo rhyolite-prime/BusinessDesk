@@ -226,11 +226,13 @@ const calculation = computed(() => {
 })
 function setTaxEnabled(key: (typeof taxKeys)[number], enabled: boolean) {
   taxes[key].enabled = enabled
-  // Preserve the supplied employee template's suggested rates without
-  // presenting them as current statutory advice or changing supplier defaults.
-  if (enabled && type.value === 'employee-payment' && taxes[key].rate === '0') {
-    const suggested = { nhil: '2.5', getfund: '2.5', vat: '15', cst: '5', covid: '1', incomeWithholding: '0', vatWithholding: '7' }
-    taxes[key].rate = suggested[key]
+  if (enabled && taxes[key].rate === '0') {
+    if (key === 'incomeWithholding') taxes[key].rate = '5'
+    else if (key === 'vatWithholding') taxes[key].rate = '7'
+    else if (type.value === 'employee-payment') {
+      const suggested = { nhil: '2.5', getfund: '2.5', vat: '15', cst: '5', covid: '1' }
+      taxes[key].rate = suggested[key]
+    }
   }
   if (enabled && key === 'cst') taxes.covid.enabled = false
   if (enabled && key === 'covid') taxes.cst.enabled = false
