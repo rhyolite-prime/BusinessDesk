@@ -2,6 +2,7 @@
 #include "InventoryInternal.h"
 #include "utils/TransactionUtil.h"
 #include <unordered_map>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;
@@ -504,7 +505,7 @@ drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filte
       std::to_string(args.size() + 1) + "::bigint OFFSET $" +
       std::to_string(args.size() + 2) + "::bigint";
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
-  drogon::orm::Result rows, totals;
+  std::optional<drogon::orm::Result> rows, totals;
   if (args.size() == 2) {
     rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
     totals = co_await db->execSqlCoro("SELECT count(*) AS total " + from + w, args[0], args[1]);
@@ -523,9 +524,9 @@ drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filte
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(totals[0]["total"].as<int64_t>());
+  r.result["totalCount"] = Json::Int64((*totals)[0]["total"].as<int64_t>());
   r.success = true;
   co_return r;
 }
@@ -592,7 +593,7 @@ drogon::Task<dto::BaseApiResponse> runLedger(DbClientPtr db, Json::Value filters
       std::to_string(args.size() + 1) + "::bigint OFFSET $" +
       std::to_string(args.size() + 2) + "::bigint";
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
-  drogon::orm::Result rows, totals;
+  std::optional<drogon::orm::Result> rows, totals;
   // Filter budget is bounded: item, warehouse, unit, type, from, to (<=8 args).
   switch (args.size()) {
   case 2:
@@ -626,9 +627,9 @@ drogon::Task<dto::BaseApiResponse> runLedger(DbClientPtr db, Json::Value filters
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(totals[0]["total"].as<int64_t>());
+  r.result["totalCount"] = Json::Int64((*totals)[0]["total"].as<int64_t>());
   r.success = true;
   co_return r;
 }
