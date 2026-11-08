@@ -228,3 +228,13 @@ modules without templates, failed loading, and selections above the API's
 1000-template limit cannot be submitted. Changing modules clears the SYNC
 confirmation. Hard replacement is not offered in module mode. Last No and
 per-tenant transaction behavior are unchanged. No migration is required.
+
+
+## Supplier account number allocation
+
+New supplier forms use the tenant-owned `supplier-account-id` key. Configure one
+live matching entry across modules; duplicate module matches are rejected instead
+of choosing an arbitrary module. The supplier service locks and advances the
+counter in the same transaction as supplier creation. Format/prefix/suffix/padding
+are honored, and failed saves do not consume numbers. See [suppliers.md](suppliers.md)
+for setup, collisions and compatibility with existing explicit-number API clients.

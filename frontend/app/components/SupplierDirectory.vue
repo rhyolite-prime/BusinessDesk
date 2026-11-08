@@ -121,7 +121,7 @@ async function save() {
   busy.value = true
   formError.value = ''
   try {
-    const body = props.group ? { name: form.name.trim() } : { ...form }
+    const body = props.group ? { name: form.name.trim() } : { ...form, accountNumber: editing.value ? form.accountNumber : '' }
     if (editing.value) Object.assign(body, { version: editing.value.version })
     await request(
       `${endpoint.value}${editing.value ? `/${editing.value.id}` : ''}`,
@@ -430,13 +430,15 @@ onUnmounted(() => {
                   v-for="field in supplierTextFields"
                   :key="field.key"
                   :label="field.label"
-                  :required="'required' in field && field.required"
+                  :required="'required' in field && field.required && (field.key !== 'accountNumber' || !!editing)"
                   ><TextInput
                     v-model="form[field.key]"
                     :type="'type' in field ? field.type : 'text'"
-                    :required="'required' in field && field.required"
-                    :maxlength="field.max" /></FormField
-                ><SupplierLookup
+                    :required="'required' in field && field.required && (field.key !== 'accountNumber' || !!editing)"
+                    :maxlength="field.max"
+                    :readonly="field.key === 'accountNumber' && !editing"
+                    :placeholder="field.key === 'accountNumber' && !editing ? 'Assigned on save' : undefined" /></FormField
+                ><p v-if="!editing" class="text-xs text-ink-faint sm:col-span-2">Account number is assigned on save using supplier-account-id in System numbers. Cancelling does not consume a number.</p><SupplierLookup
                   v-model="form.supplierGroupId"
                   label="Supplier group"
                   kind="groups"

@@ -218,3 +218,38 @@ debit/VAT/IRS defaults and reloads same-unit options; stale requests are ignored
 Saved GL labels remain visible on read-only/edit views. All four fields remain
 required in the save handler and backend; account eligibility validation and
 supplier payloads are unchanged.
+
+
+## Automatic new-supplier account numbers
+
+The New supplier modal makes Account number read-only and shows **Assigned on
+save**. Saving sends a blank account number; the backend allocates it from the
+current tenant's live System numbers entry with key `supplier-account-id`
+(case-insensitive). It uses `lastNo + 1`, minimum numeric `padding`, and the
+configured `{NO}`, `{PREFIX}`, `{SUFFIX}` format and literal separators. For
+example, prefix `SUP-`, suffix `-GH`, padding `4`, lastNo `40`, and format
+`{PREFIX}{NO}{SUFFIX}` produce `SUP-0041-GH`.
+
+Configure/sync this entry in **Shared config → System numbers** before creating
+suppliers. Exactly one live entry with this key is required across modules;
+there is no guessed module ID, seeded fallback or use of a host/other tenant's
+counter. Missing/archived/ambiguous entries, invalid formats, exhausted counters,
+outputs longer than 80 characters and collisions with live or archived supplier
+numbers fail with an actionable configuration error. Resolve collisions by
+correcting the configured counter; existing supplier identities are not changed.
+
+Allocation is server-side in the same transaction as supplier insertion, with a
+row lock on the tenant counter and authenticated modification audit. Concurrent
+allocations serialize, and validation/insert/read/commit failures roll back the
+counter. Opening or cancelling the modal does not allocate anything. Edit/view
+continues to show the persisted account number and does not consume a number.
+Existing explicit-number API integrations remain supported; the new modal always
+requests automatic allocation. No new migration or application-database change
+is required (existing System numbers migration 006 remains a prerequisite).
+
+Validation is covered by `test/suppliers/service_pg_test.cc` against disposable
+PostgreSQL, including a second-connection lock probe, rollback, tenant isolation,
+formatting, collisions, archive handling and missing/ambiguous configuration.
+Browser coverage in `test/suppliers/http_browser_test.mjs` checks read-only new
+number entry, safe configuration errors, generated saved values and edit/cancel
+behavior using the real Nuxt BFF with a controlled upstream.

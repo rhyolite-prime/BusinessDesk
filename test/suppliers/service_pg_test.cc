@@ -45,7 +45,7 @@ void check(bool value, const char *label) {
 int main() {
   auto *db = PQconnectdb(std::getenv("SUPPLIERS_TEST_DATABASE_URL"));
   assert(PQstatus(db) == 0);
-  bool lockArmed = false, lockObserved = false, failSavedRead = false;
+  bool lockArmed = false, lockObserved = false, failSavedRead = false, numberLockArmed = false, numberLockObserved = false;
   std::string probeGroup;
   auto sql = [&](const std::string &query,
                  const std::vector<Json::Value> &params =
@@ -127,6 +127,16 @@ int main() {
       lockObserved = code && std::string(code) == "55P03";
       PQclear(x);
       PQfinish(probe);
+    }
+    if (numberLockArmed && query.find("FROM core_system_numbers") != std::string::npos && query.find("FOR UPDATE") != std::string::npos) {
+      numberLockArmed = false;
+      auto *probe = PQconnectdb(std::getenv("SUPPLIERS_TEST_DATABASE_URL"));
+      auto *x = PQexecParams(probe, "SET search_path TO suppliers_test", 0, nullptr, nullptr, nullptr, nullptr, 0); PQclear(x);
+      x = PQexecParams(probe, "SET lock_timeout='50ms'", 0, nullptr, nullptr, nullptr, nullptr, 0); PQclear(x);
+      const char *values[] = {tenant.c_str()};
+      x = PQexecParams(probe, "UPDATE core_system_numbers SET last_no=last_no+1 WHERE tenant_id=$1 AND lower(key)='supplier-account-id' AND is_deleted=false", 1, nullptr, values, nullptr, nullptr, 0);
+      const auto *code = PQresultErrorField(x, 'C'); numberLockObserved = code && std::string(code) == "55P03";
+      PQclear(x); PQfinish(probe);
     }
     return rows;
   };
@@ -386,6 +396,49 @@ int main() {
                 .value["n"] == 0,
         "C++ exception after insert explicitly rolls back rather than "
         "auto-committing");
+  auto numbered = b; numbered.removeMember("accountNumber");
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "missing supplier numbering fails explicitly");
+  auto templateId = sql("INSERT INTO core_system_numbers(module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) VALUES(2,'Supplier','supplier-account-id','SUP-','-GH','{PREFIX}{NO}{SUFFIX}',4,40,$1) RETURNING id", {actor})[0].value["id"].asString();
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "host template is never consumed as tenant counter");
+  sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3", {other,actor2,templateId});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "another tenant's counter is not used");
+  auto sequence = sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,'SUPPLIER-ACCOUNT-ID',prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3 RETURNING id", {tenant,actor,templateId})[0].value["id"].asString();
+  numberLockArmed = true;
+  auto automatic = call("create", false, "", numbered);
+  check(automatic.success && automatic.result["accountNumber"] == "SUP-0041-GH", "automatic number applies prefix padding suffix and case-insensitive key");
+  check(numberLockObserved, "concurrent counter allocation is blocked until supplier transaction finishes");
+  check(sql("SELECT last_no,last_modified_by_user_id FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_modified_by_user_id"] == actor, "number allocation audit uses authenticated actor");
+  numbered["accountNumber"] = "";
+  auto secondNumber = call("create", false, "", numbered);
+  check(secondNumber.success && secondNumber.result["accountNumber"] == "SUP-0042-GH", "blank create account number also allocates next distinct number");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {templateId})[0].value["last_no"] == 40 && sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1", {other})[0].value["last_no"] == 40, "host and other tenant counters are unchanged");
+  auto numberedEdit = numbered; numberedEdit["accountNumber"] = secondNumber.result["accountNumber"]; numberedEdit["version"] = 1; numberedEdit["name"] = "Renamed automatically numbered supplier";
+  check(call("update", false, secondNumber.result["id"].asString(), numberedEdit).success, "editing keeps generated number without allocation");
+  failSavedRead = true;
+  check(call("create", false, "", numbered).error["code"] == "database_error", "failed saved read reports auto-numbered create failure");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 42 && sql("SELECT count(*)::int AS n FROM core_suppliers WHERE account_number='SUP-0043-GH'")[0].value["n"] == 0, "failed create rolls back both supplier and counter");
+  drogon::TestTransaction::failCommit = true;
+  auto failedAutomaticCommit = call("create", false, "", numbered);
+  drogon::TestTransaction::failCommit = false;
+  check(!failedAutomaticCommit.success && sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 42, "failed commit does not consume a supplier number");
+  check(call("delete", false, automatic.result["id"].asString()).success, "automatic supplier can be archived");
+  sql("UPDATE core_system_numbers SET last_no=40 WHERE id=$1", {sequence});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "archived generated supplier numbers remain reserved");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 40, "collision does not advance counter");
+  sql("UPDATE core_system_numbers SET last_no=2147483647 WHERE id=$1", {sequence});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "exhausted counter does not wrap");
+  sql("UPDATE core_system_numbers SET last_no=42,format_pattern='{BAD}{NO}' WHERE id=$1", {sequence});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "invalid number format fails explicitly");
+  sql("UPDATE core_system_numbers SET format_pattern='{PREFIX}{NO}{SUFFIX}',prefix=repeat('X',80) WHERE id=$1", {sequence});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "oversized generated number is rejected before insert");
+  sql("UPDATE core_system_numbers SET prefix='SUP-',is_deleted=true WHERE id=$1", {sequence});
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "archived counters are excluded");
+  sql("UPDATE core_system_numbers SET is_deleted=false WHERE id=$1", {sequence});
+  auto otherTemplate = sql("INSERT INTO core_system_numbers(module_id,item_name,key,created_by_user_id) VALUES(3,'Supplier','supplier-account-id',$1) RETURNING id", {actor})[0].value["id"].asString();
+  auto duplicateSequence = sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,created_by_user_id) VALUES($1,$2,3,'Supplier','supplier-account-id',$3) RETURNING id", {tenant,otherTemplate,actor})[0].value["id"].asString();
+  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "ambiguous modules are rejected rather than guessed");
+  sql("UPDATE core_system_numbers SET is_deleted=true WHERE id=$1", {duplicateSequence});
+  check(call("delete", false, secondNumber.result["id"].asString()).success, "archive generated test supplier without allocating a number");
   bool protectedAccount = false;
   try {
     sql("UPDATE gl_accounts SET is_deleted=true WHERE id=$1 AND "

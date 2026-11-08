@@ -78,6 +78,8 @@ bool validate(Json::Value &b, bool group, bool update) {
            b["name"].asString().size() <= 200 &&
            b["name"].asString().find('\0') == std::string::npos;
   }
+  // A missing/blank account number on create is allocated transactionally.
+  if (!update && !b.isMember("accountNumber")) b["accountNumber"] = "";
   for (const auto &f : fields) {
     std::string key = f.key, cast = f.cast;
     if (cast == "boolean") {
@@ -115,7 +117,7 @@ bool validate(Json::Value &b, bool group, bool update) {
                  : key == "phoneNo" || key == "contactPersonPhone" ? 50
                                                                    : 80;
     if (s.size() > max ||
-        ((key == "name" || key == "accountNumber") && s.empty()))
+        ((key == "name" || (key == "accountNumber" && update)) && s.empty()))
       return false;
     if ((key == "email" || key == "contactPersonEmail") && !s.empty() &&
         !std::regex_match(s, std::regex(R"(^[^\s@]+@[^\s@]+\.[^\s@]+$)")))
@@ -383,6 +385,58 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
         r.result["id"] = id;
         r.result["isDeleted"] = true;
       } else {
+        if (!group && op == "create" && b["accountNumber"].asString().empty()) {
+          auto ready = co_await db->execSqlCoro("SELECT to_regclass('core_system_numbers') IS NOT NULL AS ready");
+          if (!ready[0]["ready"].as<bool>())
+            co_return fail("supplier_numbering", "Configure supplier-account-id in tenant System numbers.");
+          // The caller supplies no module or tenant scope. Refuse an ambiguous key
+          // rather than guess a module ID. Lock the tenant counter until commit.
+          auto numbers = co_await db->execSqlCoro(
+              "SELECT id,prefix,suffix,format_pattern,padding,last_no FROM core_system_numbers "
+              "WHERE tenant_id=$1 AND lower(key)='supplier-account-id' AND is_deleted=false ORDER BY id FOR UPDATE",
+              who.tenantId);
+          if (numbers.size() != 1)
+            co_return fail("supplier_numbering", "Configure exactly one live supplier-account-id in tenant System numbers.");
+          const auto &number = numbers[0];
+          const auto last = number["last_no"].as<int64_t>();
+          const auto padding = number["padding"].as<int>();
+          if (last < 0 || last >= 2147483647 || padding < 0 || padding > 18)
+            co_return fail("supplier_numbering", "Supplier numbering is exhausted or invalid.");
+          auto digits = std::to_string(last + 1);
+          if (digits.size() < static_cast<size_t>(padding)) digits.insert(0, padding - digits.size(), '0');
+          const auto pattern = number["format_pattern"].as<std::string>();
+          std::string formatted;
+          int numberTokens = 0;
+          for (size_t i = 0; i < pattern.size();) {
+            if (pattern[i] == '{') {
+              const auto end = pattern.find('}', i);
+              if (end == std::string::npos) co_return fail("supplier_numbering", "Invalid supplier number format.");
+              const auto token = pattern.substr(i, end - i + 1);
+              if (token == "{NO}") { formatted += digits; ++numberTokens; }
+              else if (token == "{PREFIX}") formatted += number["prefix"].as<std::string>();
+              else if (token == "{SUFFIX}") formatted += number["suffix"].as<std::string>();
+              else co_return fail("supplier_numbering", "Invalid supplier number format.");
+              i = end + 1;
+            } else {
+              if (pattern[i] == '}') co_return fail("supplier_numbering", "Invalid supplier number format.");
+              formatted += pattern[i++];
+            }
+          }
+          formatted = trim(formatted);
+          if (numberTokens != 1 || formatted.empty() || formatted.size() > 80)
+            co_return fail("supplier_numbering", "Supplier account number must fit 80 characters.");
+          // Archived supplier numbers remain reserved too. Do not guess a new
+          // sequence when an operator has reset a counter behind existing data.
+          auto reserved = co_await db->execSqlCoro(
+              "SELECT id FROM core_suppliers WHERE tenant_id=$1 AND lower(account_number)=lower($2) LIMIT 1",
+              who.tenantId, formatted);
+          if (!reserved.empty())
+            co_return fail("supplier_numbering", "The generated supplier account number is already reserved.");
+          co_await db->execSqlCoro(
+              "UPDATE core_system_numbers SET last_no=$2,last_modified_at=now(),last_modified_by_user_id=$3 WHERE id=$1 AND tenant_id=$4",
+              number["id"].as<std::string>(), static_cast<int>(last + 1), who.userId, who.tenantId);
+          b["accountNumber"] = formatted;
+        }
         std::string cols, values, assign;
         if (group) {
           cols = "name";
