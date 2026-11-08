@@ -222,8 +222,9 @@ supplier payloads are unchanged.
 
 ## Automatic new-supplier account numbers
 
-The New supplier modal makes Account number read-only and shows **Assigned on
-save**. Saving sends a blank account number; the backend allocates it from the
+The New supplier modal makes Account number read-only and displays the **next
+available number** from the authenticated, no-store `/api/shared/suppliers/next-number`
+endpoint. This preview is not a reservation and does not advance the counter. Saving sends a blank account number; the backend allocates it from the
 current tenant's live System numbers entry with key `supplier-account-id`
 (case-insensitive). It uses `lastNo + 1`, minimum numeric `padding`, and the
 configured `{NO}`, `{PREFIX}`, `{SUFFIX}` format and literal separators. For
@@ -234,9 +235,13 @@ Configure/sync this entry in **Shared config → System numbers** before creatin
 suppliers. Exactly one live entry with this key is required across modules;
 there is no guessed module ID, seeded fallback or use of a host/other tenant's
 counter. Missing/archived/ambiguous entries, invalid formats, exhausted counters,
-outputs longer than 80 characters and collisions with live or archived supplier
-numbers fail with an actionable configuration error. Resolve collisions by
-correcting the configured counter; existing supplier identities are not changed.
+outputs longer than 80 characters fail with an actionable configuration error.
+Preview and save both skip numbers used by live or archived suppliers. Saving
+rechecks under the counter lock; if another writer takes the candidate during
+insertion, it retries the next number without overwriting the existing supplier.
+The success notice shows the actual saved account number, even if it differs
+from the preview. Candidate search is bounded at 10,000 numbers, insertion-race
+retries at 100; exhaustion fails safely without consuming a number.
 
 Allocation is server-side in the same transaction as supplier insertion, with a
 row lock on the tenant counter and authenticated modification audit. Concurrent
@@ -250,6 +255,6 @@ is required (existing System numbers migration 006 remains a prerequisite).
 Validation is covered by `test/suppliers/service_pg_test.cc` against disposable
 PostgreSQL, including a second-connection lock probe, rollback, tenant isolation,
 formatting, collisions, archive handling and missing/ambiguous configuration.
-Browser coverage in `test/suppliers/http_browser_test.mjs` checks read-only new
-number entry, safe configuration errors, generated saved values and edit/cancel
+Browser coverage in `test/suppliers/http_browser_test.mjs` checks read-only number
+preview, safe configuration errors, allocation after a preview is taken and edit/cancel
 behavior using the real Nuxt BFF with a controlled upstream.

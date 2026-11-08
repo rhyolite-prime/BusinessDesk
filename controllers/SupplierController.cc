@@ -97,3 +97,8 @@ drogon::Task<drogon::HttpResponsePtr>
 SupplierController::supplierOptions(drogon::HttpRequestPtr req) {
   co_return co_await handle(req, "options", false, std::string{});
 }
+
+drogon::Task<drogon::HttpResponsePtr>
+SupplierController::supplierNextNumber(drogon::HttpRequestPtr req) {
+  co_return co_await handle(req, "next-number", false, std::string{});
+}

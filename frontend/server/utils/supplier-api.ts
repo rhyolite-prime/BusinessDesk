@@ -13,7 +13,7 @@ export async function supplierRequest(
   event: H3Event,
   method: 'GET' | 'POST' | 'PUT' | 'DELETE',
   group = false,
-  mode: 'list' | 'detail' | 'options' = 'list',
+  mode: 'list' | 'detail' | 'options' | 'next-number' = 'list',
 ) {
   setHeader(event, 'Cache-Control', 'no-store')
   if (method !== 'GET') checkAuthOrigin(event)
@@ -59,7 +59,7 @@ export async function supplierRequest(
       result: any
       error?: { code?: string }
     }>(
-      `${base}/api/v1/shared/${group ? 'supplier-groups' : 'suppliers'}${mode === 'detail' ? `/${id}` : mode === 'options' ? '/options' : ''}`,
+      `${base}/api/v1/shared/${group ? 'supplier-groups' : 'suppliers'}${mode === 'detail' ? `/${id}` : mode === 'options' ? '/options' : mode === 'next-number' ? '/next-number' : ''}`,
       {
         method,
         query,

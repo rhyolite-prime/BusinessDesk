@@ -45,7 +45,8 @@ void check(bool value, const char *label) {
 int main() {
   auto *db = PQconnectdb(std::getenv("SUPPLIERS_TEST_DATABASE_URL"));
   assert(PQstatus(db) == 0);
-  bool lockArmed = false, lockObserved = false, failSavedRead = false, numberLockArmed = false, numberLockObserved = false;
+  bool lockArmed = false, lockObserved = false, failSavedRead = false, numberLockArmed = false, numberLockObserved = false, raceNumber = false;
+  std::string racedSupplier;
   std::string probeGroup;
   auto sql = [&](const std::string &query,
                  const std::vector<Json::Value> &params =
@@ -54,6 +55,17 @@ int main() {
         query.find("FROM core_suppliers s") != std::string::npos) {
       failSavedRead = false;
       throw std::runtime_error("Injected transport read failure");
+    }
+    if (raceNumber && query.starts_with("INSERT INTO core_suppliers") && query.find("ON CONFLICT") != std::string::npos) {
+      raceNumber = false;
+      Json::Value payload; Json::Reader reader; reader.parse(params[2].asString(), payload);
+      auto *probe = PQconnectdb(std::getenv("SUPPLIERS_TEST_DATABASE_URL"));
+      auto *x = PQexecParams(probe, "SET search_path TO suppliers_test", 0, nullptr, nullptr, nullptr, nullptr, 0); PQclear(x);
+      const auto accountNumber = payload["accountNumber"].asString();
+      const char *values[] = {tenant.c_str(), accountNumber.c_str()};
+      x = PQexecParams(probe, "INSERT INTO core_suppliers SELECT (jsonb_populate_record(NULL::core_suppliers,to_jsonb(s)||jsonb_build_object('id',gen_random_uuid(),'account_number',$2::text,'balance',0,'is_deleted',false))).* FROM core_suppliers s WHERE tenant_id=$1 LIMIT 1 RETURNING id", 2, nullptr, values, nullptr, nullptr, 0);
+      if (PQresultStatus(x) != 2) throw std::runtime_error(PQresultErrorMessage(x));
+      racedSupplier = PQgetvalue(x,0,0); PQclear(x); PQfinish(probe);
     }
     if (std::getenv("PREF_DEBUG_SQL"))
       std::cerr << query << std::endl;
@@ -403,6 +415,10 @@ int main() {
   sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3", {other,actor2,templateId});
   check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "another tenant's counter is not used");
   auto sequence = sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,'SUPPLIER-ACCOUNT-ID',prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3 RETURNING id", {tenant,actor,templateId})[0].value["id"].asString();
+  check(call("next-number", false, "", {}, {}).error["code"] == "unauthorized", "preview requires tenant authentication");
+  auto numberPreview = call("next-number");
+  check(numberPreview.success && numberPreview.result["accountNumber"] == "SUP-0041-GH" && numberPreview.result.size() == 1, "preview exposes formatted available number only");
+  check(call("next-number").result["accountNumber"] == "SUP-0041-GH" && sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 40, "repeated preview does not consume or reserve numbers");
   numberLockArmed = true;
   auto automatic = call("create", false, "", numbered);
   check(automatic.success && automatic.result["accountNumber"] == "SUP-0041-GH", "automatic number applies prefix padding suffix and case-insensitive key");
@@ -423,8 +439,13 @@ int main() {
   check(!failedAutomaticCommit.success && sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 42, "failed commit does not consume a supplier number");
   check(call("delete", false, automatic.result["id"].asString()).success, "automatic supplier can be archived");
   sql("UPDATE core_system_numbers SET last_no=40 WHERE id=$1", {sequence});
-  check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "archived generated supplier numbers remain reserved");
-  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 40, "collision does not advance counter");
+  check(call("next-number").result["accountNumber"] == "SUP-0043-GH", "preview skips both archived and live occupied numbers");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 40, "preview collision search never advances counter");
+  raceNumber = true;
+  auto skipped = call("create", false, "", numbered);
+  check(skipped.success && skipped.result["accountNumber"] == "SUP-0044-GH", "save skips existing numbers and retries a concurrent manual insert claiming the candidate");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE id=$1", {sequence})[0].value["last_no"] == 44 && call("get", false, racedSupplier).result["accountNumber"] == "SUP-0043-GH", "counter commits chosen number without overwriting racing supplier");
+  check(call("delete", false, skipped.result["id"].asString()).success && call("delete", false, racedSupplier).success, "archive allocation race fixtures");
   sql("UPDATE core_system_numbers SET last_no=2147483647 WHERE id=$1", {sequence});
   check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "exhausted counter does not wrap");
   sql("UPDATE core_system_numbers SET last_no=42,format_pattern='{BAD}{NO}' WHERE id=$1", {sequence});

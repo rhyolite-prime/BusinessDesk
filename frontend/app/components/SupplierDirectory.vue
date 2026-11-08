@@ -84,7 +84,10 @@ async function open(row?: SupplierRecord | Group, view = false) {
     const result = row
       ? await request<SupplierRecord | Group>(`${endpoint.value}/${row.id}`)
       : null
-    if (current !== generation || who !== identity()) return
+    const preview = !row && !props.group
+      ? await request<{ accountNumber: string }>(`${endpoint.value}/next-number`)
+      : null
+    if (current !== generation || who !== identity() || life !== lifecycle) return
     editing.value = result
     readOnly.value = view
     Object.assign(form, blankSupplier())
@@ -93,6 +96,7 @@ async function open(row?: SupplierRecord | Group, view = false) {
         if (key in result)
           Object.assign(form, { [key]: (result as SupplierRecord)[key] })
     }
+    if (preview) form.accountNumber = preview.accountNumber
     unit.value = (result as SupplierRecord | null)?.accountingUnitId || ''
     dialog.value = true
   } catch (e) {
@@ -123,13 +127,13 @@ async function save() {
   try {
     const body = props.group ? { name: form.name.trim() } : { ...form, accountNumber: editing.value ? form.accountNumber : '' }
     if (editing.value) Object.assign(body, { version: editing.value.version })
-    await request(
+    const saved = await request<SupplierRecord | Group>(
       `${endpoint.value}${editing.value ? `/${editing.value.id}` : ''}`,
       { method: editing.value ? 'PUT' : 'POST', body },
     )
     if (current !== generation || who !== identity()) return
     dialog.value = false
-    notice.value = `${props.group ? 'Supplier group' : 'Supplier'} saved.`
+    notice.value = props.group ? 'Supplier group saved.' : `Supplier ${(saved as SupplierRecord).accountNumber} saved.`
     await load()
   } catch (e) {
     if (current === generation && who === identity())
@@ -437,8 +441,8 @@ onUnmounted(() => {
                     :required="'required' in field && field.required && (field.key !== 'accountNumber' || !!editing)"
                     :maxlength="field.max"
                     :readonly="field.key === 'accountNumber' && !editing"
-                    :placeholder="field.key === 'accountNumber' && !editing ? 'Assigned on save' : undefined" /></FormField
-                ><p v-if="!editing" class="text-xs text-ink-faint sm:col-span-2">Account number is assigned on save using supplier-account-id in System numbers. Cancelling does not consume a number.</p><SupplierLookup
+                    :placeholder="field.key === 'accountNumber' && !editing ? 'Loading next number…' : undefined" /></FormField
+                ><p v-if="!editing" class="text-xs text-ink-faint sm:col-span-2">This is the next available account number from supplier-account-id. It is not reserved; if taken before saving, the next available number will be assigned. Cancelling does not consume a number.</p><SupplierLookup
                   v-model="form.supplierGroupId"
                   label="Supplier group"
                   kind="groups"

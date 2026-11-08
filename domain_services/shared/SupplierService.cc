@@ -126,6 +126,57 @@ bool validate(Json::Value &b, bool group, bool update) {
   return b["statusId"] == "active" || b["statusId"] == "on_hold" ||
          b["statusId"] == "inactive";
 }
+// Preview never reserves a number. Allocation calls this under the supplier transaction.
+drogon::Task<dto::BaseApiResponse> nextSupplierNumber(DbClientPtr db, const utils::AuditIdentity &who, bool lock) {
+  auto ready = co_await db->execSqlCoro("SELECT to_regclass('core_system_numbers') IS NOT NULL AS ready");
+  if (!ready[0]["ready"].as<bool>()) co_return fail("supplier_numbering", "Configure supplier-account-id in tenant System numbers.");
+  auto numbers = co_await db->execSqlCoro(
+      "SELECT id,prefix,suffix,format_pattern,padding,last_no FROM core_system_numbers "
+      "WHERE tenant_id=$1 AND lower(key)='supplier-account-id' AND is_deleted=false ORDER BY id" + std::string(lock ? " FOR UPDATE" : ""), who.tenantId);
+  if (numbers.size() != 1) co_return fail("supplier_numbering", "Configure exactly one live supplier-account-id in tenant System numbers.");
+  const auto &number = numbers[0];
+  const auto last = number["last_no"].as<int64_t>();
+  const auto padding = number["padding"].as<int>();
+  if (last < 0 || last >= 2147483647 || padding < 0 || padding > 18)
+    co_return fail("supplier_numbering", "Supplier numbering is exhausted or invalid.");
+  // Bounded search: do not hang a request when an administrator resets a counter
+  // far behind a large existing catalog. Live AND archived identities are reserved.
+  for (int64_t next = last + 1; next <= 2147483647 && next <= last + 10000; ++next) {
+    auto digits = std::to_string(next);
+    if (digits.size() < static_cast<size_t>(padding)) digits.insert(0, padding - digits.size(), '0');
+    const auto pattern = number["format_pattern"].as<std::string>();
+    std::string formatted;
+    int numberTokens = 0;
+    for (size_t i = 0; i < pattern.size();) {
+      if (pattern[i] == '{') {
+        const auto end = pattern.find('}', i);
+        if (end == std::string::npos) co_return fail("supplier_numbering", "Invalid supplier number format.");
+        const auto token = pattern.substr(i, end - i + 1);
+        if (token == "{NO}") { formatted += digits; ++numberTokens; }
+        else if (token == "{PREFIX}") formatted += number["prefix"].as<std::string>();
+        else if (token == "{SUFFIX}") formatted += number["suffix"].as<std::string>();
+        else co_return fail("supplier_numbering", "Invalid supplier number format.");
+        i = end + 1;
+      } else {
+        if (pattern[i] == '}') co_return fail("supplier_numbering", "Invalid supplier number format.");
+        formatted += pattern[i++];
+      }
+    }
+    formatted = trim(formatted);
+    if (numberTokens != 1 || formatted.empty() || formatted.size() > 80)
+      co_return fail("supplier_numbering", "Supplier account number must fit 80 characters.");
+
+    auto reserved = co_await db->execSqlCoro(
+        "SELECT id FROM core_suppliers WHERE tenant_id=$1 AND lower(btrim(account_number))=lower($2) LIMIT 1", who.tenantId, formatted);
+    if (!reserved.empty()) continue;
+    dto::BaseApiResponse result; result.success = true;
+    result.result["accountNumber"] = formatted;
+    result.result["sequenceId"] = number["id"].as<std::string>();
+    result.result["nextNo"] = static_cast<int>(next);
+    co_return result;
+  }
+  co_return fail("supplier_numbering", "No available supplier number within the search limit. Check the counter.");
+}
 const std::string supplierSelect =
     "SELECT "
     "jsonb_build_object('id',s.id,'version',s.version,'createdAt',s.created_at,"
@@ -182,6 +233,11 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
       who.userId, who.tenantId);
   if (actor.empty())
     co_return fail("forbidden", "A live tenant user is required.");
+  if (op == "next-number") {
+    auto preview = co_await nextSupplierNumber(db, who, false);
+    if (preview.success) { preview.result.removeMember("sequenceId"); preview.result.removeMember("nextNo"); }
+    co_return preview;
+  }
   dto::BaseApiResponse r;
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
   if (op == "options") {
@@ -385,58 +441,6 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
         r.result["id"] = id;
         r.result["isDeleted"] = true;
       } else {
-        if (!group && op == "create" && b["accountNumber"].asString().empty()) {
-          auto ready = co_await db->execSqlCoro("SELECT to_regclass('core_system_numbers') IS NOT NULL AS ready");
-          if (!ready[0]["ready"].as<bool>())
-            co_return fail("supplier_numbering", "Configure supplier-account-id in tenant System numbers.");
-          // The caller supplies no module or tenant scope. Refuse an ambiguous key
-          // rather than guess a module ID. Lock the tenant counter until commit.
-          auto numbers = co_await db->execSqlCoro(
-              "SELECT id,prefix,suffix,format_pattern,padding,last_no FROM core_system_numbers "
-              "WHERE tenant_id=$1 AND lower(key)='supplier-account-id' AND is_deleted=false ORDER BY id FOR UPDATE",
-              who.tenantId);
-          if (numbers.size() != 1)
-            co_return fail("supplier_numbering", "Configure exactly one live supplier-account-id in tenant System numbers.");
-          const auto &number = numbers[0];
-          const auto last = number["last_no"].as<int64_t>();
-          const auto padding = number["padding"].as<int>();
-          if (last < 0 || last >= 2147483647 || padding < 0 || padding > 18)
-            co_return fail("supplier_numbering", "Supplier numbering is exhausted or invalid.");
-          auto digits = std::to_string(last + 1);
-          if (digits.size() < static_cast<size_t>(padding)) digits.insert(0, padding - digits.size(), '0');
-          const auto pattern = number["format_pattern"].as<std::string>();
-          std::string formatted;
-          int numberTokens = 0;
-          for (size_t i = 0; i < pattern.size();) {
-            if (pattern[i] == '{') {
-              const auto end = pattern.find('}', i);
-              if (end == std::string::npos) co_return fail("supplier_numbering", "Invalid supplier number format.");
-              const auto token = pattern.substr(i, end - i + 1);
-              if (token == "{NO}") { formatted += digits; ++numberTokens; }
-              else if (token == "{PREFIX}") formatted += number["prefix"].as<std::string>();
-              else if (token == "{SUFFIX}") formatted += number["suffix"].as<std::string>();
-              else co_return fail("supplier_numbering", "Invalid supplier number format.");
-              i = end + 1;
-            } else {
-              if (pattern[i] == '}') co_return fail("supplier_numbering", "Invalid supplier number format.");
-              formatted += pattern[i++];
-            }
-          }
-          formatted = trim(formatted);
-          if (numberTokens != 1 || formatted.empty() || formatted.size() > 80)
-            co_return fail("supplier_numbering", "Supplier account number must fit 80 characters.");
-          // Archived supplier numbers remain reserved too. Do not guess a new
-          // sequence when an operator has reset a counter behind existing data.
-          auto reserved = co_await db->execSqlCoro(
-              "SELECT id FROM core_suppliers WHERE tenant_id=$1 AND lower(account_number)=lower($2) LIMIT 1",
-              who.tenantId, formatted);
-          if (!reserved.empty())
-            co_return fail("supplier_numbering", "The generated supplier account number is already reserved.");
-          co_await db->execSqlCoro(
-              "UPDATE core_system_numbers SET last_no=$2,last_modified_at=now(),last_modified_by_user_id=$3 WHERE id=$1 AND tenant_id=$4",
-              number["id"].as<std::string>(), static_cast<int>(last + 1), who.userId, who.tenantId);
-          b["accountNumber"] = formatted;
-        }
         std::string cols, values, assign;
         if (group) {
           cols = "name";
@@ -455,19 +459,37 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
             values += value;
             assign += std::string(f.column) + "=" + value;
           }
-        const std::string json = Json::FastWriter().write(b);
         if (op == "create") {
-          auto rows = co_await db->execSqlCoro(
-              "INSERT INTO " + table + "(tenant_id,created_by_user_id," + cols +
-                  ") VALUES($1,$2," + values + ") RETURNING id",
-              who.tenantId, who.userId, json);
-          id = rows[0]["id"].as<std::string>();
+          const bool automatic = !group && b["accountNumber"].asString().empty();
+          // A manual API writer can claim a candidate without locking the sequence.
+          // Target only the account-number unique index; retry without aborting the
+          // transaction instead of overwriting that supplier or leaking a conflict.
+          for (int attempt = 0; attempt < 100; ++attempt) {
+            dto::BaseApiResponse number;
+            if (automatic) {
+              number = co_await nextSupplierNumber(db, who, true);
+              if (!number.success) co_return number;
+              b["accountNumber"] = number.result["accountNumber"];
+            }
+            auto rows = co_await db->execSqlCoro(
+                "INSERT INTO " + table + "(tenant_id,created_by_user_id," + cols +
+                    ") VALUES($1,$2," + values + ")" +
+                    std::string(automatic ? " ON CONFLICT (tenant_id,lower(btrim(account_number))) DO NOTHING" : "") + " RETURNING id",
+                who.tenantId, who.userId, Json::FastWriter().write(b));
+            if (rows.empty()) continue;
+            id = rows[0]["id"].as<std::string>();
+            if (automatic) co_await db->execSqlCoro(
+                "UPDATE core_system_numbers SET last_no=$2,last_modified_at=now(),last_modified_by_user_id=$3 WHERE id=$1 AND tenant_id=$4",
+                number.result["sequenceId"].asString(), number.result["nextNo"].asInt(), who.userId, who.tenantId);
+            break;
+          }
+          if (id.empty()) co_return fail("supplier_numbering", "Supplier number allocation is busy. Retry saving.");
         } else
           co_await db->execSqlCoro(
               "UPDATE " + table + " SET " + assign +
                   ",last_modified_at=now(),last_modified_by_user_id=$4,version="
                   "version+1 WHERE tenant_id=$1 AND id=$2 AND is_deleted=false",
-              who.tenantId, id, json, who.userId);
+              who.tenantId, id, Json::FastWriter().write(b), who.userId);
         auto saved = co_await db->execSqlCoro(
             base + " WHERE s.tenant_id=$1 AND s.id=$2 AND s.is_deleted=false",
             who.tenantId, id);
@@ -493,8 +515,9 @@ SupplierService::execute(std::string op, bool group, std::string id,
   if (!uuid(who.tenantId) || !uuid(who.userId))
     co_return fail("unauthorized", "Tenant authentication required.");
   if (op != "list" && op != "get" && op != "create" && op != "update" &&
-      op != "delete" && op != "options")
+      op != "delete" && op != "options" && op != "next-number")
     co_return fail("validation_error", "Invalid operation.");
+  if (op == "next-number" && group) co_return fail("validation_error", "Supplier numbers only.");
   if (((op == "get" || op == "update" || op == "delete") && !uuid(id)) ||
       page < 1 || page > 1000000 || size < 1 || size > 100 ||
       query.size() > 200 || query.find('\0') != std::string::npos ||
@@ -528,7 +551,7 @@ SupplierService::execute(std::string op, bool group, std::string id,
       co_return fail("schema_not_ready",
                      "Apply migrations through "
                      "023_drop_customer_supplier_rates.sql.");
-    if (op == "get" || op == "list" || op == "options")
+    if (op == "get" || op == "list" || op == "options" || op == "next-number")
       co_return co_await run(db, op, group, id, body, page, size, query, kind,
                              unit, who);
     auto tx = co_await db->newTransactionCoro();

@@ -32,6 +32,9 @@ public:
   ADD_METHOD_TO(SupplierController::supplierOptions,
                 "/api/v1/shared/suppliers/options", drogon::Get,
                 "TenantJwtAuthFilter");
+  ADD_METHOD_TO(SupplierController::supplierNextNumber,
+                "/api/v1/shared/suppliers/next-number", drogon::Get,
+                "TenantJwtAuthFilter");
   METHOD_LIST_END
   drogon::Task<drogon::HttpResponsePtr> groupList(drogon::HttpRequestPtr req);
   drogon::Task<drogon::HttpResponsePtr> groupGet(drogon::HttpRequestPtr req,
@@ -53,4 +56,5 @@ public:
   supplierRemove(drogon::HttpRequestPtr req, std::string id);
   drogon::Task<drogon::HttpResponsePtr>
   supplierOptions(drogon::HttpRequestPtr req);
+  drogon::Task<drogon::HttpResponsePtr> supplierNextNumber(drogon::HttpRequestPtr req);
 };
