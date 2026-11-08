@@ -85,7 +85,6 @@ onUnmounted(() => { version++ })
     <section class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#15201e]">
       <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Accounting unit<select v-model="unitId" :disabled="loading || saving" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"><option value="">Select an accounting unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.code }} · {{ unit.name }}</option></select></label>
       <button :disabled="loading || saving" class="rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700" @click="unitId ? loadAccounts() : loadUnits()">Refresh</button>
-      <p class="text-xs text-slate-400">Persisted accounts for this unit. Bank, branch, GL and currency names are filled from their catalogs.</p>
     </section>
     <p v-if="loadError" role="alert" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{{ loadError }}</p>
 
@@ -119,7 +118,7 @@ onUnmounted(() => { version++ })
           </tbody>
         </table>
       </div>
-      <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800"><span>Bank accounts are saved to your tenant and selected accounting unit.</span><NuxtLink to="/ledger/accounts" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage chart-of-account details →</NuxtLink><NuxtLink to="/ledger/shared-config/banks" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage banks and branches →</NuxtLink></div>
+      <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800"> <NuxtLink to="/ledger/accounts" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage chart-of-account details →</NuxtLink><NuxtLink to="/ledger/shared-config/banks" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage banks and branches →</NuxtLink></div>
     </section>
 
     <div v-if="showForm" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" @click.self="!saving && (showForm = false)">
