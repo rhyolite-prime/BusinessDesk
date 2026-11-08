@@ -245,7 +245,7 @@ const payrollNet = computed(() => visibleRows.value.reduce((sum, row) => sum + N
 function formatGhs(value: unknown) {
   const amount = Number(value)
   if (!Number.isFinite(amount)) return String(value ?? '—')
-  return new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS', maximumFractionDigits: 2 }).format(amount)
+  return formatCurrency(amount, 'GHS')
 }
 
 function formatCell(key: string, value: unknown) {

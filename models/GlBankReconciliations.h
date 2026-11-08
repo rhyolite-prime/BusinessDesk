@@ -132,11 +132,12 @@ class GlBankReconciliations
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -219,11 +220,12 @@ class GlBankReconciliations
 
     /**  For column reconciled_by_user_id  */
     ///Get the value of the column reconciled_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfReconciledByUserId() const noexcept;
+    const std::string &getValueOfReconciledByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getReconciledByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getReconciledByUserId() const noexcept;
     ///Set the value of the column reconciled_by_user_id
-    void setReconciledByUserId(const int64_t &pReconciledByUserId) noexcept;
+    void setReconciledByUserId(const std::string &pReconciledByUserId) noexcept;
+    void setReconciledByUserId(std::string &&pReconciledByUserId) noexcept;
     void setReconciledByUserIdToNull() noexcept;
 
     /**  For column created_at  */
@@ -236,11 +238,12 @@ class GlBankReconciliations
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
 
 
 
@@ -252,30 +255,15 @@ class GlBankReconciliations
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlBankAccounts)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
+    GlBankAccounts getGlBankAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBankAccounts(const drogon::orm::DbClientPtr &clientPtr,
                            const std::function<void(GlBankAccounts)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                        const std::function<void(GlBankAccounts)> &rcb,
-                        const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBankReconciliations>;
@@ -293,7 +281,7 @@ class GlBankReconciliations
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> bankAccountId_;
     std::shared_ptr<std::string> statementNumber_;
@@ -303,9 +291,9 @@ class GlBankReconciliations
     std::shared_ptr<std::string> statementClosingBalance_;
     std::shared_ptr<std::string> status_;
     std::shared_ptr<::trantor::Date> reconciledAt_;
-    std::shared_ptr<int64_t> reconciledByUserId_;
+    std::shared_ptr<std::string> reconciledByUserId_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
 
     struct MetaData
     {

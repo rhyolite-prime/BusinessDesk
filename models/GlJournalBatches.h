@@ -84,6 +84,7 @@ class GlJournalBatches
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _version;
 
     };
 
@@ -151,11 +152,12 @@ class GlJournalBatches
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -285,11 +287,12 @@ class GlJournalBatches
 
     /**  For column submitted_by_user_id  */
     ///Get the value of the column submitted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfSubmittedByUserId() const noexcept;
+    const std::string &getValueOfSubmittedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getSubmittedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getSubmittedByUserId() const noexcept;
     ///Set the value of the column submitted_by_user_id
-    void setSubmittedByUserId(const int64_t &pSubmittedByUserId) noexcept;
+    void setSubmittedByUserId(const std::string &pSubmittedByUserId) noexcept;
+    void setSubmittedByUserId(std::string &&pSubmittedByUserId) noexcept;
     void setSubmittedByUserIdToNull() noexcept;
 
     /**  For column approved_at  */
@@ -303,11 +306,12 @@ class GlJournalBatches
 
     /**  For column approved_by_user_id  */
     ///Get the value of the column approved_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfApprovedByUserId() const noexcept;
+    const std::string &getValueOfApprovedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getApprovedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getApprovedByUserId() const noexcept;
     ///Set the value of the column approved_by_user_id
-    void setApprovedByUserId(const int64_t &pApprovedByUserId) noexcept;
+    void setApprovedByUserId(const std::string &pApprovedByUserId) noexcept;
+    void setApprovedByUserId(std::string &&pApprovedByUserId) noexcept;
     void setApprovedByUserIdToNull() noexcept;
 
     /**  For column posted_at  */
@@ -321,11 +325,12 @@ class GlJournalBatches
 
     /**  For column posted_by_user_id  */
     ///Get the value of the column posted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfPostedByUserId() const noexcept;
+    const std::string &getValueOfPostedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getPostedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getPostedByUserId() const noexcept;
     ///Set the value of the column posted_by_user_id
-    void setPostedByUserId(const int64_t &pPostedByUserId) noexcept;
+    void setPostedByUserId(const std::string &pPostedByUserId) noexcept;
+    void setPostedByUserId(std::string &&pPostedByUserId) noexcept;
     void setPostedByUserIdToNull() noexcept;
 
     /**  For column reversed_at  */
@@ -339,11 +344,12 @@ class GlJournalBatches
 
     /**  For column reversed_by_user_id  */
     ///Get the value of the column reversed_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfReversedByUserId() const noexcept;
+    const std::string &getValueOfReversedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getReversedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getReversedByUserId() const noexcept;
     ///Set the value of the column reversed_by_user_id
-    void setReversedByUserId(const int64_t &pReversedByUserId) noexcept;
+    void setReversedByUserId(const std::string &pReversedByUserId) noexcept;
+    void setReversedByUserId(std::string &&pReversedByUserId) noexcept;
     void setReversedByUserIdToNull() noexcept;
 
     /**  For column reversal_reason  */
@@ -366,11 +372,12 @@ class GlJournalBatches
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
     /**  For column last_modified_at  */
@@ -384,11 +391,12 @@ class GlJournalBatches
 
     /**  For column last_modified_by_user_id  */
     ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfLastModifiedByUserId() const noexcept;
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getLastModifiedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
     ///Set the value of the column last_modified_by_user_id
-    void setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
     void setLastModifiedByUserIdToNull() noexcept;
 
     /**  For column is_deleted  */
@@ -410,16 +418,25 @@ class GlJournalBatches
 
     /**  For column deleted_by_user_id  */
     ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfDeletedByUserId() const noexcept;
+    const std::string &getValueOfDeletedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getDeletedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
     ///Set the value of the column deleted_by_user_id
-    void setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column version  */
+    ///Get the value of the column version, returns the default value if the column is null
+    const int32_t &getValueOfVersion() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getVersion() const noexcept;
+    ///Set the value of the column version
+    void setVersion(const int32_t &pVersion) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 31;  }
+
+    static size_t getColumnNumber() noexcept {  return 32;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -427,45 +444,20 @@ class GlJournalBatches
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlAccountingPeriods)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlAccountingPeriods getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountingPeriods)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountingPeriods getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlAccountingPeriods)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountingPeriods getPeriod(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getPeriod(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlAccountingPeriods)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getReversalOfBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getReversalOfBatch(const drogon::orm::DbClientPtr &clientPtr,
-                            const std::function<void(GlJournalBatches)> &rcb,
-                            const drogon::orm::ExceptionCallback &ecb) const;
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlJournalBatches>;
@@ -483,7 +475,7 @@ class GlJournalBatches
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> batchNumber_;
     std::shared_ptr<std::string> transactionSource_;
@@ -498,21 +490,22 @@ class GlJournalBatches
     std::shared_ptr<std::string> reversalOfBatchId_;
     std::shared_ptr<std::string> idempotencyKey_;
     std::shared_ptr<::trantor::Date> submittedAt_;
-    std::shared_ptr<int64_t> submittedByUserId_;
+    std::shared_ptr<std::string> submittedByUserId_;
     std::shared_ptr<::trantor::Date> approvedAt_;
-    std::shared_ptr<int64_t> approvedByUserId_;
+    std::shared_ptr<std::string> approvedByUserId_;
     std::shared_ptr<::trantor::Date> postedAt_;
-    std::shared_ptr<int64_t> postedByUserId_;
+    std::shared_ptr<std::string> postedByUserId_;
     std::shared_ptr<::trantor::Date> reversedAt_;
-    std::shared_ptr<int64_t> reversedByUserId_;
+    std::shared_ptr<std::string> reversedByUserId_;
     std::shared_ptr<std::string> reversalReason_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
     std::shared_ptr<::trantor::Date> lastModifiedAt_;
-    std::shared_ptr<int64_t> lastModifiedByUserId_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
-    std::shared_ptr<int64_t> deletedByUserId_;
+    std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> version_;
 
     struct MetaData
     {
@@ -525,7 +518,7 @@ class GlJournalBatches
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[31]={ false };
+    bool dirtyFlag_[32]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -743,6 +736,13 @@ class GlJournalBatches
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
+        }
+        sql += "version,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[31])
+        {
+            needSelection=true;
         }
 
         if(parametersCount > 0)
@@ -1049,6 +1049,19 @@ class GlJournalBatches
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        if(dirtyFlag_[31])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(parametersCount > 0)

@@ -55,6 +55,8 @@ const std::string GlAccountingPeriods::Cols::_deleted_at = "\"deleted_at\"";
 
 const std::string GlAccountingPeriods::Cols::_deleted_by_user_id = "\"deleted_by_user_id\"";
 
+const std::string GlAccountingPeriods::Cols::_version = "\"version\"";
+
 
 const std::string GlAccountingPeriods::primaryKeyName = "id";
 
@@ -65,22 +67,23 @@ const std::string GlAccountingPeriods::tableName = "\"gl_accounting_periods\"";
 
 const std::vector<typename GlAccountingPeriods::MetaData> GlAccountingPeriods::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"period","int32_t","integer",4,0,0,1},
 {"period_start_date","::trantor::Date","date",0,0,0,1},
 {"period_end_date","::trantor::Date","date",0,0,0,1},
 {"last_closed_at","::trantor::Date","timestamp with time zone",0,0,0,0},
 {"status","std::string","character varying",20,0,0,1},
-{"closed_by_user_id","int64_t","bigint",8,0,0,0},
+{"closed_by_user_id","std::string","uuid",0,0,0,0},
 {"close_reason","std::string","text",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0},
+{"version","int32_t","integer",4,0,0,1}
 
 };
 const std::string &GlAccountingPeriods::getColumnName(size_t index) noexcept(false)
@@ -103,7 +106,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -177,7 +180,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r["closed_by_user_id"].isNull())
         {
 
-            closedByUserId_=std::make_shared<int64_t>(r["closed_by_user_id"].as<int64_t>());
+            closedByUserId_=std::make_shared<std::string>(r["closed_by_user_id"].as<std::string>());
 
         }
 
@@ -215,7 +218,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -246,7 +249,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -284,7 +287,14 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
+
+        }
+
+        if(!r["version"].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r["version"].as<int32_t>());
 
         }
 
@@ -292,7 +302,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 17 > r.size())
+        if(offset + 18 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -311,7 +321,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -392,7 +402,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            closedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            closedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -433,7 +443,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -466,7 +476,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -507,7 +517,15 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 17;
+        if(!r[index].isNull())
+        {
+
+            version_=std::make_shared<int32_t>(r[index].as<int32_t>());
 
         }
 
@@ -517,7 +535,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Row &r, const ssize_t indexOffset
 
 GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -537,7 +555,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -631,7 +649,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            closedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            closedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -677,7 +695,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -714,7 +732,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -760,7 +778,16 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson, const std::ve
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson[pMasqueradingVector[17]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[17]].asInt64());
         }
     }
 
@@ -783,7 +810,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -877,7 +904,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[8]=true;
         if(!pJson["closed_by_user_id"].isNull())
         {
-            closedByUserId_=std::make_shared<int64_t>((int64_t)pJson["closed_by_user_id"].asInt64());
+            closedByUserId_=std::make_shared<std::string>(pJson["closed_by_user_id"].asString());
         }
     }
 
@@ -923,7 +950,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[11]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -960,7 +987,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[13]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1006,7 +1033,16 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[16]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[17]=true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
         }
     }
 
@@ -1015,7 +1051,7 @@ GlAccountingPeriods::GlAccountingPeriods(const Json::Value &pJson) noexcept(fals
 void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -1034,7 +1070,7 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1128,7 +1164,7 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            closedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            closedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -1174,7 +1210,7 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[11] = true;
         if(!pJson[pMasqueradingVector[11]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[11]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[11]].asString());
         }
     }
 
@@ -1211,7 +1247,7 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[13] = true;
         if(!pJson[pMasqueradingVector[13]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[13]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[13]].asString());
         }
     }
 
@@ -1257,7 +1293,16 @@ void GlAccountingPeriods::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson[pMasqueradingVector[17]].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[17]].asInt64());
         }
     }
 
@@ -1279,7 +1324,7 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1373,7 +1418,7 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8] = true;
         if(!pJson["closed_by_user_id"].isNull())
         {
-            closedByUserId_=std::make_shared<int64_t>((int64_t)pJson["closed_by_user_id"].asInt64());
+            closedByUserId_=std::make_shared<std::string>(pJson["closed_by_user_id"].asString());
         }
     }
 
@@ -1419,7 +1464,7 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[11] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1456,7 +1501,7 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[13] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1502,7 +1547,16 @@ void GlAccountingPeriods::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[16] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
+        }
+    }
+
+    if(pJson.isMember("version"))
+    {
+        dirtyFlag_[17] = true;
+        if(!pJson["version"].isNull())
+        {
+            version_=std::make_shared<int32_t>((int32_t)pJson["version"].asInt64());
         }
     }
 
@@ -1535,20 +1589,25 @@ const typename GlAccountingPeriods::PrimaryKeyType & GlAccountingPeriods::getPri
     return *id_;
 }
 
-const int32_t &GlAccountingPeriods::getValueOfTenantId() const noexcept
+const std::string &GlAccountingPeriods::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlAccountingPeriods::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlAccountingPeriods::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlAccountingPeriods::setTenantId(const int32_t &pTenantId) noexcept
+void GlAccountingPeriods::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlAccountingPeriods::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1669,20 +1728,25 @@ void GlAccountingPeriods::setStatus(std::string &&pStatus) noexcept
     dirtyFlag_[7] = true;
 }
 
-const int64_t &GlAccountingPeriods::getValueOfClosedByUserId() const noexcept
+const std::string &GlAccountingPeriods::getValueOfClosedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(closedByUserId_)
         return *closedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountingPeriods::getClosedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountingPeriods::getClosedByUserId() const noexcept
 {
     return closedByUserId_;
 }
-void GlAccountingPeriods::setClosedByUserId(const int64_t &pClosedByUserId) noexcept
+void GlAccountingPeriods::setClosedByUserId(const std::string &pClosedByUserId) noexcept
 {
-    closedByUserId_ = std::make_shared<int64_t>(pClosedByUserId);
+    closedByUserId_ = std::make_shared<std::string>(pClosedByUserId);
+    dirtyFlag_[8] = true;
+}
+void GlAccountingPeriods::setClosedByUserId(std::string &&pClosedByUserId) noexcept
+{
+    closedByUserId_ = std::make_shared<std::string>(std::move(pClosedByUserId));
     dirtyFlag_[8] = true;
 }
 void GlAccountingPeriods::setClosedByUserIdToNull() noexcept
@@ -1735,20 +1799,25 @@ void GlAccountingPeriods::setCreatedAt(const ::trantor::Date &pCreatedAt) noexce
     dirtyFlag_[10] = true;
 }
 
-const int64_t &GlAccountingPeriods::getValueOfCreatedByUserId() const noexcept
+const std::string &GlAccountingPeriods::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountingPeriods::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountingPeriods::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlAccountingPeriods::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlAccountingPeriods::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[11] = true;
+}
+void GlAccountingPeriods::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[11] = true;
 }
 void GlAccountingPeriods::setCreatedByUserIdToNull() noexcept
@@ -1779,20 +1848,25 @@ void GlAccountingPeriods::setLastModifiedAtToNull() noexcept
     dirtyFlag_[12] = true;
 }
 
-const int64_t &GlAccountingPeriods::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlAccountingPeriods::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountingPeriods::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountingPeriods::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlAccountingPeriods::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlAccountingPeriods::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[13] = true;
+}
+void GlAccountingPeriods::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[13] = true;
 }
 void GlAccountingPeriods::setLastModifiedByUserIdToNull() noexcept
@@ -1840,26 +1914,48 @@ void GlAccountingPeriods::setDeletedAtToNull() noexcept
     dirtyFlag_[15] = true;
 }
 
-const int64_t &GlAccountingPeriods::getValueOfDeletedByUserId() const noexcept
+const std::string &GlAccountingPeriods::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlAccountingPeriods::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlAccountingPeriods::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlAccountingPeriods::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlAccountingPeriods::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[16] = true;
+}
+void GlAccountingPeriods::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[16] = true;
 }
 void GlAccountingPeriods::setDeletedByUserIdToNull() noexcept
 {
     deletedByUserId_.reset();
     dirtyFlag_[16] = true;
+}
+
+const int32_t &GlAccountingPeriods::getValueOfVersion() const noexcept
+{
+    static const int32_t defaultValue = int32_t();
+    if(version_)
+        return *version_;
+    return defaultValue;
+}
+const std::shared_ptr<int32_t> &GlAccountingPeriods::getVersion() const noexcept
+{
+    return version_;
+}
+void GlAccountingPeriods::setVersion(const int32_t &pVersion) noexcept
+{
+    version_ = std::make_shared<int32_t>(pVersion);
+    dirtyFlag_[17] = true;
 }
 
 void GlAccountingPeriods::updateId(const uint64_t id)
@@ -1886,7 +1982,8 @@ const std::vector<std::string> &GlAccountingPeriods::insertColumns() noexcept
         "last_modified_by_user_id",
         "is_deleted",
         "deleted_at",
-        "deleted_by_user_id"
+        "deleted_by_user_id",
+        "version"
 
     };
     return inCols;
@@ -2099,6 +2196,18 @@ void GlAccountingPeriods::outputArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[17])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> GlAccountingPeriods::updateColumns() const
@@ -2188,6 +2297,11 @@ const std::vector<std::string> GlAccountingPeriods::updateColumns() const
     if(dirtyFlag_[16])
     {
         ret.push_back(getColumnName(16));
+    }
+
+    if(dirtyFlag_[17])
+    {
+        ret.push_back(getColumnName(17));
     }
 
     return ret;
@@ -2400,6 +2514,18 @@ void GlAccountingPeriods::updateArgs(drogon::orm::internal::SqlBinder &binder) c
         }
     }
 
+    if(dirtyFlag_[17])
+    {
+        if(getVersion())
+        {
+            binder << getValueOfVersion();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value GlAccountingPeriods::toJson() const
 {
@@ -2496,7 +2622,7 @@ Json::Value GlAccountingPeriods::toJson() const
     if(getClosedByUserId())
     {
 
-        ret["closed_by_user_id"]=(Json::Int64)getValueOfClosedByUserId();
+        ret["closed_by_user_id"]=getValueOfClosedByUserId();
 
     }
     else
@@ -2529,7 +2655,7 @@ Json::Value GlAccountingPeriods::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2551,7 +2677,7 @@ Json::Value GlAccountingPeriods::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -2584,12 +2710,23 @@ Json::Value GlAccountingPeriods::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
     {
         ret["deleted_by_user_id"]=Json::Value();
+    }
+
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
     }
 
     return ret;
@@ -2604,7 +2741,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 17)
+    if(pMasqueradingVector.size() == 18)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -2724,7 +2861,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
             if(getClosedByUserId())
             {
 
-                ret[pMasqueradingVector[8]]=(Json::Int64)getValueOfClosedByUserId();
+                ret[pMasqueradingVector[8]]=getValueOfClosedByUserId();
 
             }
             else
@@ -2766,7 +2903,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[11]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[11]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2794,7 +2931,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[13]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[13]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -2836,12 +2973,26 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[16]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[16]]=getValueOfDeletedByUserId();
 
             }
             else
             {
                 ret[pMasqueradingVector[16]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[17].empty())
+        {
+            if(getVersion())
+            {
+
+                ret[pMasqueradingVector[17]]=getValueOfVersion();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[17]]=Json::Value();
             }
         }
 
@@ -2940,7 +3091,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     if(getClosedByUserId())
     {
 
-        ret["closed_by_user_id"]=(Json::Int64)getValueOfClosedByUserId();
+        ret["closed_by_user_id"]=getValueOfClosedByUserId();
 
     }
     else
@@ -2973,7 +3124,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2995,7 +3146,7 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3028,12 +3179,23 @@ Json::Value GlAccountingPeriods::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
     {
         ret["deleted_by_user_id"]=Json::Value();
+    }
+
+    if(getVersion())
+    {
+
+        ret["version"]=getValueOfVersion();
+
+    }
+    else
+    {
+        ret["version"]=Json::Value();
     }
 
     return ret;
@@ -3174,13 +3336,19 @@ bool GlAccountingPeriods::validateJsonForCreation(const Json::Value &pJson, std:
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(17, "version", pJson["version"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool GlAccountingPeriods::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                              const std::vector<std::string> &pMasqueradingVector,
                                                              std::string &err)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         err = "Bad masquerading vector";
         return false;
@@ -3387,6 +3555,16 @@ bool GlAccountingPeriods::validateMasqueradedJsonForCreation(const Json::Value &
 
       }
 
+      if(!pMasqueradingVector[17].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[17]))
+          {
+              if(!validJsonOfField(17, pMasqueradingVector[17], pJson[pMasqueradingVector[17]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -3506,13 +3684,19 @@ bool GlAccountingPeriods::validateJsonForUpdate(const Json::Value &pJson, std::s
             return false;
     }
 
+    if(pJson.isMember("version"))
+    {
+        if(!validJsonOfField(17, "version", pJson["version"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool GlAccountingPeriods::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                            const std::vector<std::string> &pMasqueradingVector,
                                                            std::string &err)
 {
-    if(pMasqueradingVector.size() != 17)
+    if(pMasqueradingVector.size() != 18)
     {
         err = "Bad masquerading vector";
         return false;
@@ -3627,6 +3811,12 @@ bool GlAccountingPeriods::validateMasqueradedJsonForUpdate(const Json::Value &pJ
               return false;
       }
 
+      if(!pMasqueradingVector[17].empty() && pJson.isMember(pMasqueradingVector[17]))
+      {
+          if(!validJsonOfField(17, pMasqueradingVector[17], pJson[pMasqueradingVector[17]], err, false))
+              return false;
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -3668,7 +3858,7 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3786,7 +3976,7 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3832,7 +4022,7 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3862,7 +4052,7 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3908,7 +4098,23 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 17:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isInt())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3923,51 +4129,7 @@ bool GlAccountingPeriods::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlAccountingPeriods::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlAccountingPeriods::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(CoreAccountingUnits)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlAccountingPeriods::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlAccountingPeriods::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -3987,9 +4149,9 @@ CoreAccountingUnits GlAccountingPeriods::getAccountingUnit(const DbClientPtr &cl
     return CoreAccountingUnits(r[0]);
 }
 
-void GlAccountingPeriods::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(CoreAccountingUnits)> &rcb,
-                                            const ExceptionCallback &ecb) const
+void GlAccountingPeriods::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                 const std::function<void(CoreAccountingUnits)> &rcb,
+                                                 const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

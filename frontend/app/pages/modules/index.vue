@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight, LockKeyhole, LogOut, Search, ShoppingCart, X } from '@lucide/vue'
+import { workspaceSubscriptions } from '../../features/tenant-account'
 import { businessModules, type BusinessModule, type ModuleDomain, moduleDashboardPath } from '../../features/modules/catalog'
 
 definePageMeta({ layout: false })
@@ -8,6 +9,8 @@ useHead({ title: 'Module Manager' })
 const { user, isDemo, logout, refreshSession } = useBusinessDeskAuth()
 await refreshSession()
 const subscriptionsOpen = ref(false)
+const {data:entitlements,error:subscriptionError}=await useAsyncData('module-entitlements',()=>useRequestFetch()<{modules:Record<string,boolean>}>('/api/account/entitlements'))
+function canOpen(module:BusinessModule) {const key=workspaceSubscriptions[module.id];return !!key && entitlements.value?.modules[key]===true}
 const signingOut = ref(false)
 const searchQuery = ref('')
 const selectedDomain = ref<'All workspaces' | ModuleDomain>('All workspaces')
@@ -57,7 +60,7 @@ async function signOut() {
     <div class="mx-auto max-w-[1600px] px-4 pb-8 pt-5 sm:px-6 lg:px-7">
       <header class="mb-5 flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
         <div>
-          <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">BusinessDesk ERP</p>
+          <p class="text-[9px] font-bold uppercase tracking-[0.16em] text-brand-700 dark:text-brand-300">BusinessDesk 720 ERP</p>
           <h1 class="mt-1 text-[18px] font-semibold tracking-[-0.02em] text-slate-900 dark:text-white">Module manager</h1>
           <p class="mt-1 max-w-2xl text-[11px] leading-5 text-slate-500 dark:text-slate-400">Choose a workspace for finance, operations, people, or your industry workflows.</p>
           <p class="mt-1.5 text-[10px] text-slate-400">Account: <span class="font-medium text-slate-500 dark:text-slate-300">{{ accountId }}</span></p>
@@ -141,11 +144,11 @@ async function signOut() {
           <p class="mt-2.5 text-[9px] font-semibold text-slate-500 dark:text-slate-400">{{ module.category }}</p>
           <p class="mt-1 text-[9px] leading-[1.55] text-slate-400 dark:text-slate-500">{{ module.description }}</p>
           <NuxtLink
-            :to="moduleDashboardPath(module)"
+            :to="canOpen(module) ? moduleDashboardPath(module) : '/account'"
             class="mt-auto inline-flex w-fit items-center gap-1 pt-3 text-[10px] font-semibold transition"
             :class="module.readiness === 'live' ? 'text-brand-700 hover:text-brand-800 dark:text-brand-300 dark:hover:text-brand-200' : 'text-slate-600 hover:text-brand-700 dark:text-slate-300 dark:hover:text-brand-300'"
           >
-            {{ moduleActionLabel(module) }} <ArrowRight :size="12" />
+            {{ canOpen(module) ? moduleActionLabel(module) : 'Subscription required' }} <ArrowRight :size="12" />
           </NuxtLink>
         </article>
       </section>
@@ -167,14 +170,14 @@ async function signOut() {
               <button type="button" aria-label="Close access dialog" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-slate-200" @click="subscriptionsOpen = false"><X :size="17" /></button>
             </div>
             <div class="mt-5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/25">
-              <p class="text-xs font-semibold text-amber-900 dark:text-amber-200">Subscription management is not connected yet.</p>
-              <p class="mt-1 text-[11px] leading-5 text-amber-900/75 dark:text-amber-200/75">Live and Preview labels describe implementation readiness only. They are not a verified subscription or access decision.</p>
+              <p class="text-xs font-semibold text-amber-900 dark:text-amber-200">{{ subscriptionError ? 'Subscription verification unavailable. Module access is not assumed.' : 'Module access is verified against your tenant subscription.' }}</p>
+              <p class="mt-1 text-[11px] leading-5 text-amber-900/75 dark:text-amber-200/75">Live and Preview labels describe implementation readiness only. Account administrators can review fees, renewal dates and billing records or request changes from the host.</p>
             </div>
             <div class="mt-5 grid grid-cols-2 gap-3">
               <div class="rounded-lg border border-slate-200 px-3 py-3 dark:border-slate-700"><p class="text-[10px] text-slate-400">Live module</p><p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ liveCount }}</p></div>
               <div class="rounded-lg border border-slate-200 px-3 py-3 dark:border-slate-700"><p class="text-[10px] text-slate-400">Preview workspaces</p><p class="mt-1 text-sm font-semibold text-slate-800 dark:text-slate-100">{{ previewCount }}</p></div>
             </div>
-            <div class="mt-5 flex justify-end">
+            <div class="mt-5 flex justify-end gap-3"><NuxtLink to="/account" class="rounded-lg border px-4 py-2.5 text-xs font-semibold text-brand-700">Account &amp; subscription</NuxtLink>
               <button type="button" class="rounded-lg bg-brand-700 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-brand-800" @click="subscriptionsOpen = false">Close</button>
             </div>
           </section>

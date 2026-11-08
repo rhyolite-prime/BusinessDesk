@@ -52,7 +52,7 @@ const isActive = (to: string) =>
 
     <div class="px-5 py-4 border-t border-white/10 text-[10px] text-white/40 leading-relaxed">
       <p class="font-semibold text-white/60">{{ brand.productName }}</p>
-      <p>BusinessDesk ERP · Finance, operations &amp; people</p>
+      <p>BusinessDesk 720 ERP · Finance, operations &amp; people</p>
     </div>
   </aside>
 </template>

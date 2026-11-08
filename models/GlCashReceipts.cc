@@ -83,7 +83,7 @@ const std::string GlCashReceipts::tableName = "\"gl_cash_receipts\"";
 
 const std::vector<typename GlCashReceipts::MetaData> GlCashReceipts::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"receipt_number","std::string","character varying",40,0,0,1},
 {"receipt_date","::trantor::Date","date",0,0,0,1},
@@ -99,12 +99,12 @@ const std::vector<typename GlCashReceipts::MetaData> GlCashReceipts::metaData_={
 {"journal_batch_id","std::string","uuid",0,0,0,0},
 {"idempotency_key","std::string","character varying",120,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,0},
+{"created_by_user_id","std::string","uuid",0,0,0,0},
 {"last_modified_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"last_modified_by_user_id","int64_t","bigint",8,0,0,0},
+{"last_modified_by_user_id","std::string","uuid",0,0,0,0},
 {"is_deleted","bool","boolean",1,0,0,1},
 {"deleted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"deleted_by_user_id","int64_t","bigint",8,0,0,0}
+{"deleted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlCashReceipts::getColumnName(size_t index) noexcept(false)
@@ -127,7 +127,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -260,7 +260,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -291,7 +291,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["last_modified_by_user_id"].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r["last_modified_by_user_id"].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r["last_modified_by_user_id"].as<std::string>());
 
         }
 
@@ -329,7 +329,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r["deleted_by_user_id"].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r["deleted_by_user_id"].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r["deleted_by_user_id"].as<std::string>());
 
         }
 
@@ -356,7 +356,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -505,7 +505,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -538,7 +538,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            lastModifiedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            lastModifiedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -579,7 +579,7 @@ GlCashReceipts::GlCashReceipts(const Row &r, const ssize_t indexOffset) noexcept
         if(!r[index].isNull())
         {
 
-            deletedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            deletedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -609,7 +609,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -778,7 +778,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -815,7 +815,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[19]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -861,7 +861,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson, const std::vector<std::
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[22]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -884,7 +884,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1053,7 +1053,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1090,7 +1090,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[19]=true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1136,7 +1136,7 @@ GlCashReceipts::GlCashReceipts(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[22]=true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1164,7 +1164,7 @@ void GlCashReceipts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1333,7 +1333,7 @@ void GlCashReceipts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[17] = true;
         if(!pJson[pMasqueradingVector[17]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[17]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[17]].asString());
         }
     }
 
@@ -1370,7 +1370,7 @@ void GlCashReceipts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[19] = true;
         if(!pJson[pMasqueradingVector[19]].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[19]].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[19]].asString());
         }
     }
 
@@ -1416,7 +1416,7 @@ void GlCashReceipts::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[22] = true;
         if(!pJson[pMasqueradingVector[22]].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[22]].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[22]].asString());
         }
     }
 
@@ -1438,7 +1438,7 @@ void GlCashReceipts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1607,7 +1607,7 @@ void GlCashReceipts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[17] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1644,7 +1644,7 @@ void GlCashReceipts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[19] = true;
         if(!pJson["last_modified_by_user_id"].isNull())
         {
-            lastModifiedByUserId_=std::make_shared<int64_t>((int64_t)pJson["last_modified_by_user_id"].asInt64());
+            lastModifiedByUserId_=std::make_shared<std::string>(pJson["last_modified_by_user_id"].asString());
         }
     }
 
@@ -1690,7 +1690,7 @@ void GlCashReceipts::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[22] = true;
         if(!pJson["deleted_by_user_id"].isNull())
         {
-            deletedByUserId_=std::make_shared<int64_t>((int64_t)pJson["deleted_by_user_id"].asInt64());
+            deletedByUserId_=std::make_shared<std::string>(pJson["deleted_by_user_id"].asString());
         }
     }
 
@@ -1723,20 +1723,25 @@ const typename GlCashReceipts::PrimaryKeyType & GlCashReceipts::getPrimaryKey() 
     return *id_;
 }
 
-const int32_t &GlCashReceipts::getValueOfTenantId() const noexcept
+const std::string &GlCashReceipts::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlCashReceipts::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceipts::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlCashReceipts::setTenantId(const int32_t &pTenantId) noexcept
+void GlCashReceipts::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlCashReceipts::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2080,20 +2085,25 @@ void GlCashReceipts::setCreatedAt(const ::trantor::Date &pCreatedAt) noexcept
     dirtyFlag_[16] = true;
 }
 
-const int64_t &GlCashReceipts::getValueOfCreatedByUserId() const noexcept
+const std::string &GlCashReceipts::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlCashReceipts::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceipts::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlCashReceipts::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlCashReceipts::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[17] = true;
+}
+void GlCashReceipts::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[17] = true;
 }
 void GlCashReceipts::setCreatedByUserIdToNull() noexcept
@@ -2124,20 +2134,25 @@ void GlCashReceipts::setLastModifiedAtToNull() noexcept
     dirtyFlag_[18] = true;
 }
 
-const int64_t &GlCashReceipts::getValueOfLastModifiedByUserId() const noexcept
+const std::string &GlCashReceipts::getValueOfLastModifiedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(lastModifiedByUserId_)
         return *lastModifiedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlCashReceipts::getLastModifiedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceipts::getLastModifiedByUserId() const noexcept
 {
     return lastModifiedByUserId_;
 }
-void GlCashReceipts::setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept
+void GlCashReceipts::setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept
 {
-    lastModifiedByUserId_ = std::make_shared<int64_t>(pLastModifiedByUserId);
+    lastModifiedByUserId_ = std::make_shared<std::string>(pLastModifiedByUserId);
+    dirtyFlag_[19] = true;
+}
+void GlCashReceipts::setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept
+{
+    lastModifiedByUserId_ = std::make_shared<std::string>(std::move(pLastModifiedByUserId));
     dirtyFlag_[19] = true;
 }
 void GlCashReceipts::setLastModifiedByUserIdToNull() noexcept
@@ -2185,20 +2200,25 @@ void GlCashReceipts::setDeletedAtToNull() noexcept
     dirtyFlag_[21] = true;
 }
 
-const int64_t &GlCashReceipts::getValueOfDeletedByUserId() const noexcept
+const std::string &GlCashReceipts::getValueOfDeletedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(deletedByUserId_)
         return *deletedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlCashReceipts::getDeletedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlCashReceipts::getDeletedByUserId() const noexcept
 {
     return deletedByUserId_;
 }
-void GlCashReceipts::setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept
+void GlCashReceipts::setDeletedByUserId(const std::string &pDeletedByUserId) noexcept
 {
-    deletedByUserId_ = std::make_shared<int64_t>(pDeletedByUserId);
+    deletedByUserId_ = std::make_shared<std::string>(pDeletedByUserId);
+    dirtyFlag_[22] = true;
+}
+void GlCashReceipts::setDeletedByUserId(std::string &&pDeletedByUserId) noexcept
+{
+    deletedByUserId_ = std::make_shared<std::string>(std::move(pDeletedByUserId));
     dirtyFlag_[22] = true;
 }
 void GlCashReceipts::setDeletedByUserIdToNull() noexcept
@@ -3120,7 +3140,7 @@ Json::Value GlCashReceipts::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3142,7 +3162,7 @@ Json::Value GlCashReceipts::toJson() const
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3175,7 +3195,7 @@ Json::Value GlCashReceipts::toJson() const
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -3441,7 +3461,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[17]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[17]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -3469,7 +3489,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
             if(getLastModifiedByUserId())
             {
 
-                ret[pMasqueradingVector[19]]=(Json::Int64)getValueOfLastModifiedByUserId();
+                ret[pMasqueradingVector[19]]=getValueOfLastModifiedByUserId();
 
             }
             else
@@ -3511,7 +3531,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
             if(getDeletedByUserId())
             {
 
-                ret[pMasqueradingVector[22]]=(Json::Int64)getValueOfDeletedByUserId();
+                ret[pMasqueradingVector[22]]=getValueOfDeletedByUserId();
 
             }
             else
@@ -3714,7 +3734,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -3736,7 +3756,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
     if(getLastModifiedByUserId())
     {
 
-        ret["last_modified_by_user_id"]=(Json::Int64)getValueOfLastModifiedByUserId();
+        ret["last_modified_by_user_id"]=getValueOfLastModifiedByUserId();
 
     }
     else
@@ -3769,7 +3789,7 @@ Json::Value GlCashReceipts::toMasqueradedJson(
     if(getDeletedByUserId())
     {
 
-        ret["deleted_by_user_id"]=(Json::Int64)getValueOfDeletedByUserId();
+        ret["deleted_by_user_id"]=getValueOfDeletedByUserId();
 
     }
     else
@@ -4613,7 +4633,7 @@ bool GlCashReceipts::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4920,7 +4940,7 @@ bool GlCashReceipts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4950,7 +4970,7 @@ bool GlCashReceipts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -4996,7 +5016,7 @@ bool GlCashReceipts::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -5055,51 +5075,7 @@ void GlCashReceipts::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlCashReceipts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlCashReceipts::getTenant(const DbClientPtr &clientPtr,
-                               const std::function<void(CoreAccountingUnits)> &rcb,
-                               const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlCashReceipts::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -5119,9 +5095,9 @@ CoreAccountingUnits GlCashReceipts::getAccountingUnit(const DbClientPtr &clientP
     return CoreAccountingUnits(r[0]);
 }
 
-void GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                       const std::function<void(CoreAccountingUnits)> &rcb,
-                                       const ExceptionCallback &ecb) const
+void GlCashReceipts::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                            const std::function<void(CoreAccountingUnits)> &rcb,
+                                            const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -5143,95 +5119,7 @@ void GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlBankAccounts GlCashReceipts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBankAccounts(r[0]);
-}
-
-void GlCashReceipts::getTenant(const DbClientPtr &clientPtr,
-                               const std::function<void(GlBankAccounts)> &rcb,
-                               const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBankAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBankAccounts GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlBankAccounts(r[0]);
-}
-
-void GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                       const std::function<void(GlBankAccounts)> &rcb,
-                                       const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_bank_accounts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlBankAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlBankAccounts GlCashReceipts::getCashBankAccount(const DbClientPtr &clientPtr) const {
+GlBankAccounts GlCashReceipts::getGlBankAccounts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_bank_accounts where id = $1";
     Result r(nullptr);
     {
@@ -5251,9 +5139,9 @@ GlBankAccounts GlCashReceipts::getCashBankAccount(const DbClientPtr &clientPtr) 
     return GlBankAccounts(r[0]);
 }
 
-void GlCashReceipts::getCashBankAccount(const DbClientPtr &clientPtr,
-                                        const std::function<void(GlBankAccounts)> &rcb,
-                                        const ExceptionCallback &ecb) const
+void GlCashReceipts::getGlBankAccounts(const DbClientPtr &clientPtr,
+                                       const std::function<void(GlBankAccounts)> &rcb,
+                                       const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_bank_accounts where id = $1";
     *clientPtr << sql
@@ -5275,95 +5163,7 @@ void GlCashReceipts::getCashBankAccount(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlJournalBatches GlCashReceipts::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlCashReceipts::getTenant(const DbClientPtr &clientPtr,
-                               const std::function<void(GlJournalBatches)> &rcb,
-                               const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlCashReceipts::getAccountingUnit(const DbClientPtr &clientPtr,
-                                       const std::function<void(GlJournalBatches)> &rcb,
-                                       const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlCashReceipts::getJournalBatch(const DbClientPtr &clientPtr) const {
+GlJournalBatches GlCashReceipts::getGlJournalBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     Result r(nullptr);
     {
@@ -5383,9 +5183,9 @@ GlJournalBatches GlCashReceipts::getJournalBatch(const DbClientPtr &clientPtr) c
     return GlJournalBatches(r[0]);
 }
 
-void GlCashReceipts::getJournalBatch(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlJournalBatches)> &rcb,
-                                     const ExceptionCallback &ecb) const
+void GlCashReceipts::getGlJournalBatches(const DbClientPtr &clientPtr,
+                                         const std::function<void(GlJournalBatches)> &rcb,
+                                         const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     *clientPtr << sql

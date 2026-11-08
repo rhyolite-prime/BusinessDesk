@@ -61,7 +61,7 @@ const std::string GlFxRevaluationLines::tableName = "\"gl_fx_revaluation_lines\"
 
 const std::vector<typename GlFxRevaluationLines::MetaData> GlFxRevaluationLines::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"revaluation_run_id","std::string","uuid",0,0,0,1},
 {"account_id","std::string","uuid",0,0,0,1},
@@ -95,7 +95,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Row &r, const ssize_t indexOffs
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -216,7 +216,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Row &r, const ssize_t indexOffs
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -351,7 +351,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Json::Value &pJson, const std::
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -492,7 +492,7 @@ GlFxRevaluationLines::GlFxRevaluationLines(const Json::Value &pJson) noexcept(fa
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -638,7 +638,7 @@ void GlFxRevaluationLines::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -778,7 +778,7 @@ void GlFxRevaluationLines::updateByJson(const Json::Value &pJson) noexcept(false
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -929,20 +929,25 @@ const typename GlFxRevaluationLines::PrimaryKeyType & GlFxRevaluationLines::getP
     return *id_;
 }
 
-const int32_t &GlFxRevaluationLines::getValueOfTenantId() const noexcept
+const std::string &GlFxRevaluationLines::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlFxRevaluationLines::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationLines::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlFxRevaluationLines::setTenantId(const int32_t &pTenantId) noexcept
+void GlFxRevaluationLines::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlFxRevaluationLines::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -2685,7 +2690,7 @@ bool GlFxRevaluationLines::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2920,95 +2925,7 @@ void GlFxRevaluationLines::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlFxRevaluationRuns GlFxRevaluationLines::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlFxRevaluationRuns(r[0]);
-}
-
-void GlFxRevaluationLines::getTenant(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlFxRevaluationRuns)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlFxRevaluationRuns(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlFxRevaluationRuns GlFxRevaluationLines::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlFxRevaluationRuns(r[0]);
-}
-
-void GlFxRevaluationLines::getAccountingUnit(const DbClientPtr &clientPtr,
-                                             const std::function<void(GlFxRevaluationRuns)> &rcb,
-                                             const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlFxRevaluationRuns(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlFxRevaluationRuns GlFxRevaluationLines::getRevaluationRun(const DbClientPtr &clientPtr) const {
+GlFxRevaluationRuns GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
     Result r(nullptr);
     {
@@ -3028,9 +2945,9 @@ GlFxRevaluationRuns GlFxRevaluationLines::getRevaluationRun(const DbClientPtr &c
     return GlFxRevaluationRuns(r[0]);
 }
 
-void GlFxRevaluationLines::getRevaluationRun(const DbClientPtr &clientPtr,
-                                             const std::function<void(GlFxRevaluationRuns)> &rcb,
-                                             const ExceptionCallback &ecb) const
+void GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr,
+                                                  const std::function<void(GlFxRevaluationRuns)> &rcb,
+                                                  const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
     *clientPtr << sql
@@ -3052,95 +2969,7 @@ void GlFxRevaluationLines::getRevaluationRun(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlAccounts GlFxRevaluationLines::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlFxRevaluationLines::getTenant(const DbClientPtr &clientPtr,
-                                     const std::function<void(GlAccounts)> &rcb,
-                                     const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlFxRevaluationLines::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlAccounts(r[0]);
-}
-
-void GlFxRevaluationLines::getAccountingUnit(const DbClientPtr &clientPtr,
-                                             const std::function<void(GlAccounts)> &rcb,
-                                             const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_accounts where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlAccounts(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlAccounts GlFxRevaluationLines::getAccount(const DbClientPtr &clientPtr) const {
+GlAccounts GlFxRevaluationLines::getGlAccounts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_accounts where id = $1";
     Result r(nullptr);
     {
@@ -3160,9 +2989,9 @@ GlAccounts GlFxRevaluationLines::getAccount(const DbClientPtr &clientPtr) const 
     return GlAccounts(r[0]);
 }
 
-void GlFxRevaluationLines::getAccount(const DbClientPtr &clientPtr,
-                                      const std::function<void(GlAccounts)> &rcb,
-                                      const ExceptionCallback &ecb) const
+void GlFxRevaluationLines::getGlAccounts(const DbClientPtr &clientPtr,
+                                         const std::function<void(GlAccounts)> &rcb,
+                                         const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_accounts where id = $1";
     *clientPtr << sql

@@ -4,9 +4,9 @@
  */
 export default defineAppConfig({
   brand: {
-    productName: 'BusinessDesk ERP',
-    institutionName: 'BusinessDesk',
-    institutionShort: 'BusinessDesk',
+    productName: 'BusinessDesk 720 ERP',
+    institutionName: 'BusinessDesk 720',
+    institutionShort: 'Rhyolite',
     tagline: 'One workspace for finance and operations',
     theme: {
       primary: '#1B4B42',

@@ -69,7 +69,7 @@ const std::string GlFxRevaluationRuns::tableName = "\"gl_fx_revaluation_runs\"";
 
 const std::vector<typename GlFxRevaluationRuns::MetaData> GlFxRevaluationRuns::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"revaluation_date","::trantor::Date","date",0,0,0,1},
 {"currency_id","std::string","uuid",0,0,0,1},
@@ -80,11 +80,11 @@ const std::vector<typename GlFxRevaluationRuns::MetaData> GlFxRevaluationRuns::m
 {"total_loss","std::string","numeric",0,0,0,1},
 {"journal_batch_id","std::string","uuid",0,0,0,0},
 {"created_at","::trantor::Date","timestamp with time zone",0,0,0,1},
-{"created_by_user_id","int64_t","bigint",8,0,0,1},
+{"created_by_user_id","std::string","uuid",0,0,0,1},
 {"approved_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"approved_by_user_id","int64_t","bigint",8,0,0,0},
+{"approved_by_user_id","std::string","uuid",0,0,0,0},
 {"posted_at","::trantor::Date","timestamp with time zone",0,0,0,0},
-{"posted_by_user_id","int64_t","bigint",8,0,0,0}
+{"posted_by_user_id","std::string","uuid",0,0,0,0}
 
 };
 const std::string &GlFxRevaluationRuns::getColumnName(size_t index) noexcept(false)
@@ -107,7 +107,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -205,7 +205,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r["created_by_user_id"].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r["created_by_user_id"].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r["created_by_user_id"].as<std::string>());
 
         }
 
@@ -236,7 +236,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r["approved_by_user_id"].isNull())
         {
 
-            approvedByUserId_=std::make_shared<int64_t>(r["approved_by_user_id"].as<int64_t>());
+            approvedByUserId_=std::make_shared<std::string>(r["approved_by_user_id"].as<std::string>());
 
         }
 
@@ -267,7 +267,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r["posted_by_user_id"].isNull())
         {
 
-            postedByUserId_=std::make_shared<int64_t>(r["posted_by_user_id"].as<int64_t>());
+            postedByUserId_=std::make_shared<std::string>(r["posted_by_user_id"].as<std::string>());
 
         }
 
@@ -294,7 +294,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -403,7 +403,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            createdByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            createdByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -436,7 +436,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            approvedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            approvedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -469,7 +469,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Row &r, const ssize_t indexOffset
         if(!r[index].isNull())
         {
 
-            postedByUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            postedByUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -499,7 +499,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson, const std::ve
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -623,7 +623,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson, const std::ve
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -660,7 +660,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson, const std::ve
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            approvedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            approvedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -697,7 +697,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson, const std::ve
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            postedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            postedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -720,7 +720,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -844,7 +844,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[12]=true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -881,7 +881,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[14]=true;
         if(!pJson["approved_by_user_id"].isNull())
         {
-            approvedByUserId_=std::make_shared<int64_t>((int64_t)pJson["approved_by_user_id"].asInt64());
+            approvedByUserId_=std::make_shared<std::string>(pJson["approved_by_user_id"].asString());
         }
     }
 
@@ -918,7 +918,7 @@ GlFxRevaluationRuns::GlFxRevaluationRuns(const Json::Value &pJson) noexcept(fals
         dirtyFlag_[16]=true;
         if(!pJson["posted_by_user_id"].isNull())
         {
-            postedByUserId_=std::make_shared<int64_t>((int64_t)pJson["posted_by_user_id"].asInt64());
+            postedByUserId_=std::make_shared<std::string>(pJson["posted_by_user_id"].asString());
         }
     }
 
@@ -946,7 +946,7 @@ void GlFxRevaluationRuns::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -1070,7 +1070,7 @@ void GlFxRevaluationRuns::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[12] = true;
         if(!pJson[pMasqueradingVector[12]].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[12]].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[12]].asString());
         }
     }
 
@@ -1107,7 +1107,7 @@ void GlFxRevaluationRuns::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[14] = true;
         if(!pJson[pMasqueradingVector[14]].isNull())
         {
-            approvedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[14]].asInt64());
+            approvedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[14]].asString());
         }
     }
 
@@ -1144,7 +1144,7 @@ void GlFxRevaluationRuns::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[16] = true;
         if(!pJson[pMasqueradingVector[16]].isNull())
         {
-            postedByUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[16]].asInt64());
+            postedByUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[16]].asString());
         }
     }
 
@@ -1166,7 +1166,7 @@ void GlFxRevaluationRuns::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -1290,7 +1290,7 @@ void GlFxRevaluationRuns::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[12] = true;
         if(!pJson["created_by_user_id"].isNull())
         {
-            createdByUserId_=std::make_shared<int64_t>((int64_t)pJson["created_by_user_id"].asInt64());
+            createdByUserId_=std::make_shared<std::string>(pJson["created_by_user_id"].asString());
         }
     }
 
@@ -1327,7 +1327,7 @@ void GlFxRevaluationRuns::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[14] = true;
         if(!pJson["approved_by_user_id"].isNull())
         {
-            approvedByUserId_=std::make_shared<int64_t>((int64_t)pJson["approved_by_user_id"].asInt64());
+            approvedByUserId_=std::make_shared<std::string>(pJson["approved_by_user_id"].asString());
         }
     }
 
@@ -1364,7 +1364,7 @@ void GlFxRevaluationRuns::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[16] = true;
         if(!pJson["posted_by_user_id"].isNull())
         {
-            postedByUserId_=std::make_shared<int64_t>((int64_t)pJson["posted_by_user_id"].asInt64());
+            postedByUserId_=std::make_shared<std::string>(pJson["posted_by_user_id"].asString());
         }
     }
 
@@ -1397,20 +1397,25 @@ const typename GlFxRevaluationRuns::PrimaryKeyType & GlFxRevaluationRuns::getPri
     return *id_;
 }
 
-const int32_t &GlFxRevaluationRuns::getValueOfTenantId() const noexcept
+const std::string &GlFxRevaluationRuns::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlFxRevaluationRuns::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationRuns::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlFxRevaluationRuns::setTenantId(const int32_t &pTenantId) noexcept
+void GlFxRevaluationRuns::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlFxRevaluationRuns::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1629,20 +1634,25 @@ void GlFxRevaluationRuns::setCreatedAt(const ::trantor::Date &pCreatedAt) noexce
     dirtyFlag_[11] = true;
 }
 
-const int64_t &GlFxRevaluationRuns::getValueOfCreatedByUserId() const noexcept
+const std::string &GlFxRevaluationRuns::getValueOfCreatedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(createdByUserId_)
         return *createdByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlFxRevaluationRuns::getCreatedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationRuns::getCreatedByUserId() const noexcept
 {
     return createdByUserId_;
 }
-void GlFxRevaluationRuns::setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept
+void GlFxRevaluationRuns::setCreatedByUserId(const std::string &pCreatedByUserId) noexcept
 {
-    createdByUserId_ = std::make_shared<int64_t>(pCreatedByUserId);
+    createdByUserId_ = std::make_shared<std::string>(pCreatedByUserId);
+    dirtyFlag_[12] = true;
+}
+void GlFxRevaluationRuns::setCreatedByUserId(std::string &&pCreatedByUserId) noexcept
+{
+    createdByUserId_ = std::make_shared<std::string>(std::move(pCreatedByUserId));
     dirtyFlag_[12] = true;
 }
 
@@ -1668,20 +1678,25 @@ void GlFxRevaluationRuns::setApprovedAtToNull() noexcept
     dirtyFlag_[13] = true;
 }
 
-const int64_t &GlFxRevaluationRuns::getValueOfApprovedByUserId() const noexcept
+const std::string &GlFxRevaluationRuns::getValueOfApprovedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(approvedByUserId_)
         return *approvedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlFxRevaluationRuns::getApprovedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationRuns::getApprovedByUserId() const noexcept
 {
     return approvedByUserId_;
 }
-void GlFxRevaluationRuns::setApprovedByUserId(const int64_t &pApprovedByUserId) noexcept
+void GlFxRevaluationRuns::setApprovedByUserId(const std::string &pApprovedByUserId) noexcept
 {
-    approvedByUserId_ = std::make_shared<int64_t>(pApprovedByUserId);
+    approvedByUserId_ = std::make_shared<std::string>(pApprovedByUserId);
+    dirtyFlag_[14] = true;
+}
+void GlFxRevaluationRuns::setApprovedByUserId(std::string &&pApprovedByUserId) noexcept
+{
+    approvedByUserId_ = std::make_shared<std::string>(std::move(pApprovedByUserId));
     dirtyFlag_[14] = true;
 }
 void GlFxRevaluationRuns::setApprovedByUserIdToNull() noexcept
@@ -1712,20 +1727,25 @@ void GlFxRevaluationRuns::setPostedAtToNull() noexcept
     dirtyFlag_[15] = true;
 }
 
-const int64_t &GlFxRevaluationRuns::getValueOfPostedByUserId() const noexcept
+const std::string &GlFxRevaluationRuns::getValueOfPostedByUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(postedByUserId_)
         return *postedByUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlFxRevaluationRuns::getPostedByUserId() const noexcept
+const std::shared_ptr<std::string> &GlFxRevaluationRuns::getPostedByUserId() const noexcept
 {
     return postedByUserId_;
 }
-void GlFxRevaluationRuns::setPostedByUserId(const int64_t &pPostedByUserId) noexcept
+void GlFxRevaluationRuns::setPostedByUserId(const std::string &pPostedByUserId) noexcept
 {
-    postedByUserId_ = std::make_shared<int64_t>(pPostedByUserId);
+    postedByUserId_ = std::make_shared<std::string>(pPostedByUserId);
+    dirtyFlag_[16] = true;
+}
+void GlFxRevaluationRuns::setPostedByUserId(std::string &&pPostedByUserId) noexcept
+{
+    postedByUserId_ = std::make_shared<std::string>(std::move(pPostedByUserId));
     dirtyFlag_[16] = true;
 }
 void GlFxRevaluationRuns::setPostedByUserIdToNull() noexcept
@@ -2412,7 +2432,7 @@ Json::Value GlFxRevaluationRuns::toJson() const
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2434,7 +2454,7 @@ Json::Value GlFxRevaluationRuns::toJson() const
     if(getApprovedByUserId())
     {
 
-        ret["approved_by_user_id"]=(Json::Int64)getValueOfApprovedByUserId();
+        ret["approved_by_user_id"]=getValueOfApprovedByUserId();
 
     }
     else
@@ -2456,7 +2476,7 @@ Json::Value GlFxRevaluationRuns::toJson() const
     if(getPostedByUserId())
     {
 
-        ret["posted_by_user_id"]=(Json::Int64)getValueOfPostedByUserId();
+        ret["posted_by_user_id"]=getValueOfPostedByUserId();
 
     }
     else
@@ -2652,7 +2672,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
             if(getCreatedByUserId())
             {
 
-                ret[pMasqueradingVector[12]]=(Json::Int64)getValueOfCreatedByUserId();
+                ret[pMasqueradingVector[12]]=getValueOfCreatedByUserId();
 
             }
             else
@@ -2680,7 +2700,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
             if(getApprovedByUserId())
             {
 
-                ret[pMasqueradingVector[14]]=(Json::Int64)getValueOfApprovedByUserId();
+                ret[pMasqueradingVector[14]]=getValueOfApprovedByUserId();
 
             }
             else
@@ -2708,7 +2728,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
             if(getPostedByUserId())
             {
 
-                ret[pMasqueradingVector[16]]=(Json::Int64)getValueOfPostedByUserId();
+                ret[pMasqueradingVector[16]]=getValueOfPostedByUserId();
 
             }
             else
@@ -2856,7 +2876,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
     if(getCreatedByUserId())
     {
 
-        ret["created_by_user_id"]=(Json::Int64)getValueOfCreatedByUserId();
+        ret["created_by_user_id"]=getValueOfCreatedByUserId();
 
     }
     else
@@ -2878,7 +2898,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
     if(getApprovedByUserId())
     {
 
-        ret["approved_by_user_id"]=(Json::Int64)getValueOfApprovedByUserId();
+        ret["approved_by_user_id"]=getValueOfApprovedByUserId();
 
     }
     else
@@ -2900,7 +2920,7 @@ Json::Value GlFxRevaluationRuns::toMasqueradedJson(
     if(getPostedByUserId())
     {
 
-        ret["posted_by_user_id"]=(Json::Int64)getValueOfPostedByUserId();
+        ret["posted_by_user_id"]=getValueOfPostedByUserId();
 
     }
     else
@@ -3552,7 +3572,7 @@ bool GlFxRevaluationRuns::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3743,7 +3763,7 @@ bool GlFxRevaluationRuns::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3773,7 +3793,7 @@ bool GlFxRevaluationRuns::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3803,7 +3823,7 @@ bool GlFxRevaluationRuns::validJsonOfField(size_t index,
                 return true;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -3862,51 +3882,7 @@ void GlFxRevaluationRuns::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(CoreAccountingUnits)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlFxRevaluationRuns::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -3926,9 +3902,9 @@ CoreAccountingUnits GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &cl
     return CoreAccountingUnits(r[0]);
 }
 
-void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(CoreAccountingUnits)> &rcb,
-                                            const ExceptionCallback &ecb) const
+void GlFxRevaluationRuns::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                 const std::function<void(CoreAccountingUnits)> &rcb,
+                                                 const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
@@ -3950,95 +3926,7 @@ void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlJournalBatches GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlFxRevaluationRuns::getTenant(const DbClientPtr &clientPtr,
-                                    const std::function<void(GlJournalBatches)> &rcb,
-                                    const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlJournalBatches(r[0]);
-}
-
-void GlFxRevaluationRuns::getAccountingUnit(const DbClientPtr &clientPtr,
-                                            const std::function<void(GlJournalBatches)> &rcb,
-                                            const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_journal_batches where id = $1";
-    *clientPtr << sql
-               << *accountingUnitId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlJournalBatches(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-GlJournalBatches GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientPtr) const {
+GlJournalBatches GlFxRevaluationRuns::getGlJournalBatches(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     Result r(nullptr);
     {
@@ -4058,9 +3946,9 @@ GlJournalBatches GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientP
     return GlJournalBatches(r[0]);
 }
 
-void GlFxRevaluationRuns::getJournalBatch(const DbClientPtr &clientPtr,
-                                          const std::function<void(GlJournalBatches)> &rcb,
-                                          const ExceptionCallback &ecb) const
+void GlFxRevaluationRuns::getGlJournalBatches(const DbClientPtr &clientPtr,
+                                              const std::function<void(GlJournalBatches)> &rcb,
+                                              const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from gl_journal_batches where id = $1";
     *clientPtr << sql

@@ -1,4 +1,4 @@
-import type { AccountsResponse, DashboardResponse, JournalsResponse, LedgerAccount, JournalSummary } from '../../app/features/ledger/types'
+import type { AccountsResponse, DashboardResponse, LedgerAccount } from '../../app/features/ledger/types'
 
 export const demoAccounts: LedgerAccount[] = [
   { id: 'acc-1000', accountNumber: '1000', name: 'Cash on Hand', group: 'Current Assets', accountType: 'Asset', currency: 'GHS', accountHeaderId: 'control-petty-cash', balance: '12450.00', status: 'Active' },
@@ -20,32 +20,6 @@ export const demoAccounts: LedgerAccount[] = [
   { id: 'acc-5100', accountNumber: '5100', name: 'Foreign Exchange Loss', group: 'Expenses', accountType: 'Expense', currency: 'GHS', accountHeaderId: 'control-fx-loss', balance: '1820.14', status: 'Inactive' },
 ]
 
-export const demoJournals: JournalSummary[] = [
-  { id: 'jrn-001', batchNumber: 'GJ-2026-0042', description: 'Monthly depreciation — April', date: '2026-04-30', source: 'General journal', debit: '12500.00', credit: '12500.00', status: 'Posted', preparer: 'E. Mensah' },
-  { id: 'jrn-002', batchNumber: 'GJ-2026-0041', description: 'Accrual — utilities', date: '2026-04-29', source: 'General journal', debit: '4830.00', credit: '4830.00', status: 'Pending approval', preparer: 'K. Agyeman' },
-  { id: 'jrn-003', batchNumber: 'PV-2026-0118', description: 'Office supplies — Adom Trading', date: '2026-04-28', source: 'Payment voucher', debit: '2640.00', credit: '2640.00', status: 'Approved', preparer: 'M. Boateng' },
-  { id: 'jrn-004', batchNumber: 'RC-2026-0076', description: 'Consulting receipt — Akua Co.', date: '2026-04-27', source: 'Cash receipt', debit: '18750.00', credit: '18750.00', status: 'Posted', preparer: 'E. Mensah' },
-  {
-    id: 'jrn-005', batchNumber: 'GJ-2026-0040', description: 'FX revaluation — USD balances', date: '2026-04-26', source: 'Revaluation',
-    debit: '1820.140000', credit: '1820.140000', status: 'Draft', preparer: 'K. Agyeman', isMultiCurrency: true, lineCount: 2,
-    lines: [
-      { id: 'jrn-005-line-1', accountId: 'acc-5100', accountNumber: '5100', accountName: 'Foreign Exchange Loss', referenceNumber: 'FX-APR-2026', description: 'Unrealized exchange loss', currencyCode: 'GHS', currencyName: 'Ghana cedi', exchangeRate: '1.0000000000', foreignDebit: '1820.140000', foreignCredit: '0.000000', debit: '1820.140000', credit: '0.000000' },
-      { id: 'jrn-005-line-2', accountId: 'acc-1020', accountNumber: '1020', accountName: 'Bank — USD Account', referenceNumber: 'FX-APR-2026', description: 'Revaluation of USD bank balance', currencyCode: 'USD', currencyName: 'US dollar', exchangeRate: '12.5000000000', foreignDebit: '0.000000', foreignCredit: '145.611200', debit: '0.000000', credit: '1820.140000' },
-    ],
-  },
-  { id: 'jrn-006', batchNumber: 'GJ-2026-0039', description: 'Correction — duplicate accrual', date: '2026-04-24', source: 'Reversal', debit: '930.00', credit: '930.00', status: 'Reversed', preparer: 'M. Boateng' },
-]
-
-export function getNextDemoJournalBatchNumber(batchDate: string): string {
-  const year = batchDate.slice(0, 4)
-  const pattern = new RegExp(`^GJ-${year}-(\\d+)$`)
-  const highestSequence = demoJournals.reduce((highest, journal) => {
-    const match = journal.batchNumber.match(pattern)
-    return match ? Math.max(highest, Number(match[1])) : highest
-  }, 0)
-  return `GJ-${year}-${String(highestSequence + 1).padStart(4, '0')}`
-}
-
 export const demoDashboard: DashboardResponse = {
   accountingUnit: { id: 'unit-accra', name: 'Accra Operations', code: 'ACC-01', baseCurrency: 'GHS' },
   asOf: '2026-04-30',
@@ -60,7 +34,7 @@ export const demoDashboard: DashboardResponse = {
     { label: 'Main operating bank', amount: '548219.75', currency: 'GHS', change: '+5.8%' },
     { label: 'USD bank account', amount: '18750.00', currency: 'USD', change: 'As at 30 Apr' },
   ],
-  recentJournals: demoJournals.slice(0, 5),
+  recentJournals: [],
 }
 
 export function filterDemoAccounts(query: Record<string, unknown>): AccountsResponse {
@@ -69,17 +43,6 @@ export function filterDemoAccounts(query: Record<string, unknown>): AccountsResp
   const items = demoAccounts.filter((account) => {
     const matchesSearch = !search || [account.accountNumber, account.name, account.group, account.accountType].some((value) => value.toLowerCase().includes(search))
     const matchesStatus = !status || account.status.toLowerCase() === status
-    return matchesSearch && matchesStatus
-  })
-  return { items, total: items.length }
-}
-
-export function filterDemoJournals(query: Record<string, unknown>): JournalsResponse {
-  const search = String(query.search ?? '').trim().toLowerCase()
-  const status = String(query.status ?? '').trim().toLowerCase()
-  const items = demoJournals.filter((journal) => {
-    const matchesSearch = !search || [journal.batchNumber, journal.description, journal.source, journal.preparer].some((value) => value.toLowerCase().includes(search))
-    const matchesStatus = !status || journal.status.toLowerCase().includes(status)
     return matchesSearch && matchesStatus
   })
   return { items, total: items.length }

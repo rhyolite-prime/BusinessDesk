@@ -15,7 +15,7 @@ interface AuthIdentityResponse {
 
 /**
  * Small compatibility adapter for the BusinessDesk workspace chrome. The
- * layered auth module owns the TOTP flow and httpOnly session cookie; this
+ * layered auth module owns server-verified TOTP and the httpOnly JWT cookie; this
  * composable exposes the identity shape used by the module manager/sidebar.
  */
 export function useBusinessDeskAuth() {
@@ -30,7 +30,7 @@ export function useBusinessDeskAuth() {
       const identity = await requestFetch<AuthIdentityResponse>('/api/auth/me')
       user.value = identity.authenticated && identity.username
         ? {
-            accountId: identity.accountId || 'DEMO-01',
+            accountId: identity.accountId || '',
             username: identity.username,
             displayName: identity.name || identity.username,
           }

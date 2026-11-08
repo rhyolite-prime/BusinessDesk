@@ -55,14 +55,14 @@ const std::string GlApprovalEvents::tableName = "\"gl_approval_events\"";
 
 const std::vector<typename GlApprovalEvents::MetaData> GlApprovalEvents::metaData_={
 {"id","std::string","uuid",0,0,1,1},
-{"tenant_id","int32_t","integer",4,0,0,1},
+{"tenant_id","std::string","uuid",0,0,0,1},
 {"accounting_unit_id","std::string","uuid",0,0,0,1},
 {"entity_type","std::string","character varying",40,0,0,1},
 {"entity_id","std::string","uuid",0,0,0,1},
 {"action","std::string","character varying",30,0,0,1},
 {"from_status","std::string","character varying",24,0,0,0},
 {"to_status","std::string","character varying",24,0,0,1},
-{"actor_user_id","int64_t","bigint",8,0,0,1},
+{"actor_user_id","std::string","uuid",0,0,0,1},
 {"reason","std::string","text",0,0,0,0},
 {"occurred_at","::trantor::Date","timestamp with time zone",0,0,0,1},
 {"request_id","std::string","character varying",100,0,0,0}
@@ -88,7 +88,7 @@ GlApprovalEvents::GlApprovalEvents(const Row &r, const ssize_t indexOffset) noex
         if(!r["tenant_id"].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r["tenant_id"].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r["tenant_id"].as<std::string>());
 
         }
 
@@ -137,7 +137,7 @@ GlApprovalEvents::GlApprovalEvents(const Row &r, const ssize_t indexOffset) noex
         if(!r["actor_user_id"].isNull())
         {
 
-            actorUserId_=std::make_shared<int64_t>(r["actor_user_id"].as<int64_t>());
+            actorUserId_=std::make_shared<std::string>(r["actor_user_id"].as<std::string>());
 
         }
 
@@ -202,7 +202,7 @@ GlApprovalEvents::GlApprovalEvents(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            tenantId_=std::make_shared<int32_t>(r[index].as<int32_t>());
+            tenantId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -258,7 +258,7 @@ GlApprovalEvents::GlApprovalEvents(const Row &r, const ssize_t indexOffset) noex
         if(!r[index].isNull())
         {
 
-            actorUserId_=std::make_shared<int64_t>(r[index].as<int64_t>());
+            actorUserId_=std::make_shared<std::string>(r[index].as<std::string>());
 
         }
 
@@ -329,7 +329,7 @@ GlApprovalEvents::GlApprovalEvents(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -392,7 +392,7 @@ GlApprovalEvents::GlApprovalEvents(const Json::Value &pJson, const std::vector<s
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            actorUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            actorUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -461,7 +461,7 @@ GlApprovalEvents::GlApprovalEvents(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1]=true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -524,7 +524,7 @@ GlApprovalEvents::GlApprovalEvents(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8]=true;
         if(!pJson["actor_user_id"].isNull())
         {
-            actorUserId_=std::make_shared<int64_t>((int64_t)pJson["actor_user_id"].asInt64());
+            actorUserId_=std::make_shared<std::string>(pJson["actor_user_id"].asString());
         }
     }
 
@@ -598,7 +598,7 @@ void GlApprovalEvents::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[1] = true;
         if(!pJson[pMasqueradingVector[1]].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[1]].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson[pMasqueradingVector[1]].asString());
         }
     }
 
@@ -661,7 +661,7 @@ void GlApprovalEvents::updateByMasqueradedJson(const Json::Value &pJson,
         dirtyFlag_[8] = true;
         if(!pJson[pMasqueradingVector[8]].isNull())
         {
-            actorUserId_=std::make_shared<int64_t>((int64_t)pJson[pMasqueradingVector[8]].asInt64());
+            actorUserId_=std::make_shared<std::string>(pJson[pMasqueradingVector[8]].asString());
         }
     }
 
@@ -729,7 +729,7 @@ void GlApprovalEvents::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[1] = true;
         if(!pJson["tenant_id"].isNull())
         {
-            tenantId_=std::make_shared<int32_t>((int32_t)pJson["tenant_id"].asInt64());
+            tenantId_=std::make_shared<std::string>(pJson["tenant_id"].asString());
         }
     }
 
@@ -792,7 +792,7 @@ void GlApprovalEvents::updateByJson(const Json::Value &pJson) noexcept(false)
         dirtyFlag_[8] = true;
         if(!pJson["actor_user_id"].isNull())
         {
-            actorUserId_=std::make_shared<int64_t>((int64_t)pJson["actor_user_id"].asInt64());
+            actorUserId_=std::make_shared<std::string>(pJson["actor_user_id"].asString());
         }
     }
 
@@ -871,20 +871,25 @@ const typename GlApprovalEvents::PrimaryKeyType & GlApprovalEvents::getPrimaryKe
     return *id_;
 }
 
-const int32_t &GlApprovalEvents::getValueOfTenantId() const noexcept
+const std::string &GlApprovalEvents::getValueOfTenantId() const noexcept
 {
-    static const int32_t defaultValue = int32_t();
+    static const std::string defaultValue = std::string();
     if(tenantId_)
         return *tenantId_;
     return defaultValue;
 }
-const std::shared_ptr<int32_t> &GlApprovalEvents::getTenantId() const noexcept
+const std::shared_ptr<std::string> &GlApprovalEvents::getTenantId() const noexcept
 {
     return tenantId_;
 }
-void GlApprovalEvents::setTenantId(const int32_t &pTenantId) noexcept
+void GlApprovalEvents::setTenantId(const std::string &pTenantId) noexcept
 {
-    tenantId_ = std::make_shared<int32_t>(pTenantId);
+    tenantId_ = std::make_shared<std::string>(pTenantId);
+    dirtyFlag_[1] = true;
+}
+void GlApprovalEvents::setTenantId(std::string &&pTenantId) noexcept
+{
+    tenantId_ = std::make_shared<std::string>(std::move(pTenantId));
     dirtyFlag_[1] = true;
 }
 
@@ -1025,20 +1030,25 @@ void GlApprovalEvents::setToStatus(std::string &&pToStatus) noexcept
     dirtyFlag_[7] = true;
 }
 
-const int64_t &GlApprovalEvents::getValueOfActorUserId() const noexcept
+const std::string &GlApprovalEvents::getValueOfActorUserId() const noexcept
 {
-    static const int64_t defaultValue = int64_t();
+    static const std::string defaultValue = std::string();
     if(actorUserId_)
         return *actorUserId_;
     return defaultValue;
 }
-const std::shared_ptr<int64_t> &GlApprovalEvents::getActorUserId() const noexcept
+const std::shared_ptr<std::string> &GlApprovalEvents::getActorUserId() const noexcept
 {
     return actorUserId_;
 }
-void GlApprovalEvents::setActorUserId(const int64_t &pActorUserId) noexcept
+void GlApprovalEvents::setActorUserId(const std::string &pActorUserId) noexcept
 {
-    actorUserId_ = std::make_shared<int64_t>(pActorUserId);
+    actorUserId_ = std::make_shared<std::string>(pActorUserId);
+    dirtyFlag_[8] = true;
+}
+void GlApprovalEvents::setActorUserId(std::string &&pActorUserId) noexcept
+{
+    actorUserId_ = std::make_shared<std::string>(std::move(pActorUserId));
     dirtyFlag_[8] = true;
 }
 
@@ -1597,7 +1607,7 @@ Json::Value GlApprovalEvents::toJson() const
     if(getActorUserId())
     {
 
-        ret["actor_user_id"]=(Json::Int64)getValueOfActorUserId();
+        ret["actor_user_id"]=getValueOfActorUserId();
 
     }
     else
@@ -1770,7 +1780,7 @@ Json::Value GlApprovalEvents::toMasqueradedJson(
             if(getActorUserId())
             {
 
-                ret[pMasqueradingVector[8]]=(Json::Int64)getValueOfActorUserId();
+                ret[pMasqueradingVector[8]]=getValueOfActorUserId();
 
             }
             else
@@ -1916,7 +1926,7 @@ Json::Value GlApprovalEvents::toMasqueradedJson(
     if(getActorUserId())
     {
 
-        ret["actor_user_id"]=(Json::Int64)getValueOfActorUserId();
+        ret["actor_user_id"]=getValueOfActorUserId();
 
     }
     else
@@ -2473,7 +2483,7 @@ bool GlApprovalEvents::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2616,7 +2626,7 @@ bool GlApprovalEvents::validJsonOfField(size_t index,
                 return false;
             }
 
-            if(!pJson.isInt64())
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;
@@ -2685,51 +2695,7 @@ bool GlApprovalEvents::validJsonOfField(size_t index,
     return true;
 }
 
-CoreAccountingUnits GlApprovalEvents::getTenant(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *tenantId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreAccountingUnits(r[0]);
-}
-
-void GlApprovalEvents::getTenant(const DbClientPtr &clientPtr,
-                                 const std::function<void(CoreAccountingUnits)> &rcb,
-                                 const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_accounting_units where id = $1";
-    *clientPtr << sql
-               << *tenantId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreAccountingUnits(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreAccountingUnits GlApprovalEvents::getAccountingUnit(const DbClientPtr &clientPtr) const {
+CoreAccountingUnits GlApprovalEvents::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
@@ -2749,9 +2715,9 @@ CoreAccountingUnits GlApprovalEvents::getAccountingUnit(const DbClientPtr &clien
     return CoreAccountingUnits(r[0]);
 }
 
-void GlApprovalEvents::getAccountingUnit(const DbClientPtr &clientPtr,
-                                         const std::function<void(CoreAccountingUnits)> &rcb,
-                                         const ExceptionCallback &ecb) const
+void GlApprovalEvents::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                              const std::function<void(CoreAccountingUnits)> &rcb,
+                                              const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql

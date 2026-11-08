@@ -137,11 +137,12 @@ class GlFxRevaluationRuns
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -234,11 +235,12 @@ class GlFxRevaluationRuns
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
 
     /**  For column approved_at  */
     ///Get the value of the column approved_at, returns the default value if the column is null
@@ -251,11 +253,12 @@ class GlFxRevaluationRuns
 
     /**  For column approved_by_user_id  */
     ///Get the value of the column approved_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfApprovedByUserId() const noexcept;
+    const std::string &getValueOfApprovedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getApprovedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getApprovedByUserId() const noexcept;
     ///Set the value of the column approved_by_user_id
-    void setApprovedByUserId(const int64_t &pApprovedByUserId) noexcept;
+    void setApprovedByUserId(const std::string &pApprovedByUserId) noexcept;
+    void setApprovedByUserId(std::string &&pApprovedByUserId) noexcept;
     void setApprovedByUserIdToNull() noexcept;
 
     /**  For column posted_at  */
@@ -269,11 +272,12 @@ class GlFxRevaluationRuns
 
     /**  For column posted_by_user_id  */
     ///Get the value of the column posted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfPostedByUserId() const noexcept;
+    const std::string &getValueOfPostedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getPostedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getPostedByUserId() const noexcept;
     ///Set the value of the column posted_by_user_id
-    void setPostedByUserId(const int64_t &pPostedByUserId) noexcept;
+    void setPostedByUserId(const std::string &pPostedByUserId) noexcept;
+    void setPostedByUserId(std::string &&pPostedByUserId) noexcept;
     void setPostedByUserIdToNull() noexcept;
 
 
@@ -291,30 +295,15 @@ class GlFxRevaluationRuns
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(GlJournalBatches)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlJournalBatches)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlJournalBatches getJournalBatch(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getJournalBatch(const drogon::orm::DbClientPtr &clientPtr,
-                         const std::function<void(GlJournalBatches)> &rcb,
-                         const drogon::orm::ExceptionCallback &ecb) const;
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlFxRevaluationRuns>;
@@ -332,7 +321,7 @@ class GlFxRevaluationRuns
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<::trantor::Date> revaluationDate_;
     std::shared_ptr<std::string> currencyId_;
@@ -343,11 +332,11 @@ class GlFxRevaluationRuns
     std::shared_ptr<std::string> totalLoss_;
     std::shared_ptr<std::string> journalBatchId_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
     std::shared_ptr<::trantor::Date> approvedAt_;
-    std::shared_ptr<int64_t> approvedByUserId_;
+    std::shared_ptr<std::string> approvedByUserId_;
     std::shared_ptr<::trantor::Date> postedAt_;
-    std::shared_ptr<int64_t> postedByUserId_;
+    std::shared_ptr<std::string> postedByUserId_;
 
     struct MetaData
     {

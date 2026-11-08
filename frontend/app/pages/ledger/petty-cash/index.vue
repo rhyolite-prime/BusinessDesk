@@ -281,10 +281,8 @@ function organizationUnitName(id: string) {
 }
 
 function formatMoneyUnits(units: bigint, currencyCode = form.currencyCode) {
-  const cents = (units + BigInt(5000)) / BigInt(10000)
-  const whole = cents / BigInt(100)
-  const fraction = String(cents % BigInt(100)).padStart(2, '0')
-  return `${currencyCode} ${new Intl.NumberFormat('en-GH', { maximumFractionDigits: 0 }).format(whole)}.${fraction}`
+  const sign = units < 0n ? '-' : '', absolute = units < 0n ? -units : units
+  return formatCurrency(`${sign}${absolute / 1000000n}.${String(absolute % 1000000n).padStart(6, '0')}`, currencyCode)
 }
 
 function normalizeInputAmount(value: string) {

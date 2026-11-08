@@ -14,10 +14,10 @@ init()
         <BrandMark dark />
       </NuxtLink>
       <div class="relative">
-        <h2 class="text-2xl font-bold leading-snug">Core banking for institutions<br />too important to operate without one.</h2>
+        <h2 class="text-2xl font-bold leading-snug">Your business, connected.<br />Your operations, in control.</h2>
         <p class="text-white/70 text-sm mt-3 max-w-sm leading-relaxed">
-          Multi-tenant core, USSD and mobile self-service — one platform for clients,
-          groups, loans, savings, accounting, and maker-checker controls.
+          One ERP platform for finance, procurement, inventory, and people —
+          bringing your teams, workflows, and business insights together.
         </p>
       </div>
       <p class="relative text-[11px] text-white/40">{{ brand.institutionName }} · {{ brand.tagline }}</p>

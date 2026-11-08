@@ -25,7 +25,7 @@ const cycleTone = computed(() => payroll.cycle.value.status === 'Posted'
     : 'border-slate-200 bg-white text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300')
 
 function formatGhs(value: number) {
-  return new Intl.NumberFormat('en-GH', { style: 'currency', currency: 'GHS', maximumFractionDigits: 0 }).format(value)
+  return formatCurrency(value, 'GHS')
 }
 
 function setPeriod() {

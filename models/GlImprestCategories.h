@@ -60,6 +60,7 @@ class GlImprestCategories
         static const std::string _is_deleted;
         static const std::string _deleted_at;
         static const std::string _deleted_by_user_id;
+        static const std::string _version;
 
     };
 
@@ -127,11 +128,12 @@ class GlImprestCategories
 
     /**  For column tenant_id  */
     ///Get the value of the column tenant_id, returns the default value if the column is null
-    const int32_t &getValueOfTenantId() const noexcept;
+    const std::string &getValueOfTenantId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int32_t> &getTenantId() const noexcept;
+    const std::shared_ptr<std::string> &getTenantId() const noexcept;
     ///Set the value of the column tenant_id
-    void setTenantId(const int32_t &pTenantId) noexcept;
+    void setTenantId(const std::string &pTenantId) noexcept;
+    void setTenantId(std::string &&pTenantId) noexcept;
 
     /**  For column accounting_unit_id  */
     ///Get the value of the column accounting_unit_id, returns the default value if the column is null
@@ -161,11 +163,12 @@ class GlImprestCategories
 
     /**  For column created_by_user_id  */
     ///Get the value of the column created_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfCreatedByUserId() const noexcept;
+    const std::string &getValueOfCreatedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getCreatedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getCreatedByUserId() const noexcept;
     ///Set the value of the column created_by_user_id
-    void setCreatedByUserId(const int64_t &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(const std::string &pCreatedByUserId) noexcept;
+    void setCreatedByUserId(std::string &&pCreatedByUserId) noexcept;
     void setCreatedByUserIdToNull() noexcept;
 
     /**  For column last_modified_at  */
@@ -179,11 +182,12 @@ class GlImprestCategories
 
     /**  For column last_modified_by_user_id  */
     ///Get the value of the column last_modified_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfLastModifiedByUserId() const noexcept;
+    const std::string &getValueOfLastModifiedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getLastModifiedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getLastModifiedByUserId() const noexcept;
     ///Set the value of the column last_modified_by_user_id
-    void setLastModifiedByUserId(const int64_t &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(const std::string &pLastModifiedByUserId) noexcept;
+    void setLastModifiedByUserId(std::string &&pLastModifiedByUserId) noexcept;
     void setLastModifiedByUserIdToNull() noexcept;
 
     /**  For column is_deleted  */
@@ -205,16 +209,25 @@ class GlImprestCategories
 
     /**  For column deleted_by_user_id  */
     ///Get the value of the column deleted_by_user_id, returns the default value if the column is null
-    const int64_t &getValueOfDeletedByUserId() const noexcept;
+    const std::string &getValueOfDeletedByUserId() const noexcept;
     ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
-    const std::shared_ptr<int64_t> &getDeletedByUserId() const noexcept;
+    const std::shared_ptr<std::string> &getDeletedByUserId() const noexcept;
     ///Set the value of the column deleted_by_user_id
-    void setDeletedByUserId(const int64_t &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(const std::string &pDeletedByUserId) noexcept;
+    void setDeletedByUserId(std::string &&pDeletedByUserId) noexcept;
     void setDeletedByUserIdToNull() noexcept;
 
+    /**  For column version  */
+    ///Get the value of the column version, returns the default value if the column is null
+    const int32_t &getValueOfVersion() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<int32_t> &getVersion() const noexcept;
+    ///Set the value of the column version
+    void setVersion(const int32_t &pVersion) noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 11;  }
+
+    static size_t getColumnNumber() noexcept {  return 12;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -222,15 +235,10 @@ class GlImprestCategories
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    CoreAccountingUnits getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenant(const drogon::orm::DbClientPtr &clientPtr,
-                   const std::function<void(CoreAccountingUnits)> &rcb,
-                   const drogon::orm::ExceptionCallback &ecb) const;
-
-    CoreAccountingUnits getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountingUnit(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreAccountingUnits)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImprestCategories>;
@@ -248,16 +256,17 @@ class GlImprestCategories
     ///For mysql or sqlite3
     void updateId(const uint64_t id);
     std::shared_ptr<std::string> id_;
-    std::shared_ptr<int32_t> tenantId_;
+    std::shared_ptr<std::string> tenantId_;
     std::shared_ptr<std::string> accountingUnitId_;
     std::shared_ptr<std::string> name_;
     std::shared_ptr<::trantor::Date> createdAt_;
-    std::shared_ptr<int64_t> createdByUserId_;
+    std::shared_ptr<std::string> createdByUserId_;
     std::shared_ptr<::trantor::Date> lastModifiedAt_;
-    std::shared_ptr<int64_t> lastModifiedByUserId_;
+    std::shared_ptr<std::string> lastModifiedByUserId_;
     std::shared_ptr<bool> isDeleted_;
     std::shared_ptr<::trantor::Date> deletedAt_;
-    std::shared_ptr<int64_t> deletedByUserId_;
+    std::shared_ptr<std::string> deletedByUserId_;
+    std::shared_ptr<int32_t> version_;
 
     struct MetaData
     {
@@ -270,7 +279,7 @@ class GlImprestCategories
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[11]={ false };
+    bool dirtyFlag_[12]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -362,6 +371,13 @@ class GlImprestCategories
         {
             sql += "deleted_by_user_id,";
             ++parametersCount;
+        }
+        sql += "version,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[11])
+        {
+            needSelection=true;
         }
 
         if(parametersCount > 0)
@@ -478,6 +494,19 @@ class GlImprestCategories
             n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
             sql.append(placeholderStr, n);
 
+        }
+
+        if(dirtyFlag_[11])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
         }
 
         if(parametersCount > 0)

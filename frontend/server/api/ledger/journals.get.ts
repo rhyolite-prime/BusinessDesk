@@ -1,7 +1,2 @@
-import { filterDemoJournals } from '../../utils/ledger-demo'
-import { getLedgerResource } from '../../utils/ledger-api'
-
-export default defineEventHandler((event) => {
-  const query = getQuery(event)
-  return getLedgerResource(event, 'journals', query, () => filterDemoJournals(query))
-})
+import { journalRequest } from '../../utils/journal-api'
+export default defineEventHandler(event => journalRequest(event, 'GET', 'list'))
