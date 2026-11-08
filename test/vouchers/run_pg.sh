@@ -4,6 +4,7 @@ cd "$(dirname "$0")/../.."
 : "${SUPPLIERS_TEST_DATABASE_URL:?Disposable PostgreSQL database required}"
 : "${JSONCPP_SOURCE_DIR:?JsonCpp checkout with dist/jsoncpp.cpp required}"
 : "${LIBPQ_LIB_DIR:?libpq directory required}"
+export JOURNAL_TEST_DATABASE_URL="${JOURNAL_TEST_DATABASE_URL:-$SUPPLIERS_TEST_DATABASE_URL}"
 node test/vouchers/setup_pg.mjs
 work=$(mktemp -d); trap 'rm -rf "$work"' EXIT
 python3 test/banks/prepare_db_seam.py "$work/mocks"

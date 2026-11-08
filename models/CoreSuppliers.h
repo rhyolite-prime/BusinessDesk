@@ -195,6 +195,7 @@ class CoreSuppliers
     ///Set the value of the column vat_account_id
     void setVatAccountId(const std::string &pVatAccountId) noexcept;
     void setVatAccountId(std::string &&pVatAccountId) noexcept;
+    void setVatAccountIdToNull() noexcept;
 
     /**  For column credit_account_id  */
     ///Get the value of the column credit_account_id, returns the default value if the column is null
@@ -204,6 +205,7 @@ class CoreSuppliers
     ///Set the value of the column credit_account_id
     void setCreditAccountId(const std::string &pCreditAccountId) noexcept;
     void setCreditAccountId(std::string &&pCreditAccountId) noexcept;
+    void setCreditAccountIdToNull() noexcept;
 
     /**  For column debit_account_id  */
     ///Get the value of the column debit_account_id, returns the default value if the column is null
@@ -213,6 +215,7 @@ class CoreSuppliers
     ///Set the value of the column debit_account_id
     void setDebitAccountId(const std::string &pDebitAccountId) noexcept;
     void setDebitAccountId(std::string &&pDebitAccountId) noexcept;
+    void setDebitAccountIdToNull() noexcept;
 
     /**  For column tin_number  */
     ///Get the value of the column tin_number, returns the default value if the column is null
@@ -321,6 +324,7 @@ class CoreSuppliers
     ///Set the value of the column irs_account_id
     void setIrsAccountId(const std::string &pIrsAccountId) noexcept;
     void setIrsAccountId(std::string &&pIrsAccountId) noexcept;
+    void setIrsAccountIdToNull() noexcept;
 
     /**  For column is_resident  */
     ///Get the value of the column is_resident, returns the default value if the column is null

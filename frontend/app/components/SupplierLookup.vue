@@ -11,6 +11,7 @@ const props = withDefaults(
     kind: 'groups' | 'currencies' | 'accounts' | 'credits'
     selectedLabel?: string
     unitId?: string
+    optional?: boolean
     disabled?: boolean
   }>(),
   { selectedLabel: '', unitId: '', disabled: false },
@@ -32,7 +33,7 @@ const inputId = useId(),
   cache = ref<Record<string, Option>>({})
 function choose(value: string) {
   const option = (isGl.value ? options.value : visible.value).find((o) => o.id === value)
-  if (isGl.value && !option) return
+  if (isGl.value && !option && !(props.optional && !value)) return
   if (option) {
     cache.value[value] = option
     emit('selected', option)
@@ -107,7 +108,8 @@ onUnmounted(() => {
     <AccountControlPicker show-label
       v-if="isGl"
       kind="accounts"
-      :label="label + ' *'"
+      :label="label + (optional ? ' (optional)' : ' *')"
+      :empty-label="optional ? 'Not configured' : undefined"
       :model-value="modelValue"
       :options="glOptions"
       :unavailable-text="cache[modelValue]?.label || selectedLabel || 'Unavailable account (replace)'"

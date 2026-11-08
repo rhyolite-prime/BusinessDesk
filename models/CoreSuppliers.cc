@@ -103,9 +103,9 @@ const std::vector<typename CoreSuppliers::MetaData> CoreSuppliers::metaData_={
 {"account_number","std::string","character varying",80,0,0,1},
 {"supplier_group_id","std::string","uuid",0,0,0,1},
 {"status","std::string","character varying",20,0,0,1},
-{"vat_account_id","std::string","uuid",0,0,0,1},
-{"credit_account_id","std::string","uuid",0,0,0,1},
-{"debit_account_id","std::string","uuid",0,0,0,1},
+{"vat_account_id","std::string","uuid",0,0,0,0},
+{"credit_account_id","std::string","uuid",0,0,0,0},
+{"debit_account_id","std::string","uuid",0,0,0,0},
 {"tin_number","std::string","character varying",80,0,0,1},
 {"name","std::string","character varying",200,0,0,1},
 {"email","std::string","character varying",254,0,0,1},
@@ -117,7 +117,7 @@ const std::vector<typename CoreSuppliers::MetaData> CoreSuppliers::metaData_={
 {"vat_number","std::string","character varying",80,0,0,1},
 {"currency_id","std::string","uuid",0,0,0,1},
 {"credit_limit","std::string","numeric",0,0,0,1},
-{"irs_account_id","std::string","uuid",0,0,0,1},
+{"irs_account_id","std::string","uuid",0,0,0,0},
 {"is_resident","bool","boolean",1,0,0,1},
 {"tax_office","std::string","character varying",160,0,0,1},
 {"balance","std::string","numeric",0,0,0,1},
@@ -2232,6 +2232,11 @@ void CoreSuppliers::setVatAccountId(std::string &&pVatAccountId) noexcept
     vatAccountId_ = std::make_shared<std::string>(std::move(pVatAccountId));
     dirtyFlag_[5] = true;
 }
+void CoreSuppliers::setVatAccountIdToNull() noexcept
+{
+    vatAccountId_.reset();
+    dirtyFlag_[5] = true;
+}
 
 const std::string &CoreSuppliers::getValueOfCreditAccountId() const noexcept
 {
@@ -2254,6 +2259,11 @@ void CoreSuppliers::setCreditAccountId(std::string &&pCreditAccountId) noexcept
     creditAccountId_ = std::make_shared<std::string>(std::move(pCreditAccountId));
     dirtyFlag_[6] = true;
 }
+void CoreSuppliers::setCreditAccountIdToNull() noexcept
+{
+    creditAccountId_.reset();
+    dirtyFlag_[6] = true;
+}
 
 const std::string &CoreSuppliers::getValueOfDebitAccountId() const noexcept
 {
@@ -2274,6 +2284,11 @@ void CoreSuppliers::setDebitAccountId(const std::string &pDebitAccountId) noexce
 void CoreSuppliers::setDebitAccountId(std::string &&pDebitAccountId) noexcept
 {
     debitAccountId_ = std::make_shared<std::string>(std::move(pDebitAccountId));
+    dirtyFlag_[7] = true;
+}
+void CoreSuppliers::setDebitAccountIdToNull() noexcept
+{
+    debitAccountId_.reset();
     dirtyFlag_[7] = true;
 }
 
@@ -2538,6 +2553,11 @@ void CoreSuppliers::setIrsAccountId(const std::string &pIrsAccountId) noexcept
 void CoreSuppliers::setIrsAccountId(std::string &&pIrsAccountId) noexcept
 {
     irsAccountId_ = std::make_shared<std::string>(std::move(pIrsAccountId));
+    dirtyFlag_[19] = true;
+}
+void CoreSuppliers::setIrsAccountIdToNull() noexcept
+{
+    irsAccountId_.reset();
     dirtyFlag_[19] = true;
 }
 
@@ -4937,11 +4957,6 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-    else
-    {
-        err="The vat_account_id column cannot be null";
-        return false;
-    }
 
     if(pJson.isMember("credit_account_id"))
     {
@@ -4949,11 +4964,6 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-    else
-    {
-        err="The credit_account_id column cannot be null";
-        return false;
-    }
 
     if(pJson.isMember("debit_account_id"))
     {
@@ -4961,11 +4971,6 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-    else
-    {
-        err="The debit_account_id column cannot be null";
-        return false;
-    }
 
     if(pJson.isMember("tin_number"))
     {
@@ -5105,11 +5110,6 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-    else
-    {
-        err="The irs_account_id column cannot be null";
-        return false;
-    }
 
     if(pJson.isMember("is_resident"))
     {
@@ -5290,11 +5290,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[5] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -5306,11 +5301,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[6] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -5322,11 +5312,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[7] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -5514,11 +5499,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-        else
-        {
-            err="The " + pMasqueradingVector[19] + " column cannot be null";
-            return false;
-        }
 
       }
 
@@ -6175,8 +6155,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -6191,8 +6170,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -6207,8 +6185,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())
@@ -6471,8 +6448,7 @@ bool CoreSuppliers::validJsonOfField(size_t index,
 
             if(pJson.isNull())
             {
-                err="The " + fieldName + " column cannot be null";
-                return false;
+                return true;
             }
 
             if(!pJson.isString())

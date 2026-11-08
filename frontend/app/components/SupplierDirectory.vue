@@ -105,20 +105,18 @@ async function open(row?: SupplierRecord | Group, view = false) {
     if (life === lifecycle && who === identity()) busy.value = false
   }
 }
-function chooseCredit(option: { unitId?: string }) {
+const unitAnchor = computed(() => supplierAccountFields.find(field => !!form[field.key])?.key)
+function chooseAccount(key: typeof supplierAccountFields[number]['key'], option: { unitId?: string }) {
   if (unit.value !== option.unitId) {
-    form.debitAccountId = ''
-    form.vatAccountId = ''
-    form.irsAccountId = ''
+    for (const field of supplierAccountFields) if (field.key !== key) form[field.key] = ''
   }
   unit.value = option.unitId || ''
 }
+watch(() => supplierAccountFields.map(field => form[field.key]), values => {
+  if (values.every(value => !value)) unit.value = ''
+})
 async function save() {
   if (busy.value || readOnly.value) return
-  if (!props.group && supplierAccountFields.some(field => !form[field.key])) {
-    formError.value = 'Select all four GL posting accounts before saving.'
-    return
-  }
   const current = generation,
     who = identity(),
     life = lifecycle
@@ -518,8 +516,9 @@ onUnmounted(() => {
                 GL posting defaults
               </h3>
               <p class="mb-4 text-xs text-ink-faint">
-                Select the AP liability account first. All four GL accounts must
-                belong to the same active accounting unit.
+                All posting defaults are optional. Select only the accounts you need;
+                any selected accounts must belong to the same active accounting unit.
+                The credit account, if set, must be an AP liability.
               </p>
               <div class="grid gap-4 sm:grid-cols-2">
                 <SupplierLookup
@@ -529,13 +528,10 @@ onUnmounted(() => {
                   :label="field.label"
                   :kind="field.kind"
                   :selected-label="detail?.[field.name] || ''"
-                  :unit-id="field.key === 'creditAccountId' ? '' : unit"
-                  :disabled="
-                    busy ||
-                    readOnly ||
-                    (field.key !== 'creditAccountId' && !form.creditAccountId)
-                  "
-                  @selected="field.key === 'creditAccountId' && chooseCredit($event)"
+                  :unit-id="field.key === unitAnchor ? '' : unit"
+                  optional
+                  :disabled="busy || readOnly"
+                  @selected="chooseAccount(field.key, $event)"
                 />
               </div>
             </section>

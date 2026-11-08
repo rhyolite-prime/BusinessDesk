@@ -128,6 +128,19 @@ int main() {
   sql("INSERT INTO users(id,tenant_id,first_name,is_tenant_admin_user) "
       "VALUES($1,$3,'Admin',true),($2,$3,'User',false)",
       {actor, actor2, tenant});
+  auto journalTemplate =
+      sql("INSERT INTO "
+          "core_system_numbers(module_id,item_name,key,prefix,padding,last_no,"
+          "created_by_user_id) "
+          "VALUES(1,'Journal','journal-batch-id','JV-',5,0,$1) RETURNING id",
+          {actor})[0]
+          .value["id"];
+  sql("INSERT INTO "
+      "core_system_numbers(tenant_id,source_template_id,module_id,item_name,"
+      "key,prefix,padding,last_no,created_by_user_id) SELECT "
+      "$1,id,module_id,item_name,key,prefix,padding,last_no,$2 FROM "
+      "core_system_numbers WHERE id=$3",
+      {tenant, actor, journalTemplate});
   sql("INSERT INTO core_currencies(id,code,name) "
       "VALUES($1,'GHS','Cedi'),($2,'USD','Dollar')",
       {currency, usd});
@@ -233,6 +246,23 @@ int main() {
   retention["isPercentage"] = true;
   retention["value"] = "10";
   input["retentions"].append(retention);
+  const auto optionalVoucherInput = input;
+  sql("UPDATE core_suppliers SET "
+      "credit_account_id=NULL,debit_account_id=NULL,vat_account_id=NULL,irs_"
+      "account_id=NULL WHERE id=$1",
+      {supplier});
+  check(call("preview", "", input).success,
+        "supplier without defaults can use explicitly selected voucher GL "
+        "accounts");
+  auto noPosting = input;
+  noPosting["lines"][0]["accountId"] = "";
+  check(!call("preview", "", noPosting).success,
+        "optional supplier defaults do not remove actual voucher account "
+        "requirements");
+  sql("UPDATE core_suppliers SET "
+      "credit_account_id=$2,debit_account_id=$2,vat_account_id=$2,irs_account_"
+      "id=$2 WHERE id=$1",
+      {supplier, account});
   auto preview = call("preview", "", input);
   if (!preview.success)
     std::cerr << preview.toJson() << std::endl;
@@ -926,6 +956,22 @@ int main() {
           .asString();
   check(groupsReset.find("core_customers") != std::string::npos,
         "customer groups registered with dependent customers for tenant reset");
+  auto noGlSupplier =
+      sql("INSERT INTO core_suppliers SELECT "
+          "(jsonb_populate_record(NULL::core_suppliers,to_jsonb(s)||jsonb_"
+          "build_object('id',gen_random_uuid(),'account_number','NO-GL-"
+          "SUPPLIER','credit_account_id',NULL,'debit_account_id',NULL,'vat_"
+          "account_id',NULL,'irs_account_id',NULL))).* FROM core_suppliers s "
+          "WHERE id=$1 RETURNING id",
+          {supplier})[0]
+          .value["id"]
+          .asString();
+  auto noGlVoucher = optionalVoucherInput;
+  noGlVoucher["payeeId"] = noGlSupplier;
+  noGlVoucher["requestId"] = "a0000000-0000-4000-8000-000000000099";
+  check(call("create", "", noGlVoucher).success,
+        "database voucher trigger accepts an unconfigured live supplier with "
+        "explicit voucher accounts");
   std::cout << checks
             << " payment and receipt voucher PostgreSQL checks passed\n";
 

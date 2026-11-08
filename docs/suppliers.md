@@ -2,17 +2,19 @@
 
 ## Deployment
 
-Apply migrations through **016_suppliers.sql** to the backend database/schema,
+Apply migrations in order through **028_supplier_optional_gl_defaults.sql** to the backend database/schema,
 then rebuild/restart C++ and Nuxt. Apply migrations in order, using an explicit
 matching `search_path` for custom schemas. The API fails closed with
-`schema_not_ready` / 503 if supplier tables are missing; Nuxt names migration 016.
+`schema_not_ready` / 503 if prerequisite tables are missing, or
+`supplier_optional_gl_schema` / 503 if the four defaults are still NOT NULL.
+Nuxt displays the migration to apply.
 No runtime table creation or demo persistence is used.
 
 ```sh
-psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/016_suppliers.sql
+psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/028_supplier_optional_gl_defaults.sql
 ```
 
-The down migration drops supplier data, indexes, triggers, voucher FK and reset
+The **016** down migration drops supplier data, indexes, triggers, voucher FK and reset
 registry entries. Back up first and stop application writes before downgrading.
 It must run before downgrading migration 015.
 
@@ -20,8 +22,11 @@ The existing `gl_payment_vouchers.supplier_id` receives a composite, tenant-scop
 FK **NOT VALID**: existing legacy supplier IDs are not rewritten or removed.
 New/changed references are enforced. Review unmatched legacy voucher references
 before manually validating `fk_payment_voucher_supplier`. A trigger additionally
-requires new/changed voucher supplier links to be live and use the supplier's
-posting accounting unit. NULL supplier links remain supported.
+requires new/changed voucher supplier links to be live. After migration 028,
+any configured defaults must be active and belong to the voucher's accounting
+unit; a supplier without defaults is available across the tenant's units. Changes
+to a voucher's accounting unit are checked too. Actual voucher posting accounts
+remain mandatory and validated independently. NULL supplier links remain supported.
 
 ## Frontend
 
@@ -53,7 +58,7 @@ The backend rechecks live tenant/user status, including lockout and deletion.
   case-insensitively unique per tenant. A group with any live suppliers cannot
   be deleted. Deleting a group never silently deletes its suppliers.
 - Supplier: `accountNumber` (80 bytes), `name` (200), group, status, currency,
-  all four account IDs, credit limit and `isResident` are required.
+  credit limit and `isResident` are required. All four GL default IDs are optional.
 - Optional strings default to empty: email/contact email (254), phone/contact
   phone (50), address (1,000), contact person/tax office (160), TIN/VAT number
   (80). Emails are validated when supplied. Embedded NUL and unknown fields are
@@ -61,10 +66,15 @@ The backend rechecks live tenant/user status, including lockout and deletion.
 - Status IDs are `active`, `on_hold`, `inactive`; status labels are derived.
 - Group must be a live record in this tenant. Currency must be active in the
   **global/shared host catalog**, not tenant-owned.
-- Credit GL must be **Liability** (`standard_account_type=1`, the existing enum).
-  Credit/debit/VAT/IRS accounts are required, active, live, tenant-owned and
-  belong to **one active accounting unit**. All account types are allowed for
-  debit/VAT/IRS. The credit choice determines the unit for the other lookups.
+- Credit/debit/VAT/IRS defaults are independently optional: omitted, JSON `null`,
+  empty or whitespace-only strings are normalized to SQL NULL and returned as
+  empty strings. Updates are full records: omitting a default clears it.
+  Any supplied account must be active, live, tenant-owned and belong to
+  **one active accounting unit**. A supplied credit GL must be **Liability**
+  (`standard_account_type=1`); all account types are allowed for debit/VAT/IRS.
+  Any selected default can establish the unit, even without a credit default.
+  With none configured, `accountingUnitId` is empty (tenant-wide supplier).
+  Existing financial-history restrictions on changing defaults still apply.
 - Relationship names/codes (`supplierGroupName`, account names, currency
   name/code, status name) are derived by scoped joins, not writable snapshots.
   Renaming a group or account therefore does not leave stale supplier labels.
@@ -213,11 +223,17 @@ mode, with search inside the dropdown and keyboard navigation. The existing
 supplier options API remains authoritative for eligible accounts and accounting
 unit IDs. GL lookups collect all pages (100 per request, maximum 100,000 choices;
 errors instead of silent truncation). Groups and currencies keep their paginated
-selectors unchanged. Changing the primary credit account to another unit clears
-debit/VAT/IRS defaults and reloads same-unit options; stale requests are ignored.
-Saved GL labels remain visible on read-only/edit views. All four fields remain
-required in the save handler and backend; account eligibility validation and
-supplier payloads are unchanged.
+selectors unchanged. All four controls are enabled independently and marked
+optional. Choose **Not configured** to clear a default. The first populated
+control anchors the unit; changing that anchor to another unit clears the other
+defaults and reloads same-unit options. Clearing all defaults resets the unit.
+Stale requests are ignored; saved labels remain visible on read-only/edit views.
+
+Migration **028** drops NOT NULL on only the four supplier GL columns and updates
+the voucher supplier-scope trigger. It does not change customer defaults or
+backfill invented accounts. Its down migration intentionally fails if **any** row,
+including archived suppliers, lacks any default. Restore genuine valid defaults
+before rollback; stop writes and back up first.
 
 
 ## Automatic new-supplier account numbers

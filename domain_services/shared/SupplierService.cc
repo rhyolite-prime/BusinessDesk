@@ -55,6 +55,10 @@ Json::Value parse(const std::string &text) {
     throw std::runtime_error("Invalid database JSON");
   return r;
 }
+bool optionalPostingAccount(const std::string &key) {
+  return key == "creditAccountId" || key == "debitAccountId" ||
+         key == "vatAccountId" || key == "irsAccountId";
+}
 bool validate(Json::Value &b, bool group, bool update) {
   if (!b.isObject())
     return false;
@@ -90,6 +94,8 @@ bool validate(Json::Value &b, bool group, bool update) {
     if (!b.isMember(key) && cast == "text" && key != "name" &&
         key != "accountNumber" && key != "statusId")
       b[key] = "";
+    if (optionalPostingAccount(key) && (!b.isMember(key) || b[key].isNull()))
+      b[key] = "";
     if (!b[key].isString())
       return false;
     auto s = trim(b[key].asString());
@@ -97,6 +103,8 @@ bool validate(Json::Value &b, bool group, bool update) {
     if (s.find('\0') != std::string::npos)
       return false;
     if (cast == "uuid") {
+      if (optionalPostingAccount(key) && s.empty())
+        continue;
       if (!uuid(s))
         return false;
       std::transform(s.begin(), s.end(), s.begin(),
@@ -183,21 +191,27 @@ const std::string supplierSelect =
     "'createdByUserId',s.created_by_user_id,'lastModifiedAt',s.last_modified_"
     "at,'lastModifiedByUserId',s.last_modified_by_user_id,'balance',s.balance::"
     "text,'accountNumber',s.account_number,'supplierGroupId',s.supplier_group_"
-    "id::text,'statusId',s.status,'vatAccountId',s.vat_account_id::text,'"
-    "creditAccountId',s.credit_account_id::text,'debitAccountId',s.debit_"
-    "account_id::text,'tinNumber',s.tin_number,'name',s.name,'email',s.email,'"
+    "id::text,'statusId',s.status,'vatAccountId',coalesce(s.vat_account_id::"
+    "text,''),'"
+    "creditAccountId',coalesce(s.credit_account_id::text,''),'debitAccountId',"
+    "coalesce(s.debit_"
+    "account_id::text,''),'tinNumber',s.tin_number,'name',s.name,'email',s."
+    "email,'"
     "phoneNo',s.phone_no,'address',s.address,'contactPerson',s.contact_person,'"
     "contactPersonPhone',s.contact_person_phone,'contactPersonEmail',s.contact_"
     "person_email,'vatNumber',s.vat_number,'currencyId',s.currency_id::text,'"
-    "creditLimit',s.credit_limit::text,'irsAccountId',s.irs_account_id::text,'"
+    "creditLimit',s.credit_limit::text,'irsAccountId',coalesce(s.irs_account_"
+    "id::text,''),'"
     "isResident',s.is_resident,'taxOffice',s.tax_office,'supplierGroupName',"
     "coalesce(g.name,''),'statusName',CASE s.status WHEN 'active' THEN "
     "'Active' WHEN 'on_hold' THEN 'On hold' ELSE 'Inactive' "
     "END,'currencyName',coalesce(c.name,''),'currencyCode',coalesce(c.code,''),"
     "'vatAccountName',coalesce(v.account_name,''),'creditAccountName',coalesce("
     "a.account_name,''),'debitAccountName',coalesce(d.account_name,''),'"
-    "irsAccountName',coalesce(i.account_name,''),'accountingUnitId',a."
-    "accounting_unit_id,'accountingUnitName',coalesce(u.name,''))::text AS "
+    "irsAccountName',coalesce(i.account_name,''),'accountingUnitId',coalesce("
+    "coalesce(a."
+    "accounting_unit_id,d.accounting_unit_id,v.accounting_unit_id,i.accounting_"
+    "unit_id)::text,''),'accountingUnitName',coalesce(u.name,''))::text AS "
     "record  FROM core_suppliers s LEFT JOIN core_supplier_groups g ON "
     "g.id=s.supplier_group_id AND g.tenant_id=s.tenant_id AND "
     "g.is_deleted=false LEFT JOIN core_currencies c ON c.id=s.currency_id AND "
@@ -207,7 +221,9 @@ const std::string supplierSelect =
     "a.is_deleted=false LEFT JOIN gl_accounts d ON d.id=s.debit_account_id AND "
     "d.tenant_id=s.tenant_id AND d.is_deleted=false LEFT JOIN gl_accounts i ON "
     "i.id=s.irs_account_id AND i.tenant_id=s.tenant_id AND i.is_deleted=false "
-    "LEFT JOIN core_accounting_units u ON u.id=a.accounting_unit_id AND "
+    "LEFT JOIN core_accounting_units u ON "
+    "u.id=coalesce(a.accounting_unit_id,d.accounting_unit_id,v.accounting_unit_"
+    "id,i.accounting_unit_id) AND "
     "u.tenant_id=s.tenant_id AND u.is_deleted=false";
 const std::string groupSelect =
     "SELECT "
@@ -328,21 +344,27 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
             "SELECT id FROM core_supplier_groups WHERE tenant_id=$1 AND id=$2 "
             "AND is_deleted=false FOR SHARE",
             who.tenantId, b["supplierGroupId"].asString());
-        // Ledger mutations lock the unit before currency/accounts too.
-        auto selectedUnit = co_await db->execSqlCoro(
-            "SELECT u.id FROM core_accounting_units u JOIN gl_accounts a ON "
-            "a.accounting_unit_id=u.id AND a.tenant_id=u.tenant_id AND "
-            "a.is_deleted=false "
-            "AND a.status='active' WHERE u.tenant_id=$1 AND a.id=$2 AND "
-            "u.is_deleted=false "
-            "AND u.is_active=true FOR SHARE OF u",
-            who.tenantId, b["creditAccountId"].asString());
-        if (selectedUnit.empty())
-          co_return fail(
-              "validation_error",
-              "Select a credit account in an active accounting unit.");
-        const std::string selectedUnitId =
-            selectedUnit[0]["id"].as<std::string>();
+        // Any supplied default can establish unit scope; no default is
+        // required.
+        std::string anchor, selectedUnitId;
+        for (auto key : {"creditAccountId", "debitAccountId", "vatAccountId",
+                         "irsAccountId"})
+          if (anchor.empty() && !b[key].asString().empty())
+            anchor = b[key].asString();
+        if (!anchor.empty()) {
+          auto selectedUnit = co_await db->execSqlCoro(
+              "SELECT u.id FROM core_accounting_units u JOIN gl_accounts a ON "
+              "a.accounting_unit_id=u.id AND a.tenant_id=u.tenant_id AND "
+              "a.is_deleted=false AND a.status='active' "
+              "WHERE u.tenant_id=$1 AND a.id=$2 AND u.is_deleted=false AND "
+              "u.is_active=true FOR SHARE OF u",
+              who.tenantId, anchor);
+          if (selectedUnit.empty())
+            co_return fail(
+                "validation_error",
+                "Select posting defaults in an active accounting unit.");
+          selectedUnitId = selectedUnit[0]["id"].as<std::string>();
+        }
         auto currency = co_await db->execSqlCoro(
             "SELECT id FROM core_currencies WHERE id=$1 AND is_deleted=false "
             "AND is_active=true FOR SHARE",
@@ -350,45 +372,56 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
         if (groups.empty() || currency.empty())
           co_return fail("validation_error",
                          "Select a live supplier group and active currency.");
-        auto accounts = co_await db->execSqlCoro(
-            "SELECT a.id,a.accounting_unit_id,a.standard_account_type FROM "
-            "gl_accounts a JOIN core_accounting_units u ON "
-            "u.id=a.accounting_unit_id AND u.tenant_id=a.tenant_id AND "
-            "u.is_deleted=false AND u.is_active=true WHERE a.tenant_id=$1 AND "
-            "a.is_deleted=false AND a.status='active' AND a.id IN($2,$3,$4,$5) "
-            "AND a.accounting_unit_id=$6 ORDER BY a.id FOR SHARE OF a",
-            who.tenantId, b["creditAccountId"].asString(),
-            b["debitAccountId"].asString(), b["vatAccountId"].asString(),
-            b["irsAccountId"].asString(), selectedUnitId);
-        std::set<std::string> found, units;
-        bool liability = false;
-        for (const auto &a : accounts) {
-          auto aid = a["id"].as<std::string>();
-          found.insert(aid);
-          units.insert(a["accounting_unit_id"].as<std::string>());
-          if (aid == b["creditAccountId"].asString() &&
-              a["standard_account_type"].as<int>() == 1)
-            liability = true;
-        }
-        for (auto key : {"creditAccountId", "debitAccountId", "vatAccountId",
-                         "irsAccountId"})
-          if (!found.count(b[key].asString()))
+        if (!anchor.empty()) {
+          auto accounts = co_await db->execSqlCoro(
+              "SELECT a.id,a.accounting_unit_id,a.standard_account_type FROM "
+              "gl_accounts a JOIN core_accounting_units u ON "
+              "u.id=a.accounting_unit_id AND u.tenant_id=a.tenant_id AND "
+              "u.is_deleted=false AND u.is_active=true WHERE a.tenant_id=$1 "
+              "AND "
+              "a.is_deleted=false AND a.status='active' AND a.id "
+              "IN(NULLIF($2,'')::uuid,NULLIF($3,'')::uuid,NULLIF($4,'')::uuid,"
+              "NULLIF($5,'')::uuid) "
+              "AND a.accounting_unit_id=$6 ORDER BY a.id FOR SHARE OF a",
+              who.tenantId, b["creditAccountId"].asString(),
+              b["debitAccountId"].asString(), b["vatAccountId"].asString(),
+              b["irsAccountId"].asString(), selectedUnitId);
+          std::set<std::string> found, units;
+          bool liability = false;
+          for (const auto &a : accounts) {
+            auto aid = a["id"].as<std::string>();
+            found.insert(aid);
+            units.insert(a["accounting_unit_id"].as<std::string>());
+            if (aid == b["creditAccountId"].asString() &&
+                a["standard_account_type"].as<int>() == 1)
+              liability = true;
+          }
+          for (auto key : {"creditAccountId", "debitAccountId", "vatAccountId",
+                           "irsAccountId"})
+            if (!b[key].asString().empty() && !found.count(b[key].asString()))
+              co_return fail(
+                  "validation_error",
+                  "Select active GL accounts belonging to this tenant.");
+          if (units.size() != 1 ||
+              (!b["creditAccountId"].asString().empty() && !liability))
             co_return fail(
                 "validation_error",
-                "Select active GL accounts belonging to this tenant.");
-        if (units.size() != 1 || !liability)
-          co_return fail("validation_error",
-                         "All GL accounts must belong to one accounting unit; "
-                         "the credit account must be a liability.");
+                "All GL accounts must belong to one accounting unit; "
+                "the credit account, when provided, must be a liability.");
+        }
       }
       if (op != "create") {
         auto rows = co_await db->execSqlCoro(
             "SELECT version" +
-                std::string(
-                    group ? ""
-                          : ",account_number,balance<>0 AS "
-                            "has_balance,currency_id,credit_account_id,debit_"
-                            "account_id,vat_account_id,irs_account_id") +
+                std::string(group ? ""
+                                  : ",account_number,balance<>0 AS "
+                                    "has_balance,currency_id,coalesce(credit_"
+                                    "account_id::text,'') AS credit_account_id,"
+                                    "coalesce(debit_account_id::text,'') AS "
+                                    "debit_account_id,coalesce(vat_account_id::"
+                                    "text,'') AS vat_account_id,"
+                                    "coalesce(irs_account_id::text,'') AS "
+                                    "irs_account_id") +
                 " FROM " + table +
                 " WHERE tenant_id=$1 AND id=$2 AND is_deleted=false FOR UPDATE",
             who.tenantId, id);
@@ -454,7 +487,10 @@ run(DbClientPtr db, std::string op, bool group, std::string id, Json::Value b,
               assign += ",";
             }
             const std::string value =
-                "($3::jsonb->>'" + std::string(f.key) + "')::" + f.cast;
+                (optionalPostingAccount(f.key)
+                     ? "NULLIF($3::jsonb->>'" + std::string(f.key) +
+                           "','')::uuid"
+                     : "($3::jsonb->>'" + std::string(f.key) + "')::" + f.cast);
             cols += f.column;
             values += value;
             assign += std::string(f.column) + "=" + value;
@@ -551,6 +587,15 @@ SupplierService::execute(std::string op, bool group, std::string id,
       co_return fail("schema_not_ready",
                      "Apply migrations through "
                      "023_drop_customer_supplier_rates.sql.");
+    auto optionalReady = co_await db->execSqlCoro(
+        "SELECT NOT EXISTS(SELECT 1 FROM pg_attribute WHERE "
+        "attrelid=to_regclass('core_suppliers') "
+        "AND attname IN "
+        "('credit_account_id','debit_account_id','vat_account_id','irs_account_"
+        "id') AND attnotnull AND NOT attisdropped) AS ready");
+    if (!optionalReady[0]["ready"].as<bool>())
+      co_return fail("supplier_optional_gl_schema",
+                     "Apply migration 028_supplier_optional_gl_defaults.sql.");
     if (op == "get" || op == "list" || op == "options" || op == "next-number")
       co_return co_await run(db, op, group, id, body, page, size, query, kind,
                              unit, who);

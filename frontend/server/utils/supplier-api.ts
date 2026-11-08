@@ -92,7 +92,7 @@ export async function supplierRequest(
     // Add supplier performs a GET before any form fields exist. Older backends
     // may match /next-number as /{id} and return 400 for a non-UUID ID. Never
     // report that as a supplier-field validation problem or invent a number.
-    if (mode === 'next-number' && code !== 'supplier_numbering' && code !== 'schema_not_ready' && status !== 401 && status !== 403) {
+    if (mode === 'next-number' && code !== 'supplier_numbering' && code !== 'schema_not_ready' && code !== 'supplier_optional_gl_schema' && status !== 401 && status !== 403) {
       const unsupported = [400, 404, 405, 501].includes(status)
       throw createError({
         statusCode: 503,
@@ -102,7 +102,7 @@ export async function supplierRequest(
       })
     }
     const messages: Record<number, string> = {
-      400: 'Check required fields, email and decimal precision. Use live groups, active currency and GL accounts from one unit; the credit account must be a liability.',
+      400: 'Check required fields, email and decimal precision. Use a live group and active currency. GL defaults are optional; any supplied accounts must be active and from one unit, and a supplied credit account must be a liability.',
       401: 'Sign in again to continue.',
       403: 'A live tenant account is required.',
       404: 'This supplier record is no longer available.',
@@ -111,7 +111,9 @@ export async function supplierRequest(
     throw createError({
       statusCode: messages[status] ? status : 503,
       statusMessage:
-        code === 'supplier_numbering'
+        code === 'supplier_optional_gl_schema'
+          ? 'Apply migration 028_supplier_optional_gl_defaults.sql to allow optional supplier GL posting defaults.'
+          : code === 'supplier_numbering'
           ? 'Check the tenant System numbers entry supplier-account-id: exactly one live entry is required, with a valid format, an available next number and an account number no longer than 80 characters.'
           : code === 'schema_not_ready'
           ? 'Apply migrations through 023_drop_customer_supplier_rates.sql to enable supplier configuration.'

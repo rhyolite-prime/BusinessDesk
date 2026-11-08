@@ -200,20 +200,29 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
         "Select a live posting period in this unit containing the entry date.");
   const bool receipt = b["type"] == "customer-receipt";
   auto payee = co_await db->execSqlCoro(
-      receipt
-          ? "SELECT c.name FROM core_customers c JOIN gl_accounts a ON "
-            "a.tenant_id=c.tenant_id AND a.id=c.receivable_account_id AND a.is_deleted=false "
-            "WHERE c.id=$1 AND c.tenant_id=$2 AND c.is_deleted=false AND c.is_active=true "
-            "AND c.accounting_unit_id=$3 AND a.accounting_unit_id=$3 FOR SHARE OF c"
-          : b["type"] == "employee-payment"
-          ? "SELECT concat_ws(' ',first_name,NULLIF(other_name,''),last_name) AS "
+      receipt ? "SELECT c.name FROM core_customers c JOIN gl_accounts a ON "
+                "a.tenant_id=c.tenant_id AND a.id=c.receivable_account_id AND "
+                "a.is_deleted=false "
+                "WHERE c.id=$1 AND c.tenant_id=$2 AND c.is_deleted=false AND "
+                "c.is_active=true "
+                "AND c.accounting_unit_id=$3 AND a.accounting_unit_id=$3 FOR "
+                "SHARE OF c"
+      : b["type"] == "employee-payment"
+          ? "SELECT concat_ws(' ',first_name,NULLIF(other_name,''),last_name) "
+            "AS "
             "name FROM hr_employee_biodata WHERE id=$1 AND tenant_id=$2 AND "
             "is_deleted=false AND $3::uuid IS NOT NULL FOR SHARE"
-          : "SELECT s.name FROM core_suppliers s JOIN gl_accounts a ON "
-      "a.id=s.credit_account_id AND a.tenant_id=s.tenant_id AND "
-      "a.is_deleted=false WHERE s.id=$1 AND s.tenant_id=$2 AND "
-      "s.is_deleted=false AND s.status IN('active','on_hold') AND "
-      "a.accounting_unit_id=$3 FOR SHARE OF s",
+          : "SELECT s.name FROM core_suppliers s WHERE s.id=$1 AND "
+            "s.tenant_id=$2 AND "
+            "s.is_deleted=false AND s.status IN('active','on_hold') AND NOT "
+            "EXISTS("
+            "SELECT 1 FROM "
+            "(VALUES(s.credit_account_id),(s.debit_account_id),(s.vat_account_"
+            "id),(s.irs_account_id)) AS defaults(id) "
+            "WHERE defaults.id IS NOT NULL AND NOT EXISTS(SELECT 1 FROM "
+            "gl_accounts a WHERE a.id=defaults.id "
+            "AND a.tenant_id=s.tenant_id AND a.is_deleted=false AND "
+            "a.status='active' AND a.accounting_unit_id=$3)) FOR SHARE OF s",
       b["payeeId"].asString(), who.tenantId, unit);
   if (payee.empty())
     throw std::invalid_argument("Select a live payee in this tenant and posting unit.");

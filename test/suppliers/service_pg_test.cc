@@ -217,6 +217,11 @@ int main() {
   check(call("list").error["code"] == "schema_not_ready",
         "missing migration fails closed");
   sql("ALTER TABLE temporarily_missing_suppliers RENAME TO core_suppliers");
+  sql("ALTER TABLE core_suppliers ALTER COLUMN credit_account_id SET NOT NULL");
+  check(call("list").error["code"] == "supplier_optional_gl_schema",
+        "missing optional-default migration fails explicitly");
+  sql("ALTER TABLE core_suppliers ALTER COLUMN credit_account_id DROP NOT "
+      "NULL");
   Json::Value gb;
   gb["name"] = " Local vendors ";
   auto createdGroup = call("create", true, "", gb);
@@ -460,6 +465,96 @@ int main() {
   check(call("create", false, "", numbered).error["code"] == "supplier_numbering", "ambiguous modules are rejected rather than guessed");
   sql("UPDATE core_system_numbers SET is_deleted=true WHERE id=$1", {duplicateSequence});
   check(call("delete", false, secondNumber.result["id"].asString()).success, "archive generated test supplier without allocating a number");
+  auto optional = b;
+  optional["accountNumber"] = "SUP-NO-GL";
+  for (auto key :
+       {"creditAccountId", "debitAccountId", "vatAccountId", "irsAccountId"})
+    optional.removeMember(key);
+  auto noDefaults = call("create", false, "", optional);
+  check(noDefaults.success && noDefaults.result["accountingUnitId"] == "",
+        "supplier saves without any GL defaults or inferred unit");
+  for (auto key :
+       {"creditAccountId", "debitAccountId", "vatAccountId", "irsAccountId"})
+    check(noDefaults.result[key] == "",
+          "optional GL response is empty, not a fake account ID");
+  check(sql("SELECT credit_account_id IS NULL AND debit_account_id IS NULL AND "
+            "vat_account_id IS NULL AND irs_account_id IS NULL AS empty FROM "
+            "core_suppliers WHERE id=$1",
+            {noDefaults.result["id"]})[0]
+            .value["empty"]
+            .asBool(),
+        "empty defaults are stored as SQL NULL");
+  auto blanks = optional;
+  blanks["version"] = 1;
+  for (auto key :
+       {"creditAccountId", "debitAccountId", "vatAccountId", "irsAccountId"})
+    blanks[key] = "  ";
+  check(
+      call("update", false, noDefaults.result["id"].asString(), blanks).success,
+      "blank optional defaults normalize safely on update");
+  auto tenantWideVoucher =
+      sql("INSERT INTO "
+          "gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,"
+          "voucher_entry_date,mode_of_payment,currency_id,supplier_id) "
+          "VALUES($1,$2,'NO-DEFAULTS',current_date,'bank',$3,$4) RETURNING id",
+          {tenant, secondUnit, currency, noDefaults.result["id"]})[0]
+          .value["id"];
+  check(!tenantWideVoucher.asString().empty(),
+        "unconfigured supplier can be used in another tenant-owned unit");
+  sql("DELETE FROM gl_payment_vouchers WHERE id=$1", {tenantWideVoucher});
+  auto malformed = optional;
+  malformed["accountNumber"] = "SUP-INVALID-OPTIONAL";
+  malformed["vatAccountId"] = "not-a-uuid";
+  check(call("create", false, "", malformed).error["code"] ==
+            "validation_error",
+        "optional does not permit malformed supplied IDs");
+  malformed["vatAccountId"] = foreignCredit;
+  check(call("create", false, "", malformed).error["code"] ==
+            "validation_error",
+        "optional defaults cannot reference another tenant");
+  for (auto key :
+       {"creditAccountId", "debitAccountId", "vatAccountId", "irsAccountId"}) {
+    auto partial = optional;
+    partial["accountNumber"] = std::string("SUP-ONLY-") + key;
+    partial[key] = std::string(key) == "creditAccountId" ? credit : debit;
+    auto one = call("create", false, "", partial);
+    check(one.success && one.result["accountingUnitId"] == unit,
+          "each optional GL can independently establish unit scope");
+    if (std::string(key) == "debitAccountId") {
+      bool wrongUnitBlocked = false;
+      try {
+        sql("INSERT INTO "
+            "gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,"
+            "voucher_entry_date,mode_of_payment,currency_id,supplier_id) "
+            "VALUES($1,$2,'PARTIAL-WRONG-UNIT',current_date,'bank',$3,$4)",
+            {tenant, secondUnit, currency, one.result["id"]});
+      } catch (const std::exception &) {
+        wrongUnitBlocked = true;
+      }
+      check(wrongUnitBlocked,
+            "voucher trigger enforces scope from a non-credit default");
+    }
+    partial["version"] = 1;
+    partial[key] = Json::nullValue;
+    auto cleared = call("update", false, one.result["id"].asString(), partial);
+    check(cleared.success && cleared.result[key] == "" &&
+              cleared.result["accountingUnitId"] == "",
+          "clearing the final optional GL removes scope safely");
+    check(call("delete", false, one.result["id"].asString()).success,
+          "archive optional-default fixture");
+  }
+  bool rollbackBlocked = false;
+  try {
+    sql("ALTER TABLE core_suppliers ALTER COLUMN credit_account_id SET NOT "
+        "NULL");
+  } catch (const std::exception &) {
+    rollbackBlocked = true;
+  }
+  check(
+      rollbackBlocked,
+      "migration rollback refuses to fabricate GL defaults for nullable data");
+  check(call("delete", false, noDefaults.result["id"].asString()).success,
+        "unconfigured supplier can be archived");
   bool protectedAccount = false;
   try {
     sql("UPDATE gl_accounts SET is_deleted=true WHERE id=$1 AND "
@@ -489,6 +584,9 @@ int main() {
   edit["debitAccountId"] = vat;
   check(call("update", false, id, edit).error["code"] == "conflict",
         "nonzero balance prevents posting-account reassignment");
+  edit["debitAccountId"] = "";
+  check(call("update", false, id, edit).error["code"] == "conflict",
+        "nonzero balance still prevents clearing posting defaults");
   edit["debitAccountId"] = debit;
   check(call("update", false, id, edit).success,
         "contact changes do not rewrite nonzero balances");
@@ -511,6 +609,20 @@ int main() {
   edit["accountNumber"] = "SUP-002";
   check(call("update", false, id, edit).error["code"] == "conflict",
         "payment history protects supplier accounting identity");
+  auto clearWithHistory = edit;
+  clearWithHistory["accountNumber"] = b["accountNumber"];
+  clearWithHistory["creditAccountId"] = "";
+  check(call("update", false, id, clearWithHistory).error["code"] == "conflict",
+        "payment history still prevents clearing posting defaults");
+  bool unitChangeBlocked = false;
+  try {
+    sql("UPDATE gl_payment_vouchers SET accounting_unit_id=$2 WHERE id=$1",
+        {voucherId, secondUnit});
+  } catch (const std::exception &) {
+    unitChangeBlocked = true;
+  }
+  check(unitChangeBlocked,
+        "voucher unit edits revalidate supplier default scope");
   bool foreignVoucherBlocked = false;
   try {
     voucher(other, otherUnit, "FOREIGN");

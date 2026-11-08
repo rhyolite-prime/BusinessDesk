@@ -52,10 +52,10 @@ try {
     result = await preview()
     check(result.response.status === code && !result.body.statusMessage.includes('Rebuild'), `authentication failure ${code} remains distinct`)
   }
-  for (const code of ['supplier_numbering', 'schema_not_ready']) {
+  for (const code of ['supplier_numbering', 'schema_not_ready', 'supplier_optional_gl_schema']) {
     status = 503; payload = { success: false, error: { code, message: 'PRIVATE SQL' } }
     result = await preview()
-    check(result.response.status === 503 && result.body.statusMessage.includes(code === 'supplier_numbering' ? 'supplier-account-id' : '023_drop_customer_supplier_rates.sql') && !JSON.stringify(result.body).includes('PRIVATE'), `${code} retains safe actionable configuration advice`)
+    check(result.response.status === 503 && result.body.statusMessage.includes(code === 'supplier_numbering' ? 'supplier-account-id' : code === 'supplier_optional_gl_schema' ? '028_supplier_optional_gl_defaults.sql' : '023_drop_customer_supplier_rates.sql') && !JSON.stringify(result.body).includes('PRIVATE'), `${code} retains safe actionable configuration advice`)
   }
   for (const value of [null, {}, { accountNumber: '' }, { accountNumber: 42 }]) {
     status = 200; payload = { success: true, result: value }

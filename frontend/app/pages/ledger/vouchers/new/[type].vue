@@ -257,7 +257,7 @@ const lineAccounts = computed(() =>
 const payees = computed(() =>
   type.value === 'supplier-payment'
     ? suppliers.value
-        .filter((s) => s.accountingUnitId === unitId.value)
+        .filter((s) => !s.accountingUnitId || s.accountingUnitId === unitId.value)
         .map((s) => ({ id: s.id, name: s.name, code: s.accountNumber }))
     : type.value === 'employee-payment'
       ? employees.value.map(e => ({ id: e.id, name: e.name, code: e.employeeIdentifier }))
