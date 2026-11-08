@@ -19,6 +19,14 @@ if (initialModule.id === 'payroll') {
   await navigateTo('/payroll', { replace: true })
 }
 
+if (initialModule.id === 'inventory') {
+  await navigateTo('/inventory', { replace: true })
+}
+
+if (initialModule.id === 'supply-chain') {
+  await navigateTo('/supply-chain', { replace: true })
+}
+
 const activeModule = computed(() => getBusinessModule(route.params.module) ?? initialModule)
 const setupSteps = [
   { title: 'Connect operational data', description: 'Link the module to its service and business records.', icon: Database },
