@@ -38,7 +38,7 @@ export async function supplierRequest(
     })
   const q = getQuery(event)
   const query =
-    method === 'GET' && mode !== 'detail'
+    method === 'GET' && (mode === 'list' || mode === 'options')
       ? {
           pageNo: q.pageNo || 1,
           pageSize: q.pageSize || 20,
@@ -83,10 +83,24 @@ export async function supplierRequest(
           )[r.error?.code || ''] || 503,
         data: r,
       })
+    if (mode === 'next-number' && (typeof r.result?.accountNumber !== 'string' || !r.result.accountNumber.trim() || r.result.accountNumber.length > 80))
+      throw createError({ statusCode: 502 })
     return r.result
   } catch (e: any) {
     const status = e?.response?.status || e?.statusCode
-    const code = e?.data?.error?.code || e?.data?.data?.error?.code
+    const code = e?.response?._data?.error?.code || e?.data?.error?.code || e?.data?.data?.error?.code
+    // Add supplier performs a GET before any form fields exist. Older backends
+    // may match /next-number as /{id} and return 400 for a non-UUID ID. Never
+    // report that as a supplier-field validation problem or invent a number.
+    if (mode === 'next-number' && code !== 'supplier_numbering' && code !== 'schema_not_ready' && status !== 401 && status !== 403) {
+      const unsupported = [400, 404, 405, 501].includes(status)
+      throw createError({
+        statusCode: 503,
+        statusMessage: unsupported
+          ? 'Supplier account-number preview was rejected by the backend. Rebuild and restart the C++ backend with the latest SupplierController and SupplierService, and verify GET /api/v1/shared/suppliers/next-number reaches the preview endpoint. No supplier fields have been submitted.'
+          : 'Unable to load the next supplier account number from the backend. Verify the supplier preview service is running, then retry Add supplier. No supplier fields have been submitted.',
+      })
+    }
     const messages: Record<number, string> = {
       400: 'Check required fields, email and decimal precision. Use live groups, active currency and GL accounts from one unit; the credit account must be a liability.',
       401: 'Sign in again to continue.',

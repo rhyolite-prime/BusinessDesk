@@ -258,3 +258,20 @@ formatting, collisions, archive handling and missing/ambiguous configuration.
 Browser coverage in `test/suppliers/http_browser_test.mjs` checks read-only number
 preview, safe configuration errors, allocation after a preview is taken and edit/cancel
 behavior using the real Nuxt BFF with a controlled upstream.
+
+### Add supplier fails before the form opens
+
+Add supplier first calls `GET /api/shared/suppliers/next-number`, which proxies
+`GET /api/v1/shared/suppliers/next-number`. No supplier fields are submitted at
+this stage. A 400/404/405 response from that upstream endpoint can indicate an
+older backend or a route/deployment mismatch (an old supplier-ID route may
+interpret `next-number` as an invalid UUID). Rebuild/restart the C++ backend with
+the latest SupplierController and SupplierService and verify that the configured
+frontend API base targets that instance. This is not a reason to change the
+supplier's GL classifications or fill fields in a form that has not opened.
+
+Preview errors now have their own safe messages, preserving separate session,
+System numbers configuration and schema errors. Invalid successful preview
+payloads fail explicitly; the UI never fabricates or falls back to a number.
+Run `node test/suppliers/preview_http_test.mjs` after a frontend build to verify
+these BFF failure modes with a controlled upstream (no browser required).
