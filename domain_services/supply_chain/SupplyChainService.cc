@@ -12,6 +12,7 @@
 #include <map>
 #include <set>
 #include <vector>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;
@@ -1490,7 +1491,7 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
   const std::string sel = select + w + orderBy + " LIMIT $" + std::to_string(args.size() + 1) +
                           "::bigint OFFSET $" + std::to_string(args.size() + 2) + "::bigint";
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   switch (args.size()) {
   case 2:
     rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
@@ -1504,11 +1505,11 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(rows.size() < size
-                                           ? offset + (int64_t)rows.size()
-                                           : offset + rows.size() + 1); // cheap estimate: one extra page
+  r.result["totalCount"] = Json::Int64(rows->size() < size
+                                           ? offset + (int64_t)rows->size()
+                                           : offset + rows->size() + 1); // cheap estimate: one extra page
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
