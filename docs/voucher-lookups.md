@@ -23,27 +23,30 @@ No migration is needed beyond existing migrations through 016.
 ### Searchable supplier-payment fields
 
 The supplier payment form reuses Journal Entry's `AccountControlPicker` for
-**Supplier / payee**, **Bank / cash G/L**, each **Debit G/L** allocation and each
-**Organizational unit**. Search matches supplier name/number, GL number/name or
-organization hierarchy. Keyboard navigation, Enter selection, Escape dismissal,
-selected labels and empty-result messages use the shared picker behavior.
+**Supplier / payee**, **Bank / cash G/L**, each **Debit G/L** allocation, each
+**Organizational unit**, **Income withholding credit account** and **VAT
+withholding credit account**. Search matches supplier name/number, GL
+number/name or organization hierarchy. Keyboard navigation, Enter selection,
+Escape dismissal, selected labels and empty-result messages use the shared
+picker behavior.
 
 Picker labels are visually hidden by default while retaining accessible names.
 Use `show-label` to opt into visible labels, as the voucher header, journal,
-setup screens and report filters do. The voucher line table relies on its column
-headings instead of repeating GL/organization labels within each row.
+setup screens and report filters do. The voucher line table and withholding tax
+cards rely on their column or card headings instead of repeating labels.
 
 Existing authenticated, fully paginated catalogs and accounting-unit scope are
 unchanged. Supplier selection still defaults an empty allocation and currency;
 bank selection still resolves the linked bank record; the debit list excludes
 the selected bank GL. Organizational unit remains optional with **No unit** to
 clear. Changing accounting unit clears dependent selections. Pickers are disabled
-while loading/saving, on lookup failure, and for non-draft vouchers. Saved drafts
-restore their selections. Table-cell menus float in a viewport-positioned overlay outside the table,
+while loading/saving, on lookup failure, and for non-draft vouchers; the two
+withholding credit account pickers also remain disabled until their respective
+withholding tax is enabled. Saved drafts restore their selections. Table-cell menus float in a viewport-positioned overlay outside the table,
 so opening them does not stretch rows or get clipped by the horizontal scroll
 container. Menus fit the viewport, open above when needed, and track scrolling
-and resizing. Other voucher
-workflows and tax/retention fields retain their existing controls and behavior.
+and resizing. Other voucher workflows and remaining tax/retention fields retain
+their existing controls and behavior.
 
 Every existing proxy verifies the session and forwards its bearer token. Lookup
 failures are displayed with Retry, selections remain empty and saving is blocked;

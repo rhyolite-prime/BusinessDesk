@@ -27,4 +27,6 @@ export interface BankAccountOptions {
   accounts: { id: string; name: string; accountNumber: string; currencyId: string }[]
   currencies: { id: string; name: string; code: string }[]
 }
+export const bankAccountTypes = ['Current Account', 'Savings Account'] as const
+export type BankAccountType = (typeof bankAccountTypes)[number]
 export const emptyBankAccount = () => ({ bankId: '', bankBranchId: '', accountId: '', currencyId: '', accountNumber: '', accountType: 'Current Account', address: '', location: '', contactPerson: '', contactNumber: '', chequeBookStart: '', chequeBookEnd: '', dateOpened: '', isActive: true })

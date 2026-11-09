@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Pencil, Plus, Search, Trash2, X } from '@lucide/vue'
-import { emptyBankAccount, type BankAccount, type BankAccountOptions } from '../../../features/ledger/bank-account-types'
+import { bankAccountTypes, emptyBankAccount, type BankAccount, type BankAccountOptions } from '../../../features/ledger/bank-account-types'
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Bank Accounts' })
 const request = useRequestFetch(), unitId = useState<string>('ledger-accounting-unit', () => '')
@@ -12,6 +12,8 @@ const form = reactive(emptyBankAccount())
 let version = 0
 const errorMessage = (e: any) => e?.data?.statusMessage || 'Request failed. Please retry.'
 const availableBranches = computed(() => options.value.branches.filter(b => b.bankId === form.bankId))
+const selectedGlCurrency = computed(() => options.value.accounts.find(a => a.id === form.accountId)?.currencyId || '')
+const availableCurrencies = computed(() => selectedGlCurrency.value ? options.value.currencies.filter(item => item.id === selectedGlCurrency.value) : options.value.currencies)
 const activeCount = computed(() => accounts.value.filter(a => a.isActive).length)
 const currenciesInUse = computed(() => new Set(accounts.value.map(a => a.currencyId)).size)
 const visibleBankAccounts = computed(() => {
@@ -19,7 +21,7 @@ const visibleBankAccounts = computed(() => {
  return accounts.value.filter(a => (!statusFilter.value || String(a.isActive) === statusFilter.value) && (!term || [a.bankName,a.bankBranchName,a.accountNumber,a.accountType,a.currencyCode || '',a.location,a.accountName].some(v => v.toLowerCase().includes(term))))
 })
 function glAccountLabel(id: string) { const a = options.value.accounts.find(a => a.id === id); return a ? `${a.accountNumber} · ${a.name}` : 'Unavailable GL account' }
-function selectGl() { const currency = options.value.accounts.find(a => a.id === form.accountId)?.currencyId; if (currency) form.currencyId = currency }
+function selectGl() { const currency = selectedGlCurrency.value; if (currency) form.currencyId = currency }
 async function loadAccounts() {
  const current = ++version, unit = unitId.value
  accounts.value = []; options.value = { banks: [], branches: [], accounts: [], currencies: [] }; loaded.value = false; loadError.value = ''; showForm.value = false; deleteTarget.value = null
@@ -83,7 +85,6 @@ onUnmounted(() => { version++ })
     <section class="flex flex-wrap items-end gap-3 rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-800 dark:bg-[#15201e]">
       <label class="text-xs font-semibold text-slate-600 dark:text-slate-300">Accounting unit<select v-model="unitId" :disabled="loading || saving" class="mt-1.5 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700"><option value="">Select an accounting unit</option><option v-for="unit in units" :key="unit.id" :value="unit.id">{{ unit.code }} · {{ unit.name }}</option></select></label>
       <button :disabled="loading || saving" class="rounded-lg border border-slate-200 px-3 py-2 text-xs dark:border-slate-700" @click="unitId ? loadAccounts() : loadUnits()">Refresh</button>
-      <p class="text-xs text-slate-400">Persisted accounts for this unit. Bank, branch, GL and currency names are filled from their catalogs.</p>
     </section>
     <p v-if="loadError" role="alert" class="rounded-lg bg-rose-50 p-3 text-xs text-rose-700">{{ loadError }}</p>
 
@@ -117,7 +118,7 @@ onUnmounted(() => { version++ })
           </tbody>
         </table>
       </div>
-      <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800"><span>Bank accounts are saved to your tenant and selected accounting unit.</span><NuxtLink to="/ledger/accounts" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage chart-of-account details →</NuxtLink><NuxtLink to="/ledger/shared-config/banks" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage banks and branches →</NuxtLink></div>
+      <div class="flex flex-col justify-between gap-2 border-t border-slate-100 px-5 py-3 text-[10px] text-slate-400 sm:flex-row dark:border-slate-800"> <NuxtLink to="/ledger/accounts" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage chart-of-account details →</NuxtLink><NuxtLink to="/ledger/shared-config/banks" class="font-semibold text-brand-700 hover:underline dark:text-brand-300">Manage banks and branches →</NuxtLink></div>
     </section>
 
     <div v-if="showForm" class="fixed inset-0 z-[70] flex items-center justify-center bg-slate-950/40 p-4 backdrop-blur-[2px]" @click.self="!saving && (showForm = false)">
@@ -129,8 +130,8 @@ onUnmounted(() => { version++ })
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bank branch</span><select v-model="form.bankBranchId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">Select branch</option><option v-if="form.bankBranchId && !availableBranches.some(b => b.id === form.bankBranchId)" :value="form.bankBranchId">Unavailable branch (replace)</option><option v-for="branch in availableBranches" :key="branch.id" :value="branch.id">{{ branch.name }}</option></select></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">GL account</span><select v-model="form.accountId" @change="selectGl" required :disabled="loading || !options.accounts.length" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 disabled:opacity-50 dark:border-slate-700 dark:bg-slate-900"><option value="">Select GL account</option><option v-for="account in options.accounts" :key="account.id" :value="account.id">{{ account.accountNumber }} · {{ account.name }}</option></select><span v-if="!loading && !options.accounts.length" class="mt-1 block text-[10px] text-rose-600">Create an account detail before linking a bank.</span></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account number</span><input v-model="form.accountNumber" required maxlength="100" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Bank account number" /></label>
-            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account type</span><input v-model="form.accountType" required maxlength="50" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="e.g. Current, Savings" /></label>
-            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Currency</span><select v-model="form.currencyId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">Select currency</option><option v-if="form.currencyId && !options.currencies.some(item => item.id === form.currencyId)" :value="form.currencyId">Unavailable reference (replace)</option><option v-for="item in options.currencies" :key="item.id" :value="item.id">{{ item.code + ' · ' + item.name }}</option></select></label>
+            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account type</span><select v-model="form.accountType" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select account type</option><option v-if="form.accountType && !(bankAccountTypes as readonly string[]).includes(form.accountType)" :value="form.accountType">{{ form.accountType }}</option><option v-for="type in bankAccountTypes" :key="type" :value="type">{{ type }}</option></select></label>
+            <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Currency</span><select v-model="form.currencyId" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-sm dark:border-slate-700 dark:bg-slate-900"><option value="">Select currency</option><option v-if="form.currencyId && !availableCurrencies.some(item => item.id === form.currencyId)" :value="form.currencyId">Unavailable reference (replace)</option><option v-for="item in availableCurrencies" :key="item.id" :value="item.id">{{ item.code + ' · ' + item.name }}</option></select></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Location</span><input v-model="form.location" maxlength="150" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="City or location" /></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Date opened</span><input v-model="form.dateOpened" required type="date" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Contact person</span><input v-model="form.contactPerson" maxlength="130" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Contact name" /></label>

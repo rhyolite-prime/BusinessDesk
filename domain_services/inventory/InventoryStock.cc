@@ -6,7 +6,9 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <vector>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;
@@ -255,7 +257,7 @@ struct PreparedLine {
 // Lock each item and resolve conversions/tracking rules per line.
 drogon::Task<dto::BaseApiResponse>
 prepareLines(DbClientPtr tx, const utils::AuditIdentity &who, const std::string &type,
-             const std::string &reason, const std::string &sourceWarehouse,
+             const std::string &sourceWarehouse,
              Json::Value &body, std::vector<PreparedLine> &prepared) {
   prepared.clear();
   std::map<std::string, Json::Value> items;
@@ -1017,7 +1019,7 @@ drogon::Task<dto::BaseApiResponse> createFlow(DbClientPtr tx, const utils::Audit
   const std::string number =
       co_await allocateNumber(tx, who, b["accountingUnitId"].asString(), type);
   std::vector<PreparedLine> prepared;
-  const auto ready = co_await prepareLines(tx, who, type, b["movementReason"].asString(),
+  const auto ready = co_await prepareLines(tx, who, type,
                                            b["sourceWarehouseId"].asString(), b, prepared);
   if (!ready.success)
     co_return ready;
@@ -1104,7 +1106,6 @@ drogon::Task<dto::BaseApiResponse> updateFlow(DbClientPtr tx, const utils::Audit
     co_return fail("conflict", "Document type and accounting unit cannot change.");
   std::vector<PreparedLine> prepared;
   const auto ready = co_await prepareLines(tx, who, b["documentType"].asString(),
-                                           b["movementReason"].asString(),
                                            b["sourceWarehouseId"].asString(), b, prepared);
   if (!ready.success)
     co_return ready;
@@ -1292,8 +1293,10 @@ InventoryService::documents(std::string op, std::string id, Json::Value body,
   }
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await schemaReady(db, {"inv_stock_documents", "inv_stock_document_lines",
-                                    "inv_stock_balances", "inv_stock_transactions"})))
+    static const std::vector<std::string> requiredTables{
+        "inv_stock_documents", "inv_stock_document_lines",
+        "inv_stock_balances", "inv_stock_transactions"};
+    if (!(co_await schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Inventory upgrade required: apply migrations 029-035 first.");
     bool canWrite = false;
@@ -1354,7 +1357,7 @@ InventoryService::documents(std::string op, std::string id, Json::Value body,
           "LEFT JOIN core_suppliers sp ON sp.tenant_id=d.tenant_id AND sp.id=d.supplier_id AND sp.is_deleted=false "
           "LEFT JOIN core_customers cu ON cu.tenant_id=d.tenant_id AND cu.id=d.customer_id AND cu.is_deleted=false "
           "JOIN core_currencies cr ON cr.id=d.currency_id" + w;
-      drogon::orm::Result rows, totals;
+      std::optional<drogon::orm::Result> rows, totals;
       switch (args.size()) {
       case 2:
         rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
@@ -1374,9 +1377,9 @@ InventoryService::documents(std::string op, std::string id, Json::Value body,
         break;
       }
       r.result["data"] = Json::arrayValue;
-      for (const auto &row : rows)
+      for (const auto &row : *rows)
         r.result["data"].append(parse(row["record"].as<std::string>()));
-      r.result["totalCount"] = Json::Int64(totals[0]["total"].as<int64_t>());
+      r.result["totalCount"] = Json::Int64((*totals)[0]["total"].as<int64_t>());
       r.result["capabilities"]["canWrite"] = canWrite;
       r.success = true;
       co_return r;
