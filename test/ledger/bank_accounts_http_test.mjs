@@ -1,10 +1,11 @@
 // Built Nuxt transport/browser tests with a mock upstream, not a live Drogon/JWT deployment.
 import http from 'node:http'
+import fs from 'node:fs'
 import assert from 'node:assert/strict'
 import { spawn } from 'node:child_process'
 import { createRequire } from 'node:module'
-const unit='30000000-0000-4000-8000-000000000001',unit2='30000000-0000-4000-8000-000000000002',account='50000000-0000-4000-8000-000000000001',bank='80000000-0000-4000-8000-000000000001',branch='90000000-0000-4000-8000-000000000001',currency='40000000-0000-4000-8000-000000000001'
-const choices={banks:[{id:bank,name:'Live Bank'}],branches:[{id:branch,bankId:bank,name:'Accra'}],accounts:[{id:account,accountNumber:'100',name:'Cash',currencyId:currency}],currencies:[{id:currency,code:'GHS',name:'Cedi'}]}
+const unit='30000000-0000-4000-8000-000000000001',unit2='30000000-0000-4000-8000-000000000002',account='50000000-0000-4000-8000-000000000001',bank='80000000-0000-4000-8000-000000000001',branch='90000000-0000-4000-8000-000000000001',currency='40000000-0000-4000-8000-000000000001',usd='40000000-0000-4000-8000-000000000002'
+const choices={banks:[{id:bank,name:'Live Bank'}],branches:[{id:branch,bankId:bank,name:'Accra'}],accounts:[{id:account,accountNumber:'100',name:'Cash',currencyId:currency}],currencies:[{id:currency,code:'GHS',name:'Cedi'},{id:usd,code:'USD',name:'US Dollar'}]}
 const fields=['bankId','bankBranchId','accountId','currencyId','accountNumber','accountType','dateOpened','address','location','contactPerson','contactNumber','chequeBookStart','chequeBookEnd','isActive']
 let rows=[],next=0,checks=0,failure=false,used=false
 const seen=[],check=(ok,label)=>{assert.ok(ok,label);checks++}
@@ -42,6 +43,8 @@ async function call(path,method='GET',body,cookie='',origin=base){
  return {response,body:result}
 }
 try{
+ const glHeader=fs.readFileSync('controllers/GlController.h','utf8'),bankAccountHeader=fs.readFileSync('controllers/BankAccountController.h','utf8')
+ check(!glHeader.includes('ADD_METHOD_TO')&&bankAccountHeader.includes('"/api/v1/ledger/bank-accounts"'),'GlController does not shadow BankAccountController routes')
  let r=await call('/api/ledger/bank-accounts');check(r.response.status===401,'anonymous denied')
  const login=await call('/api/auth/login','POST',{accountId:'acme',usernameOrEmail:'tenant',password:'test-only'}),cookie=login.response.headers.getSetCookie().find(c=>c.startsWith('bd_access=')).split(';')[0],query=`?accountingUnitId=${unit}`
  r=await call('/api/ledger/bank-accounts','GET',undefined,cookie);check(r.response.status===400,'unit required')
@@ -70,10 +73,14 @@ try{
    await page.goto(base+'/ledger/bank-accounts');await page.getByLabel('Accounting unit',{exact:false}).selectOption(unit)
    const add=page.getByRole('button',{name:'Add bank account',exact:true});await add.waitFor();await add.click();const modal=page.getByRole('dialog');await modal.waitFor()
    await modal.getByLabel('Bank name',{exact:false}).selectOption(bank);await modal.getByLabel('Bank branch',{exact:false}).selectOption(branch);await modal.getByLabel('GL account',{exact:false}).selectOption(account)
-   check(await modal.getByLabel('Currency',{exact:false}).inputValue()===currency,'explicit GL currency prefilled')
+   const currencySelect=modal.getByLabel('Currency',{exact:false})
+   check(await currencySelect.inputValue()===currency&&(await currencySelect.locator('option').allTextContents()).join('|')==='Select currency|GHS · Cedi','explicit GL currency prefilled and filtered to matching currency')
+   const typeSelect=modal.getByLabel('Account type',{exact:false})
+   check(await typeSelect.evaluate(el=>el.tagName)==='SELECT'&&await typeSelect.inputValue()==='Current Account'&&(await typeSelect.locator('option:not([disabled])').allTextContents()).join('|')==='Current Account|Savings Account','account type dropdown offers Current Account and Savings Account')
+   await typeSelect.selectOption('Savings Account')
    await modal.getByLabel('Account number',{exact:true}).fill('BROWSER-001');await modal.getByLabel('Date opened',{exact:true}).fill('2024-02-29');await modal.getByLabel('Contact number',{exact:true}).fill('0201234567')
    await page.setViewportSize({width:390,height:640});const scroller=modal.locator('form > div').first();await scroller.evaluate(el=>{el.scrollTop=el.scrollHeight});check(await scroller.evaluate(el=>el.scrollTop>0),'mobile modal can scroll')
-   await modal.getByRole('button',{name:'Save bank account',exact:true}).click();await modal.waitFor({state:'hidden'});check(rows[0].accountNumber==='BROWSER-001'&&rows[0].bankId===bank&&rows[0].bankBranchId===branch,'browser persisted create, no demo data')
+   await modal.getByRole('button',{name:'Save bank account',exact:true}).click();await modal.waitFor({state:'hidden'});check(rows[0].accountNumber==='BROWSER-001'&&rows[0].accountType==='Savings Account'&&rows[0].bankId===bank&&rows[0].bankBranchId===branch,'browser persisted create with Savings Account, no demo data')
    await page.setViewportSize({width:1280,height:800});await page.getByRole('button',{name:'Edit bank account',exact:true}).click();await modal.getByLabel('Location',{exact:true}).fill('Tema');await modal.getByRole('button',{name:'Save changes',exact:true}).click();await modal.waitFor({state:'hidden'});check(rows[0].location==='Tema','browser edit')
    await page.getByRole('button',{name:'Edit bank account',exact:true}).click();await modal.getByLabel('Location',{exact:true}).fill('Discard');await modal.getByRole('button',{name:'Cancel',exact:true}).click();check(rows[0].location==='Tema','cancel does not write')
    await page.getByLabel('Accounting unit',{exact:false}).selectOption(unit2);await page.getByText('No bank accounts found',{exact:true}).waitFor();check(await page.getByRole('button',{name:'Edit bank account',exact:true}).count()===0,'unit switch clears old records')
