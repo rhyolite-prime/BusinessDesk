@@ -538,15 +538,15 @@ class GlJournalLines
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
-                             const std::function<void(GlJournalBatches)> &rcb,
-                             const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
                        const std::function<void(GlAccounts)> &rcb,
                        const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlJournalBatches getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlJournalBatches)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlJournalLines>;

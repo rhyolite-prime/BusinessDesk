@@ -239,15 +239,15 @@ class GlBankReconciliationLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlBankReconciliations getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr,
-                                  const std::function<void(GlBankReconciliations)> &rcb,
-                                  const drogon::orm::ExceptionCallback &ecb) const;
-
     GlJournalLines getGlJournalLines(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlJournalLines(const drogon::orm::DbClientPtr &clientPtr,
                            const std::function<void(GlJournalLines)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankReconciliations getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBankReconciliations(const drogon::orm::DbClientPtr &clientPtr,
+                                  const std::function<void(GlBankReconciliations)> &rcb,
+                                  const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBankReconciliationLines>;

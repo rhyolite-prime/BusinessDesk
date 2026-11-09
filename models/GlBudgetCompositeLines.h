@@ -187,15 +187,15 @@ class GlBudgetCompositeLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlBudgetComposites getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr,
-                               const std::function<void(GlBudgetComposites)> &rcb,
-                               const drogon::orm::ExceptionCallback &ecb) const;
-
     GlBudgets getGlBudgets(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlBudgets(const drogon::orm::DbClientPtr &clientPtr,
                       const std::function<void(GlBudgets)> &rcb,
                       const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBudgetComposites getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlBudgetComposites(const drogon::orm::DbClientPtr &clientPtr,
+                               const std::function<void(GlBudgetComposites)> &rcb,
+                               const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlBudgetCompositeLines>;

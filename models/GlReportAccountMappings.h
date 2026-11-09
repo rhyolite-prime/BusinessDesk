@@ -220,11 +220,6 @@ class GlReportAccountMappings
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    Tenants getTenants(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getTenants(const drogon::orm::DbClientPtr &clientPtr,
-                    const std::function<void(Tenants)> &rcb,
-                    const drogon::orm::ExceptionCallback &ecb) const;
-
     CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
     void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
                                 const std::function<void(CoreAccountingUnits)> &rcb,
@@ -234,6 +229,11 @@ class GlReportAccountMappings
     void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
                        const std::function<void(GlAccounts)> &rcb,
                        const drogon::orm::ExceptionCallback &ecb) const;
+
+    Tenants getTenants(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getTenants(const drogon::orm::DbClientPtr &clientPtr,
+                    const std::function<void(Tenants)> &rcb,
+                    const drogon::orm::ExceptionCallback &ecb) const;
 
     Users getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
     void getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr,

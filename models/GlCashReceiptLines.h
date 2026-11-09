@@ -230,15 +230,15 @@ class GlCashReceiptLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlCashReceipts getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(GlCashReceipts)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
                        const std::function<void(GlAccounts)> &rcb,
                        const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlCashReceipts getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlCashReceipts(const drogon::orm::DbClientPtr &clientPtr,
+                           const std::function<void(GlCashReceipts)> &rcb,
+                           const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlCashReceiptLines>;
