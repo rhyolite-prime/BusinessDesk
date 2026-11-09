@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useInventory, useInventoryUnitId } from '../../../features/inventory/useInventory'
 import { useInventoryOptions } from '../../../features/inventory/useInventoryOptions'
-import type { MasterField } from '../../../features/inventory/components/InventoryMasterTable.vue'
+import InventoryMasterTable, { type MasterField } from '../../../features/inventory/components/InventoryMasterTable.vue'
 
 definePageMeta({ layout: 'admin-inventory' })
 useHead({ title: 'Batches & serials' })
