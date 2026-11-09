@@ -61,6 +61,8 @@ inline Json::Value defaults() {
     t[k]["enabled"] = false;
     t[k]["rate"] = "0";
   }
+  t["incomeWithholding"]["rate"] = "5";
+  t["vatWithholding"]["rate"] = "7";
   t["incomeWithholding"]["accountId"] = Json::nullValue;
   t["vatWithholding"]["accountId"] = Json::nullValue;
   return t;

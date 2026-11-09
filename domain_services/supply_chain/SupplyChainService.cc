@@ -13,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;
@@ -1521,8 +1522,9 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   r.result["data"] = Json::arrayValue;
   for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  const int64_t got = static_cast<int64_t>(rows->size());
-  r.result["totalCount"] = Json::Int64(got < size ? offset + got : offset + got + 1); // cheap estimate: short page ends paging
+  r.result["totalCount"] = Json::Int64(rows->size() < size
+                                           ? offset + (int64_t)rows->size()
+                                           : offset + rows->size() + 1); // cheap estimate: one extra page
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
@@ -1596,10 +1598,12 @@ SupplyChainService::execute(std::string op, std::string id, Json::Value body, in
   }
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await inventory_internal::schemaReady(
-            db, {"scm_purchase_requisitions", "scm_purchase_requisition_lines",
-                 "scm_purchase_orders", "scm_purchase_order_lines", "scm_purchase_receipts",
-                 "scm_purchase_receipt_lines", "scm_document_sequences", "scm_procurement_events"})))
+    static const std::vector<std::string> requiredTables{
+        "scm_purchase_requisitions", "scm_purchase_requisition_lines",
+        "scm_purchase_orders",       "scm_purchase_order_lines",
+        "scm_purchase_receipts",     "scm_purchase_receipt_lines",
+        "scm_document_sequences",    "scm_procurement_events"};
+    if (!(co_await inventory_internal::schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Supply chain upgrade required: apply migrations 032-035 first.");
     bool canWrite = false;

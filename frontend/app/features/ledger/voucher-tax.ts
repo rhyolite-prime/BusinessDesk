@@ -36,7 +36,12 @@ export function defaultVoucherTaxes(): VoucherTaxes {
       k,
       {
         enabled: false,
-        rate: '0',
+        rate:
+          k === 'incomeWithholding'
+            ? '5'
+            : k === 'vatWithholding'
+              ? '7'
+              : '0',
         ...(k.endsWith('Withholding') ? { accountId: null } : {}),
       },
     ]),

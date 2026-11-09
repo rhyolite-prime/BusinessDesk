@@ -1,6 +1,7 @@
 #include "InventoryService.h"
 #include "InventoryInternal.h"
 #include "utils/TransactionUtil.h"
+#include <optional>
 #include <unordered_map>
 #include <optional>
 namespace business_desk::domain_services {
@@ -23,7 +24,7 @@ struct MasterSpec {
   const char *unitColumn = nullptr; // optional accounting-unit filter column
   bool allowDelete = true;
   bool hasActive = false; // options restrict to is_active rows
-  std::set<std::string> enums;
+  std::set<std::string> enums = {};
   const char *enumKey = nullptr;
 };
 bool oneOf(const std::string &s, const std::set<std::string> &allowed) {
@@ -767,7 +768,7 @@ drogon::Task<dto::BaseApiResponse> runSnapshots(DbClientPtr db, const std::strin
 // ---------------------------------------------------------------------------
 drogon::Task<dto::BaseApiResponse> runCloses(DbClientPtr db, const std::string &op,
                                              const std::string &id, Json::Value b,
-                                             int page, int size, const std::string &query,
+                                             int page, int size,
                                              const std::string &unit, bool canWrite,
                                              utils::AuditIdentity who) {
   dto::BaseApiResponse r;
@@ -1056,7 +1057,9 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
     co_return fail("not_found", "Unknown inventory resource.");
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await schemaReady(db, {"inv_items", "inv_warehouses", "inv_stock_balances"})))
+    static const std::vector<std::string> requiredTables{
+        "inv_items", "inv_warehouses", "inv_stock_balances"};
+    if (!(co_await schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Inventory upgrade required: apply migrations 029-035 first.");
     bool canWrite = false;
@@ -1072,7 +1075,7 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
       if (resource == "snapshots")
         co_return co_await runSnapshots(db, action, id, body, page, size, query, unit, canWrite, who);
       if (resource == "closes")
-        co_return co_await runCloses(db, action, id, body, page, size, query, unit, canWrite, who);
+        co_return co_await runCloses(db, action, id, body, page, size, unit, canWrite, who);
       if (resource == "dashboard" && action == "summary")
         co_return co_await runDashboard(db, unit, who);
       if (resource == "items" && action == "card")
@@ -1095,7 +1098,7 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
       } else if (resource == "snapshots") {
         result = co_await runSnapshots(tx, action, id, body, page, size, query, unit, canWrite, who);
       } else if (resource == "closes") {
-        result = co_await runCloses(tx, action, id, body, page, size, query, unit, canWrite, who);
+        result = co_await runCloses(tx, action, id, body, page, size, unit, canWrite, who);
       } else {
         result = co_await runMaster(tx, resource, action, id, body, page, size, query, unit, canWrite, who);
       }
