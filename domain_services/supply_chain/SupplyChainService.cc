@@ -1522,9 +1522,7 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   r.result["data"] = Json::arrayValue;
   for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(rows->size() < size
-                                           ? offset + (int64_t)rows->size()
-                                           : offset + rows->size() + 1); // cheap estimate: one extra page
+  r.result["totalCount"] = Json::Int64( static_cast<int64_t>(rows->size()) < static_cast<int64_t>(size) ? offset + static_cast<int64_t>(rows->size()) : offset + static_cast<int64_t>(rows->size()) + 1);
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
