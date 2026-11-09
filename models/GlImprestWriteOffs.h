@@ -371,10 +371,10 @@ class GlImprestWriteOffs
                            const std::function<void(CoreCurrencies)> &rcb,
                            const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlImprests getGlImprests(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlImprests(const drogon::orm::DbClientPtr &clientPtr,
-                       const std::function<void(GlImprests)> &rcb,
-                       const drogon::orm::ExceptionCallback &ecb) const;
+    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(CoreAccountingUnits)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
     GlAccounts getDebitAccount(const drogon::orm::DbClientPtr &clientPtr) const;
     void getDebitAccount(const drogon::orm::DbClientPtr &clientPtr,
@@ -391,10 +391,10 @@ class GlImprestWriteOffs
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
 
-    CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
-                                const std::function<void(CoreAccountingUnits)> &rcb,
-                                const drogon::orm::ExceptionCallback &ecb) const;
+    GlImprests getGlImprests(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImprests(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlImprests)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImprestWriteOffs>;

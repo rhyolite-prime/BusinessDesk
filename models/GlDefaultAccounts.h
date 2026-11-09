@@ -655,36 +655,6 @@ class GlDefaultAccounts
                                 const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlBankAccounts getAccountsPayablesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountsPayablesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                                        const std::function<void(GlBankAccounts)> &rcb,
-                                        const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getPayrollBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getPayrollBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                               const std::function<void(GlBankAccounts)> &rcb,
-                               const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getSalesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getSalesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                             const std::function<void(GlBankAccounts)> &rcb,
-                             const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getAccountsReceivableBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getAccountsReceivableBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                                          const std::function<void(GlBankAccounts)> &rcb,
-                                          const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlBankAccounts getPurchasesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getPurchasesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
-                                 const std::function<void(GlBankAccounts)> &rcb,
-                                 const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlImprestCategories getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr,
-                                const std::function<void(GlImprestCategories)> &rcb,
-                                const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccounts getImprestGlAccount(const drogon::orm::DbClientPtr &clientPtr) const;
     void getImprestGlAccount(const drogon::orm::DbClientPtr &clientPtr,
                              const std::function<void(GlAccounts)> &rcb,
@@ -844,6 +814,36 @@ class GlDefaultAccounts
     void getRealizedFxGainAccount(const drogon::orm::DbClientPtr &clientPtr,
                                   const std::function<void(GlAccounts)> &rcb,
                                   const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankAccounts getAccountsPayablesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getAccountsPayablesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
+                                        const std::function<void(GlBankAccounts)> &rcb,
+                                        const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankAccounts getPayrollBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getPayrollBankAccount(const drogon::orm::DbClientPtr &clientPtr,
+                               const std::function<void(GlBankAccounts)> &rcb,
+                               const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankAccounts getSalesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getSalesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
+                             const std::function<void(GlBankAccounts)> &rcb,
+                             const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankAccounts getAccountsReceivableBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getAccountsReceivableBankAccount(const drogon::orm::DbClientPtr &clientPtr,
+                                          const std::function<void(GlBankAccounts)> &rcb,
+                                          const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlBankAccounts getPurchasesBankAccount(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getPurchasesBankAccount(const drogon::orm::DbClientPtr &clientPtr,
+                                 const std::function<void(GlBankAccounts)> &rcb,
+                                 const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlImprestCategories getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImprestCategories(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlImprestCategories)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlDefaultAccounts>;

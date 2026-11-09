@@ -433,6 +433,11 @@ class CoreSuppliers
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
+    CoreCurrencies getCoreCurrencies(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCoreCurrencies(const drogon::orm::DbClientPtr &clientPtr,
+                           const std::function<void(CoreCurrencies)> &rcb,
+                           const drogon::orm::ExceptionCallback &ecb) const;
+
     Tenants getTenants(const drogon::orm::DbClientPtr &clientPtr) const;
     void getTenants(const drogon::orm::DbClientPtr &clientPtr,
                     const std::function<void(Tenants)> &rcb,
@@ -462,11 +467,6 @@ class CoreSuppliers
     void getSupplierGroup(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(CoreSupplierGroups)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
-
-    CoreCurrencies getCoreCurrencies(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getCoreCurrencies(const drogon::orm::DbClientPtr &clientPtr,
-                           const std::function<void(CoreCurrencies)> &rcb,
-                           const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<CoreSuppliers>;

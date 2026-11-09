@@ -2925,50 +2925,6 @@ void GlFxRevaluationLines::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlFxRevaluationRuns GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *revaluationRunId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlFxRevaluationRuns(r[0]);
-}
-
-void GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr,
-                                                  const std::function<void(GlFxRevaluationRuns)> &rcb,
-                                                  const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
-    *clientPtr << sql
-               << *revaluationRunId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlFxRevaluationRuns(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
 GlAccounts GlFxRevaluationLines::getGlAccounts(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_accounts where id = $1";
     Result r(nullptr);
@@ -3008,6 +2964,50 @@ void GlFxRevaluationLines::getGlAccounts(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlAccounts(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlFxRevaluationRuns GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *revaluationRunId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlFxRevaluationRuns(r[0]);
+}
+
+void GlFxRevaluationLines::getGlFxRevaluationRuns(const DbClientPtr &clientPtr,
+                                                  const std::function<void(GlFxRevaluationRuns)> &rcb,
+                                                  const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_fx_revaluation_runs where id = $1";
+    *clientPtr << sql
+               << *revaluationRunId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlFxRevaluationRuns(r[0]));
                     }
                }
                >> ecb;

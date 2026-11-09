@@ -321,15 +321,15 @@ class GlAccounts
                                 const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
 
-    GlAccountControls getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr,
-                              const std::function<void(GlAccountControls)> &rcb,
-                              const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccountGroups getGlAccountGroups(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlAccountGroups(const drogon::orm::DbClientPtr &clientPtr,
                             const std::function<void(GlAccountGroups)> &rcb,
                             const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlAccountControls getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountControls(const drogon::orm::DbClientPtr &clientPtr,
+                              const std::function<void(GlAccountControls)> &rcb,
+                              const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlAccounts>;

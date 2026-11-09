@@ -301,11 +301,6 @@ class GlImprestRetirementLines
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlImprestRetirements getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr,
-                                 const std::function<void(GlImprestRetirements)> &rcb,
-                                 const drogon::orm::ExceptionCallback &ecb) const;
-
     GlAccounts getDebitAccount(const drogon::orm::DbClientPtr &clientPtr) const;
     void getDebitAccount(const drogon::orm::DbClientPtr &clientPtr,
                          const std::function<void(GlAccounts)> &rcb,
@@ -315,6 +310,11 @@ class GlImprestRetirementLines
     void getCreditAccount(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(GlAccounts)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlImprestRetirements getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlImprestRetirements(const drogon::orm::DbClientPtr &clientPtr,
+                                 const std::function<void(GlImprestRetirements)> &rcb,
+                                 const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlImprestRetirementLines>;
