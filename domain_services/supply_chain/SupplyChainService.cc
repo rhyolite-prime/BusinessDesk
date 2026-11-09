@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 #include <optional>
@@ -1597,10 +1598,12 @@ SupplyChainService::execute(std::string op, std::string id, Json::Value body, in
   }
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await inventory_internal::schemaReady(
-            db, {"scm_purchase_requisitions", "scm_purchase_requisition_lines",
-                 "scm_purchase_orders", "scm_purchase_order_lines", "scm_purchase_receipts",
-                 "scm_purchase_receipt_lines", "scm_document_sequences", "scm_procurement_events"})))
+    static const std::vector<std::string> requiredTables{
+        "scm_purchase_requisitions", "scm_purchase_requisition_lines",
+        "scm_purchase_orders",       "scm_purchase_order_lines",
+        "scm_purchase_receipts",     "scm_purchase_receipt_lines",
+        "scm_document_sequences",    "scm_procurement_events"};
+    if (!(co_await inventory_internal::schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Supply chain upgrade required: apply migrations 032-035 first.");
     bool canWrite = false;
