@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { useSupplyChain, type PurchaseOrder, type PurchaseReceipt, type Requisition, type ReceiptLine, type OrderLine, type RequisitionLine } from '../../features/supply-chain/useSupplyChain'
 
-definePageMeta({ layout: 'admin-ledger' })
+definePageMeta({ layout: 'admin-supply-chain' })
 useHead({ title: 'Supply chain' })
 
 interface Unit { id: string; code: string; name: string; baseCurrencyId: string; isActive?: boolean }
@@ -20,7 +20,12 @@ const warehouses = ref<OptionRow[]>([])
 const items = ref<(OptionRow & { baseUomId?: string; baseUom?: string; trackingMethod?: string })[]>([])
 const topError = ref('')
 const loadingUnits = ref(true)
-const tab = ref<'requisitions' | 'orders' | 'receipts'>('requisitions')
+// The sidebar opens each workspace with ?tab=; the query picks the starting tab.
+const route = useRoute()
+const tabKeys = ['requisitions', 'orders', 'receipts'] as const
+const tabFromQuery = (value: unknown) => (tabKeys as readonly string[]).includes(String(value)) ? (String(value) as typeof tabKeys[number]) : 'requisitions'
+const tab = ref<'requisitions' | 'orders' | 'receipts'>(tabFromQuery(route.query.tab))
+watch(() => route.query.tab, (value) => { tab.value = tabFromQuery(value) })
 const tabs = computed(() => [
   { key: 'requisitions', label: 'Purchase requisitions', count: reqTotal.value },
   { key: 'orders', label: 'Purchase orders', count: poTotal.value },
@@ -161,8 +166,8 @@ async function saveReq() {
       purpose: reqForm.purpose.trim(),
       lines,
     }
-    if (editingReq.value) await api.requisitions.update(editingReq.value.id, body)
-    else await api.requisitions.create({ ...body, requestKey: crypto.randomUUID() })
+    if (editingReq.value) await api.requisitions.update(editingReq.value.id, { ...body, requestId: crypto.randomUUID(), version: editingReq.value.version })
+    else await api.requisitions.create({ ...body, requestId: crypto.randomUUID() })
     showReqForm.value = false
     await loadReqs()
   } catch (e) {
@@ -272,8 +277,8 @@ async function savePo() {
       ...(poForm.notes.trim() ? { notes: poForm.notes.trim() } : {}),
       lines,
     }
-    if (editingPo.value) await api.orders.update(editingPo.value.id, body)
-    else await api.orders.create({ ...body, requestKey: crypto.randomUUID() })
+    if (editingPo.value) await api.orders.update(editingPo.value.id, { ...body, requestId: crypto.randomUUID(), version: editingPo.value.version })
+    else await api.orders.create({ ...body, requestId: crypto.randomUUID() })
     showPoForm.value = false
     await loadPos()
   } catch (e) {
@@ -386,7 +391,7 @@ async function saveGrn() {
       receiptDate: grnForm.receiptDate,
       ...(grnForm.deliveryNoteNumber.trim() ? { deliveryNoteNumber: grnForm.deliveryNoteNumber.trim() } : {}),
       ...(grnForm.notes.trim() ? { notes: grnForm.notes.trim() } : {}),
-      requestKey: crypto.randomUUID(),
+      requestId: crypto.randomUUID(),
       lines: lines.map((line) => ({
         orderLineId: line.orderLineId,
         quantityReceived: String(line.quantityReceived).trim(),
@@ -475,7 +480,8 @@ async function runAction(action: string) {
   detailBusy.value = true
   detailError.value = ''
   try {
-    const body: Record<string, unknown> = {}
+    // Every transition carries the record version so stale updates are rejected.
+    const body: Record<string, unknown> = { version: detail.value.row.version }
     if (reasonPrompt.value) body.reason = reasonText.value.trim()
     await api[detail.value.kind].action(detail.value.row.id, action, body)
     reasonPrompt.value = null
@@ -572,7 +578,6 @@ onMounted(async () => {
 <template>
   <div class="space-y-6">
     <PageHeader title="Supply chain" subtitle="Requisitions, purchase orders and goods receipts, connected to the stock ledger">
-      <SelectInput v-model="unitId" :options="units.map((u) => ({ value: u.id, label: `${u.code} — ${u.name}` }))" placeholder="Select accounting unit" class="min-w-[220px]" />
       <BaseButton v-if="tab === 'requisitions'" icon="plus" :disabled="!unitId" @click="openReqCreate">New requisition</BaseButton>
       <BaseButton v-else-if="tab === 'orders'" icon="plus" :disabled="!unitId" @click="openPoCreate()">New purchase order</BaseButton>
       <BaseButton v-else icon="plus" :disabled="!unitId" @click="openGrnCreate()">New receipt</BaseButton>

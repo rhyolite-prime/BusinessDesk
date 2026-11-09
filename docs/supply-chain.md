@@ -17,7 +17,7 @@ request without restarts.
 All routes require `TenantJwtAuthFilter` and the `supply_chain` module
 permission. Tenant, actor and unit authority come from the session; every
 mutation carries the header `version` for optimistic locking plus an
-idempotent `requestKey`.
+idempotent `requestId`.
 
 | Method | Backend route | Request / result |
 | --- | --- | --- |
