@@ -819,9 +819,8 @@ onMounted(async () => {
             <FormField v-if="docForm.documentType === 'transfer'" label="Destination warehouse" required>
               <SelectInput v-model="docForm.destinationWarehouseId" :options="whRows.filter((w) => w.isActive !== false && w.id !== docForm.sourceWarehouseId).map((w) => ({ value: w.id, label: `${w.code} — ${w.name}` }))" placeholder="Select warehouse" />
             </FormField>
-            <FormField label="Document number">
+            <FormField label="Document number" hint="Preview only — the number is reserved when the draft is created.">
               <TextInput :model-value="docForm.number" disabled placeholder="Assigned on save" />
-              <template #default><p class="text-[11px] text-ink-faint">Preview only — the number is reserved when the draft is created.</p></template>
             </FormField>
           </div>
           <div class="grid gap-4 sm:grid-cols-2">
