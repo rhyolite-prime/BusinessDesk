@@ -33,6 +33,7 @@ export interface Requisition {
   createdAt?: string
   lines?: RequisitionLine[]
   events?: { action: string; newStatus: string; version: number; createdAt: string }[]
+  history?: { action: string; newStatus: string; version: number; createdAt: string }[]
 }
 export interface OrderLine {
   id?: string
@@ -74,6 +75,7 @@ export interface PurchaseOrder {
   rejectionReason?: string | null
   lines?: OrderLine[]
   events?: { action: string; newStatus: string; version: number; createdAt: string }[]
+  history?: { action: string; newStatus: string; version: number; createdAt: string }[]
 }
 export interface ReceiptLine {
   id?: string
@@ -112,27 +114,47 @@ export interface PurchaseReceipt {
   cancelReason?: string | null
   lines?: ReceiptLine[]
   events?: { action: string; newStatus: string; version: number; createdAt: string }[]
+  history?: { action: string; newStatus: string; version: number; createdAt: string }[]
 }
+/** Normalised paged result used by every supply chain screen. */
 interface Paged<T> { items: T[]; total: number }
+/** Envelope the SCM service returns for list operations. */
+interface ListEnvelope<T> { data?: T[]; totalCount?: number | string }
+
+/** Keep the response bodies compact for UI code: drop empty query keys. */
+const clean = (query: Record<string, unknown>) =>
+  Object.fromEntries(Object.entries(query).filter(([, v]) => v !== undefined && v !== null && v !== ''))
 
 export function useSupplyChain() {
   const request = useRequestFetch()
+  // Dynamic resource paths and methods are outside Nuxt's typed-route overloads.
+  const call = request as unknown as (url: string, opts?: Record<string, unknown>) => Promise<any>
   const unitId = useState<string>('ledger-accounting-unit', () => '')
-  function crud<T>(resource: 'requisitions' | 'orders' | 'receipts') {
+  const toPage = <T,>(r: ListEnvelope<T>): Paged<T> => ({
+    items: Array.isArray(r?.data) ? r.data : [],
+    total: Number(r?.totalCount ?? 0),
+  })
+  function crud<T extends { history?: unknown[]; events?: unknown[] }>(resource: 'requisitions' | 'orders' | 'receipts') {
+    const base = `/api/scm/${resource}`
     return {
       list: (unit = unitId.value, q = '', status = '', page = 1, size = 20) =>
-        request<Paged<T>>(`/api/scm/${resource}`, { query: { accountingUnitId: unit, q, status, page, size } }),
-      get: (id: string) => request<T>(`/api/scm/${resource}/${id}`),
+        request<ListEnvelope<T>>(base, { query: clean({ accountingUnitId: unit, q, status, page, size }) }).then(toPage<T>),
+      /** Detail: the service returns the audit trail as `history`; expose it as `events`. */
+      get: (id: string) =>
+        request<T>(`${base}/${id}`).then((row) => ({ ...row, events: row.events ?? row.history ?? [] }) as T),
       create: (body: Record<string, unknown>) =>
-        request<{ id: string } & Record<string, unknown>>(`/api/scm/${resource}`, { method: 'POST', body }),
+        request<{ id: string } & Record<string, unknown>>(base, { method: 'POST', body }),
+      /** Draft replacement. The body must carry the record `version`. */
       update: (id: string, body: Record<string, unknown>) =>
-        request('/api/scm/' + resource + '/' + id, { method: 'PUT', body }),
+        request(`${base}/${id}`, { method: 'PUT', body }),
       nextNumber: (unit = unitId.value) =>
-        request<{ number: string }>(`/api/scm/${resource}/next-number`, { query: { accountingUnitId: unit } }),
+        request<{ documentNumber: string }>(`${base}/next-number`, { query: { accountingUnitId: unit } })
+          .then((r) => ({ number: r.documentNumber })),
+      /** Workflow transitions. Every transition carries the record `version`. */
       action: (id: string, action: string, body: Record<string, unknown> = {}) =>
-        request(`/api/scm/${resource}/${id}/${action}`, { method: 'POST', body }),
+        call(`${base}/${id}/${action}`, { method: 'POST', body }),
       remove: (id: string, version: number) =>
-        request('/api/scm/' + resource + '/' + id, { method: 'DELETE', query: { version } }),
+        request(`${base}/${id}`, { method: 'DELETE', query: { version } }),
     }
   }
   return {
@@ -147,20 +169,20 @@ export function useSupplyChain() {
     },
     items: {
       list: (unit = '', q = '') =>
-        request<Paged<{ id: string; itemCode: string; name: string; trackingMethod?: string }>>(
+        request<ListEnvelope<{ id: string; itemCode: string; name: string; trackingMethod?: string; baseUomId?: string; status?: string; isPurchasable?: boolean }>>(
           '/api/inventory/items',
-          { query: { accountingUnitId: unit, q, size: 100 } },
-        ),
+          { query: clean({ accountingUnitId: unit, q, size: 100 }) },
+        ).then(toPage),
       options: (unit = '') =>
-        request<Paged<{ id: string; code: string; name: string }>>('/api/inventory/uoms', {
-          query: { accountingUnitId: unit, size: 200 },
-        }),
+        request<ListEnvelope<{ id: string; code: string; name: string }>>('/api/inventory/uoms', {
+          query: clean({ accountingUnitId: unit, size: 200 }),
+        }).then(toPage),
     },
     warehouses: {
       list: (unit = '') =>
-        request<Paged<{ id: string; code: string; name: string }>>('/api/inventory/warehouses', {
-          query: { accountingUnitId: unit, size: 100 },
-        }),
+        request<ListEnvelope<{ id: string; code: string; name: string }>>('/api/inventory/warehouses', {
+          query: clean({ accountingUnitId: unit, size: 100 }),
+        }).then(toPage),
     },
     requisitions: crud<Requisition>('requisitions'),
     orders: crud<PurchaseOrder>('orders'),

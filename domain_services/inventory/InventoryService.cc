@@ -326,7 +326,14 @@ runMaster(DbClientPtr db, const std::string &resource, const std::string &op,
   if (op == "list" || op == "options") {
     const bool scoped =
         op == "list" && spec.unitColumn != nullptr && !unit.empty();
-    const std::string w = filterSql(spec, scoped);
+    std::string w = filterSql(spec, scoped);
+    // Item-scoped catalogs can be listed for a single item (item settings pages).
+    static const std::set<std::string> itemScoped{"item-warehouses", "item-suppliers",
+                                                  "item-uom-conversions", "batches", "serials"};
+    if (op == "list" && itemScoped.count(resource) && b.isObject() && b.isMember("itemId") &&
+        b["itemId"].isString() && uuid(b["itemId"].asString()))
+      w += " AND " + std::string(spec.alias) + ".item_id='" + lower(b["itemId"].asString()) +
+           "'::uuid";
     const int64_t limit = op == "options" ? 100 : size,
                   offset = op == "options" ? 0 : (int64_t(page) - 1) * size;
     std::string sel;
@@ -1028,8 +1035,20 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
                           int page, int size, std::string query,
                           std::string unitId, utils::AuditIdentity who) {
   const auto dot = op.rfind('.');
-  const std::string resource = dot == std::string::npos ? "" : op.substr(0, dot),
-                    action = dot == std::string::npos ? op : op.substr(dot + 1);
+  std::string resource = dot == std::string::npos ? "" : op.substr(0, dot);
+  std::string action = dot == std::string::npos ? op : op.substr(dot + 1);
+  // Contract aliases. The documented catalog name "item-categories" is stored
+  // as "categories"; POST on snapshots and closes is the create verb, which
+  // maps onto capture (snapshots) or prepare/close (closes, chosen by body.action).
+  if (resource == "item-categories")
+    resource = "categories";
+  if (resource == "snapshots" && action == "create")
+    action = "capture";
+  if (resource == "closes" && action == "create")
+    action = (body.isObject() && body.isMember("action") && body["action"].isString() &&
+              body["action"].asString() == "close")
+                 ? "close"
+                 : "prepare";
   static const std::set<std::string> readActions{"list", "options", "get", "card", "summary"};
   static const std::set<std::string> writeActions{"create", "update", "delete", "capture", "prepare", "close"};
   if (resource.empty() || (!readActions.count(action) && !writeActions.count(action)) ||
