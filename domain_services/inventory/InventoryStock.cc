@@ -8,6 +8,7 @@
 #include <map>
 #include <optional>
 #include <vector>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;

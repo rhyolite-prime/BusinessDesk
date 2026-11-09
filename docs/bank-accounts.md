@@ -41,8 +41,10 @@ Reads never include deleted bank accounts. Inactive (but not deleted) bank accou
 remain visible in the list; the UI supports status/search filtering. List and
 lookup endpoints return all eligible records in scope, not an implicit first page.
 
-All routes use `TenantJwtAuthFilter`, including its live user/tenant authorization,
-and JWT-derived audit identity. Host cookies/JWTs are not tenant authorization.
+`BankAccountController` replaces the old unfiltered `GlController` bank-account
+registrations so all `/api/v1/ledger/bank-accounts` routes use
+`TenantJwtAuthFilter`, including its live user/tenant authorization, and
+JWT-derived audit identity. Host cookies/JWTs are not tenant authorization.
 There is no new bank-account-specific role policy. Client-supplied tenant, record
 ID, roles, scope, audit and deletion properties are rejected, not trusted.
 
@@ -100,9 +102,12 @@ existing ledger/auth upstream configuration.
   (optional, max 20). Exclusive input aliases `accountNo` and `contactNo` are
   accepted; providing both spellings of one property is rejected. Outputs use
   canonical names. Account numbers remain strings, retaining leading zeroes.
-- `accountType`: required, max 50. `address` and `location`: optional, max 150 each.
-  `contactPerson`: optional, max 130. `chequeBookStart` / `chequeBookEnd`: optional,
-  max 20 each; stored as strings, not numerically ordered or auto-issued cheques.
+- `accountType`: required, max 50 (the UI form presents a dropdown of
+  `Current Account` and `Savings Account`, defaulting to `Current Account`, while
+  preserving any existing legacy string on read/edit). `address` and `location`:
+  optional, max 150 each. `contactPerson`: optional, max 130. `chequeBookStart` /
+  `chequeBookEnd`: optional, max 20 each; stored as strings, not numerically
+  ordered or auto-issued cheques.
 - String limits are checked in UTF-8 bytes, consistent with existing services;
   whitespace is trimmed and NULs rejected. No field is silently truncated.
 - `dateOpened`: required calendar date `YYYY-MM-DD`, stored as PostgreSQL `date`,

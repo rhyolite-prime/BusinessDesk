@@ -8,6 +8,8 @@ int main() {
     try {
       if (!reader.parse(line, b))
         throw std::invalid_argument("JSON");
+      if (b.isObject() && !b.isMember("taxes"))
+        b["taxes"] = business_desk::voucher_math::defaults();
       out["result"] = business_desk::voucher_math::calculate(b);
     } catch (const std::exception &) {
       out["error"] = true;

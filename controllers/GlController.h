@@ -11,16 +11,7 @@ class GlController : public drogon::HttpController<GlController>
   public:
     static constexpr const char *PREFIX = "/api/v1/ledger/";
     METHOD_LIST_BEGIN
-    // JournalController owns authenticated journal CRUD/validation/posting.
-
-
-
-
-    ADD_METHOD_TO(GlController::listBankAccounts, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Get);
-    ADD_METHOD_TO(GlController::createBankAccount, std::string(PREFIX) + "bank-accounts", drogon::HttpMethod::Post);
-    ADD_METHOD_TO(GlController::updateBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Put);
-    ADD_METHOD_TO(GlController::deleteBankAccount, std::string(PREFIX) + "bank-accounts/{1}", drogon::HttpMethod::Delete);
-
+    // Dedicated ledger controllers own authenticated ledger CRUD, lookups and posting.
     METHOD_LIST_END
 
     drogon::Task<drogon::HttpResponsePtr> validateJournal(drogon::HttpRequestPtr request);

@@ -13,6 +13,7 @@
 #include <optional>
 #include <set>
 #include <vector>
+#include <optional>
 namespace business_desk::domain_services {
 namespace {
 using namespace inventory_internal;
@@ -182,21 +183,19 @@ FROM scm_procurement_events e LEFT JOIN users u ON u.id=e.created_by_user_id
 WHERE e.tenant_id=$1 AND e.entity_type=$3 AND e.entity_id=$2::uuid AND e.is_deleted=false
 ORDER BY e.version)";
 }
-std::string requireUuid(Json::Value &row, const char *key, bool optional) {
-  auto &v = row[key];
-  if (v.isNull() || (v.isString() && trim(v.asString()).empty())) {
-    if (!optional)
-      return std::string(key) + ": a UUID is required.";
-    v = Json::nullValue;
-    return {};
-  }
-  if (!v.isString())
-    return std::string(key) + ": a UUID is required.";
-  const auto s = lower(trim(v.asString()));
-  if (!uuid(s))
-    return std::string(key) + ": invalid UUID.";
-  v = s;
-  return {};
+// Field-level UUID validation used by the payload validators below. Returns an
+// empty string when the field checks out, otherwise the client-visible problem
+// message. Optional fields tolerate missing/null/empty-string values; present
+// values are trimmed back into the payload for storage.
+std::string requireUuid(Json::Value &b, const char *field, bool optional) {
+  const auto &v = b[field];
+  const std::string raw = v.isString() ? trim(v.asString()) : "";
+  if (raw.empty())
+    return optional ? "" : std::string(field) + " is required.";
+  if (!uuid(raw))
+    return std::string(field) + " must be a valid UUID.";
+  b[field] = raw;
+  return "";
 }
 std::string validateRequisition(Json::Value &b, bool update) {
   if (!b.isObject())
@@ -1523,10 +1522,9 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   r.result["data"] = Json::arrayValue;
   for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  const auto rowCount = static_cast<int64_t>(rows->size());
-  r.result["totalCount"] = Json::Int64(rowCount < size
-                                           ? offset + rowCount
-                                           : offset + rowCount + 1); // cheap estimate: one extra page
+  r.result["totalCount"] = Json::Int64(rows->size() < size
+                                           ? offset + (int64_t)rows->size()
+                                           : offset + rows->size() + 1); // cheap estimate: one extra page
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
