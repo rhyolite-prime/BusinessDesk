@@ -8,7 +8,7 @@ const { isDark, initializeTheme, toggleTheme } = useTheme()
 
 const currentModule = getBusinessModule('supply-chain')!
 const currentDashboard = computed(() => moduleDashboardPath(currentModule))
-const pageTitle = computed(() => supplyChainPageByPath(route.path)?.title ?? currentModule.name)
+const pageTitle = computed(() => supplyChainPageByPath(route.path, route.query.tab)?.title ?? currentModule.name)
 
 onMounted(initializeTheme)
 </script>

@@ -2,10 +2,10 @@
 import type { ModuleNavGroup, ModulePageDefinition } from '../inventory/navigation'
 
 export const supplyChainPages: ModulePageDefinition[] = [
-  { path: '/supply-chain', title: 'Supply chain', description: 'Requisitions, purchase orders and goods receipts, connected to the stock ledger.', icon: 'home' },
-  { path: '/supply-chain?tab=requisitions', title: 'Purchase requisitions', description: 'Internal demand: draft, submit, approve and convert into purchase orders.', icon: 'document-text' },
-  { path: '/supply-chain?tab=orders', title: 'Purchase orders', description: 'Supplier commitments with currency-resolved totals, approval and dispatch.', icon: 'credit-card' },
-  { path: '/supply-chain?tab=receipts', title: 'Goods receipts', description: 'Inbound deliveries posted to the stock ledger and the general ledger.', icon: 'arrow-path' },
+  { path: '/supply-chain', title: 'Supply chain', description: 'Procurement status, approval queues and inbound delivery activity.', icon: 'home' },
+  { path: '/supply-chain/operations?tab=requisitions', title: 'Purchase requisitions', description: 'Internal demand: draft, submit, approve and convert into purchase orders.', icon: 'document-text' },
+  { path: '/supply-chain/operations?tab=orders', title: 'Purchase orders', description: 'Supplier commitments with currency-resolved totals, approval and dispatch.', icon: 'credit-card' },
+  { path: '/supply-chain/operations?tab=receipts', title: 'Goods receipts', description: 'Inbound deliveries posted to the stock ledger and the general ledger.', icon: 'arrow-path' },
 ]
 
 export const supplyChainNavigationGroups: ModuleNavGroup[] = [
@@ -14,9 +14,9 @@ export const supplyChainNavigationGroups: ModuleNavGroup[] = [
     icon: 'document-text',
     links: [
       { label: 'Overview', to: '/supply-chain', icon: 'home' },
-      { label: 'Purchase requisitions', to: '/supply-chain?tab=requisitions', icon: 'document-text' },
-      { label: 'Purchase orders', to: '/supply-chain?tab=orders', icon: 'credit-card' },
-      { label: 'Goods receipts', to: '/supply-chain?tab=receipts', icon: 'arrow-path' },
+      { label: 'Purchase requisitions', to: '/supply-chain/operations?tab=requisitions', icon: 'document-text' },
+      { label: 'Purchase orders', to: '/supply-chain/operations?tab=orders', icon: 'credit-card' },
+      { label: 'Goods receipts', to: '/supply-chain/operations?tab=receipts', icon: 'arrow-path' },
     ],
   },
   {
@@ -34,9 +34,12 @@ export const supplyChainNavigationGroups: ModuleNavGroup[] = [
   },
 ]
 
-export function supplyChainPageByPath(path: string): ModulePageDefinition | undefined {
-  // Tabs share one route, so the title comes from the overview entry.
-  return supplyChainPages.find((page) => page.path === path.split('?')[0])
+export function supplyChainPageByPath(path: string, tab?: unknown): ModulePageDefinition | undefined {
+  if (path === '/supply-chain/operations') {
+    const requestedTab = ['requisitions', 'orders', 'receipts'].includes(String(tab)) ? String(tab) : 'requisitions'
+    return supplyChainPages.find((page) => page.path === `/supply-chain/operations?tab=${requestedTab}`)
+  }
+  return supplyChainPages.find((page) => page.path === path)
 }
 
 export const supplyChainSearchItems = supplyChainPages
