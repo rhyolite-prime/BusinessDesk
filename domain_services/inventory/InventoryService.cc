@@ -1,6 +1,7 @@
 #include "InventoryService.h"
 #include "InventoryInternal.h"
 #include "utils/TransactionUtil.h"
+#include <optional>
 #include <unordered_map>
 namespace business_desk::domain_services {
 namespace {
@@ -22,7 +23,7 @@ struct MasterSpec {
   const char *unitColumn = nullptr; // optional accounting-unit filter column
   bool allowDelete = true;
   bool hasActive = false; // options restrict to is_active rows
-  std::set<std::string> enums;
+  std::set<std::string> enums = {};
   const char *enumKey = nullptr;
 };
 bool oneOf(const std::string &s, const std::set<std::string> &allowed) {
@@ -504,7 +505,7 @@ drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filte
       std::to_string(args.size() + 1) + "::bigint OFFSET $" +
       std::to_string(args.size() + 2) + "::bigint";
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
-  drogon::orm::Result rows, totals;
+  std::optional<drogon::orm::Result> rows, totals;
   if (args.size() == 2) {
     rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
     totals = co_await db->execSqlCoro("SELECT count(*) AS total " + from + w, args[0], args[1]);
@@ -523,9 +524,10 @@ drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filte
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(totals[0]["total"].as<int64_t>());
+  r.result["totalCount"] = Json::Int64((*totals)[0]["total"].as<int64_t>());
+  r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
 }
@@ -592,7 +594,7 @@ drogon::Task<dto::BaseApiResponse> runLedger(DbClientPtr db, Json::Value filters
       std::to_string(args.size() + 1) + "::bigint OFFSET $" +
       std::to_string(args.size() + 2) + "::bigint";
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
-  drogon::orm::Result rows, totals;
+  std::optional<drogon::orm::Result> rows, totals;
   // Filter budget is bounded: item, warehouse, unit, type, from, to (<=8 args).
   switch (args.size()) {
   case 2:
@@ -626,9 +628,10 @@ drogon::Task<dto::BaseApiResponse> runLedger(DbClientPtr db, Json::Value filters
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(totals[0]["total"].as<int64_t>());
+  r.result["totalCount"] = Json::Int64((*totals)[0]["total"].as<int64_t>());
+  r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
 }
@@ -766,7 +769,7 @@ drogon::Task<dto::BaseApiResponse> runSnapshots(DbClientPtr db, const std::strin
 // ---------------------------------------------------------------------------
 drogon::Task<dto::BaseApiResponse> runCloses(DbClientPtr db, const std::string &op,
                                              const std::string &id, Json::Value b,
-                                             int page, int size, const std::string &query,
+                                             int page, int size,
                                              const std::string &unit, bool canWrite,
                                              utils::AuditIdentity who) {
   dto::BaseApiResponse r;
@@ -994,7 +997,7 @@ drogon::Task<dto::BaseApiResponse> runDashboard(DbClientPtr db, const std::strin
       "SELECT jsonb_build_object("
       "'items',(SELECT count(*) FROM inv_items i WHERE i.tenant_id=$1 AND i.is_deleted=false),"
       "'activeWarehouses',(SELECT count(*) FROM inv_warehouses w WHERE w.tenant_id=$1 AND w.is_deleted=false AND w.is_active=true" +
-      (scoped ? " AND w.accounting_unit_id=$2::uuid" : "") + "),"
+      unitJoin + "),"
       "'batchesExpiring30d',(SELECT count(*) FROM inv_batches bt WHERE bt.tenant_id=$1 AND bt.is_deleted=false "
       "AND bt.is_active AND bt.expiry_date IS NOT NULL AND bt.expiry_date>=CURRENT_DATE "
       "AND bt.expiry_date<=CURRENT_DATE+30),"
@@ -1055,7 +1058,9 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
     co_return fail("not_found", "Unknown inventory resource.");
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await schemaReady(db, {"inv_items", "inv_warehouses", "inv_stock_balances"})))
+    static const std::vector<std::string> requiredTables{
+        "inv_items", "inv_warehouses", "inv_stock_balances"};
+    if (!(co_await schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Inventory upgrade required: apply migrations 029-035 first.");
     bool canWrite = false;
@@ -1071,7 +1076,7 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
       if (resource == "snapshots")
         co_return co_await runSnapshots(db, action, id, body, page, size, query, unit, canWrite, who);
       if (resource == "closes")
-        co_return co_await runCloses(db, action, id, body, page, size, query, unit, canWrite, who);
+        co_return co_await runCloses(db, action, id, body, page, size, unit, canWrite, who);
       if (resource == "dashboard" && action == "summary")
         co_return co_await runDashboard(db, unit, who);
       if (resource == "items" && action == "card")
@@ -1094,7 +1099,7 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
       } else if (resource == "snapshots") {
         result = co_await runSnapshots(tx, action, id, body, page, size, query, unit, canWrite, who);
       } else if (resource == "closes") {
-        result = co_await runCloses(tx, action, id, body, page, size, query, unit, canWrite, who);
+        result = co_await runCloses(tx, action, id, body, page, size, unit, canWrite, who);
       } else {
         result = co_await runMaster(tx, resource, action, id, body, page, size, query, unit, canWrite, who);
       }

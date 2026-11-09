@@ -1,7 +1,6 @@
 #pragma once
-// File-local helpers shared by the InventoryService translation units. Every
-// function has internal linkage; including this header in more than one .cc is
-// intentional and safe.
+// Inline helpers shared by the InventoryService and SupplyChainService
+// translation units; including this header in more than one .cc is safe.
 #include "domain_services/permissions/PermissionService.h"
 #include "dto/BaseApiResponse.h"
 #include "utils/AuditUtil.h"
@@ -22,34 +21,34 @@ struct Field {
   unsigned max = 200;
   bool createOnly = false;
 };
-static dto::BaseApiResponse fail(const char *code, const std::string &message) {
+inline dto::BaseApiResponse fail(const char *code, const std::string &message) {
   dto::BaseApiResponse r;
   r.error["code"] = code;
   r.error["message"] = message;
   return r;
 }
-static bool uuid(const std::string &s) {
+inline bool uuid(const std::string &s) {
   static const std::regex re(
       "^[a-fA-F0-9]{8}(-[a-fA-F0-9]{4}){3}-[a-fA-F0-9]{12}$");
   return std::regex_match(s, re) &&
          s != "00000000-0000-0000-0000-000000000000";
 }
-static std::string trim(const std::string &s) {
+inline std::string trim(const std::string &s) {
   const auto a = s.find_first_not_of(" \t\r\n"), b = s.find_last_not_of(" \t\r\n");
   return a == std::string::npos ? "" : s.substr(a, b - a + 1);
 }
-static std::string lower(std::string s) {
+inline std::string lower(std::string s) {
   std::transform(s.begin(), s.end(), s.begin(),
                  [](unsigned char c) { return std::tolower(c); });
   return s;
 }
-static bool text(const std::string &s, unsigned max) {
+inline bool text(const std::string &s, unsigned max) {
   return s.find('\0') == std::string::npos &&
          std::count_if(s.begin(), s.end(), [](unsigned char c) {
            return (c & 0xc0) != 0x80;
          }) <= max;
 }
-static bool date(const std::string &s) {
+inline bool date(const std::string &s) {
   if (!std::regex_match(s, std::regex("^[12][0-9]{3}-[0-9]{2}-[0-9]{2}$")))
     return false;
   const int y = std::stoi(s.substr(0, 4)), m = std::stoi(s.substr(5, 2)),
@@ -62,35 +61,35 @@ static bool date(const std::string &s) {
 }
 // Exact decimal strings: up to 14 integer digits and 6 fraction digits,
 // optionally signed. Rates use 6 fraction digits within [0,1].
-static bool decimal(const std::string &s, bool signedAllowed = false) {
+inline bool decimal(const std::string &s, bool signedAllowed = false) {
   static const std::regex plain("^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$");
   static const std::regex sig("^-?(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$");
   return std::regex_match(s, signedAllowed ? sig : plain);
 }
-static bool rate(const std::string &s) {
+inline bool rate(const std::string &s) {
   static const std::regex re("^(0(\\.[0-9]{1,6})?|1(\\.0{1,6})?)$");
   return std::regex_match(s, re);
 }
 // UoM conversion factors: positive, up to 10 integer + 10 fraction digits.
-static bool factor(const std::string &s) {
+inline bool factor(const std::string &s) {
   static const std::regex re(
       "^(0\\.[0-9]{0,9}[1-9]|[0-9]{1,10}(\\.[0-9]{1,10})?)$");
   return std::regex_match(s, re);
 }
-static Json::Value parse(const std::string &s) {
+inline Json::Value parse(const std::string &s) {
   Json::Value v;
   Json::Reader r;
   if (!r.parse(s, v))
     throw std::runtime_error("Invalid database JSON");
   return v;
 }
-static std::string json(const Json::Value &v) {
+inline std::string json(const Json::Value &v) {
   return Json::FastWriter().write(v);
 }
 // Strict whitelist validation of a body against a field table. Normalizes in
 // place: nulls become defaults, UUIDs lowercased, decimals validated as exact
 // strings. Returns an empty string when valid.
-static std::string validate(Json::Value &b, const std::vector<Field> &fields,
+inline std::string validate(Json::Value &b, const std::vector<Field> &fields,
                             bool update,
                             const std::set<std::string> &extra = {}) {
   if (!b.isObject())
@@ -170,7 +169,7 @@ static std::string validate(Json::Value &b, const std::vector<Field> &fields,
 // Identity + permission gate mirroring the module services: tenant admin or a
 // grant of <module>.manage/.write for writes, <module>.read for reads. Sets
 // canWrite so list responses can advertise capabilities.
-static drogon::Task<dto::BaseApiResponse>
+inline drogon::Task<dto::BaseApiResponse>
 authorize(DbClientPtr db, const utils::AuditIdentity &who, bool write,
           const char *module, bool &canWrite) {
   if (!uuid(who.tenantId) || !uuid(who.userId))
@@ -207,9 +206,9 @@ authorize(DbClientPtr db, const utils::AuditIdentity &who, bool write,
 }
 // Migration probes keyed on the tables each area depends on; callers wrap the
 // message naming the exact migration to apply.
-static drogon::Task<bool> schemaReady(DbClientPtr db,
-                                      std::initializer_list<const char *> tables) {
-  for (const auto *table : tables) {
+inline drogon::Task<bool> schemaReady(DbClientPtr db,
+                                      const std::vector<std::string> &tables) {
+  for (const auto &table : tables) {
     auto probe = co_await db->execSqlCoro("SELECT to_regclass($1) IS NOT NULL AS ok",
                                           table);
     if (probe.empty() || !probe[0]["ok"].as<bool>())
@@ -217,10 +216,10 @@ static drogon::Task<bool> schemaReady(DbClientPtr db,
   }
   co_return true;
 }
-static std::string search(const std::string &raw) { return trim(raw).substr(0, 120); }
+inline std::string search(const std::string &raw) { return trim(raw).substr(0, 120); }
 // Error text from our own migration-authored RAISE statements is safe to show
 // (it contains no SQL); anything else stays generic to avoid leaking details.
-static std::string knownMessage(const std::string &raw) {
+inline std::string knownMessage(const std::string &raw) {
   static const char *known[] = {
       "Negative stock is not allowed in this warehouse",
       "Select live warehouses in this accounting unit",

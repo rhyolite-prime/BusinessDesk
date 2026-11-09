@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 namespace business_desk::domain_services {
@@ -180,6 +181,22 @@ std::string eventsSelect() {
 FROM scm_procurement_events e LEFT JOIN users u ON u.id=e.created_by_user_id
 WHERE e.tenant_id=$1 AND e.entity_type=$3 AND e.entity_id=$2::uuid AND e.is_deleted=false
 ORDER BY e.version)";
+}
+std::string requireUuid(Json::Value &row, const char *key, bool optional) {
+  auto &v = row[key];
+  if (v.isNull() || (v.isString() && trim(v.asString()).empty())) {
+    if (!optional)
+      return std::string(key) + ": a UUID is required.";
+    v = Json::nullValue;
+    return {};
+  }
+  if (!v.isString())
+    return std::string(key) + ": a UUID is required.";
+  const auto s = lower(trim(v.asString()));
+  if (!uuid(s))
+    return std::string(key) + ": invalid UUID.";
+  v = s;
+  return {};
 }
 std::string validateRequisition(Json::Value &b, bool update) {
   if (!b.isObject())
@@ -1490,7 +1507,7 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
   const std::string sel = select + w + orderBy + " LIMIT $" + std::to_string(args.size() + 1) +
                           "::bigint OFFSET $" + std::to_string(args.size() + 2) + "::bigint";
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   switch (args.size()) {
   case 2:
     rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
@@ -1504,11 +1521,12 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(rows.size() < size
-                                           ? offset + (int64_t)rows.size()
-                                           : offset + rows.size() + 1); // cheap estimate: one extra page
+  const auto rowCount = static_cast<int64_t>(rows->size());
+  r.result["totalCount"] = Json::Int64(rowCount < size
+                                           ? offset + rowCount
+                                           : offset + rowCount + 1); // cheap estimate: one extra page
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
@@ -1582,10 +1600,12 @@ SupplyChainService::execute(std::string op, std::string id, Json::Value body, in
   }
   try {
     auto db = drogon::app().getDbClient();
-    if (!(co_await inventory_internal::schemaReady(
-            db, {"scm_purchase_requisitions", "scm_purchase_requisition_lines",
-                 "scm_purchase_orders", "scm_purchase_order_lines", "scm_purchase_receipts",
-                 "scm_purchase_receipt_lines", "scm_document_sequences", "scm_procurement_events"})))
+    static const std::vector<std::string> requiredTables{
+        "scm_purchase_requisitions", "scm_purchase_requisition_lines",
+        "scm_purchase_orders",       "scm_purchase_order_lines",
+        "scm_purchase_receipts",     "scm_purchase_receipt_lines",
+        "scm_document_sequences",    "scm_procurement_events"};
+    if (!(co_await inventory_internal::schemaReady(db, requiredTables)))
       co_return fail("schema_not_ready",
                      "Supply chain upgrade required: apply migrations 032-035 first.");
     bool canWrite = false;
