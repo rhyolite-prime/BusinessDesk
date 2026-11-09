@@ -197,18 +197,18 @@ export const businessModules: BusinessModule[] = [
     name: 'Human Resources',
     domain: 'People & education',
     category: 'People operations',
-    description: 'Centralize employee records, recruitment, onboarding, leave, performance, and workforce administration.',
+    description: 'Manage employee records, time off, recruiting, onboarding tasks, and performance reviews.',
     readiness: 'preview',
     icon: UsersRound,
     metrics: [
-      { label: 'Active employees', context: 'Workforce summary' },
-      { label: 'Open vacancies', context: 'Recruitment activity' },
-      { label: 'Leave approvals', context: 'Team review queue' },
+      { label: 'Employee records', context: 'Shared employee directory' },
+      { label: 'Pending requests', context: 'Time-off review queue' },
+      { label: 'Away today', context: 'Approved time off' },
     ],
     workflows: [
       { title: 'Employee records', description: 'Maintain employee profiles, roles, and organizational details.' },
-      { title: 'Recruitment & onboarding', description: 'Coordinate candidate pipelines and new-starter tasks.' },
-      { title: 'Leave & performance', description: 'Manage leave requests, reviews, and employee development.' },
+      { title: 'Time off', description: 'Record and review employee leave requests.' },
+      { title: 'Hiring & development', description: 'Track openings, candidates, onboarding tasks, and employee reviews.' },
     ],
   },
   {
@@ -357,6 +357,7 @@ export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string)
   const moduleId = requestedId === 'payroll-js' ? 'payroll' : requestedId
   if (moduleId === 'general-ledger') return '/ledger'
   if (moduleId === 'payroll') return '/payroll'
+  if (moduleId === 'human-resource') return '/hr'
   if (moduleId === 'inventory') return '/inventory'
   if (moduleId === 'supply-chain') return '/supply-chain'
   return `/modules/${moduleId}`
