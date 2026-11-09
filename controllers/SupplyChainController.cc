@@ -21,7 +21,7 @@ drogon::Task<drogon::HttpResponsePtr> run(drogon::HttpRequestPtr req, std::strin
     body = *req->getJsonObject();
   const bool remove = op.size() > 7 && op.substr(op.size() - 7) == ".delete";
   const bool nextNumber = op.size() > 12 && op.substr(op.size() - 12) == ".next-number";
-  if (nextNumber || op.size() > 5 && op.substr(op.size() - 5) == ".list") {
+  if (nextNumber || (op.size() > 5 && op.substr(op.size() - 5) == ".list")) {
     if (!body.isObject())
       body = Json::Value(Json::objectValue);
     const auto status = req->getParameter("status");
