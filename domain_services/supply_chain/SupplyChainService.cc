@@ -10,6 +10,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <map>
+#include <optional>
 #include <set>
 #include <vector>
 namespace business_desk::domain_services {
@@ -180,6 +181,20 @@ std::string eventsSelect() {
 FROM scm_procurement_events e LEFT JOIN users u ON u.id=e.created_by_user_id
 WHERE e.tenant_id=$1 AND e.entity_type=$3 AND e.entity_id=$2::uuid AND e.is_deleted=false
 ORDER BY e.version)";
+}
+// Field-level UUID validation used by the payload validators below. Returns an
+// empty string when the field checks out, otherwise the client-visible problem
+// message. Optional fields tolerate missing/null/empty-string values; present
+// values are trimmed back into the payload for storage.
+std::string requireUuid(Json::Value &b, const char *field, bool optional) {
+  const auto &v = b[field];
+  const std::string raw = v.isString() ? trim(v.asString()) : "";
+  if (raw.empty())
+    return optional ? "" : std::string(field) + " is required.";
+  if (!uuid(raw))
+    return std::string(field) + " must be a valid UUID.";
+  b[field] = raw;
+  return "";
 }
 std::string validateRequisition(Json::Value &b, bool update) {
   if (!b.isObject())
@@ -1490,7 +1505,7 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   const int64_t limit = size, offset = (int64_t(page) - 1) * size;
   const std::string sel = select + w + orderBy + " LIMIT $" + std::to_string(args.size() + 1) +
                           "::bigint OFFSET $" + std::to_string(args.size() + 2) + "::bigint";
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   switch (args.size()) {
   case 2:
     rows = co_await db->execSqlCoro(sel, args[0], args[1], limit, offset);
@@ -1504,11 +1519,10 @@ drogon::Task<dto::BaseApiResponse> listScm(DbClientPtr db, const std::string &re
   }
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
-  for (const auto &row : rows)
+  for (const auto &row : *rows)
     r.result["data"].append(parse(row["record"].as<std::string>()));
-  r.result["totalCount"] = Json::Int64(rows.size() < size
-                                           ? offset + (int64_t)rows.size()
-                                           : offset + rows.size() + 1); // cheap estimate: one extra page
+  const int64_t got = static_cast<int64_t>(rows->size());
+  r.result["totalCount"] = Json::Int64(got < size ? offset + got : offset + got + 1); // cheap estimate: short page ends paging
   r.result["capabilities"]["canWrite"] = canWrite;
   r.success = true;
   co_return r;
