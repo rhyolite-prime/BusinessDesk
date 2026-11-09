@@ -471,7 +471,6 @@ runMaster(DbClientPtr db, const std::string &resource, const std::string &op,
 drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filters,
                                                int page, int size,
                                                const std::string &query,
-                                               bool canWrite,
                                                utils::AuditIdentity who) {
   std::string w = " WHERE b.tenant_id=$1 AND b.is_deleted=false ";
   std::vector<std::string> args{who.tenantId, search(query)};
@@ -537,7 +536,6 @@ drogon::Task<dto::BaseApiResponse> runBalances(DbClientPtr db, Json::Value filte
 drogon::Task<dto::BaseApiResponse> runLedger(DbClientPtr db, Json::Value filters,
                                              int page, int size,
                                              const std::string &query,
-                                             bool canWrite,
                                              utils::AuditIdentity who) {
   std::string w = " WHERE t.tenant_id=$1 ";
   std::vector<std::string> args{who.tenantId, search(query)};
@@ -1069,9 +1067,9 @@ InventoryService::execute(std::string op, std::string id, Json::Value body,
       if (!authz.success)
         co_return authz;
       if (resource == "balances" && action == "list")
-        co_return co_await runBalances(db, body, page, size, query, canWrite, who);
+        co_return co_await runBalances(db, body, page, size, query, who);
       if (resource == "ledger" && action == "list")
-        co_return co_await runLedger(db, body, page, size, query, canWrite, who);
+        co_return co_await runLedger(db, body, page, size, query, who);
       if (resource == "snapshots")
         co_return co_await runSnapshots(db, action, id, body, page, size, query, unit, canWrite, who);
       if (resource == "closes")
