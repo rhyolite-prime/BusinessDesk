@@ -20,7 +20,7 @@ export interface MasterColumn {
   format?: (row: any) => string
 }
 export interface MasterApi {
-  list: (query?: InventoryQuery) => Promise<Page<any>>
+  list: (query: InventoryQuery) => Promise<Page<any>>
   create: (body: Record<string, unknown>) => Promise<unknown>
   update: (id: string, body: Record<string, unknown>) => Promise<unknown>
   remove: (id: string, version: number) => Promise<unknown>

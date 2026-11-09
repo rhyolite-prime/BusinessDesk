@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { useInventory, useInventoryUnitId } from '../../../features/inventory/useInventory'
+import InventoryMasterTable from '../../../features/inventory/components/InventoryMasterTable.vue'
 
 definePageMeta({ layout: 'admin-inventory' })
 useHead({ title: 'Stock balances' })

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useInventory, useInventoryUnitId } from '../../../features/inventory/useInventory'
-import type { MasterField } from '../../../features/inventory/components/InventoryMasterTable.vue'
+import InventoryMasterTable, { type MasterField } from '../../../features/inventory/components/InventoryMasterTable.vue'
 
 definePageMeta({ layout: 'admin-inventory' })
 useHead({ title: 'Warehouses' })
