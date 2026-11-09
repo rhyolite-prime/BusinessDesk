@@ -28,7 +28,7 @@ repair scripts and fail transactionally on live-data conflicts.
 All routes require `TenantJwtAuthFilter`, module permission
 `inventory` (`read`/`write`/`manage`) and an active tenant accounting unit.
 Tenant and audit actor come from the JWT; every mutation carries an
-optimistic-locking `version` and an idempotency `requestKey`.
+optimistic-locking `version` and an idempotency `requestId`.
 
 | Method | Backend route | Request / result |
 | --- | --- | --- |
@@ -44,7 +44,7 @@ optimistic-locking `version` and an idempotency `requestKey`.
 | GET / POST | `/api/v1/inventory/documents` | Paged drafts with type/status/date filters; create drafts (`receipt`, `issue`, `transfer`, `adjustment`, `count`) |
 | GET | `/api/v1/inventory/documents/{id}` | Full record: header, live lines, workflow events, posted linkage |
 | GET | `/api/v1/inventory/documents/next-number?documentType=receipt` | Unreserved sequence preview |
-| POST | `/api/v1/inventory/documents/{id}/{submit\|approve\|reject\|post\|cancel\|reverse}` | Workflow transitions; `post` books quantities, costs, FIFO layers, ledgers and the GL batch atomically |
+| POST | `/api/v1/inventory/documents/{id}/{submit\|approve\|post\|cancel\|reverse}` | Workflow transitions; `post` books quantities, costs, FIFO layers, ledgers and the GL batch atomically |
 
 Same-origin Nuxt routes mirror these under `/api/inventory/**`. The BFF
 (`frontend/server/utils/inventory-api.ts`) forwards the session bearer, applies
@@ -54,7 +54,7 @@ There is no demo fallback and the HttpOnly token never reaches the browser.
 ## Document workflow invariants
 
 `draft → submitted → approved → posted`, with `draft/submitted/approved →
-cancelled`, `submitted → rejected` and `posted → reversed`. Drafts may be
+cancelled`, `posted → reversed`. Drafts may be
 replaced wholesale (`PUT`) or deleted; any later state is frozen by database
 guards, not application code (`031` line/header protection triggers). Posting:
 

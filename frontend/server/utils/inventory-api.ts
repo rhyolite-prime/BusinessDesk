@@ -5,11 +5,14 @@ import { headUuid } from './account-head-api'
 
 /** Resources served by domain_services/inventory/InventoryService. */
 export const inventoryResources = new Set([
-  'items', 'uoms', 'item-categories', 'warehouses', 'bin-locations', 'batches',
-  'serials', 'balances', 'ledger', 'snapshots', 'closes', 'documents',
+  'items', 'uoms', 'item-categories', 'warehouses', 'bin-locations', 'item-warehouses',
+  'item-suppliers', 'item-uom-conversions', 'batches', 'serials', 'balances', 'ledger',
+  'snapshots', 'closes', 'documents',
 ])
-const documentActions = new Set(['submit', 'approve', 'reject', 'post', 'cancel', 'reverse'])
-const passiveActions = new Set(['activate', 'deactivate'])
+// Workflow transitions the service implements. Documents cannot be rejected:
+// the posted-state schema only allows draft, submitted, approved, posted,
+// cancelled and reversed.
+const documentActions = new Set(['submit', 'approve', 'post', 'cancel', 'reverse'])
 
 /** Dedicated real-data adapter for the inventory service: no demo fallback and no
  * browser-visible JWT. The C++ service validates every payload again; this layer
@@ -32,9 +35,7 @@ export async function inventoryRequest(
   if ((mode === 'detail' || mode === 'action' || mode === 'card') && !headUuid(id))
     throw createError({ statusCode: 400, statusMessage: 'A valid record ID is required.' })
   if (mode === 'action') {
-    const allowed = resource === 'documents' ? documentActions
-      : resource === 'items' || resource === 'warehouses' ? passiveActions
-      : new Set<string>()
+    const allowed = resource === 'documents' ? documentActions : new Set<string>()
     if (!allowed.has(action))
       throw createError({ statusCode: 404, statusMessage: 'Unknown inventory action.' })
   }
