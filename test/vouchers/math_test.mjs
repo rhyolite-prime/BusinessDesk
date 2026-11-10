@@ -10,7 +10,8 @@ for (const [k, rate] of [['nhil', '2.5'], ['getfund', '2.5'], ['vat', '15']]) Ob
 b.taxes.incomeWithholding.enabled = true
 b.taxes.vatWithholding.enabled = true
 b.retentions.push({ value: '10', isPercentage: true }); cases.push(structuredClone(b))
-assert.equal(calculateVoucher(b).net, '96.000000')
+assert.equal(calculateVoucher(b).retained, '10.800000')
+assert.equal(calculateVoucher(b).net, '97.200000')
 cases.push({ lines: [{ localAmount: '100', foreignAmount: '0', isWithhold: true }], retentions: [], multiCurrency: false, exchangeRate: '1' })
 for (const key of ['cst', 'covid']) { const x = structuredClone(b); Object.assign(x.taxes[key], { enabled: true, rate: key === 'cst' ? '5' : '1' }); cases.push(x) }
 for (const [key, rate, gross] of [['cst', '5', '125'], ['covid', '1', '121']]) {
@@ -30,7 +31,21 @@ for (const amount of ['0.005', '0.004999', '99999999999999.999999', '1e4', '-1',
 const centCase = base();centCase.lines = [{ localAmount: '0.10', isWithhold: true }, { localAmount: '0.10', isWithhold: true }];Object.assign(centCase.taxes.incomeWithholding, { enabled: true, rate: '5' });cases.push(centCase)
 assert.equal(calculateVoucher(centCase).incomeWithholding, '0.020000', 'round rows before summing, half up')
 const mixed = structuredClone(b);mixed.lines.push({ localAmount: '30', isWithhold: false });cases.push(mixed)
-assert.equal(calculateVoucher(mixed).net, '123.000000', 'unflagged gross remains untaxed, percentage retention uses whole gross')
+assert.equal(calculateVoucher(mixed).net, '124.200000', 'percentage retention includes unflagged rows but excludes statutory withholding')
+const multiple = structuredClone(b)
+multiple.retentions.push({ value: '5', isPercentage: true }, { value: '3.33', isPercentage: false })
+const multiResult = calculateVoucher(multiple)
+assert.deepEqual(multiResult.retentions, ['10.800000', '5.400000', '3.330000'], 'percentages share the same net-before-retentions basis; fixed amounts stay fixed')
+assert.equal(multiResult.net, '88.470000')
+cases.push(multiple)
+const fx = structuredClone(b); fx.multiCurrency = true; fx.lines[0].foreignAmount = '96'; fx.exchangeRate = '1.25'; cases.push(fx)
+assert.equal(calculateVoucher(fx).retained, '10.800000', 'FX conversion precedes withholding and retention')
+const rounding = structuredClone(b); rounding.retentions = [{ value: '0.005', isPercentage: false }, { value: '0.125', isPercentage: true }]; cases.push(rounding)
+assert.deepEqual(calculateVoucher(rounding).retentions, ['0.010000', '0.140000'], 'fixed and percentage retentions round half-up')
+const noTax = base(); noTax.retentions = [{ value: '10', isPercentage: true }]; cases.push(noTax)
+assert.equal(calculateVoucher(noTax).retained, '12.000000', 'without withholding, retention basis equals gross')
+const over = base(); for (const k of ['incomeWithholding','vatWithholding']) Object.assign(over.taxes[k], { enabled:true, rate:'100' }); over.retentions = [{ value:'10', isPercentage:true }]; cases.push(over)
+assert.throws(() => calculateVoucher(over), /Deductions exceed/, 'withholding cannot make retention basis negative')
 const output = spawnSync(process.env.VOUCHER_MATH_DRIVER, [], { input: cases.map(x => JSON.stringify(x)).join('\n') + '\n', encoding: 'utf8', maxBuffer: 16 * 1024 * 1024 })
 assert.equal(output.status, 0, output.stderr)
 const rows = output.stdout.trim().split('\n').map(x => JSON.parse(x))
@@ -40,4 +55,4 @@ for (let i = 0; i < cases.length; i++) {
   try { actual = { result: calculateVoucher(cases[i]) } } catch { actual = { error: true } }
   assert.deepEqual(rows[i], actual, `C++/TypeScript exact decimal agreement, vector ${i}`)
 }
-console.log(`${cases.length} native/browser calculation parity vectors and 7 known-result checks passed`)
+console.log(`${cases.length} native/browser calculation parity vectors and known-result checks passed`)

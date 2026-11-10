@@ -133,13 +133,16 @@ inline Json::Value calculate(const Json::Value &body) {
     }
     out["lines"].append(row);
   }
+  if (deduct > gross)
+    throw std::invalid_argument("Deductions exceed the gross payment.");
+  const I retentionBasis = gross - deduct;
   I retained = 0;
   for (const auto &r : body["retentions"]) {
     I v = parse(r["value"]);
     if (r["isPercentage"].asBool()) {
       if (v > 100000000)
         throw std::invalid_argument("Retention percentage cannot exceed 100.");
-      v = round(gross * v, integer("1000000000000")) * 10000;
+      v = round(retentionBasis * v, integer("1000000000000")) * 10000;
     } else
       v = cents(v);
     if (v == 0)

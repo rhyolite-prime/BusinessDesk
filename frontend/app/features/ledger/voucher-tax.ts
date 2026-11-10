@@ -138,13 +138,15 @@ export function calculateVoucher(
     }
     return row
   })
+  if (deduct > gross) throw new Error('Deductions exceed the gross payment.')
+  const retentionBasis = gross - deduct
   let retained = 0n
   const retentions = body.retentions.map((r) => {
     let v = voucherDecimal(r.value)
     if (r.isPercentage) {
       if (v > percent)
         throw new Error('Retention percentage cannot exceed 100.')
-      v = voucherRound(gross * v, percent * cent) * cent
+      v = voucherRound(retentionBasis * v, percent * cent) * cent
     } else v = voucherRound(v) * cent
     if (v === 0n) throw new Error('Retention must be positive after rounding.')
     retained += v
