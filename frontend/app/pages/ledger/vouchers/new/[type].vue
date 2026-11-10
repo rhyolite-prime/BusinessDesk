@@ -242,20 +242,10 @@ const taxPreview = computed(() => {
   }
 })
 
-// Only an explicit checkbox change adjusts supplier taxes, never draft hydration.
+// Only an explicit checkbox change applies supplier defaults, never draft hydration.
 const editedTaxRates = new Set<(typeof taxKeys)[number]>()
 function onLineWithholdChange(checked: boolean) {
-  if (type.value !== 'supplier-payment') return
-  if (!checked) {
-    // Tax settings are voucher-wide, so clearing any row resets all components,
-    // even if another row remains marked. Retentions are independent.
-    for (const key of taxKeys) {
-      taxes[key].enabled = false
-      taxes[key].rate = '0'
-    }
-    editedTaxRates.clear()
-    return
-  }
+  if (!checked || type.value !== 'supplier-payment') return
   const defaults = { nhil: '2.5', getfund: '2.5', vat: '15', incomeWithholding: '5', vatWithholding: '7' } as const
   for (const key of Object.keys(defaults) as Array<keyof typeof defaults>) {
     const tax = taxes[key]
@@ -1073,7 +1063,6 @@ async function saveDraft() {
         <div><span class="block text-slate-500">Taxable base · {{ baseCurrency }}</span><strong>{{ formatVoucherAmount(taxPreview.value.base, baseCurrency) }}</strong></div>
         <div v-for="key in taxKeys" :key="key"><span class="block text-slate-500">{{ taxLabels[key] }}</span><strong>{{ formatVoucherAmount(taxPreview.value[key], baseCurrency) }}</strong></div>
       </div>
-      <p class="text-[11px] text-slate-500">Gross, taxes and withholdings round half-up per row to 2 decimals before aggregation; ledger amounts retain 6 decimals. Tax/retention credits use the first allocation’s organizational unit. Posting GLs are base-currency accounts; source foreign amounts convert once, before tax calculations.</p>
       <p v-if="periodError" class="text-xs text-rose-600">{{ periodError }}</p>
     </section>
 
