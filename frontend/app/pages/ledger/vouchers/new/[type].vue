@@ -255,6 +255,10 @@ function onLineWithholdChange(checked: boolean) {
 }
 function setTaxEnabled(key: (typeof taxKeys)[number], enabled: boolean) {
   taxes[key].enabled = enabled
+  if (!enabled && type.value === 'supplier-payment') {
+    taxes[key].rate = '0'
+    editedTaxRates.delete(key)
+  }
   if (enabled && taxes[key].rate === '0') {
     if (key === 'incomeWithholding') taxes[key].rate = '5'
     else if (key === 'vatWithholding') taxes[key].rate = '7'
@@ -263,8 +267,9 @@ function setTaxEnabled(key: (typeof taxKeys)[number], enabled: boolean) {
       taxes[key].rate = suggested[key]
     }
   }
-  if (enabled && key === 'cst') taxes.covid.enabled = false
-  if (enabled && key === 'covid') taxes.cst.enabled = false
+  // Switching between mutually exclusive components is also an uncheck.
+  if (enabled && key === 'cst' && taxes.covid.enabled) setTaxEnabled('covid', false)
+  if (enabled && key === 'covid' && taxes.cst.enabled) setTaxEnabled('cst', false)
 }
 
 const activeAccounts = computed(() =>
@@ -1043,7 +1048,7 @@ async function saveDraft() {
     </section>
 
     <section v-if="type === 'supplier-payment' || type === 'employee-payment'" class="space-y-4 rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]">
-      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
+      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply. Unchecking a tax clears its rate. Unchecking any row clears all voucher tax rates and disables the taxes.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
       <label v-if="type === 'employee-payment'" class="block text-xs font-medium">Withholding tax type<input v-model="form.taxType" aria-label="Withholding tax type" maxlength="40" class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-xs dark:border-slate-700" placeholder="Tax type / classification" /></label>
       <div class="grid gap-3 md:grid-cols-2">
         <div v-for="key in taxKeys" :key="key" class="space-y-2 rounded-lg border border-slate-100 p-3 dark:border-slate-700">
@@ -1062,7 +1067,7 @@ async function saveDraft() {
     </section>
 
     <section v-if="supportsRetentions" class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
-      <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Retentions</h2><p class="mt-1 text-[11px] text-slate-500">Percentage retentions apply to the amount after income and VAT withholding, before retentions; fixed deductions use the entered base-currency amount.</p></div><button type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="addRetention"><Plus :size="14" /> Add retention</button></div>
+      <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Retentions</h2><p class="mt-1 text-[11px] text-slate-500">Percentage retentions apply to the amount after income and VAT withholding, before retentions; fixed deductions use the entered base-currency amount. Multiple percentages use the same basis. Deductions round to two decimals.</p></div><button type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="addRetention"><Plus :size="14" /> Add retention</button></div>
       <div v-if="retentions.length" class="overflow-x-auto"><table class="w-full min-w-[800px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="min-w-[220px] px-5 py-3">Credit G/L</th><th class="min-w-[200px] px-3 py-3">Description</th><th class="w-[130px] px-3 py-3">Calculation</th><th class="w-[140px] px-3 py-3 text-right">Rate / amount</th><th class="w-[160px] px-3 py-3 text-right">Calculated · {{ baseCurrency }}</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(retention, index) in retentions" :key="retention.key"><td class="px-5 py-2.5"><select :aria-label="`Retention credit GL ${index+1}`" v-model="retention.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select credit account</option><option v-for="account in activeAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="retention.description" maxlength="160" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Withholding tax" /></td><td class="px-3 py-2.5"><select v-model="retention.isPercentage" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none dark:border-slate-700 dark:bg-slate-900"><option :value="true">Percentage</option><option :value="false">Fixed amount</option></select></td><td class="px-3 py-2.5"><div class="relative"><input :aria-label="`Retention rate or amount ${index+1}`" v-model="retention.value" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 pr-8 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-slate-400">{{ retention.isPercentage ? '%' : baseCurrency }}</span></div></td><td class="px-3 py-2.5 text-right text-xs font-semibold tabular-nums text-slate-700 dark:text-slate-300">{{ retentionAmountText(retention) ? formatVoucherAmount(retentionAmountText(retention), baseCurrency) : '—' }}</td><td class="px-3 py-2.5"><button type="button" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30" aria-label="Remove retention" @click="removeRetention(index)"><Trash2 :size="14" /></button></td></tr></tbody></table></div>
       <div v-else class="px-5 py-6 text-center text-xs text-slate-400">No additional retentions added.</div>
     </section>
