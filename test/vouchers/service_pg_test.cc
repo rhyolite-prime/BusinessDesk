@@ -284,11 +284,21 @@ int main() {
   check(!call("create", "", input, {}).success &&
             !call("create", "", input, {other, actor}).success,
         "anonymous and cross tenant denied");
+  check(call("create", "", input).error["message"].asString().find("gl-voucher-batch-id") != std::string::npos,
+        "missing supplier voucher numbering is actionable");
+  auto voucherTemplate = sql("INSERT INTO core_system_numbers(module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) VALUES(1,'Voucher','gl-voucher-batch-id','SV-','-GH','{PREFIX}{NO}{SUFFIX}',4,40,$1) RETURNING id", {actor})[0].value["id"];
+  sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) SELECT $1,id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3", {tenant, actor, voucherTemplate});
+  sql("UPDATE core_system_numbers SET format_pattern='{BAD}' WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant});
+  check(call("create", "", input).error["message"].asString().find("gl-voucher-batch-id") != std::string::npos,
+        "invalid numbering configuration is rejected");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt() == 40, "invalid format consumes no number");
+  sql("UPDATE core_system_numbers SET format_pattern='{PREFIX}{NO}{SUFFIX}' WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant});
   auto saved = call("create", "", input);
   if (!saved.success)
     std::cerr << saved.toJson() << std::endl;
   check(saved.success, "persist full voucher");
   auto v = saved.result;
+  check(v["batchNumber"] == "SV-0041-GH", "supplier voucher uses configured system number format");
   const std::string id = v["id"].asString();
   check(v["taxSummary"] == c &&
             v["proposedJournal"] == preview.result["proposedJournal"],
@@ -308,6 +318,7 @@ int main() {
   check(replay.success && replay.result["id"] == id &&
             count("gl_payment_vouchers") == 1,
         "create replay cannot duplicate voucher");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt() == 41, "idempotent replay does not consume a number");
   auto changed = input;
   changed["description"] = "Changed";
   check(call("create", "", changed).error["code"] == "conflict",
