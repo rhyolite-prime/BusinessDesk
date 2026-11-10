@@ -495,10 +495,11 @@ int main() {
   auto ep = call("preview", "", emp);
   check(ep.success && ep.result["taxSummary"]["net"] == "108.000000",
         "employee legacy tax calculation without retention");
+  auto beforeEmployee = sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt();
   auto ec = call("create", "", emp);
   if (!ec.success)
     std::cerr << ec.toJson() << std::endl;
-  check(ec.success && ec.result["batchNumber"].asString().starts_with("EPV-") &&
+  check(ec.success && ec.result["batchNumber"].asString() == "SV-" + std::string(4 - std::to_string(beforeEmployee + 1).size(), '0') + std::to_string(beforeEmployee + 1) + "-GH" &&
             ec.result["payeeName"] == "Ama Mensah",
         "create employee voucher with server-derived payee");
   check(ec.result["taxType"] == "Professional services",
@@ -688,12 +689,13 @@ int main() {
   tampered = cr;
   tampered["lines"][0]["isImprest"] = true;
   check(!call("create", "", tampered).success, "receipt imprest rejected");
+  auto beforeReceipt = sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt();
   auto createdReceipt = call("create", "", cr);
   if (!createdReceipt.success)
     std::cerr << createdReceipt.toJson() << std::endl;
   check(
       createdReceipt.success &&
-          createdReceipt.result["batchNumber"].asString().starts_with("CRV-") &&
+          createdReceipt.result["batchNumber"].asString() == "SV-" + std::string(4 - std::to_string(beforeReceipt + 1).size(), '0') + std::to_string(beforeReceipt + 1) + "-GH" &&
           createdReceipt.result["netAmount"] == "120.000000",
       "receipt saves authoritative positive gross and net");
   const auto rid = createdReceipt.result["id"].asString();

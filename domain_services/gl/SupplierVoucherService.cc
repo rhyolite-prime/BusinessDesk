@@ -678,7 +678,7 @@ SupplierVoucherService::execute(std::string op, std::string id,
         "SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE "
         "attrelid=to_regclass('gl_payment_vouchers') AND "
         "attname='proposed_journal' AND NOT attisdropped) AND "
-        "to_regclass('gl_supplier_voucher_sequences') IS NOT NULL AS ready");
+        "to_regclass('core_system_numbers') IS NOT NULL AS ready");
     if (!ready[0]["ready"].as<bool>())
       co_return fail("schema_not_ready",
                      "Apply migration 017_supplier_voucher_posting.sql.");
