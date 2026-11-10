@@ -20,7 +20,7 @@ import type {
   LedgerVoucherType,
   LedgerVouchersResponse,
 } from '../voucher-data'
-import { voucherTypeMetadata, voucherTypeInfo } from '../voucher-data'
+import { voucherTypeMetadata, voucherTypeInfo, isLedgerVoucherType } from '../voucher-data'
 import { taxKeys, taxLabels } from '../voucher-tax'
 import { useLedgerVoucherApi } from '../useLedgerVoucherApi'
 
@@ -28,7 +28,9 @@ defineProps<{ history?: boolean }>()
 
 const api = useLedgerVoucherApi()
 const search = ref('')
-const typeFilter = ref<'all' | LedgerVoucherType>('all')
+const route = useRoute()
+const typeFilter = ref<'all' | LedgerVoucherType>(isLedgerVoucherType(route.query.type) ? route.query.type : 'all')
+watch(() => route.query.type, value => { typeFilter.value = isLedgerVoucherType(value) ? value : 'all' })
 const statusFilter = ref('')
 const showCreateMenu = ref(false)
 const selectedIds = ref(new Set<string>())
@@ -328,8 +330,8 @@ function exportCsv() {
       <div class="border-b border-slate-100 p-4 dark:border-slate-800 sm:px-5">
         <div class="flex flex-col justify-between gap-3 lg:flex-row lg:items-center">
           <div class="flex flex-wrap gap-1 rounded-lg bg-slate-100 p-1 dark:bg-slate-900/70">
-            <button type="button" class="rounded-md px-3 py-2 text-[11px] font-semibold transition" :class="typeFilter === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'" @click="typeFilter = 'all'">All vouchers</button>
-            <button v-for="type in voucherTypeMetadata" :key="type.value" type="button" class="rounded-md px-3 py-2 text-[11px] font-semibold transition" :class="typeFilter === type.value ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'" @click="typeFilter = type.value">{{ type.shortLabel }}</button>
+            <button type="button" :aria-pressed="typeFilter === 'all'" class="rounded-md px-3 py-2 text-[11px] font-semibold transition" :class="typeFilter === 'all' ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'" @click="typeFilter = 'all'">All vouchers</button>
+            <button v-for="type in voucherTypeMetadata" :key="type.value" type="button" :aria-pressed="typeFilter === type.value" class="rounded-md px-3 py-2 text-[11px] font-semibold transition" :class="typeFilter === type.value ? 'bg-white text-slate-900 shadow-sm dark:bg-slate-800 dark:text-white' : 'text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-slate-200'" @click="typeFilter = type.value">{{ type.shortLabel }}</button>
           </div>
           <div class="flex flex-col gap-2 sm:flex-row sm:items-center">
             <label class="relative w-full sm:w-[290px]"><Search :size="15" class="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" /><input v-model="search" type="search" placeholder="Search voucher, payee, invoice…" class="h-10 w-full rounded-lg border border-slate-200 bg-white pl-9 pr-3 text-xs outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" /></label>

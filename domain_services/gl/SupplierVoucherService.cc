@@ -1,5 +1,6 @@
 #include "SupplierVoucherService.h"
 #include "JournalService.h"
+#include "BatchNumberFormat.h"
 #include "VoucherMath.h"
 #include "utils/TransactionUtil.h"
 #include <chrono>
@@ -576,15 +577,31 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
                       calculation = json(prepared.calc),
                       proposal = json(prepared.proposal);
     if (op == "create") {
-      auto seq = co_await db->execSqlCoro(
-          "INSERT INTO "
-          "gl_supplier_voucher_sequences(tenant_id,accounting_unit_id,next_"
-          "number,created_by_user_id) VALUES($1,$2,2,$3) ON "
-          "CONFLICT(tenant_id,accounting_unit_id) DO UPDATE SET "
-          "next_number=gl_supplier_voucher_sequences.next_number+1 RETURNING "
-          "next_number-1 AS number",
-          who.tenantId, unit, who.userId);
-      const std::string number = std::string(b["type"] == "customer-receipt" ? "CRV-" : b["type"] == "employee-payment" ? "EPV-" : "SPV-") + seq[0]["number"].as<std::string>();
+      std::string number;
+      if (b["type"] == "supplier-payment") {
+        auto settings = co_await db->execSqlCoro(
+            "SELECT * FROM core_system_numbers WHERE tenant_id=$1 AND module_id=1 "
+            "AND lower(key)='gl-voucher-batch-id' AND is_deleted=false FOR UPDATE", who.tenantId);
+        if (settings.size() != 1)
+          co_return fail("validation_error", "Configure the General Ledger system number gl-voucher-batch-id before creating supplier vouchers.");
+        const auto last = settings[0]["last_no"].as<int>();
+        if (last >= 2147483647)
+          co_return fail("validation_error", "The gl-voucher-batch-id sequence is exhausted.");
+        try {
+          number = batchFormat(settings[0], static_cast<int64_t>(last) + 1);
+        } catch (const std::invalid_argument &) {
+          co_return fail("validation_error", "Check gl-voucher-batch-id numbering tokens, padding and maximum formatted length (40 bytes).");
+        }
+        co_await db->execSqlCoro(
+            "UPDATE core_system_numbers SET last_no=last_no+1,last_modified_at=now(),last_modified_by_user_id=$2 WHERE id=$1",
+            settings[0]["id"].as<std::string>(), who.userId);
+      } else {
+        auto seq = co_await db->execSqlCoro(
+            "INSERT INTO gl_supplier_voucher_sequences(tenant_id,accounting_unit_id,next_number,created_by_user_id) VALUES($1,$2,2,$3) ON "
+            "CONFLICT(tenant_id,accounting_unit_id) DO UPDATE SET next_number=gl_supplier_voucher_sequences.next_number+1 RETURNING next_number-1 AS number",
+            who.tenantId, unit, who.userId);
+        number = std::string(b["type"] == "customer-receipt" ? "CRV-" : "EPV-") + seq[0]["number"].as<std::string>();
+      }
       auto saved = co_await db->execSqlCoro(
           R"(INSERT INTO gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,voucher_entry_date,payment_date,mode_of_payment,voucher_type,currency_id,buy_rate,supplier_id,supplier_name,bank_account_id,gross_amount,net_amount,total_withheld,total_vat_withheld,total_retained,base_amount,total_vat_amount,source_payload,calculation,proposed_journal,posting_period_id,idempotency_key,request_hash,created_by_user_id)
  VALUES($1,$2,$3,($4::jsonb->>'entryDate')::date,COALESCE($4::jsonb->>'receiptDate',$4::jsonb->>'paymentDate')::date,$4::jsonb->>'mode',$4::jsonb->>'type',(SELECT id FROM core_currencies WHERE code=$4::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),($4::jsonb->>'exchangeRate')::numeric,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN ($4::jsonb->>'payeeId')::uuid END,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN $4::jsonb->>'payeeName' END,($4::jsonb->>'bankAccountId')::uuid,($5::jsonb->>'gross')::numeric,($5::jsonb->>'net')::numeric,($5::jsonb->>'incomeWithholding')::numeric,($5::jsonb->>'vatWithholding')::numeric,($5::jsonb->>'retained')::numeric,($5::jsonb->>'base')::numeric,($5::jsonb->>'vat')::numeric,$4::jsonb,$5::jsonb,$6::jsonb,($4::jsonb->>'periodId')::uuid,$4::jsonb->>'requestId',md5($7::jsonb::text),$8) RETURNING id)",
@@ -661,7 +678,7 @@ SupplierVoucherService::execute(std::string op, std::string id,
         "SELECT EXISTS(SELECT 1 FROM pg_attribute WHERE "
         "attrelid=to_regclass('gl_payment_vouchers') AND "
         "attname='proposed_journal' AND NOT attisdropped) AND "
-        "to_regclass('gl_supplier_voucher_sequences') IS NOT NULL AS ready");
+        "to_regclass('core_system_numbers') IS NOT NULL AS ready");
     if (!ready[0]["ready"].as<bool>())
       co_return fail("schema_not_ready",
                      "Apply migration 017_supplier_voucher_posting.sql.");
