@@ -46,6 +46,8 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/gl/AccountingUnitService.cc
         domain_services/hr/HrService.h
         domain_services/hr/HrService.cc
+        domain_services/hr/HrWorkflowService.cc
+        domain_services/hr/HrProfileService.cc
         domain_services/payroll/PayrollService.h
         domain_services/payroll/PayrollService.cc
         domain_services/sm/SchoolService.h

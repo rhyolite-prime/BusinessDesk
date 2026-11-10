@@ -242,20 +242,10 @@ const taxPreview = computed(() => {
   }
 })
 
-// Only an explicit checkbox change adjusts supplier taxes, never draft hydration.
+// Only an explicit checkbox change applies supplier defaults, never draft hydration.
 const editedTaxRates = new Set<(typeof taxKeys)[number]>()
 function onLineWithholdChange(checked: boolean) {
-  if (type.value !== 'supplier-payment') return
-  if (!checked) {
-    // Tax settings are voucher-wide, so clearing any row resets all components,
-    // even if another row remains marked. Retentions are independent.
-    for (const key of taxKeys) {
-      taxes[key].enabled = false
-      taxes[key].rate = '0'
-    }
-    editedTaxRates.clear()
-    return
-  }
+  if (!checked || type.value !== 'supplier-payment') return
   const defaults = { nhil: '2.5', getfund: '2.5', vat: '15', incomeWithholding: '5', vatWithholding: '7' } as const
   for (const key of Object.keys(defaults) as Array<keyof typeof defaults>) {
     const tax = taxes[key]
@@ -1053,7 +1043,7 @@ async function saveDraft() {
     </section>
 
     <section v-if="type === 'supplier-payment' || type === 'employee-payment'" class="space-y-4 rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]">
-      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply. Unchecking any row clears all voucher tax rates and disables the taxes.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
+      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
       <label v-if="type === 'employee-payment'" class="block text-xs font-medium">Withholding tax type<input v-model="form.taxType" aria-label="Withholding tax type" maxlength="40" class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-xs dark:border-slate-700" placeholder="Tax type / classification" /></label>
       <div class="grid gap-3 md:grid-cols-2">
         <div v-for="key in taxKeys" :key="key" class="space-y-2 rounded-lg border border-slate-100 p-3 dark:border-slate-700">

@@ -224,23 +224,11 @@ try{
   await foreignInputs.nth(0).fill('192')
   await page.getByRole('button',{name:'Add retention',exact:true}).click()
   check((await taxBase.innerText()).length>0,'incomplete retention does not suppress tax preview')
-  await page.getByLabel('Enable CST',{exact:true}).check()
-  await page.getByLabel('CST rate',{exact:true}).fill('5')
-  await page.getByLabel('Enable COVID levy',{exact:true}).check()
-  await page.getByLabel('COVID levy rate',{exact:true}).fill('1')
-  await page.getByLabel('Withholding applies to line 2',{exact:true}).uncheck()
-  check(await page.getByLabel('Withholding applies to line 1',{exact:true}).isChecked(),'reset does not alter other line flags')
-  for (const label of ['NHIL','GETFund levy','VAT','CST','COVID levy','Income withholding','VAT withholding']) {
-    check(!await page.getByLabel(`Enable ${label}`,{exact:true}).isChecked()&&await page.getByLabel(`${label} rate`,{exact:true}).inputValue()==='0'&&(await taxAmount(label)).includes('0.00'),`unchecking any row clears ${label} rate, checkbox and amount`)
-  }
-  check(await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'reset disables withholding account pickers')
-  check(await page.getByRole('button',{name:'Remove retention',exact:true}).count()===1,'reset leaves unrelated retentions intact')
   await page.getByRole('button',{name:'Remove retention',exact:true}).click()
-  await page.getByLabel('Withholding applies to line 2',{exact:true}).check()
-  for (const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5'],['VAT withholding','7']]) {
-    check(await page.getByLabel(`Enable ${label}`,{exact:true}).isChecked()&&await page.getByLabel(`${label} rate`,{exact:true}).inputValue()===rate,`checking after reset restores ${label} default`)
-  }
+  await page.getByLabel('Withholding applies to line 2',{exact:true}).uncheck()
+  check(await page.getByLabel('Enable VAT',{exact:true}).isChecked(),'unchecking a row does not disable taxes')
   await page.getByRole('button',{name:'Remove voucher line',exact:true}).nth(1).click()
+  await page.getByLabel('NHIL rate',{exact:true}).fill('2.5')
   await foreignInputs.fill('96');await rateInput.fill('1.25');await rateInput.blur()
   await openPicker('Income withholding credit account')
   check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===102,'withholding credit picker loads all active base-currency account pages')
