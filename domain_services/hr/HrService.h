@@ -1,8 +1,10 @@
-//
-// Created by Emmanuel Addo-Odame on 15/10/2026.
-//
-
-#ifndef BUSINESSDESKAPI_HRSERVICE_H
-#define BUSINESSDESKAPI_HRSERVICE_H
-
-#endif //BUSINESSDESKAPI_HRSERVICE_H
+#pragma once
+#include "dto/BaseApiResponse.h"
+#include "utils/AuditUtil.h"
+#include <drogon/drogon.h>
+namespace business_desk::domain_services {
+class HrService {
+public:
+  static drogon::Task<dto::BaseApiResponse> execute(std::string op, std::string id, Json::Value body, std::string page, utils::AuditIdentity who);
+};
+}
