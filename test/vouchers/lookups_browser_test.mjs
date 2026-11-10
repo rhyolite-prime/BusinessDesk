@@ -306,7 +306,7 @@ try{
   await saveVoucher(false,true)
   const dialog=page.getByRole('dialog',{name:'Voucher preview'})
   await dialog.waitFor()
-  check(page.url().includes('/new/supplier-payment')&&await dialog.getByText('Draft saved · SPV-TEST',{exact:true}).isVisible(),'preview opens after save without navigating away')
+  check(page.url().includes('/new/supplier-payment')&&await dialog.getByText('Voucher saved · SPV-TEST',{exact:true}).isVisible(),'preview opens after save without navigating away')
   await dialog.getByRole('button',{name:'Export PDF',exact:true}).waitFor({state:'visible'})
   await page.waitForFunction(()=>[...document.querySelectorAll('[role="dialog"] button')].some(b=>b.textContent.trim()==='Export PDF'&&!b.disabled),null,{timeout:30000})
   const doc=dialog.getByRole('document',{name:/Report page/})
