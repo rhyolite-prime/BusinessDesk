@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ArrowLeft, Calculator, Check, Plus, Save, Trash2 } from '@lucide/vue'
+import { ArrowLeft, Calculator, Check, ChevronDown, Plus, Save, Trash2 } from '@lucide/vue'
 import { voucherRateDisplay, voucherRateInput } from '../../../../features/ledger/voucher-rate-input'
 import { employeeLineFlags } from '../../../../features/ledger/employee-line-flags'
 import { useVoucherLookups } from '../../../../features/ledger/useVoucherLookups'
@@ -111,6 +111,40 @@ const {
 const voucherApi = useLedgerVoucherApi()
 const saving = ref(false)
 const saveError = ref('')
+const showSaveMenu = ref(false)
+const saveMenu = ref<HTMLElement | null>(null)
+const saveButton = ref<HTMLButtonElement | null>(null)
+const previewVoucher = shallowRef<LedgerVoucher | null>(null)
+const savedVoucher = shallowRef<LedgerVoucher | null>(null)
+async function openSaveMenu() {
+  showSaveMenu.value = true
+  await nextTick()
+  saveMenu.value?.querySelector<HTMLButtonElement>('[role="menuitem"]')?.focus()
+}
+function saveMenuKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape') {
+    event.preventDefault(); event.stopPropagation(); showSaveMenu.value = false; saveButton.value?.focus(); return
+  }
+  if (!['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) return
+  event.preventDefault()
+  if (!showSaveMenu.value) { void openSaveMenu(); return }
+  const options = [...(saveMenu.value?.querySelectorAll<HTMLButtonElement>('[role="menuitem"]') || [])]
+  if (!options.length) return
+  const index = options.indexOf(document.activeElement as HTMLButtonElement)
+  const next = event.key === 'Home' ? 0 : event.key === 'End' ? options.length - 1 : event.key === 'ArrowDown' ? (index + 1) % options.length : (index <= 0 ? options.length - 1 : index - 1)
+  options[next]?.focus()
+}
+function closeSaveMenu(event: PointerEvent) {
+  if (!saveMenu.value?.contains(event.target as Node)) showSaveMenu.value = false
+}
+onMounted(() => document.addEventListener('pointerdown', closeSaveMenu))
+onBeforeUnmount(() => document.removeEventListener('pointerdown', closeSaveMenu))
+function voucherRegisterLocation() { return { path: '/ledger/vouchers', query: { type: type.value } } }
+async function closeVoucherPreview() {
+  previewVoucher.value = null
+  try { await navigateTo(voucherRegisterLocation()) }
+  catch { saveError.value = 'The voucher was saved, but the register could not be opened. Use the link below to return to vouchers.' }
+}
 const {
   data: existingVoucher,
   pending: voucherPending,
@@ -242,10 +276,22 @@ const taxPreview = computed(() => {
   }
 })
 
-// Only an explicit checkbox change applies supplier defaults, never draft hydration.
+// Only explicit checkbox changes adjust supplier taxes, never draft hydration.
 const editedTaxRates = new Set<(typeof taxKeys)[number]>()
-function onLineWithholdChange(checked: boolean) {
-  if (!checked || type.value !== 'supplier-payment') return
+function onLineWithholdChange(checked: boolean, lineKey: string) {
+  if (type.value !== 'supplier-payment') return
+  if (!checked) {
+    // Rates are voucher-wide; retain them while another withheld line remains.
+    // Excluding this line explicitly avoids depending on event listener order.
+    if (!lines.value.some(line => line.key !== lineKey && line.isWithhold)) {
+      for (const key of taxKeys) {
+        taxes[key].enabled = false
+        taxes[key].rate = '0'
+      }
+      editedTaxRates.clear()
+    }
+    return
+  }
   const defaults = { nhil: '2.5', getfund: '2.5', vat: '15', incomeWithholding: '5', vatWithholding: '7' } as const
   for (const key of Object.keys(defaults) as Array<keyof typeof defaults>) {
     const tax = taxes[key]
@@ -255,6 +301,10 @@ function onLineWithholdChange(checked: boolean) {
 }
 function setTaxEnabled(key: (typeof taxKeys)[number], enabled: boolean) {
   taxes[key].enabled = enabled
+  if (!enabled && type.value === 'supplier-payment') {
+    taxes[key].rate = '0'
+    editedTaxRates.delete(key)
+  }
   if (enabled && taxes[key].rate === '0') {
     if (key === 'incomeWithholding') taxes[key].rate = '5'
     else if (key === 'vatWithholding') taxes[key].rate = '7'
@@ -263,8 +313,8 @@ function setTaxEnabled(key: (typeof taxKeys)[number], enabled: boolean) {
       taxes[key].rate = suggested[key]
     }
   }
-  if (enabled && key === 'cst') taxes.covid.enabled = false
-  if (enabled && key === 'covid') taxes.cst.enabled = false
+  if (enabled && key === 'cst' && taxes.covid.enabled) setTaxEnabled('covid', false)
+  if (enabled && key === 'covid' && taxes.cst.enabled) setTaxEnabled('cst', false)
 }
 
 const activeAccounts = computed(() =>
@@ -831,6 +881,7 @@ const canSave = computed(
   () =>
     validationErrors.value.length === 0 &&
     !saving.value &&
+    !savedVoucher.value &&
     !accountsPending.value &&
     !voucherPending.value &&
     !ratePending.value &&
@@ -954,20 +1005,24 @@ function buildInput(): CreateLedgerVoucherInput {
   }
 }
 
-async function saveDraft() {
+async function saveDraft(preview: boolean) {
   saveError.value = ''
-  if (!canSave.value) return
+  showSaveMenu.value = false
+  if (!canSave.value || saving.value || previewVoucher.value) return
   saving.value = true
   try {
-    if (editing.value) await voucherApi.update(editingId.value, buildInput())
-    else await voucherApi.create(buildInput())
-    await navigateTo('/ledger/vouchers')
+    const saved = editing.value
+      ? await voucherApi.update(editingId.value, buildInput())
+      : await voucherApi.create(buildInput())
+    savedVoucher.value = saved
+    if (preview) previewVoucher.value = saved
+    else await navigateTo(voucherRegisterLocation())
   } catch (e: unknown) {
     const fetchError = e as {
       statusMessage?: string
       data?: { statusMessage?: string }
     }
-    saveError.value =
+    saveError.value = savedVoucher.value ? 'The voucher was saved, but the register could not be opened. Use the link below to return to vouchers.' :
       fetchError.data?.statusMessage ||
       fetchError.statusMessage ||
       'The voucher draft could not be saved.'
@@ -1035,7 +1090,7 @@ async function saveDraft() {
 
     <section class="overflow-hidden rounded-xl border border-slate-200/80 bg-white dark:border-slate-800 dark:bg-[#15201e]">
       <div class="flex flex-col justify-between gap-3 border-b border-slate-100 px-5 py-4 sm:flex-row sm:items-center dark:border-slate-800"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Voucher lines</h2><p class="mt-1 text-[11px] text-slate-500">{{ isReceipt ? 'Receipt rows share one customer receivable G/L and organization. Totals post as one bank debit and one receivable credit.' : 'Each line posts a debit to the selected G/L account.' }}</p></div><button type="button" class="inline-flex h-9 items-center justify-center gap-2 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800" @click="addLine"><Plus :size="14" /> Add line</button></div>
-      <div class="overflow-x-auto"><table class="w-full min-w-[1380px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="w-12 px-5 py-3">#</th><th class="w-[135px] px-3 py-3">Invoice no.</th><th class="w-[135px] px-3 py-3">Reference no.</th><th class="min-w-[220px] px-3 py-3">{{ typeInfo.accountDirection === 'debit' ? 'Debit' : 'Credit' }} G/L</th><th class="min-w-[190px] px-3 py-3">Description</th><th class="w-[145px] px-3 py-3 text-right">Local · {{ baseCurrency }}</th><th class="w-[145px] px-3 py-3 text-right">Foreign · {{ form.currencyCode }}</th><th class="min-w-[185px] px-3 py-3">Organizational unit</th><th v-if="type === 'employee-payment'" class="w-[100px] px-3 py-3 text-center">Imprest ?</th><th v-if="!isReceipt" class="w-[100px] px-3 py-3 text-center">Withhold?</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in lines" :key="line.key"><td class="px-5 py-3 text-xs font-medium text-slate-400">{{ String(index + 1).padStart(2, '0') }}</td><td class="px-3 py-2.5"><input v-model="line.invoiceNumber" maxlength="80" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Invoice" /></td><td class="px-3 py-2.5"><input v-model="line.referenceNumber" maxlength="40" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Reference" /></td><td class="px-3 py-2.5"><AccountControlPicker v-if="type === 'supplier-payment'" v-model="line.accountId" kind="accounts" :label="`Debit GL line ${index+1}`" :options="debitGlChoices" :disabled="supplierPickersDisabled" portal /><select v-else :aria-label="`${isReceipt ? 'Credit' : 'Debit'} GL line ${index+1}`" v-model="line.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select account</option><option v-for="account in lineAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="line.description" maxlength="300" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Line details" /></td><td class="px-3 py-2.5"><input v-if="!form.multiCurrency" v-model="line.localAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><input v-else :value="localAmountText(line)" readonly class="h-9 w-full rounded-md border border-slate-100 bg-slate-50 px-2.5 text-right text-xs tabular-nums text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300" placeholder="Converted" /></td><td class="px-3 py-2.5"><input v-if="form.multiCurrency" v-model="line.foreignAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span v-else class="block text-right text-xs text-slate-300">—</span></td><td class="px-3 py-2.5"><AccountControlPicker v-if="type === 'supplier-payment'" v-model="line.organizationUnitId" kind="cost-centers" :label="`Organizational unit line ${index+1}`" :options="organizationChoices" :disabled="supplierPickersDisabled" empty-label="No unit" portal /><select v-else :aria-label="`Organizational unit line ${index+1}`" v-model="line.organizationUnitId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">No unit</option><option v-for="unit in ledgerOrganizationalUnits" :key="unit.id" :value="unit.id">{{ unit.path }}</option></select></td><td v-if="type === 'employee-payment'" class="px-3 py-2.5 text-center"><input v-model="line.isImprest" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="`Imprest applies to line ${index + 1}`" /></td><td v-if="!isReceipt" class="px-3 py-2.5 text-center"><input v-model="line.isWithhold" @change="onLineWithholdChange(($event.target as HTMLInputElement).checked)" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="`Withholding applies to line ${index + 1}`" /></td><td class="px-3 py-2.5"><button type="button" :disabled="lines.length <= 1" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Remove voucher line" @click="removeLine(index)"><Trash2 :size="14" /></button></td></tr><tr class="bg-slate-50/70 dark:bg-slate-900/50"><td colspan="5" class="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voucher total</td><td class="px-3 py-3 text-right text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(grossAmount, baseCurrency) }}</td><td class="px-3 py-3 text-right text-xs text-slate-500">{{ form.multiCurrency ? formatVoucherAmount(formatLedgerAmount(lines.reduce((sum, line) => sum + (parseLedgerAmount(line.foreignAmount, true) ?? BigInt(0)), BigInt(0))), form.currencyCode) : '—' }}</td><td :colspan="isReceipt ? 2 : type === 'employee-payment' ? 4 : 3" /></tr></tbody></table></div>
+      <div class="overflow-x-auto"><table class="w-full min-w-[1380px] text-left"><thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th class="w-12 px-5 py-3">#</th><th class="w-[135px] px-3 py-3">Invoice no.</th><th class="w-[135px] px-3 py-3">Reference no.</th><th class="min-w-[220px] px-3 py-3">{{ typeInfo.accountDirection === 'debit' ? 'Debit' : 'Credit' }} G/L</th><th class="min-w-[190px] px-3 py-3">Description</th><th class="w-[145px] px-3 py-3 text-right">Local · {{ baseCurrency }}</th><th class="w-[145px] px-3 py-3 text-right">Foreign · {{ form.currencyCode }}</th><th class="min-w-[185px] px-3 py-3">Organizational unit</th><th v-if="type === 'employee-payment'" class="w-[100px] px-3 py-3 text-center">Imprest ?</th><th v-if="!isReceipt" class="w-[100px] px-3 py-3 text-center">Withhold?</th><th class="w-12 px-3 py-3" /></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in lines" :key="line.key"><td class="px-5 py-3 text-xs font-medium text-slate-400">{{ String(index + 1).padStart(2, '0') }}</td><td class="px-3 py-2.5"><input v-model="line.invoiceNumber" maxlength="80" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Invoice" /></td><td class="px-3 py-2.5"><input v-model="line.referenceNumber" maxlength="40" class="h-9 w-full rounded-md border border-slate-200 px-2 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Reference" /></td><td class="px-3 py-2.5"><AccountControlPicker v-if="type === 'supplier-payment'" v-model="line.accountId" kind="accounts" :label="`Debit GL line ${index+1}`" :options="debitGlChoices" :disabled="supplierPickersDisabled" portal /><select v-else :aria-label="`${isReceipt ? 'Credit' : 'Debit'} GL line ${index+1}`" v-model="line.accountId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select account</option><option v-for="account in lineAccounts" :key="account.id" :value="account.id">{{ account.accountNumber }} — {{ account.name }}</option></select></td><td class="px-3 py-2.5"><input v-model="line.description" maxlength="300" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="Line details" /></td><td class="px-3 py-2.5"><input v-if="!form.multiCurrency" v-model="line.localAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><input v-else :value="localAmountText(line)" readonly class="h-9 w-full rounded-md border border-slate-100 bg-slate-50 px-2.5 text-right text-xs tabular-nums text-slate-600 dark:border-slate-800 dark:bg-slate-900/70 dark:text-slate-300" placeholder="Converted" /></td><td class="px-3 py-2.5"><input v-if="form.multiCurrency" v-model="line.foreignAmount" inputmode="decimal" class="h-9 w-full rounded-md border border-slate-200 px-2.5 text-right text-xs tabular-nums outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" placeholder="0.00" /><span v-else class="block text-right text-xs text-slate-300">—</span></td><td class="px-3 py-2.5"><AccountControlPicker v-if="type === 'supplier-payment'" v-model="line.organizationUnitId" kind="cost-centers" :label="`Organizational unit line ${index+1}`" :options="organizationChoices" :disabled="supplierPickersDisabled" empty-label="No unit" portal /><select v-else :aria-label="`Organizational unit line ${index+1}`" v-model="line.organizationUnitId" class="h-9 w-full rounded-md border border-slate-200 bg-white px-2.5 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="">No unit</option><option v-for="unit in ledgerOrganizationalUnits" :key="unit.id" :value="unit.id">{{ unit.path }}</option></select></td><td v-if="type === 'employee-payment'" class="px-3 py-2.5 text-center"><input v-model="line.isImprest" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="`Imprest applies to line ${index + 1}`" /></td><td v-if="!isReceipt" class="px-3 py-2.5 text-center"><input v-model="line.isWithhold" @change="onLineWithholdChange(($event.target as HTMLInputElement).checked, line.key)" type="checkbox" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" :aria-label="`Withholding applies to line ${index + 1}`" /></td><td class="px-3 py-2.5"><button type="button" :disabled="lines.length <= 1" class="rounded-md p-2 text-slate-300 hover:bg-rose-50 hover:text-rose-600 disabled:cursor-not-allowed disabled:opacity-30 dark:hover:bg-rose-950/30" aria-label="Remove voucher line" @click="removeLine(index)"><Trash2 :size="14" /></button></td></tr><tr class="bg-slate-50/70 dark:bg-slate-900/50"><td colspan="5" class="px-5 py-3 text-right text-[10px] font-semibold uppercase tracking-wide text-slate-500">Voucher total</td><td class="px-3 py-3 text-right text-xs font-semibold tabular-nums text-slate-800 dark:text-slate-200">{{ formatVoucherAmount(grossAmount, baseCurrency) }}</td><td class="px-3 py-3 text-right text-xs text-slate-500">{{ form.multiCurrency ? formatVoucherAmount(formatLedgerAmount(lines.reduce((sum, line) => sum + (parseLedgerAmount(line.foreignAmount, true) ?? BigInt(0)), BigInt(0))), form.currencyCode) : '—' }}</td><td :colspan="isReceipt ? 2 : type === 'employee-payment' ? 4 : 3" /></tr></tbody></table></div>
     </section>
 
     <section class="rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]">
@@ -1043,7 +1098,7 @@ async function saveDraft() {
     </section>
 
     <section v-if="type === 'supplier-payment' || type === 'employee-payment'" class="space-y-4 rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e]">
-      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
+      <div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Taxes &amp; withholding</h2><p class="mt-1 text-[11px] text-slate-500">Only rows marked “Withhold?” use inclusive tax extraction. Base = gross ÷ (1 + enabled levy/VAT rates). Both withholdings use that base. CST and COVID are mutually exclusive. {{ type === 'supplier-payment' ? 'Checking a row enables suggested rates, which you can edit; verify they apply. Unchecking a tax clears its rate. Clearing the last withheld row resets all tax components; otherwise only the remaining withheld rows contribute.' : 'Enter your applicable rates; no tax-law rates are assumed.' }}</p></div>
       <label v-if="type === 'employee-payment'" class="block text-xs font-medium">Withholding tax type<input v-model="form.taxType" aria-label="Withholding tax type" maxlength="40" class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 text-xs dark:border-slate-700" placeholder="Tax type / classification" /></label>
       <div class="grid gap-3 md:grid-cols-2">
         <div v-for="key in taxKeys" :key="key" class="space-y-2 rounded-lg border border-slate-100 p-3 dark:border-slate-700">
@@ -1080,7 +1135,17 @@ async function saveDraft() {
     </section>
 
     <div v-if="validationErrors.length" class="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20"><p class="text-xs font-semibold text-amber-900 dark:text-amber-200">Complete the required voucher details:</p><ul class="mt-2 list-inside list-disc space-y-1 text-[11px] text-amber-800 dark:text-amber-300"><li v-for="message in validationErrors" :key="message">{{ message }}</li></ul></div>
-    <p v-if="saveError" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }}</p>
-    <div class="flex flex-col-reverse justify-end gap-2 sm:flex-row"><NuxtLink to="/ledger/vouchers" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</NuxtLink><button type="button" :disabled="!canSave" class="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-brand-700 px-5 text-xs font-semibold text-white shadow-sm shadow-brand-900/10 hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50" @click="saveDraft"><Save :size="14" />{{ saving ? 'Saving…' : editing ? 'Update draft' : 'Save draft' }}</button></div>
+    <p v-if="saveError" role="alert" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }} <NuxtLink v-if="savedVoucher" :to="voucherRegisterLocation()" class="font-semibold underline">Back to vouchers</NuxtLink></p>
+    <div class="flex flex-col-reverse justify-end gap-2 sm:flex-row">
+      <NuxtLink :to="voucherRegisterLocation()" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</NuxtLink>
+      <div ref="saveMenu" class="relative" @keydown="saveMenuKeydown">
+        <button ref="saveButton" type="button" :disabled="!canSave" :aria-expanded="showSaveMenu" aria-haspopup="menu" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50" @click="showSaveMenu ? showSaveMenu = false : openSaveMenu()"><Save :size="14" />{{ saving ? 'Saving…' : editing ? 'Update draft' : 'Save as draft' }}<ChevronDown :size="14" /></button>
+        <div v-if="showSaveMenu" role="menu" aria-label="Save voucher" class="absolute bottom-full right-0 z-30 mb-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+          <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(false)">Save</button>
+          <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(true)">Save and Preview</button>
+        </div>
+      </div>
+    </div>
+    <VoucherPreviewModal v-if="previewVoucher" :voucher="previewVoucher" @close="closeVoucherPreview" />
   </div>
 </template>
