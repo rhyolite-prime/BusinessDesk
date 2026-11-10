@@ -1,4 +1,5 @@
 #include "JournalService.h"
+#include "BatchNumberFormat.h"
 #include "utils/TransactionUtil.h"
 #include <regex>
 #include <chrono>
@@ -17,21 +18,6 @@ bool text(Json::Value& v,size_t limit,bool required=false){if(v.isNull()&&!requi
 bool decimal(const Json::Value& v,bool rate=false){static const std::regex money("^(0|[1-9][0-9]{0,13})(\\.[0-9]{1,6})?$"),fx("^(0|[1-9][0-9]{0,9})(\\.[0-9]{1,10})?$");return v.isString()&&std::regex_match(v.asString(),rate?fx:money);}
 bool zero(const std::string& s){return s.find_first_not_of("0.")==std::string::npos;}
 bool one(const std::string& s){return s=="1"||(s.starts_with("1.")&&s.find_first_not_of('0',2)==std::string::npos);}
-// Expand tokens in the pattern only: prefix/suffix are literal values.
-std::string batchFormat(const Row& settings, int64_t counter){
- auto digits=std::to_string(counter);const int padding=settings["padding"].as<int>();
- if(padding<0||padding>18)throw std::invalid_argument("Invalid numbering padding");
- if(digits.size()<static_cast<size_t>(padding))digits.insert(0,padding-digits.size(),'0');
- const auto pattern=settings["format_pattern"].as<std::string>();std::string result;int numberTokens=0;
- for(size_t i=0;i<pattern.size();) {
-  if(pattern.compare(i,4,"{NO}")==0){result+=digits;i+=4;++numberTokens;}
-  else if(pattern.compare(i,8,"{PREFIX}")==0){result+=settings["prefix"].as<std::string>();i+=8;}
-  else if(pattern.compare(i,8,"{SUFFIX}")==0){result+=settings["suffix"].as<std::string>();i+=8;}
-  else {if(pattern[i]=='{'||pattern[i]=='}')throw std::invalid_argument("Invalid numbering token");result+=pattern[i++];}
- }
- if(numberTokens!=1||result.empty()||result.size()>40)throw std::invalid_argument("Journal number must fit 40 bytes and include NO exactly once");
- return result;
-}
 // Accept only a canonical formatted preview, never arbitrary client numbering.
 int64_t previewCounter(const Row& settings,const std::string& preview){
  batchFormat(settings,0);const auto pattern=settings["format_pattern"].as<std::string>();
