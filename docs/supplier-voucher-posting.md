@@ -52,17 +52,20 @@ One transaction locks the accounting unit and voucher, recomputes the authoritat
 The downgrade keeps line audit/deletion fields (to avoid resurrecting archived allocations) and restores ordinary nullable request-key uniqueness, not the legacy one-NULL-key-per-unit defect. Reapplying the upgrade tolerates those retained audit columns. Downgrading removes source/calculation snapshots: back up and reconcile posted vouchers before downgrading a populated installation.
 
 ## Verification
+- `g++ -std=c++20 -I. test/vouchers/batch_format_test.cc -o /tmp/voucher-batch-format-test && /tmp/voucher-batch-format-test`: standalone numbering pattern checks.
 - `test/vouchers/run_pg.sh`: real disposable PostgreSQL migrations/down/up and native service/transaction tests; accepts `VOUCHER_TEST_SANITIZERS='-fsanitize=address,undefined -fno-omit-frame-pointer'`. Uses a synchronous Drogon coroutine transport seam, not a deployed HTTP backend. Requires a UTF-8 PostgreSQL database, `SUPPLIERS_TEST_DATABASE_URL`, `JSONCPP_SOURCE_DIR`, `LIBPQ_LIB_DIR`, and npm `pg` in `SUPPLIERS_PG_DEPS`.
 - Compile `test/vouchers/math_driver.cc` with JsonCpp; run `VOUCHER_MATH_DRIVER=/path/to/driver node --experimental-strip-types test/vouchers/math_test.mjs`: known results plus generated exact C++/TypeScript parity vectors (including cent ties, FX, mixed flagged rows, CST/COVID, limits and invalid inputs).
 - Build Nuxt, then `LD_LIBRARY_PATH=/path/to/browser/libs node --experimental-strip-types test/vouchers/lookups_browser_test.mjs`: real browser/Nuxt with a controlled authenticated upstream, checking lookups, taxes, withholding credits, period selection, live saves, post response unwrapping and cross-origin rejection. Not a deployed C++ HTTP end-to-end claim.
 
-### Supplier voucher numbering
+### Voucher numbering
 
-Creating a supplier-payment voucher requires a live tenant System numbers entry
+Creating a supplier-payment, employee-payment or customer-receipt voucher requires a live tenant System numbers entry
 in the General Ledger module (`module_id=1`) with key `gl-voucher-batch-id`.
 Its prefix, suffix, format pattern, padding and last number determine the batch
 number. The pattern must contain exactly one `{NO}` and may also contain
 `{PREFIX}` and `{SUFFIX}`; the resulting number must fit 40 bytes. The counter
 is advanced transactionally when the voucher is saved, not on preview, update,
-or an idempotent retry. Configure the tenant entry before saving a new supplier
-voucher. Employee-payment and customer-receipt numbering is unchanged.
+or an idempotent retry. Configure the tenant entry before saving a new voucher. All three voucher types
+share the tenant counter. Existing voucher numbers are retained; if a newly
+formatted number already exists (including on an archived voucher), saving fails
+until the configuration is adjusted.
