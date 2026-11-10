@@ -19,6 +19,29 @@ function underThousand(n: number): string {
   const h = Math.floor(n / 100), rest = n % 100
   return [h ? `${ones[h]} Hundred` : '', rest < 20 ? (rest ? ones[rest] : '') : `${tens[Math.floor(rest / 10)]}${rest % 10 ? `-${ones[rest % 10]}` : ''}`].filter(Boolean).join(' ')
 }
+// Currency records currently expose no minor-unit name. Keep explicit names for
+// common currencies and retain an unambiguous fraction for unknown currencies.
+const currencyUnits: Record<string, { major: string; minor: string; plural: string }> = {
+  GHS: { major: 'Ghana Cedi', minor: 'Pesewa', plural: 'Pesewas' },
+  USD: { major: 'US Dollar', minor: 'Cent', plural: 'Cents' },
+  EUR: { major: 'Euro', minor: 'Cent', plural: 'Cents' },
+  GBP: { major: 'British Pound', minor: 'Penny', plural: 'Pence' },
+  NGN: { major: 'Nigerian Naira', minor: 'Kobo', plural: 'Kobo' },
+  CAD: { major: 'Canadian Dollar', minor: 'Cent', plural: 'Cents' },
+  AUD: { major: 'Australian Dollar', minor: 'Cent', plural: 'Cents' },
+  ZAR: { major: 'South African Rand', minor: 'Cent', plural: 'Cents' },
+  KES: { major: 'Kenyan Shilling', minor: 'Cent', plural: 'Cents' },
+}
+function currencyUnit(code: string) {
+  const key = code.toUpperCase()
+  if (currencyUnits[key]) return currencyUnits[key]
+  let major = key
+  try {
+    const name = new Intl.DisplayNames(['en'], { type: 'currency' }).of(key)
+    if (name) major = name.replace(/\b[a-z]/g, letter => letter.toUpperCase())
+  } catch { /* An unrecognized currency code remains visible as-is. */ }
+  return { major, minor: '', plural: '' }
+}
 export function voucherAmountInWords(value: string, currency: string): string {
   if (!/^\d+(?:\.\d{1,6})?$/.test(value)) return '—'
   const [whole = '0', fraction = ''] = value.split('.')
@@ -33,7 +56,9 @@ export function voucherAmountInWords(value: string, currency: string): string {
   }
   if (integer) return `${currency} ${amount(value)}`
   const minor = cents % 100n
-  return `${words.join(' ') || 'Zero'} ${currency}${minor ? ` and ${String(minor).padStart(2, '0')}/100` : ''} Only`
+  const unit = currencyUnit(currency)
+  const minorText = unit.minor ? `${minor} ${minor === 1n ? unit.minor : unit.plural}` : `${String(minor).padStart(2, '0')}/100`
+  return `${words.join(' ') || 'Zero'} ${unit.major}${minor ? ` and ${minorText}` : ''} Only`
 }
 const cell = (text: string, span = 1, bold = false, align: VoucherReportCell['align'] = 'left'): VoucherReportCell => ({ text, span, bold, align })
 const date = (v?: string) => v || '—'
@@ -71,5 +96,5 @@ export function voucherReport(voucher: LedgerVoucher, companyName = ''): Voucher
     rows.push({ cells: [cell('Retention details', 7, true)] })
     for (const retention of voucher.retentions) rows.push({ cells: [cell(retention.description || 'Retention', 3), cell(`${retention.isPercentage ? `${retention.value}%` : 'Fixed'} · ${[retention.accountNumber, retention.accountName].filter(Boolean).join(' — ') || '—'}`, 3), cell(amount(retention.amount), 1, false, 'right')] })
   }
-  return { id: `voucher-${voucher.voucherNumber || voucher.id}`.replace(/[^a-zA-Z0-9_-]/g, '-'), title, companyName: companyName || 'Company profile not available', subtitle: `Voucher ${voucher.voucherNumber} · ${voucher.status} · Base currency ${currency}`, generatedAt: voucher.updatedAt || voucher.createdAt || '', columns: [], sections: [{ title: '', rows: voucher.lines.map(line => [line.description]) }], landscape: true, voucherRows: rows }
+  return { id: `voucher-${voucher.voucherNumber || voucher.id}`.replace(/[^a-zA-Z0-9_-]/g, '-'), title, companyName: companyName || 'Company profile not available', subtitle: [ `Voucher ${voucher.voucherNumber}`, voucher.status?.toLowerCase() === 'draft' ? '' : voucher.status, `Base currency ${currency}` ].filter(Boolean).join(' · '), generatedAt: voucher.updatedAt || voucher.createdAt || '', columns: [], sections: [{ title: '', rows: voucher.lines.map(line => [line.description]) }], landscape: true, voucherRows: rows }
 }
