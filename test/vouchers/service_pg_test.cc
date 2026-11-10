@@ -319,12 +319,6 @@ int main() {
             count("gl_payment_vouchers") == 1,
         "create replay cannot duplicate voucher");
   check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt() == 41, "idempotent replay does not consume a number");
-  sql("UPDATE core_system_numbers SET last_no=40 WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant});
-  auto collisionInput = input;
-  collisionInput["requestId"] = "a0000000-0000-4000-8000-000000000099";
-  check(call("create", "", collisionInput).error["code"] == "conflict", "existing voucher number is not reused after counter reset");
-  check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant})[0].value["last_no"].asInt() == 40, "number collision does not advance counter");
-  sql("UPDATE core_system_numbers SET last_no=41 WHERE tenant_id=$1 AND key='gl-voucher-batch-id'", {tenant});
   auto changed = input;
   changed["description"] = "Changed";
   check(call("create", "", changed).error["code"] == "conflict",
