@@ -46,7 +46,7 @@ onBeforeUnmount(() => { disposed = true; onCleanup?.() })
     <div class="fixed inset-0 z-[100] flex items-center justify-center bg-slate-950/60 p-2 sm:p-5" @keydown="onKeydown">
       <section ref="dialog" role="dialog" aria-modal="true" aria-labelledby="voucher-preview-title" class="flex max-h-[95vh] w-full max-w-[1500px] flex-col overflow-hidden rounded-xl bg-white shadow-2xl dark:bg-slate-900">
         <header class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 dark:border-slate-700">
-          <div><h2 id="voucher-preview-title" class="text-base font-semibold">Voucher preview</h2><p class="mt-1 text-xs text-slate-500">Draft saved · {{ voucher.voucherNumber }}</p></div>
+          <div><h2 id="voucher-preview-title" class="text-base font-semibold">Voucher preview</h2><p class="mt-1 text-xs text-slate-500"> {{ voucher.voucherNumber }}</p></div>
           <button ref="closeButton" type="button" aria-label="Close voucher preview" class="rounded-lg p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800" @click="emit('close')"><X :size="20" /></button>
         </header>
         <div class="min-h-0 flex-1 overflow-auto p-3 sm:p-5">
