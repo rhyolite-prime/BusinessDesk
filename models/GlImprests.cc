@@ -8077,50 +8077,6 @@ void GlImprests::getCoreAccountingUnits(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlImprestCategories GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *imprestCategoryId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return GlImprestCategories(r[0]);
-}
-
-void GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr,
-                                        const std::function<void(GlImprestCategories)> &rcb,
-                                        const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from gl_imprest_categories where id = $1";
-    *clientPtr << sql
-               << *imprestCategoryId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(GlImprestCategories(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
 GlAccounts GlImprests::getDebitAccount(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from gl_accounts where id = $1";
     Result r(nullptr);
@@ -8248,6 +8204,50 @@ void GlImprests::getGlJournalBatches(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(GlJournalBatches(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+GlImprestCategories GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_imprest_categories where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *imprestCategoryId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return GlImprestCategories(r[0]);
+}
+
+void GlImprests::getGlImprestCategories(const DbClientPtr &clientPtr,
+                                        const std::function<void(GlImprestCategories)> &rcb,
+                                        const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from gl_imprest_categories where id = $1";
+    *clientPtr << sql
+               << *imprestCategoryId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(GlImprestCategories(r[0]));
                     }
                }
                >> ecb;

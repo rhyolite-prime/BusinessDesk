@@ -848,6 +848,11 @@ class GlPaymentVouchers
                                 const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
 
+    GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
+                                const std::function<void(GlAccountingPeriods)> &rcb,
+                                const drogon::orm::ExceptionCallback &ecb) const;
+
     GlBankAccounts getGlBankAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
     void getGlBankAccounts(const drogon::orm::DbClientPtr &clientPtr,
                            const std::function<void(GlBankAccounts)> &rcb,
@@ -857,11 +862,6 @@ class GlPaymentVouchers
     void getGlJournalBatches(const drogon::orm::DbClientPtr &clientPtr,
                              const std::function<void(GlJournalBatches)> &rcb,
                              const drogon::orm::ExceptionCallback &ecb) const;
-
-    GlAccountingPeriods getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlAccountingPeriods(const drogon::orm::DbClientPtr &clientPtr,
-                                const std::function<void(GlAccountingPeriods)> &rcb,
-                                const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<GlPaymentVouchers>;

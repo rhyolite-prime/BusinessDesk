@@ -165,15 +165,15 @@ class AuthTotpCredentials
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    Users getUsers(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getUsers(const drogon::orm::DbClientPtr &clientPtr,
-                  const std::function<void(Users)> &rcb,
-                  const drogon::orm::ExceptionCallback &ecb) const;
-
     Tenants getTenants(const drogon::orm::DbClientPtr &clientPtr) const;
     void getTenants(const drogon::orm::DbClientPtr &clientPtr,
                     const std::function<void(Tenants)> &rcb,
                     const drogon::orm::ExceptionCallback &ecb) const;
+
+    Users getUsers(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getUsers(const drogon::orm::DbClientPtr &clientPtr,
+                  const std::function<void(Users)> &rcb,
+                  const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<AuthTotpCredentials>;

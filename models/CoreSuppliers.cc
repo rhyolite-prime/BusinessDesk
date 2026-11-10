@@ -4957,20 +4957,17 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
             return false;
     }
 
-
     if(pJson.isMember("credit_account_id"))
     {
         if(!validJsonOfField(6, "credit_account_id", pJson["credit_account_id"], err, true))
             return false;
     }
 
-
     if(pJson.isMember("debit_account_id"))
     {
         if(!validJsonOfField(7, "debit_account_id", pJson["debit_account_id"], err, true))
             return false;
     }
-
 
     if(pJson.isMember("tin_number"))
     {
@@ -5109,7 +5106,6 @@ bool CoreSuppliers::validateJsonForCreation(const Json::Value &pJson, std::strin
         if(!validJsonOfField(19, "irs_account_id", pJson["irs_account_id"], err, true))
             return false;
     }
-
 
     if(pJson.isMember("is_resident"))
     {
@@ -5290,7 +5286,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-
       }
 
       if(!pMasqueradingVector[6].empty())
@@ -5301,7 +5296,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                   return false;
           }
 
-
       }
 
       if(!pMasqueradingVector[7].empty())
@@ -5311,7 +5305,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(7, pMasqueradingVector[7], pJson[pMasqueradingVector[7]], err, true))
                   return false;
           }
-
 
       }
 
@@ -5498,7 +5491,6 @@ bool CoreSuppliers::validateMasqueradedJsonForCreation(const Json::Value &pJson,
               if(!validJsonOfField(19, pMasqueradingVector[19], pJson[pMasqueradingVector[19]], err, true))
                   return false;
           }
-
 
       }
 
@@ -6646,6 +6638,50 @@ bool CoreSuppliers::validJsonOfField(size_t index,
     return true;
 }
 
+CoreCurrencies CoreSuppliers::getCoreCurrencies(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_currencies where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *currencyId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return CoreCurrencies(r[0]);
+}
+
+void CoreSuppliers::getCoreCurrencies(const DbClientPtr &clientPtr,
+                                      const std::function<void(CoreCurrencies)> &rcb,
+                                      const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from core_currencies where id = $1";
+    *clientPtr << sql
+               << *currencyId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(CoreCurrencies(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
 Tenants CoreSuppliers::getTenants(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from tenants where id = $1";
     Result r(nullptr);
@@ -6905,50 +6941,6 @@ void CoreSuppliers::getSupplierGroup(const DbClientPtr &clientPtr,
                     else
                     {
                         rcb(CoreSupplierGroups(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
-CoreCurrencies CoreSuppliers::getCoreCurrencies(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_currencies where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *currencyId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return CoreCurrencies(r[0]);
-}
-
-void CoreSuppliers::getCoreCurrencies(const DbClientPtr &clientPtr,
-                                      const std::function<void(CoreCurrencies)> &rcb,
-                                      const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from core_currencies where id = $1";
-    *clientPtr << sql
-               << *currencyId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(CoreCurrencies(r[0]));
                     }
                }
                >> ecb;

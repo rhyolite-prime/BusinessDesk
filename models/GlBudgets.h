@@ -302,15 +302,15 @@ class GlBudgets
     Json::Value toMasqueradedJson(const std::vector<std::string> &pMasqueradingVector) const;
     /// Relationship interfaces
 
-    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
-                       const std::function<void(GlAccounts)> &rcb,
-                       const drogon::orm::ExceptionCallback &ecb) const;
-
     CoreAccountingUnits getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr) const;
     void getCoreAccountingUnits(const drogon::orm::DbClientPtr &clientPtr,
                                 const std::function<void(CoreAccountingUnits)> &rcb,
                                 const drogon::orm::ExceptionCallback &ecb) const;
+
+    GlAccounts getGlAccounts(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getGlAccounts(const drogon::orm::DbClientPtr &clientPtr,
+                       const std::function<void(GlAccounts)> &rcb,
+                       const drogon::orm::ExceptionCallback &ecb) const;
 
     CoreCostCenters getTenant(const drogon::orm::DbClientPtr &clientPtr) const;
     void getTenant(const drogon::orm::DbClientPtr &clientPtr,

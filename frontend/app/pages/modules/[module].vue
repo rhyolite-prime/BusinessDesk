@@ -19,6 +19,10 @@ if (initialModule.id === 'payroll') {
   await navigateTo('/payroll', { replace: true })
 }
 
+if (initialModule.id === 'human-resource') {
+  await navigateTo('/hr', { replace: true })
+}
+
 if (initialModule.id === 'inventory') {
   await navigateTo('/inventory', { replace: true })
 }

@@ -4452,12 +4452,12 @@ void GlImprestRetirements::getCoreCurrencies(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-GlImprests GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from gl_imprests where id = $1";
+CoreAccountingUnits GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from core_accounting_units where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *imprestId_ << Mode::Blocking >>
+        binder << *accountingUnitId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -4469,16 +4469,16 @@ GlImprests GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr) con
     {
         throw UnexpectedRows("Found more than one row");
     }
-    return GlImprests(r[0]);
+    return CoreAccountingUnits(r[0]);
 }
 
-void GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr,
-                                         const std::function<void(GlImprests)> &rcb,
-                                         const ExceptionCallback &ecb) const
+void GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr,
+                                                  const std::function<void(CoreAccountingUnits)> &rcb,
+                                                  const ExceptionCallback &ecb) const
 {
-    static const std::string sql = "select * from gl_imprests where id = $1";
+    static const std::string sql = "select * from core_accounting_units where id = $1";
     *clientPtr << sql
-               << *imprestId_
+               << *accountingUnitId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {
@@ -4490,7 +4490,7 @@ void GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr,
                     }
                     else
                     {
-                        rcb(GlImprests(r[0]));
+                        rcb(CoreAccountingUnits(r[0]));
                     }
                }
                >> ecb;
@@ -4540,12 +4540,12 @@ void GlImprestRetirements::getGlJournalBatches(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-CoreAccountingUnits GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
+GlImprests GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from gl_imprests where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *accountingUnitId_ << Mode::Blocking >>
+        binder << *imprestId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -4557,16 +4557,16 @@ CoreAccountingUnits GlImprestRetirements::getCoreAccountingUnits(const DbClientP
     {
         throw UnexpectedRows("Found more than one row");
     }
-    return CoreAccountingUnits(r[0]);
+    return GlImprests(r[0]);
 }
 
-void GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr,
-                                                  const std::function<void(CoreAccountingUnits)> &rcb,
-                                                  const ExceptionCallback &ecb) const
+void GlImprestRetirements::getGlImprests(const DbClientPtr &clientPtr,
+                                         const std::function<void(GlImprests)> &rcb,
+                                         const ExceptionCallback &ecb) const
 {
-    static const std::string sql = "select * from core_accounting_units where id = $1";
+    static const std::string sql = "select * from gl_imprests where id = $1";
     *clientPtr << sql
-               << *accountingUnitId_
+               << *imprestId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {
@@ -4578,7 +4578,7 @@ void GlImprestRetirements::getCoreAccountingUnits(const DbClientPtr &clientPtr,
                     }
                     else
                     {
-                        rcb(CoreAccountingUnits(r[0]));
+                        rcb(GlImprests(r[0]));
                     }
                }
                >> ecb;
