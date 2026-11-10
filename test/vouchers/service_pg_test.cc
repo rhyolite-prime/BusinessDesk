@@ -270,8 +270,8 @@ int main() {
   auto c = preview.result["taxSummary"];
   check(c["gross"] == "120.000000" && c["base"] == "100.000000" &&
             c["vat"] == "15.000000" && c["incomeWithholding"] == "5.000000" &&
-            c["vatWithholding"] == "7.000000" && c["retained"] == "12.000000" &&
-            c["net"] == "96.000000",
+            c["vatWithholding"] == "7.000000" && c["retained"] == "10.800000" &&
+            c["net"] == "97.200000",
         "all taxes and retention exact");
   check(count("gl_journal_batches") == 0 && count("gl_account_balances") == 0,
         "preview does not persist");
@@ -330,12 +330,23 @@ int main() {
                     .value["n"] == 1 &&
             count("gl_payment_voucher_lines") == 2,
         "old allocation soft archived");
+  // A stale gross-based calculation must be refreshed before entering the workflow.
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"12.000000\"'::jsonb) WHERE id=$1", {id});
+  check(!call("submit", id, command()).success, "stale calculation cannot be submitted");
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"10.800000\"'::jsonb) WHERE id=$1", {id});
   v = call("submit", id, command()).result;
   check(v["status"] == "Pending approval", "submit pending");
   check(!call("approve", id, command(), {tenant, actor2}).success,
         "non-admin cannot approve");
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"12.000000\"'::jsonb) WHERE id=$1", {id});
+  check(!call("approve", id, command()).success, "stale calculation cannot be approved");
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"10.800000\"'::jsonb) WHERE id=$1", {id});
   v = call("approve", id, command()).result;
   check(v["status"] == "Approved", "approve voucher");
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"12.000000\"'::jsonb) WHERE id=$1", {id});
+  check(!call("post", id, command()).success && count("gl_journal_batches") == 0,
+        "stale approved calculation cannot post different amounts");
+  sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"10.800000\"'::jsonb) WHERE id=$1", {id});
   sql("UPDATE gl_accounts SET status='inactive' WHERE id=$1", {tax});
   check(!call("post", id, command()).success &&
             count("gl_journal_batches") == 0,
@@ -408,7 +419,7 @@ int main() {
   check(sql("SELECT credit_balance::text c FROM gl_account_balances WHERE "
             "account_id=$1",
             {tax})[0]
-                .value["c"] == "24.000000",
+                .value["c"] == "22.800000",
         "all deductions credited to ledger");
   check(call("post", id, stale).success && count("gl_journal_batches") == 1 &&
             count("gl_journal_history") == 1,

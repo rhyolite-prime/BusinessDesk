@@ -495,6 +495,9 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
     if (op == "approve" && !actor[0]["is_tenant_admin_user"].as<bool>())
       co_return fail("forbidden",
                      "A tenant administrator must approve vouchers.");
+    // Never approve a projection computed under an earlier calculation policy.
+    if (math::calculate(current) != current["taxSummary"])
+      co_return fail("conflict", "Voucher calculation has changed. Recreate or update the draft and obtain approval before posting.");
     const std::string next = op == "submit" ? "pending_approval" : "approved";
     co_await db->execSqlCoro(
         "UPDATE gl_payment_vouchers SET "
@@ -522,6 +525,9 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
     fresh["version"] = current["version"];
     validate(fresh, false);
     auto prepared = co_await prepare(db, fresh, base, who);
+    // Posting must not silently diverge from the reviewed calculation snapshot.
+    if (prepared.calc != current["taxSummary"])
+      co_return fail("conflict", "Voucher calculation has changed since approval. Recreate the voucher and obtain approval before posting.");
     auto posted =
         co_await JournalService::createAndPost(db, prepared.proposal, who);
     if (!posted.success)
