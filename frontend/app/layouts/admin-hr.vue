@@ -3,7 +3,7 @@ import { hrNavigationGroups, hrSearchItems } from '../features/hr/navigation'
 const route = useRoute()
 const mobileOpen = ref(false)
 const { isDark, initializeTheme, toggleTheme } = useTheme()
-const pageTitle = computed(() => route.path === '/hr/profile-changes' ? 'Employee contact changes' : route.path === '/hr/profile-requests' ? 'Contact change review' : route.path === '/hr/employees' ? 'Employee directory' : route.path === '/hr/leave' ? 'Time off' : route.path === '/hr/balances' ? 'Leave estimate' : route.path === '/hr/recruitment' ? 'Recruitment' : route.path === '/hr/onboarding' ? 'Onboarding' : route.path === '/hr/performance' ? 'Performance' : 'HR overview')
+const pageTitle = computed(() => route.path === '/hr/my-profile' ? 'My profile' : route.path === '/hr/profile-requests' ? 'Profile requests' : route.path === '/hr/employees' ? 'Employee directory' : route.path === '/hr/leave' ? 'Time off' : route.path === '/hr/balances' ? 'Leave estimate' : route.path === '/hr/recruitment' ? 'Recruitment' : route.path === '/hr/onboarding' ? 'Onboarding' : route.path === '/hr/performance' ? 'Performance' : 'HR overview')
 onMounted(initializeTheme)
 </script>
 <template>

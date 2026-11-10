@@ -1,7 +1,7 @@
 export const hrNavigationGroups = [
   { title: 'People', icon: 'users', links: [
-    { label: 'Employee contact changes', to: '/hr/profile-changes', icon: 'user' },
-    { label: 'Contact change review', to: '/hr/profile-requests', icon: 'document-text' },
+    { label: 'My profile', to: '/hr/my-profile', icon: 'user' },
+    { label: 'Profile requests', to: '/hr/profile-requests', icon: 'document-text' },
     { label: 'Employee directory', to: '/hr/employees', icon: 'users' },
     { label: 'Time off', to: '/hr/leave', icon: 'calendar-days' },
     { label: 'Leave estimate', to: '/hr/balances', icon: 'calendar-days' },
@@ -15,8 +15,8 @@ export const hrNavigationGroups = [
   ] },
 ]
 export const hrSearchItems = [
-  { label: 'Employee contact changes', detail: 'Submit contact changes for an employee', to: '/hr/profile-changes' },
-  { label: 'Contact change review', detail: 'Employee contact change requests', to: '/hr/profile-requests' },
+  { label: 'My profile', detail: 'Your profile and contact changes', to: '/hr/my-profile' },
+  { label: 'Profile requests', detail: 'Employee contact change requests', to: '/hr/profile-requests' },
   { label: 'Employee directory', detail: 'Employee profiles and records', to: '/hr/employees' },
   { label: 'Time off', detail: 'Leave requests and decisions', to: '/hr/leave' },
   { label: 'Leave estimate', detail: 'Annual leave calendar-day estimate', to: '/hr/balances' },

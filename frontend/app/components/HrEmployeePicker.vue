@@ -3,7 +3,6 @@ type Option = { id: string; employeeIdentifier: string; name: string }
 const props = defineProps<{ modelValue: string; selectedLabel?: string }>()
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
 const request = useRequestFetch()
-const { user } = useBusinessDeskAuth()
 const options = ref<Option[]>([]), search = ref(''), page = ref(1), total = ref(0), error = ref(''), loading = ref(false)
 let generation = 0
 async function load() {
@@ -15,7 +14,6 @@ async function load() {
   } catch (e: any) { if (current === generation) { options.value = []; error.value = e?.data?.statusMessage || 'Unable to load employees.' } }
   finally { if (current === generation) loading.value = false }
 }
-watch(() => `${user.value?.accountId}:${user.value?.username}`, () => { ++generation; options.value = []; search.value = ''; page.value = 1; total.value = 0; error.value = ''; loading.value = false; load() })
 onMounted(load)
 onBeforeUnmount(() => { ++generation })
 </script>

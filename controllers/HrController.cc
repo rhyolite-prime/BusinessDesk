@@ -58,7 +58,7 @@ drogon::Task<drogon::HttpResponsePtr> profileHandle(drogon::HttpRequestPtr req, 
   co_return response;
 }
 }
-drogon::Task<drogon::HttpResponsePtr> HrController::employeeProfile(drogon::HttpRequestPtr req, std::string id) { co_return co_await profileHandle(req, "get", id); }
+drogon::Task<drogon::HttpResponsePtr> HrController::myProfile(drogon::HttpRequestPtr req) { co_return co_await profileHandle(req, "me"); }
 drogon::Task<drogon::HttpResponsePtr> HrController::profileRequests(drogon::HttpRequestPtr req) { co_return co_await profileHandle(req, "list"); }
 drogon::Task<drogon::HttpResponsePtr> HrController::profileSubmit(drogon::HttpRequestPtr req) { co_return co_await profileHandle(req, "submit"); }
 drogon::Task<drogon::HttpResponsePtr> HrController::profileDecision(drogon::HttpRequestPtr req, std::string id, std::string action) { if (action != "approve" && action != "reject") action = "invalid"; co_return co_await profileHandle(req, action, id); }

@@ -11,12 +11,12 @@ public:
   ADD_METHOD_TO(HrController::workCreate, "/api/v1/hr/work-items/{1}", drogon::Post, "TenantJwtAuthFilter");
   ADD_METHOD_TO(HrController::workUpdate, "/api/v1/hr/work-items/{1}/{2}", drogon::Put, "TenantJwtAuthFilter");
   ADD_METHOD_TO(HrController::workTransition, "/api/v1/hr/work-items/{1}/{2}/transition", drogon::Post, "TenantJwtAuthFilter");
-  ADD_METHOD_TO(HrController::employeeProfile, "/api/v1/hr/profile/employees/{1}", drogon::Get, "TenantJwtAuthFilter");
+  ADD_METHOD_TO(HrController::myProfile, "/api/v1/hr/profile/me", drogon::Get, "TenantJwtAuthFilter");
   ADD_METHOD_TO(HrController::profileRequests, "/api/v1/hr/profile/requests", drogon::Get, "TenantJwtAuthFilter");
   ADD_METHOD_TO(HrController::profileSubmit, "/api/v1/hr/profile/requests", drogon::Post, "TenantJwtAuthFilter");
   ADD_METHOD_TO(HrController::profileDecision, "/api/v1/hr/profile/requests/{1}/{2}", drogon::Post, "TenantJwtAuthFilter");
   METHOD_LIST_END
-  drogon::Task<drogon::HttpResponsePtr> employeeProfile(drogon::HttpRequestPtr req, std::string id);
+  drogon::Task<drogon::HttpResponsePtr> myProfile(drogon::HttpRequestPtr req);
   drogon::Task<drogon::HttpResponsePtr> profileRequests(drogon::HttpRequestPtr req);
   drogon::Task<drogon::HttpResponsePtr> profileSubmit(drogon::HttpRequestPtr req);
   drogon::Task<drogon::HttpResponsePtr> profileDecision(drogon::HttpRequestPtr req, std::string id, std::string action);
