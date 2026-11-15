@@ -13,6 +13,7 @@ export const accountModules = {
   supply_chain: 'Supply Chain',
   property_rentals: 'Property Rentals',
   document_management: 'Document Management',
+  fleet_workshop_management: 'Fleet & Workshop Management',
 } as const
 export type AccountModule = keyof typeof accountModules
 export interface ModuleSubscription {
@@ -74,6 +75,7 @@ export const workspaceSubscriptions: Record<string, AccountModule> = {
   'supply-chain': 'supply_chain',
   'property-rentals': 'property_rentals',
   'document-management': 'document_management',
+  'fleet-workshop-management': 'fleet_workshop_management',
 }
 export function accountUpdate(account: TenantAccount) {
   return {
