@@ -128,8 +128,8 @@ int main() {
   if (!get.success)
     std::cerr << get.toJson() << std::endl;
   check(get.success, "host account projection");
-  check(get.result["modules"].size() == 14,
-        "all 14 legacy module subscriptions");
+  check(get.result["modules"].size() == 15,
+        "all 15 module subscriptions");
   check(get.toJson().toStyledString().find("SECRET") == std::string::npos,
         "safe whitelist excludes connection/account/provider secrets");
   check(call("list").result["items"].size() == 2, "host register");
@@ -170,6 +170,16 @@ int main() {
         "enabled unbounded subscription grants access");
   check(!TenantAccountService::moduleAllowed(tenant, "payroll").get(),
         "disabled module denied");
+  check(!TenantAccountService::moduleAllowed(
+             tenant, "fleet_workshop_management")
+             .get(),
+        "fleet & workshop denied until the host subscribes it");
+  sql("UPDATE tenants SET has_subscribed_to_fleet_workshop_management=true "
+      "WHERE id=$1",
+      {tenant});
+  check(TenantAccountService::moduleAllowed(tenant, "fleet_workshop_management")
+             .get(),
+        "fleet & workshop subscription grants access");
   check(!TenantAccountService::moduleAllowed(tenant, "gl;DROP TABLE tenants")
              .get(),
         "module allowlist prevents identifier injection");
@@ -200,6 +210,13 @@ int main() {
           TenantAccountService::moduleForPath("/api/v1/ledger-evil").empty() &&
           TenantAccountService::moduleForPath("/api/v1/account").empty(),
       "route module mapping has segment boundaries and account exemption");
+  check(TenantAccountService::moduleForPath(
+            "/api/v1/fleet-workshop-management/jobs") ==
+                "fleet_workshop_management" &&
+            TenantAccountService::moduleForPath(
+                "/api/v1/fleet-workshop-management-x")
+                .empty(),
+        "fleet & workshop routes gate on the new subscription");
   Json::Value request;
   request["message"] = "Please add Payroll";
   request["requestKey"] = "60000000-0000-4000-8000-000000000001";
