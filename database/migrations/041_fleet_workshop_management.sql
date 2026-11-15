@@ -11,7 +11,7 @@ BEGIN;
 CREATE TABLE fwm_document_sequences (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  document_type varchar(30) NOT NULL CHECK (document_type IN (
   'asset_no','schedule','job_card','diary_entry','fuel_log','lubricant_log',
   'tyre_event','component_event','handoff')),
@@ -21,10 +21,10 @@ CREATE TABLE fwm_document_sequences (
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
  last_modified_at timestamptz,
- last_modified_by_user_id uuid REFERENCES users(id),
- UNIQUE (tenant_id, accounting_unit_id, document_type),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id)
+ last_modified_by_user_id uuid REFERENCES users(id)
 );
+CREATE UNIQUE INDEX uq_fwm_document_sequences_scope
+ ON fwm_document_sequences(tenant_id, accounting_unit_id, document_type);
 
 -- ---------------------------------------------------------------------------
 -- 2. Accounting-unit GL & workshop default settings.
@@ -32,8 +32,8 @@ CREATE TABLE fwm_document_sequences (
 CREATE TABLE fwm_gl_settings (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
- default_warehouse_id uuid,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
+ default_warehouse_id uuid REFERENCES inv_warehouses(id),
  repairs_expense_account_id uuid REFERENCES gl_accounts(id),
  fuel_expense_account_id uuid REFERENCES gl_accounts(id),
  lubricants_expense_account_id uuid REFERENCES gl_accounts(id),
@@ -55,10 +55,7 @@ CREATE TABLE fwm_gl_settings (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, default_warehouse_id) REFERENCES inv_warehouses(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_gl_settings_unit
  ON fwm_gl_settings(tenant_id, accounting_unit_id) WHERE is_deleted = false;
@@ -66,6 +63,12 @@ CREATE UNIQUE INDEX uq_fwm_gl_settings_unit
 CREATE FUNCTION check_fwm_gl_settings_scope() RETURNS trigger LANGUAGE plpgsql SET search_path FROM CURRENT AS $$
 DECLARE acct_id uuid;
 BEGIN
+ IF NOT EXISTS (
+  SELECT 1 FROM core_accounting_units au
+  WHERE au.tenant_id = NEW.tenant_id AND au.id = NEW.accounting_unit_id AND au.is_deleted = false
+ ) THEN
+  RAISE EXCEPTION 'Selected accounting unit does not belong to this tenant' USING ERRCODE = '23503';
+ END IF;
  IF NEW.default_warehouse_id IS NOT NULL AND NOT EXISTS (
   SELECT 1 FROM inv_warehouses w
   WHERE w.tenant_id = NEW.tenant_id AND w.id = NEW.default_warehouse_id
@@ -128,8 +131,7 @@ CREATE TABLE fwm_asset_groups (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_asset_groups_code
  ON fwm_asset_groups(tenant_id, lower(btrim(code))) WHERE is_deleted = false;
@@ -139,10 +141,10 @@ CREATE INDEX ix_fwm_asset_groups_scope
 CREATE TABLE fwm_asset_group_materials (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- asset_group_id uuid NOT NULL,
+ asset_group_id uuid NOT NULL REFERENCES fwm_asset_groups(id),
  service_tier varchar(20) NOT NULL CHECK (service_tier IN ('minor_service','major_service','routine','lubrication')),
- item_id uuid NOT NULL,
- uom_id uuid NOT NULL,
+ item_id uuid NOT NULL REFERENCES inv_items(id),
+ uom_id uuid NOT NULL REFERENCES inv_units_of_measure(id),
  quantity numeric(20,6) NOT NULL CHECK (quantity > 0),
  is_lubricant boolean NOT NULL DEFAULT false,
  notes varchar(500) NOT NULL DEFAULT '',
@@ -153,11 +155,7 @@ CREATE TABLE fwm_asset_group_materials (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, asset_group_id) REFERENCES fwm_asset_groups(tenant_id, id),
- FOREIGN KEY (tenant_id, item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, uom_id) REFERENCES inv_units_of_measure(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_asset_group_materials_slot
  ON fwm_asset_group_materials(tenant_id, asset_group_id, service_tier, item_id) WHERE is_deleted = false;
@@ -165,7 +163,7 @@ CREATE UNIQUE INDEX uq_fwm_asset_group_materials_slot
 CREATE TABLE fwm_asset_group_components (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- asset_group_id uuid NOT NULL,
+ asset_group_id uuid NOT NULL REFERENCES fwm_asset_groups(id),
  component_type varchar(60) NOT NULL CHECK (btrim(component_type) <> ''),
  slot_label varchar(80) NOT NULL DEFAULT '',
  expected_life_hours numeric(20,6) NOT NULL DEFAULT 0 CHECK (expected_life_hours >= 0),
@@ -178,9 +176,7 @@ CREATE TABLE fwm_asset_group_components (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, asset_group_id) REFERENCES fwm_asset_groups(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_asset_group_components_slot
  ON fwm_asset_group_components(tenant_id, asset_group_id, lower(btrim(component_type)), lower(btrim(slot_label)))
@@ -196,7 +192,7 @@ CREATE TABLE fwm_procedures (
  service_category varchar(20) NOT NULL DEFAULT 'service'
   CHECK (service_category IN ('service','major_service','repairs','warranty','inspection')),
  estimated_hours numeric(20,6) NOT NULL DEFAULT 0 CHECK (estimated_hours >= 0),
- asset_group_id uuid,
+ asset_group_id uuid REFERENCES fwm_asset_groups(id),
  status varchar(20) NOT NULL DEFAULT 'active' CHECK (status IN ('active','inactive')),
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
@@ -205,9 +201,7 @@ CREATE TABLE fwm_procedures (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, asset_group_id) REFERENCES fwm_asset_groups(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_procedures_pcode
  ON fwm_procedures(tenant_id, lower(btrim(pcode))) WHERE is_deleted = false;
@@ -218,19 +212,19 @@ CREATE UNIQUE INDEX uq_fwm_procedures_pcode
 CREATE TABLE fwm_vehicles (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  asset_no varchar(40) NOT NULL CHECK (btrim(asset_no) <> ''),
  registration_no varchar(40) NOT NULL DEFAULT '',
- asset_group_id uuid,
+ asset_group_id uuid REFERENCES fwm_asset_groups(id),
  ownership_type varchar(20) NOT NULL DEFAULT 'company_owned'
   CHECK (ownership_type IN ('company_owned','hired_equipment','customer_vehicle')),
  is_mining_equipment boolean NOT NULL DEFAULT false,
  is_heavy_machinery boolean NOT NULL DEFAULT false,
  is_trailer_unit boolean NOT NULL DEFAULT false,
- coupled_trailer_id uuid,
+ coupled_trailer_id uuid REFERENCES fwm_vehicles(id),
  department_name varchar(120) NOT NULL DEFAULT '',
  maintenance_department_name varchar(120) NOT NULL DEFAULT '',
- cost_center_id uuid,
+ cost_center_id uuid REFERENCES core_cost_centers(id),
  log_date date,
  condition varchar(20) NOT NULL DEFAULT 'good'
   CHECK (condition IN ('excellent','good','fair','poor','breakdown')),
@@ -244,12 +238,12 @@ CREATE TABLE fwm_vehicles (
  manufacture_date date,
  purchase_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (purchase_amount >= 0),
  purchase_date date,
- currency_id uuid,
+ currency_id uuid REFERENCES core_currencies(id),
  date_installed date,
- vendor_supplier_id uuid,
+ vendor_supplier_id uuid REFERENCES core_suppliers(id),
  vendor_name varchar(160) NOT NULL DEFAULT '',
- customer_id uuid,
- assigned_employee_id uuid,
+ customer_id uuid REFERENCES core_customers(id),
+ assigned_employee_id uuid REFERENCES hr_employee_biodata(id),
  fixed_asset_id uuid,
  residual_value numeric(20,6) NOT NULL DEFAULT 0 CHECK (residual_value >= 0),
  useful_life_months integer NOT NULL DEFAULT 0 CHECK (useful_life_months BETWEEN 0 AND 1200),
@@ -283,15 +277,6 @@ CREATE TABLE fwm_vehicles (
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, asset_group_id) REFERENCES fwm_asset_groups(tenant_id, id),
- FOREIGN KEY (tenant_id, coupled_trailer_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, cost_center_id) REFERENCES core_cost_centers(tenant_id, id),
- FOREIGN KEY (currency_id) REFERENCES core_currencies(id),
- FOREIGN KEY (tenant_id, vendor_supplier_id) REFERENCES core_suppliers(tenant_id, id),
- FOREIGN KEY (tenant_id, customer_id) REFERENCES core_customers(tenant_id, id),
- FOREIGN KEY (tenant_id, assigned_employee_id) REFERENCES hr_employee_biodata(tenant_id, id),
  CHECK (coupled_trailer_id IS NULL OR coupled_trailer_id <> id),
  CHECK (NOT (is_trailer_unit AND coupled_trailer_id IS NOT NULL)),
  CHECK (cumulative_meter_reading >= current_meter_reading OR current_meter_reading >= 0)
@@ -309,7 +294,7 @@ CREATE INDEX ix_fwm_vehicles_stalled
 CREATE TABLE fwm_pm_triggers (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  trigger_type varchar(20) NOT NULL CHECK (trigger_type IN ('hours','kilometers','miles','tonnes','dates')),
  service_frequency numeric(20,6) NOT NULL CHECK (service_frequency > 0),
  service_downtime_hours numeric(20,6) NOT NULL DEFAULT 4 CHECK (service_downtime_hours >= 0),
@@ -329,9 +314,7 @@ CREATE TABLE fwm_pm_triggers (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_pm_triggers_vehicle_type
  ON fwm_pm_triggers(tenant_id, vehicle_id, trigger_type) WHERE is_deleted = false;
@@ -342,7 +325,7 @@ CREATE UNIQUE INDEX uq_fwm_pm_triggers_vehicle_type
 CREATE TABLE fwm_workshop_employees (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- employee_id uuid NOT NULL,
+ employee_id uuid NOT NULL REFERENCES hr_employee_biodata(id),
  trade_role varchar(30) NOT NULL DEFAULT 'mechanic' CHECK (trade_role IN (
   'mechanic','electrician','welder','auto_body','tyre_technician',
   'panel_beater','machinist','supervisor','driver','apprentice')),
@@ -362,9 +345,7 @@ CREATE TABLE fwm_workshop_employees (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, employee_id) REFERENCES hr_employee_biodata(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_workshop_employees_hr
  ON fwm_workshop_employees(tenant_id, employee_id) WHERE is_deleted = false;
@@ -375,7 +356,7 @@ CREATE UNIQUE INDEX uq_fwm_workshop_employees_hr
 CREATE TABLE fwm_meter_changes (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  change_date date NOT NULL,
  last_date_on_old_meter date NOT NULL,
  old_meter_reading numeric(20,6) NOT NULL CHECK (old_meter_reading >= 0),
@@ -389,8 +370,6 @@ CREATE TABLE fwm_meter_changes (
  created_by_user_id uuid NOT NULL REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
  CHECK (change_date >= last_date_on_old_meter)
 );
 CREATE INDEX ix_fwm_meter_changes_vehicle
@@ -399,7 +378,7 @@ CREATE INDEX ix_fwm_meter_changes_vehicle
 CREATE TABLE fwm_meter_readings (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  log_date date NOT NULL,
  reading numeric(20,6) NOT NULL CHECK (reading >= 0),
  engine_run_delta numeric(20,6) NOT NULL DEFAULT 0 CHECK (engine_run_delta >= 0),
@@ -413,9 +392,7 @@ CREATE TABLE fwm_meter_readings (
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE INDEX ix_fwm_meter_readings_vehicle
  ON fwm_meter_readings(tenant_id, vehicle_id, log_date DESC, created_at DESC) WHERE is_deleted = false;
@@ -423,29 +400,29 @@ CREATE INDEX ix_fwm_meter_readings_vehicle
 CREATE TABLE fwm_fuel_logs (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  fuel_log_number varchar(40) NOT NULL CHECK (btrim(fuel_log_number) <> ''),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  log_date date NOT NULL,
  meter_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (meter_reading >= 0),
  previous_meter_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (previous_meter_reading >= 0),
- fuel_item_id uuid,
- uom_id uuid,
- warehouse_id uuid,
- inv_stock_document_id uuid,
+ fuel_item_id uuid REFERENCES inv_items(id),
+ uom_id uuid REFERENCES inv_units_of_measure(id),
+ warehouse_id uuid REFERENCES inv_warehouses(id),
+ inv_stock_document_id uuid REFERENCES inv_stock_documents(id),
  journal_batch_id uuid REFERENCES gl_journal_batches(id),
  quantity_litres numeric(20,6) NOT NULL CHECK (quantity_litres > 0),
  unit_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (unit_cost >= 0),
  total_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (total_cost >= 0),
- currency_id uuid,
+ currency_id uuid REFERENCES core_currencies(id),
  actual_consumption_rate numeric(20,6) NOT NULL DEFAULT 0 CHECK (actual_consumption_rate >= 0),
  ideal_consumption_rate numeric(20,6) NOT NULL DEFAULT 0 CHECK (ideal_consumption_rate >= 0),
  variance_pct numeric(12,6) NOT NULL DEFAULT 0,
  within_tolerance boolean NOT NULL DEFAULT true,
  station_or_pump varchar(120) NOT NULL DEFAULT '',
- driver_employee_id uuid,
- cost_center_id uuid,
- supplier_id uuid,
+ driver_employee_id uuid REFERENCES hr_employee_biodata(id),
+ cost_center_id uuid REFERENCES core_cost_centers(id),
+ supplier_id uuid REFERENCES core_suppliers(id),
  status varchar(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','posted','reversed')),
  notes varchar(500) NOT NULL DEFAULT '',
  request_key uuid,
@@ -458,18 +435,7 @@ CREATE TABLE fwm_fuel_logs (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, fuel_item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, uom_id) REFERENCES inv_units_of_measure(tenant_id, id),
- FOREIGN KEY (tenant_id, warehouse_id) REFERENCES inv_warehouses(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_stock_document_id) REFERENCES inv_stock_documents(tenant_id, id),
- FOREIGN KEY (currency_id) REFERENCES core_currencies(id),
- FOREIGN KEY (tenant_id, driver_employee_id) REFERENCES hr_employee_biodata(tenant_id, id),
- FOREIGN KEY (tenant_id, cost_center_id) REFERENCES core_cost_centers(tenant_id, id),
- FOREIGN KEY (tenant_id, supplier_id) REFERENCES core_suppliers(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_fuel_logs_number
  ON fwm_fuel_logs(tenant_id, accounting_unit_id, lower(btrim(fuel_log_number)));
@@ -483,24 +449,24 @@ CREATE INDEX ix_fwm_fuel_logs_tolerance
 CREATE TABLE fwm_lubricant_logs (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  lubricant_log_number varchar(40) NOT NULL CHECK (btrim(lubricant_log_number) <> ''),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  log_date date NOT NULL,
  meter_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (meter_reading >= 0),
  lubricant_type varchar(30) NOT NULL DEFAULT 'engine_oil' CHECK (lubricant_type IN (
   'engine_oil','hydraulic_oil','transmission_oil','gear_oil','coolant','grease','brake_fluid','other')),
- item_id uuid,
- uom_id uuid,
- warehouse_id uuid,
- inv_stock_document_id uuid,
+ item_id uuid REFERENCES inv_items(id),
+ uom_id uuid REFERENCES inv_units_of_measure(id),
+ warehouse_id uuid REFERENCES inv_warehouses(id),
+ inv_stock_document_id uuid REFERENCES inv_stock_documents(id),
  journal_batch_id uuid REFERENCES gl_journal_batches(id),
  quantity numeric(20,6) NOT NULL CHECK (quantity > 0),
  unit_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (unit_cost >= 0),
  total_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (total_cost >= 0),
- currency_id uuid,
+ currency_id uuid REFERENCES core_currencies(id),
  is_oil_change boolean NOT NULL DEFAULT false,
- cost_center_id uuid,
+ cost_center_id uuid REFERENCES core_cost_centers(id),
  status varchar(20) NOT NULL DEFAULT 'draft' CHECK (status IN ('draft','posted','reversed')),
  notes varchar(500) NOT NULL DEFAULT '',
  request_key uuid,
@@ -513,16 +479,7 @@ CREATE TABLE fwm_lubricant_logs (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, uom_id) REFERENCES inv_units_of_measure(tenant_id, id),
- FOREIGN KEY (tenant_id, warehouse_id) REFERENCES inv_warehouses(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_stock_document_id) REFERENCES inv_stock_documents(tenant_id, id),
- FOREIGN KEY (currency_id) REFERENCES core_currencies(id),
- FOREIGN KEY (tenant_id, cost_center_id) REFERENCES core_cost_centers(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_lubricant_logs_number
  ON fwm_lubricant_logs(tenant_id, accounting_unit_id, lower(btrim(lubricant_log_number)));
@@ -546,15 +503,15 @@ CREATE TABLE fwm_major_components (
   CHECK (condition IN ('NEW','REBUILT','USED','REMOVED','SCRAPPED')),
  status varchar(20) NOT NULL DEFAULT 'unassigned'
   CHECK (status IN ('unassigned','fitted','in_repair','scrapped')),
- current_vehicle_id uuid,
+ current_vehicle_id uuid REFERENCES fwm_vehicles(id),
  mounted_date date,
  mounted_cum_odo numeric(20,6) NOT NULL DEFAULT 0 CHECK (mounted_cum_odo >= 0),
  estimated_life_hours numeric(20,6) NOT NULL DEFAULT 0 CHECK (estimated_life_hours >= 0),
  accumulated_hours numeric(20,6) NOT NULL DEFAULT 0 CHECK (accumulated_hours >= 0),
  purchase_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (purchase_cost >= 0),
  cumulative_repair_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (cumulative_repair_cost >= 0),
- inv_item_id uuid,
- inv_serial_id uuid,
+ inv_item_id uuid REFERENCES inv_items(id),
+ inv_serial_id uuid REFERENCES inv_serial_numbers(id),
  notes varchar(500) NOT NULL DEFAULT '',
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
@@ -564,10 +521,6 @@ CREATE TABLE fwm_major_components (
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, current_vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_serial_id) REFERENCES inv_serial_numbers(tenant_id, id),
  CHECK ((status = 'fitted') = (current_vehicle_id IS NOT NULL))
 );
 CREATE UNIQUE INDEX uq_fwm_major_components_code
@@ -582,18 +535,18 @@ CREATE TABLE fwm_tyres (
  brand varchar(80) NOT NULL DEFAULT '',
  size_spec varchar(60) NOT NULL DEFAULT '',
  pattern varchar(60) NOT NULL DEFAULT '',
- inv_item_id uuid,
- inv_serial_id uuid,
+ inv_item_id uuid REFERENCES inv_items(id),
+ inv_serial_id uuid REFERENCES inv_serial_numbers(id),
  status varchar(20) NOT NULL DEFAULT 'in_stock'
   CHECK (status IN ('in_stock','fitted','retread','scrapped')),
- current_vehicle_id uuid,
+ current_vehicle_id uuid REFERENCES fwm_vehicles(id),
  axle_position varchar(30) NOT NULL DEFAULT '',
  fitted_date date,
  fitted_meter_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (fitted_meter_reading >= 0),
  current_tread_depth_mm numeric(10,3) NOT NULL DEFAULT 0 CHECK (current_tread_depth_mm >= 0),
  purchase_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (purchase_cost >= 0),
  accumulated_meter_usage numeric(20,6) NOT NULL DEFAULT 0 CHECK (accumulated_meter_usage >= 0),
- supplier_id uuid,
+ supplier_id uuid REFERENCES core_suppliers(id),
  purchase_location varchar(120) NOT NULL DEFAULT '',
  notes varchar(500) NOT NULL DEFAULT '',
  created_at timestamptz NOT NULL DEFAULT now(),
@@ -604,11 +557,6 @@ CREATE TABLE fwm_tyres (
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, current_vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_serial_id) REFERENCES inv_serial_numbers(tenant_id, id),
- FOREIGN KEY (tenant_id, supplier_id) REFERENCES core_suppliers(tenant_id, id),
  CHECK ((status = 'fitted') = (current_vehicle_id IS NOT NULL))
 );
 CREATE UNIQUE INDEX uq_fwm_tyres_serial
@@ -622,9 +570,9 @@ CREATE INDEX ix_fwm_tyres_vehicle
 CREATE TABLE fwm_maintenance_schedules (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  schedule_number varchar(40) NOT NULL CHECK (btrim(schedule_number) <> ''),
- vehicle_id uuid NOT NULL,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  schedule_class varchar(20) NOT NULL DEFAULT 'heavy_machinery'
   CHECK (schedule_class IN ('heavy_machinery','light_vehicle')),
  work_category varchar(30) NOT NULL DEFAULT 'maintenance_schedule'
@@ -637,7 +585,7 @@ CREATE TABLE fwm_maintenance_schedules (
  trigger_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (trigger_reading >= 0),
  projected_engine_run numeric(20,6) NOT NULL DEFAULT 0 CHECK (projected_engine_run >= 0),
  special_conditions varchar(200) NOT NULL DEFAULT '',
- procedure_id uuid,
+ procedure_id uuid REFERENCES fwm_procedures(id),
  start_time varchar(20) NOT NULL DEFAULT '',
  status varchar(20) NOT NULL DEFAULT 'scheduled'
   CHECK (status IN ('forecasted','scheduled','job_created','completed','deferred','cancelled')),
@@ -650,11 +598,7 @@ CREATE TABLE fwm_maintenance_schedules (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, procedure_id) REFERENCES fwm_procedures(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_schedules_number
  ON fwm_maintenance_schedules(tenant_id, accounting_unit_id, lower(btrim(schedule_number)));
@@ -665,21 +609,21 @@ CREATE INDEX ix_fwm_schedules_scope
 CREATE TABLE fwm_job_cards (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  job_number varchar(40) NOT NULL CHECK (btrim(job_number) <> ''),
- vehicle_id uuid NOT NULL,
- coupled_trailer_id uuid,
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
+ coupled_trailer_id uuid REFERENCES fwm_vehicles(id),
  job_type varchar(30) NOT NULL DEFAULT 'corrective_repair' CHECK (job_type IN (
   'preventive_service','major_service','corrective_repair','breakdown',
   'electrical','tyre_service','component_overhaul','bodywork','major_project')),
  billing_scope varchar(20) NOT NULL DEFAULT 'internal_fleet'
   CHECK (billing_scope IN ('internal_fleet','customer_billable','warranty','hired_equipment')),
- customer_id uuid,
- cost_center_id uuid,
- schedule_id uuid,
- procedure_id uuid,
- warehouse_id uuid,
- currency_id uuid NOT NULL,
+ customer_id uuid REFERENCES core_customers(id),
+ cost_center_id uuid REFERENCES core_cost_centers(id),
+ schedule_id uuid REFERENCES fwm_maintenance_schedules(id),
+ procedure_id uuid REFERENCES fwm_procedures(id),
+ warehouse_id uuid REFERENCES inv_warehouses(id),
+ currency_id uuid NOT NULL REFERENCES core_currencies(id),
  exchange_rate numeric(20,10) NOT NULL DEFAULT 1 CHECK (exchange_rate > 0),
  opened_date date NOT NULL,
  scheduled_start_at timestamptz,
@@ -710,7 +654,7 @@ CREATE TABLE fwm_job_cards (
  billable_other_total numeric(20,6) NOT NULL DEFAULT 0 CHECK (billable_other_total >= 0),
  tax_total numeric(20,6) NOT NULL DEFAULT 0 CHECK (tax_total >= 0),
  billable_grand_total numeric(20,6) NOT NULL DEFAULT 0 CHECK (billable_grand_total >= 0),
- inv_issue_document_id uuid,
+ inv_issue_document_id uuid REFERENCES inv_stock_documents(id),
  gl_cost_journal_batch_id uuid REFERENCES gl_journal_batches(id),
  gl_revenue_journal_batch_id uuid REFERENCES gl_journal_batches(id),
  ar_invoice_id uuid,
@@ -728,17 +672,6 @@ CREATE TABLE fwm_job_cards (
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, coupled_trailer_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, customer_id) REFERENCES core_customers(tenant_id, id),
- FOREIGN KEY (tenant_id, cost_center_id) REFERENCES core_cost_centers(tenant_id, id),
- FOREIGN KEY (tenant_id, schedule_id) REFERENCES fwm_maintenance_schedules(tenant_id, id),
- FOREIGN KEY (tenant_id, procedure_id) REFERENCES fwm_procedures(tenant_id, id),
- FOREIGN KEY (tenant_id, warehouse_id) REFERENCES inv_warehouses(tenant_id, id),
- FOREIGN KEY (currency_id) REFERENCES core_currencies(id),
- FOREIGN KEY (tenant_id, inv_issue_document_id) REFERENCES inv_stock_documents(tenant_id, id),
  CHECK (billing_scope <> 'customer_billable' OR customer_id IS NOT NULL)
 );
 CREATE UNIQUE INDEX uq_fwm_job_cards_number
@@ -752,12 +685,12 @@ CREATE INDEX ix_fwm_job_cards_vehicle
 
 ALTER TABLE fwm_maintenance_schedules
  ADD CONSTRAINT fk_fwm_schedules_job_card
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id);
+ FOREIGN KEY (job_card_id) REFERENCES fwm_job_cards(id);
 
 CREATE TABLE fwm_job_card_lines (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- job_card_id uuid NOT NULL,
+ job_card_id uuid NOT NULL REFERENCES fwm_job_cards(id),
  line_number integer NOT NULL CHECK (line_number > 0),
  line_type varchar(30) NOT NULL CHECK (line_type IN (
   'spare_part','tyre','lubricant','internal_labour','outsourced_repair',
@@ -766,15 +699,15 @@ CREATE TABLE fwm_job_card_lines (
   'inventory_issue','direct_purchase_ap','workshop_labour','petty_cash','manual')),
  description varchar(500) NOT NULL CHECK (btrim(description) <> ''),
  position_or_side varchar(80) NOT NULL DEFAULT '',
- inv_item_id uuid,
- uom_id uuid,
- warehouse_id uuid,
- inv_stock_document_id uuid,
- supplier_id uuid,
+ inv_item_id uuid REFERENCES inv_items(id),
+ uom_id uuid REFERENCES inv_units_of_measure(id),
+ warehouse_id uuid REFERENCES inv_warehouses(id),
+ inv_stock_document_id uuid REFERENCES inv_stock_documents(id),
+ supplier_id uuid REFERENCES core_suppliers(id),
  ap_invoice_id uuid,
- employee_id uuid,
- tyre_id uuid,
- major_component_id uuid,
+ employee_id uuid REFERENCES hr_employee_biodata(id),
+ tyre_id uuid REFERENCES fwm_tyres(id),
+ major_component_id uuid REFERENCES fwm_major_components(id),
  gl_expense_account_id uuid REFERENCES gl_accounts(id),
  gl_revenue_account_id uuid REFERENCES gl_accounts(id),
  quantity numeric(20,6) NOT NULL CHECK (quantity > 0),
@@ -794,27 +727,18 @@ CREATE TABLE fwm_job_card_lines (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- UNIQUE (job_card_id, line_number),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, uom_id) REFERENCES inv_units_of_measure(tenant_id, id),
- FOREIGN KEY (tenant_id, warehouse_id) REFERENCES inv_warehouses(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_stock_document_id) REFERENCES inv_stock_documents(tenant_id, id),
- FOREIGN KEY (tenant_id, supplier_id) REFERENCES core_suppliers(tenant_id, id),
- FOREIGN KEY (tenant_id, employee_id) REFERENCES hr_employee_biodata(tenant_id, id),
- FOREIGN KEY (tenant_id, tyre_id) REFERENCES fwm_tyres(tenant_id, id),
- FOREIGN KEY (tenant_id, major_component_id) REFERENCES fwm_major_components(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
+CREATE UNIQUE INDEX uq_fwm_job_card_lines_number
+ ON fwm_job_card_lines(job_card_id, line_number);
 CREATE INDEX ix_fwm_job_card_lines_job
  ON fwm_job_card_lines(tenant_id, job_card_id) WHERE is_deleted = false;
 
 CREATE TABLE fwm_job_card_assignments (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- job_card_id uuid NOT NULL,
- employee_id uuid NOT NULL,
+ job_card_id uuid NOT NULL REFERENCES fwm_job_cards(id),
+ employee_id uuid NOT NULL REFERENCES hr_employee_biodata(id),
  role_on_job varchar(40) NOT NULL DEFAULT 'mechanic' CHECK (role_on_job IN (
   'lead_mechanic','mechanic','electrician','welder','tyre_technician','supervisor','helper')),
  assigned_at timestamptz NOT NULL DEFAULT now(),
@@ -828,10 +752,7 @@ CREATE TABLE fwm_job_card_assignments (
  last_modified_at timestamptz,
  last_modified_by_user_id uuid REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id),
- FOREIGN KEY (tenant_id, employee_id) REFERENCES hr_employee_biodata(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_job_card_assignments_emp
  ON fwm_job_card_assignments(tenant_id, job_card_id, employee_id, role_on_job) WHERE is_deleted = false;
@@ -840,11 +761,11 @@ CREATE UNIQUE INDEX uq_fwm_job_card_assignments_emp
 CREATE TABLE fwm_job_milestones (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- job_card_id uuid NOT NULL,
+ job_card_id uuid NOT NULL REFERENCES fwm_job_cards(id),
  milestone_code varchar(30) NOT NULL DEFAULT '',
  title varchar(180) NOT NULL CHECK (btrim(title) <> ''),
  phase varchar(60) NOT NULL DEFAULT 'execution',
- owner_employee_id uuid,
+ owner_employee_id uuid REFERENCES hr_employee_biodata(id),
  planned_start_date date,
  planned_end_date date,
  actual_start_date date,
@@ -852,7 +773,7 @@ CREATE TABLE fwm_job_milestones (
  progress_pct smallint NOT NULL DEFAULT 0 CHECK (progress_pct BETWEEN 0 AND 100),
  status varchar(20) NOT NULL DEFAULT 'pending'
   CHECK (status IN ('pending','in_progress','blocked','completed','cancelled')),
- depends_on_milestone_id uuid,
+ depends_on_milestone_id uuid REFERENCES fwm_job_milestones(id),
  deliverables varchar(500) NOT NULL DEFAULT '',
  blocker_notes varchar(500) NOT NULL DEFAULT '',
  sort_order integer NOT NULL DEFAULT 1 CHECK (sort_order > 0),
@@ -862,10 +783,6 @@ CREATE TABLE fwm_job_milestones (
  last_modified_by_user_id uuid REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
  version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id),
- FOREIGN KEY (tenant_id, owner_employee_id) REFERENCES hr_employee_biodata(tenant_id, id),
- FOREIGN KEY (tenant_id, depends_on_milestone_id) REFERENCES fwm_job_milestones(tenant_id, id),
  CHECK (planned_end_date IS NULL OR planned_start_date IS NULL OR planned_end_date >= planned_start_date),
  CHECK (depends_on_milestone_id IS NULL OR depends_on_milestone_id <> id)
 );
@@ -881,25 +798,23 @@ END $$;
 CREATE TABLE fwm_component_events (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- component_id uuid NOT NULL,
- vehicle_id uuid,
+ component_id uuid NOT NULL REFERENCES fwm_major_components(id),
+ vehicle_id uuid REFERENCES fwm_vehicles(id),
  event_type varchar(20) NOT NULL CHECK (event_type IN ('created','mounted','removed','repaired','scrapped')),
  event_date date NOT NULL,
  cum_odo_reading numeric(20,6) NOT NULL DEFAULT 0 CHECK (cum_odo_reading >= 0),
  condition varchar(20) NOT NULL DEFAULT 'USED',
  scrapped boolean NOT NULL DEFAULT false,
  repair_cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (repair_cost >= 0),
- job_card_id uuid,
+ job_card_id uuid REFERENCES fwm_job_cards(id),
  notes varchar(500) NOT NULL DEFAULT '',
  version integer NOT NULL CHECK (version > 0),
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
- is_deleted boolean NOT NULL DEFAULT false,
- UNIQUE (tenant_id, component_id, version),
- FOREIGN KEY (tenant_id, component_id) REFERENCES fwm_major_components(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id)
+ is_deleted boolean NOT NULL DEFAULT false
 );
+CREATE UNIQUE INDEX uq_fwm_component_events_version
+ ON fwm_component_events(tenant_id, component_id, version);
 CREATE TRIGGER protect_fwm_component_event_update BEFORE UPDATE ON fwm_component_events
  FOR EACH ROW EXECUTE FUNCTION protect_fwm_audit_event();
 CREATE TRIGGER protect_fwm_component_event_delete BEFORE DELETE ON fwm_component_events
@@ -908,8 +823,8 @@ CREATE TRIGGER protect_fwm_component_event_delete BEFORE DELETE ON fwm_component
 CREATE TABLE fwm_tyre_events (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- tyre_id uuid NOT NULL,
- vehicle_id uuid,
+ tyre_id uuid NOT NULL REFERENCES fwm_tyres(id),
+ vehicle_id uuid REFERENCES fwm_vehicles(id),
  event_type varchar(20) NOT NULL CHECK (event_type IN (
   'purchased','fitted','rotated','repaired','removed','retreaded','scrapped')),
  event_date date NOT NULL,
@@ -918,17 +833,15 @@ CREATE TABLE fwm_tyre_events (
  tread_depth_mm numeric(10,3) NOT NULL DEFAULT 0 CHECK (tread_depth_mm >= 0),
  cost numeric(20,6) NOT NULL DEFAULT 0 CHECK (cost >= 0),
  location_note varchar(120) NOT NULL DEFAULT '',
- job_card_id uuid,
+ job_card_id uuid REFERENCES fwm_job_cards(id),
  notes varchar(500) NOT NULL DEFAULT '',
  version integer NOT NULL CHECK (version > 0),
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
- is_deleted boolean NOT NULL DEFAULT false,
- UNIQUE (tenant_id, tyre_id, version),
- FOREIGN KEY (tenant_id, tyre_id) REFERENCES fwm_tyres(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id)
+ is_deleted boolean NOT NULL DEFAULT false
 );
+CREATE UNIQUE INDEX uq_fwm_tyre_events_version
+ ON fwm_tyre_events(tenant_id, tyre_id, version);
 CREATE TRIGGER protect_fwm_tyre_event_update BEFORE UPDATE ON fwm_tyre_events
  FOR EACH ROW EXECUTE FUNCTION protect_fwm_audit_event();
 CREATE TRIGGER protect_fwm_tyre_event_delete BEFORE DELETE ON fwm_tyre_events
@@ -938,7 +851,7 @@ CREATE TABLE fwm_job_card_events (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
  tenant_unit_id uuid,
- job_card_id uuid NOT NULL,
+ job_card_id uuid NOT NULL REFERENCES fwm_job_cards(id),
  action varchar(30) NOT NULL CHECK (action IN (
   'created','updated','opened','started','awaiting_parts','parts_issued',
   'requisition_raised','gl_posted','handoff_created','completed',
@@ -949,10 +862,10 @@ CREATE TABLE fwm_job_card_events (
  version integer NOT NULL CHECK (version > 0),
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
- is_deleted boolean NOT NULL DEFAULT false,
- UNIQUE (tenant_id, job_card_id, version),
- FOREIGN KEY (tenant_id, job_card_id) REFERENCES fwm_job_cards(tenant_id, id)
+ is_deleted boolean NOT NULL DEFAULT false
 );
+CREATE UNIQUE INDEX uq_fwm_job_card_events_version
+ ON fwm_job_card_events(tenant_id, job_card_id, version);
 CREATE TRIGGER protect_fwm_job_card_event_update BEFORE UPDATE ON fwm_job_card_events
  FOR EACH ROW EXECUTE FUNCTION protect_fwm_audit_event();
 CREATE TRIGGER protect_fwm_job_card_event_delete BEFORE DELETE ON fwm_job_card_events
@@ -964,28 +877,28 @@ CREATE TRIGGER protect_fwm_job_card_event_delete BEFORE DELETE ON fwm_job_card_e
 CREATE TABLE fwm_diary_entries (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  entry_number varchar(40) NOT NULL CHECK (btrim(entry_number) <> ''),
  entry_date date NOT NULL,
- vehicle_id uuid,
+ vehicle_id uuid REFERENCES fwm_vehicles(id),
  registration_no_snapshot varchar(60) NOT NULL DEFAULT '',
  entry_category varchar(30) NOT NULL DEFAULT 'parts' CHECK (entry_category IN (
   'parts','workmanship','electrical','tyres','oil_change','outsourced_repair','other')),
  description varchar(500) NOT NULL CHECK (btrim(description) <> ''),
  position_or_side varchar(80) NOT NULL DEFAULT '',
  location_or_vendor varchar(160) NOT NULL DEFAULT '',
- supplier_id uuid,
- inv_item_id uuid,
- employee_id uuid,
+ supplier_id uuid REFERENCES core_suppliers(id),
+ inv_item_id uuid REFERENCES inv_items(id),
+ employee_id uuid REFERENCES hr_employee_biodata(id),
  quantity numeric(20,6) NOT NULL DEFAULT 1 CHECK (quantity > 0),
  unit_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (unit_amount >= 0),
  total_amount numeric(20,6) NOT NULL DEFAULT 0 CHECK (total_amount >= 0),
- currency_id uuid NOT NULL,
+ currency_id uuid NOT NULL REFERENCES core_currencies(id),
  is_paid boolean NOT NULL DEFAULT false,
  paid_at timestamptz,
  payment_reference varchar(80) NOT NULL DEFAULT '',
- linked_job_card_id uuid,
- linked_job_line_id uuid,
+ linked_job_card_id uuid REFERENCES fwm_job_cards(id),
+ linked_job_line_id uuid REFERENCES fwm_job_card_lines(id),
  status varchar(20) NOT NULL DEFAULT 'logged'
   CHECK (status IN ('logged','allocated','promoted_to_job','cancelled')),
  notes varchar(500) NOT NULL DEFAULT '',
@@ -996,16 +909,7 @@ CREATE TABLE fwm_diary_entries (
  is_deleted boolean NOT NULL DEFAULT false,
  deleted_at timestamptz,
  deleted_by_user_id uuid REFERENCES users(id),
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, supplier_id) REFERENCES core_suppliers(tenant_id, id),
- FOREIGN KEY (tenant_id, inv_item_id) REFERENCES inv_items(tenant_id, id),
- FOREIGN KEY (tenant_id, employee_id) REFERENCES hr_employee_biodata(tenant_id, id),
- FOREIGN KEY (currency_id) REFERENCES core_currencies(id),
- FOREIGN KEY (tenant_id, linked_job_card_id) REFERENCES fwm_job_cards(tenant_id, id),
- FOREIGN KEY (tenant_id, linked_job_line_id) REFERENCES fwm_job_card_lines(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_diary_entries_number
  ON fwm_diary_entries(tenant_id, accounting_unit_id, lower(btrim(entry_number)));
@@ -1016,22 +920,17 @@ CREATE INDEX ix_fwm_diary_entries_scope
 CREATE TABLE fwm_diary_entry_allocations (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- diary_entry_id uuid NOT NULL,
- vehicle_id uuid NOT NULL,
+ diary_entry_id uuid NOT NULL REFERENCES fwm_diary_entries(id),
+ vehicle_id uuid NOT NULL REFERENCES fwm_vehicles(id),
  allocated_quantity numeric(20,6) NOT NULL DEFAULT 1 CHECK (allocated_quantity > 0),
  allocated_amount numeric(20,6) NOT NULL CHECK (allocated_amount >= 0),
- linked_job_card_id uuid,
- linked_job_line_id uuid,
+ linked_job_card_id uuid REFERENCES fwm_job_cards(id),
+ linked_job_line_id uuid REFERENCES fwm_job_card_lines(id),
  notes varchar(300) NOT NULL DEFAULT '',
  created_at timestamptz NOT NULL DEFAULT now(),
  created_by_user_id uuid NOT NULL REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, diary_entry_id) REFERENCES fwm_diary_entries(tenant_id, id),
- FOREIGN KEY (tenant_id, vehicle_id) REFERENCES fwm_vehicles(tenant_id, id),
- FOREIGN KEY (tenant_id, linked_job_card_id) REFERENCES fwm_job_cards(tenant_id, id),
- FOREIGN KEY (tenant_id, linked_job_line_id) REFERENCES fwm_job_card_lines(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_diary_alloc_vehicle
  ON fwm_diary_entry_allocations(tenant_id, diary_entry_id, vehicle_id) WHERE is_deleted = false;
@@ -1042,7 +941,7 @@ CREATE UNIQUE INDEX uq_fwm_diary_alloc_vehicle
 CREATE TABLE fwm_cross_module_links (
  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
  tenant_id uuid NOT NULL REFERENCES tenants(id),
- accounting_unit_id uuid NOT NULL,
+ accounting_unit_id uuid NOT NULL REFERENCES core_accounting_units(id),
  source_entity_type varchar(30) NOT NULL CHECK (source_entity_type IN (
   'vehicle','job_card','job_line','fuel_log','lubricant_log',
   'tyre','major_component','schedule','diary_entry')),
@@ -1067,9 +966,7 @@ CREATE TABLE fwm_cross_module_links (
  last_modified_at timestamptz,
  last_modified_by_user_id uuid REFERENCES users(id),
  is_deleted boolean NOT NULL DEFAULT false,
- version integer NOT NULL DEFAULT 1 CHECK (version > 0),
- UNIQUE (tenant_id, id),
- FOREIGN KEY (tenant_id, accounting_unit_id) REFERENCES core_accounting_units(tenant_id, id)
+ version integer NOT NULL DEFAULT 1 CHECK (version > 0)
 );
 CREATE UNIQUE INDEX uq_fwm_cross_module_idempotency
  ON fwm_cross_module_links(tenant_id, target_module, idempotency_key)

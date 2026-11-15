@@ -19,6 +19,20 @@ for (const tbl of createdTables) {
   assert.ok(downSql.includes(`DROP TABLE IF EXISTS ${tbl}`), `Missing DROP TABLE for ${tbl}`)
 }
 
+// 1b. No composite keys (no composite PK, UNIQUE table constraint, or composite FK) for Drogon C++ compatibility.
+assert.equal([...upSql.matchAll(/\bPRIMARY KEY\s*\(/gi)].length, 0, 'Unexpected composite PRIMARY KEY')
+assert.equal([...upSql.matchAll(/\bUNIQUE\s*\(/gi)].length, 0, 'Unexpected composite UNIQUE table constraint')
+assert.equal([...upSql.matchAll(/\bFOREIGN KEY\s*\([^)]*,[^)]*\)/gi)].length, 0, 'Unexpected composite FOREIGN KEY')
+for (const idx of [
+  'uq_fwm_document_sequences_scope',
+  'uq_fwm_job_card_lines_number',
+  'uq_fwm_component_events_version',
+  'uq_fwm_tyre_events_version',
+  'uq_fwm_job_card_events_version',
+]) {
+  assert.ok(upSql.includes(`CREATE UNIQUE INDEX ${idx}`), `Missing unique index ${idx}`)
+}
+
 // 2. CMakeLists registers all Fleet & Workshop sources.
 for (const src of [
   'domain_services/fleet_workshop/FleetWorkshopService.h',
