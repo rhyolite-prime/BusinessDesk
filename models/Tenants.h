@@ -156,6 +156,12 @@ class Tenants
         static const std::string _connection_string;
         static const std::string _is_active;
         static const std::string _account_version;
+        static const std::string _has_subscribed_to_fleet_workshop_management;
+        static const std::string _fleet_workshop_management_subscription_start_date;
+        static const std::string _fleet_workshop_management_subscription_end_date;
+        static const std::string _fleet_workshop_management_subscription_fee;
+        static const std::string _fleet_workshop_management_billing_cycle;
+        static const std::string _fleet_workshop_management_next_renewal_date;
 
     };
 
@@ -1201,9 +1207,63 @@ class Tenants
     ///Set the value of the column account_version
     void setAccountVersion(const int32_t &pAccountVersion) noexcept;
 
+    /**  For column has_subscribed_to_fleet_workshop_management  */
+    ///Get the value of the column has_subscribed_to_fleet_workshop_management, returns the default value if the column is null
+    const bool &getValueOfHasSubscribedToFleetWorkshopManagement() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<bool> &getHasSubscribedToFleetWorkshopManagement() const noexcept;
+    ///Set the value of the column has_subscribed_to_fleet_workshop_management
+    void setHasSubscribedToFleetWorkshopManagement(const bool &pHasSubscribedToFleetWorkshopManagement) noexcept;
+
+    /**  For column fleet_workshop_management_subscription_start_date  */
+    ///Get the value of the column fleet_workshop_management_subscription_start_date, returns the default value if the column is null
+    const ::trantor::Date &getValueOfFleetWorkshopManagementSubscriptionStartDate() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getFleetWorkshopManagementSubscriptionStartDate() const noexcept;
+    ///Set the value of the column fleet_workshop_management_subscription_start_date
+    void setFleetWorkshopManagementSubscriptionStartDate(const ::trantor::Date &pFleetWorkshopManagementSubscriptionStartDate) noexcept;
+    void setFleetWorkshopManagementSubscriptionStartDateToNull() noexcept;
+
+    /**  For column fleet_workshop_management_subscription_end_date  */
+    ///Get the value of the column fleet_workshop_management_subscription_end_date, returns the default value if the column is null
+    const ::trantor::Date &getValueOfFleetWorkshopManagementSubscriptionEndDate() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getFleetWorkshopManagementSubscriptionEndDate() const noexcept;
+    ///Set the value of the column fleet_workshop_management_subscription_end_date
+    void setFleetWorkshopManagementSubscriptionEndDate(const ::trantor::Date &pFleetWorkshopManagementSubscriptionEndDate) noexcept;
+    void setFleetWorkshopManagementSubscriptionEndDateToNull() noexcept;
+
+    /**  For column fleet_workshop_management_subscription_fee  */
+    ///Get the value of the column fleet_workshop_management_subscription_fee, returns the default value if the column is null
+    const std::string &getValueOfFleetWorkshopManagementSubscriptionFee() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getFleetWorkshopManagementSubscriptionFee() const noexcept;
+    ///Set the value of the column fleet_workshop_management_subscription_fee
+    void setFleetWorkshopManagementSubscriptionFee(const std::string &pFleetWorkshopManagementSubscriptionFee) noexcept;
+    void setFleetWorkshopManagementSubscriptionFee(std::string &&pFleetWorkshopManagementSubscriptionFee) noexcept;
+
+    /**  For column fleet_workshop_management_billing_cycle  */
+    ///Get the value of the column fleet_workshop_management_billing_cycle, returns the default value if the column is null
+    const std::string &getValueOfFleetWorkshopManagementBillingCycle() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<std::string> &getFleetWorkshopManagementBillingCycle() const noexcept;
+    ///Set the value of the column fleet_workshop_management_billing_cycle
+    void setFleetWorkshopManagementBillingCycle(const std::string &pFleetWorkshopManagementBillingCycle) noexcept;
+    void setFleetWorkshopManagementBillingCycle(std::string &&pFleetWorkshopManagementBillingCycle) noexcept;
+    void setFleetWorkshopManagementBillingCycleToNull() noexcept;
+
+    /**  For column fleet_workshop_management_next_renewal_date  */
+    ///Get the value of the column fleet_workshop_management_next_renewal_date, returns the default value if the column is null
+    const ::trantor::Date &getValueOfFleetWorkshopManagementNextRenewalDate() const noexcept;
+    ///Return a shared_ptr object pointing to the column const value, or an empty shared_ptr object if the column is null
+    const std::shared_ptr<::trantor::Date> &getFleetWorkshopManagementNextRenewalDate() const noexcept;
+    ///Set the value of the column fleet_workshop_management_next_renewal_date
+    void setFleetWorkshopManagementNextRenewalDate(const ::trantor::Date &pFleetWorkshopManagementNextRenewalDate) noexcept;
+    void setFleetWorkshopManagementNextRenewalDateToNull() noexcept;
 
 
-    static size_t getColumnNumber() noexcept {  return 109;  }
+
+    static size_t getColumnNumber() noexcept {  return 115;  }
     static const std::string &getColumnName(size_t index) noexcept(false);
 
     Json::Value toJson() const;
@@ -1335,6 +1395,12 @@ class Tenants
     std::shared_ptr<std::string> connectionString_;
     std::shared_ptr<bool> isActive_;
     std::shared_ptr<int32_t> accountVersion_;
+    std::shared_ptr<bool> hasSubscribedToFleetWorkshopManagement_;
+    std::shared_ptr<::trantor::Date> fleetWorkshopManagementSubscriptionStartDate_;
+    std::shared_ptr<::trantor::Date> fleetWorkshopManagementSubscriptionEndDate_;
+    std::shared_ptr<std::string> fleetWorkshopManagementSubscriptionFee_;
+    std::shared_ptr<std::string> fleetWorkshopManagementBillingCycle_;
+    std::shared_ptr<::trantor::Date> fleetWorkshopManagementNextRenewalDate_;
 
     struct MetaData
     {
@@ -1347,7 +1413,7 @@ class Tenants
         const bool notNull_;
     };
     static const std::vector<MetaData> metaData_;
-    bool dirtyFlag_[109]={ false };
+    bool dirtyFlag_[115]={ false };
   public:
     static const std::string &sqlForFindingByPrimaryKey()
     {
@@ -2026,6 +2092,44 @@ class Tenants
         if(!dirtyFlag_[108])
         {
             needSelection=true;
+        }
+        sql += "has_subscribed_to_fleet_workshop_management,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[109])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[110])
+        {
+            sql += "fleet_workshop_management_subscription_start_date,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[111])
+        {
+            sql += "fleet_workshop_management_subscription_end_date,";
+            ++parametersCount;
+        }
+        sql += "fleet_workshop_management_subscription_fee,";
+        ++parametersCount;
+
+        if(!dirtyFlag_[112])
+        {
+            needSelection=true;
+        }
+
+        if(dirtyFlag_[113])
+        {
+            sql += "fleet_workshop_management_billing_cycle,";
+            ++parametersCount;
+        }
+
+        if(dirtyFlag_[114])
+        {
+            sql += "fleet_workshop_management_next_renewal_date,";
+            ++parametersCount;
         }
 
         if(parametersCount > 0)
@@ -2921,6 +3025,64 @@ class Tenants
         else
         {
             sql +="default,";
+        }
+
+        if(dirtyFlag_[109])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
+        }
+
+        if(dirtyFlag_[110])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[111])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[112])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        else
+        {
+            sql +="default,";
+        }
+
+        if(dirtyFlag_[113])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
+        }
+
+        if(dirtyFlag_[114])
+        {
+
+            n = snprintf(placeholderStr,sizeof(placeholderStr),"$%d,",placeholder++);
+            sql.append(placeholderStr, n);
+
         }
 
         if(parametersCount > 0)
