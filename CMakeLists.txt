@@ -75,6 +75,11 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/inventory/InventoryStock.cc
         domain_services/supply_chain/SupplyChainService.h
         domain_services/supply_chain/SupplyChainService.cc
+        domain_services/fleet_workshop/FleetWorkshopService.h
+        domain_services/fleet_workshop/FleetWorkshopInternal.h
+        domain_services/fleet_workshop/FleetWorkshopMaster.cc
+        domain_services/fleet_workshop/FleetWorkshopOperations.cc
+        domain_services/fleet_workshop/FleetWorkshopJobs.cc
 )
 
 # ##############################################################################

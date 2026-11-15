@@ -44,7 +44,7 @@ std::string dec6str(long long v) {
 }
 // quantity (1e6 scale) * factor (SQL numeric text) -> 1e6 scale, half-up.
 long long mulFactor(long long qty, const std::string &factor) {
-  const long double prod = (long double)qty * std::stold(factor) / 1e10L;
+  const long double prod = (long double)qty * std::stold(factor);
   return prod >= 0 ? (long long)std::floor(prod + 0.5L)
                    : (long long)std::ceil(prod - 0.5L);
 }
@@ -501,6 +501,25 @@ insertDocument(DbClientPtr tx, const utils::AuditIdentity &who, Json::Value &bod
     totalValue += std::llabs(pl.qtyBase) * basis / SCALE;
   }
   const std::string refNo = trim(body["referenceNumber"].asString()).substr(0, 80);
+  const std::string destWh =
+      body["destinationWarehouseId"].isNull() ? "" : body["destinationWarehouseId"].asString();
+  const std::string supplierId =
+      body["supplierId"].isNull() ? "" : body["supplierId"].asString();
+  const std::string customerId =
+      body["customerId"].isNull() ? "" : body["customerId"].asString();
+  const std::string costCenterId =
+      body["costCenterId"].isNull() ? "" : body["costCenterId"].asString();
+  const std::string reqId =
+      body["requestId"].isNull() ? "" : body["requestId"].asString();
+  const std::string docType = body["documentType"].asString();
+  const std::string movReason = body["movementReason"].asString();
+  const std::string docDate = body["documentDate"].asString();
+  const std::string srcWh = body["sourceWarehouseId"].asString();
+  const std::string acctUnit = body["accountingUnitId"].asString();
+  const std::string notes = body["notes"].asString();
+  const std::string baseCurr = unitRow[0]["base_currency_id"].as<std::string>();
+  const std::string qtyStr = dec6str(totalQty);
+  const std::string valStr = dec6str(totalValue);
   const auto saved = co_await tx->execSqlCoro(
       "INSERT INTO inv_stock_documents(tenant_id,accounting_unit_id,document_number,document_type,movement_reason,"
       "document_date,source_warehouse_id,destination_warehouse_id,supplier_id,customer_id,cost_center_id,"
@@ -508,17 +527,9 @@ insertDocument(DbClientPtr tx, const utils::AuditIdentity &who, Json::Value &bod
       "VALUES($1,$2::uuid,$3,$4,$5,$6::date,$7::uuid,NULLIF($8::text,'')::uuid,NULLIF($9::text,'')::uuid,"
       "NULLIF($10::text,'')::uuid,NULLIF($11::text,'')::uuid,$12,$13,$14::uuid,NULLIF($15::text,'')::uuid,"
       "($16::text)::numeric,($17::text)::numeric,$18) RETURNING id",
-      who.tenantId, body["accountingUnitId"].asString(), number,
-      body["documentType"].asString(), body["movementReason"].asString(),
-      body["documentDate"].asString(), body["sourceWarehouseId"].asString(),
-      body["destinationWarehouseId"].isNull() ? "" : body["destinationWarehouseId"].asString(),
-      body["supplierId"].isNull() ? "" : body["supplierId"].asString(),
-      body["customerId"].isNull() ? "" : body["customerId"].asString(),
-      body["costCenterId"].isNull() ? "" : body["costCenterId"].asString(),
-      refNo, body["notes"].asString(),
-      unitRow[0]["base_currency_id"].as<std::string>(),
-      body["requestId"].isNull() ? "" : body["requestId"].asString(),
-      dec6str(totalQty), dec6str(totalValue), who.userId);
+      who.tenantId, acctUnit, number, docType, movReason, docDate, srcWh,
+      destWh, supplierId, customerId, costCenterId, refNo, notes, baseCurr, reqId,
+      qtyStr, valStr, who.userId);
   const std::string docId = saved[0]["id"].as<std::string>();
   co_await insertLines(tx, who, docId, body["documentType"].asString(), prepared);
   co_await addEvent(tx, who, docId, "created", "", "draft", "");
@@ -1117,6 +1128,13 @@ drogon::Task<dto::BaseApiResponse> updateFlow(DbClientPtr tx, const utils::Audit
                                 : pl.unitCost;
     totalValue += std::llabs(pl.qtyBase) * basis / SCALE;
   }
+  const std::string updDestWh =
+      b["destinationWarehouseId"].isNull() ? "" : b["destinationWarehouseId"].asString();
+  const std::string updSupplierId = b["supplierId"].isNull() ? "" : b["supplierId"].asString();
+  const std::string updCustomerId = b["customerId"].isNull() ? "" : b["customerId"].asString();
+  const std::string updCostCenterId =
+      b["costCenterId"].isNull() ? "" : b["costCenterId"].asString();
+  const std::string updRefNo = trim(b["referenceNumber"].asString()).substr(0, 80);
   co_await tx->execSqlCoro(
       "UPDATE inv_stock_documents SET movement_reason=$3,document_date=$4::date,"
       "source_warehouse_id=$5::uuid,destination_warehouse_id=NULLIF($6::text,'')::uuid,"
@@ -1127,11 +1145,8 @@ drogon::Task<dto::BaseApiResponse> updateFlow(DbClientPtr tx, const utils::Audit
       "WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND is_deleted=false",
       who.tenantId, id, b["movementReason"].asString(), b["documentDate"].asString(),
       b["sourceWarehouseId"].asString(),
-      b["destinationWarehouseId"].isNull() ? "" : b["destinationWarehouseId"].asString(),
-      b["supplierId"].isNull() ? "" : b["supplierId"].asString(),
-      b["customerId"].isNull() ? "" : b["customerId"].asString(),
-      b["costCenterId"].isNull() ? "" : b["costCenterId"].asString(),
-      trim(b["referenceNumber"].asString()).substr(0, 80), b["notes"].asString(),
+      updDestWh, updSupplierId, updCustomerId, updCostCenterId,
+      updRefNo, b["notes"].asString(),
       dec6str(totalQty), dec6str(totalValue), who.userId);
   co_await tx->execSqlCoro(
       "UPDATE inv_stock_document_lines SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3,"
@@ -1210,7 +1225,7 @@ drogon::Task<dto::BaseApiResponse> reverseFlow(DbClientPtr tx, const utils::Audi
       if (l["sourceBinId"].isString())
         m["destinationBinId"] = l["sourceBinId"].asString();
     } else {
-      long long mirrorQty = -qb;
+      long long mirrorQty = type == "issue" ? qb : -qb;
       if (type == "count") {
         // Count lines store zero; the posted delta lives in the ledger, and
         // the delta (not the counted quantity) is what must reverse.
@@ -1227,10 +1242,11 @@ drogon::Task<dto::BaseApiResponse> reverseFlow(DbClientPtr tx, const utils::Audi
       if (l["sourceBinId"].isString())
         m["sourceBinId"] = l["sourceBinId"].asString();
     }
+    m["batchCode"] = "";
     m["serialNumbers"] = l["serialNumbers"];
     if (l["batchId"].isString())
       m["batchId"] = l["batchId"].asString();
-    m["description"] = "Reversal: " + l["description"].asString();
+    m["description"] = ("Reversal: " + l["description"].asString()).substr(0, 500);
     mirror["lines"].append(m);
   }
   auto created = co_await createFlow(tx, who, mirror);
