@@ -12,18 +12,18 @@ psql "$DATABASE_URL" -X -v ON_ERROR_STOP=1 -f database/migrations/041_fleet_work
 ```
 
 - Missing `fwm_*` tables return `schema_not_ready` / `503` via `probeSchema` without caching failures; applying `041` repairs subsequent requests without restarts.
-- `database/migrations/041_fleet_workshop_management.down.sql` drops both `check_fwm_gl_settings_scope` and `update_fwm_updated_at` trigger functions, removes all 26 entries from `core_tenant_reset_registry`, and drops all 26 `fwm_*` tables in dependency order.
+- `database/migrations/041_fleet_workshop_management.down.sql` drops both `check_fwm_gl_settings_scope` and `protect_fwm_audit_event` trigger functions, removes all 26 entries from `core_tenant_reset_registry`, and drops all 26 `fwm_*` tables in dependency order.
 
 ## 2. Schema summary (`26` `fwm_*` tables)
 
 | Domain | Tables | Key invariants & cross-module FKs |
 | --- | --- | --- |
-| Foundation & GL | `fwm_document_sequences`, `fwm_gl_settings` | Per-unit numbering (`FUEL`, `LUB`, `PM`, `JOB`, `DIARY`, `VEH`) without mutating `Modules` (`1..16`); unit-scoped GL overrides validated by `check_fwm_gl_settings_scope` trigger; FKs to `gl_accounts`, `inv_warehouses`. |
+| Foundation & GL | `fwm_document_sequences`, `fwm_gl_settings` | Per-unit numbering (`FUEL`, `LUB`, `PM`, `JOB`, `DIARY`, `VEH`) without mutating `Modules` (`1..16`); unit-scoped GL overrides validated by `check_fwm_gl_settings_scope` trigger; single-column FKs to `core_accounting_units`, `gl_accounts`, `inv_warehouses`. |
 | Fleet & BOM catalog | `fwm_asset_groups`, `fwm_asset_group_materials`, `fwm_asset_group_components`, `fwm_procedures`, `fwm_vehicles`, `fwm_pm_triggers`, `fwm_workshop_employees` | Asset groups store depreciation defaults, fuel tolerances, minor/major BOMs (`inv_items`, `inv_uoms`), and standard `PCode` checklists; vehicles link `fixed_asset_id`, `customer_id`, `supplier_id`, `cost_center_id`, trailers, and per-asset `pm_triggers`; workshop employees link `hr_employee_biodata`. |
 | Telemetry, fuel & components | `fwm_meter_changes`, `fwm_meter_readings`, `fwm_fuel_logs`, `fwm_lubricant_logs`, `fwm_major_components`, `fwm_component_events`, `fwm_tyres`, `fwm_tyre_events` | Engine-run delta calculation, stalled-meter resolution, fuel tolerance calculation & alert feed, transactional `inv_stock_documents` + `gl_journal_batches` links on post/reverse, serialized component & tyre lifecycles with append-only event history. |
 | Scheduling, jobs, diary & handoffs | `fwm_maintenance_schedules`, `fwm_job_cards`, `fwm_job_card_lines`, `fwm_job_card_assignments`, `fwm_job_milestones`, `fwm_job_card_events`, `fwm_diary_entries`, `fwm_diary_entry_allocations`, `fwm_cross_module_links` | PM generator (`hours_per_day`, weekday rules, `major_service` / `minor_service` BOM autofill), job card cost/billing rollups (`billGrand = billParts + billLabour + billOther + billTax`), field diary entries with multi-vehicle split & job promotion, and idempotent cross-module handoff tracking. |
 
-All 26 tables carry `tenant_id`, optimistic `version`, `is_deleted`, audit timestamps/users, `(tenant_id, id)` uniqueness, and `core_tenant_reset_registry` registration under `'Fleet & Workshop Management'`.
+All 26 tables carry a single-column UUID primary key (`id`), `tenant_id`, optimistic `version`, `is_deleted`, audit timestamps/users, single-column foreign keys (avoiding composite keys for Drogon C++ model generation compatibility), unique indexes for multi-column invariants, and `core_tenant_reset_registry` registration under `'Fleet & Workshop Management'`.
 
 ## 3. Routes and authorization
 
