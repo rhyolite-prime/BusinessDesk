@@ -8,6 +8,7 @@ import { fleetErrorMessage, humanLabel, todayIso } from '../../../features/fleet
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Meters & stalled alerts' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -57,7 +58,11 @@ async function load() {
 }
 
 watch([activeTab, vehicleFilter, unitId, readingsPage, changesPage, stalledPage], load)
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') openCreateReading()
+  else if (route.query.new === 'change') openCreateChange()
+})
 
 /* ------------------------ Record Meter Reading ---------------------------- */
 const showReadingModal = ref(false)
@@ -71,6 +76,21 @@ const readingForm = reactive({
   isStalledEstimate: false,
   notes: '',
 })
+
+function openCreateReading() {
+  readingError.value = ''
+  const defaultVehicle = vehicleFilter.value || opts.vehicles.value[0]?.value || ''
+  const current = defaultVehicle ? opts.vehicleMap.value[defaultVehicle]?.currentMeterReading || '0' : ''
+  Object.assign(readingForm, {
+    vehicleId: defaultVehicle,
+    logDate: todayIso(),
+    reading: current,
+    source: 'manual',
+    isStalledEstimate: false,
+    notes: '',
+  })
+  showReadingModal.value = true
+}
 
 function onReadingVehicleChange(vehicleId: string) {
   readingForm.vehicleId = vehicleId
@@ -120,6 +140,24 @@ const changeForm = reactive({
   meterStalled: false,
   notes: '',
 })
+
+function openCreateChange() {
+  changeError.value = ''
+  const defaultVehicle = vehicleFilter.value || opts.vehicles.value[0]?.value || ''
+  const current = defaultVehicle ? opts.vehicleMap.value[defaultVehicle]?.currentMeterReading || '0' : '0'
+  Object.assign(changeForm, {
+    vehicleId: defaultVehicle,
+    lastDateOnOldMeter: todayIso(),
+    changeDate: todayIso(),
+    oldMeterReading: current,
+    newMeterReading: '0',
+    replacementLabel: '1st replacement',
+    engineChanged: false,
+    meterStalled: false,
+    notes: '',
+  })
+  showChangeModal.value = true
+}
 
 function onChangeVehicleChange(vehicleId: string) {
   changeForm.vehicleId = vehicleId
@@ -227,12 +265,8 @@ const stalledCols = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Meters & stalled alerts" subtitle="Daily odometer/hour-meter logs, meter replacements preserving lifetime cumulative totals, and stalled meter resolution." icon="clock">
-      <template #actions>
-        <div class="flex flex-wrap gap-2">
-          <BaseButton variant="secondary" @click="showChangeModal = true">Log meter change</BaseButton>
-          <BaseButton icon="plus" @click="showReadingModal = true">Record meter reading</BaseButton>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="arrow-path" @click="openCreateChange">Log meter change</BaseButton>
+      <BaseButton icon="plus" @click="openCreateReading">Record meter reading</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">

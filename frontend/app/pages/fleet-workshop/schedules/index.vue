@@ -17,6 +17,7 @@ import {
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Maintenance schedules & forecast' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -64,19 +65,34 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') void openCreate()
+  else if (route.query.new === 'forecast') openForecast()
+})
 
 /* ------------------------ Forecast Generator ------------------------------ */
 const showForecast = ref(false)
 const forecastSaving = ref(false)
 const forecastError = ref('')
 const forecastForm = reactive({
+  accountingUnitId: '',
   horizonDays: 30,
   fromDate: todayIso(),
 })
 
+function openForecast() {
+  forecastError.value = ''
+  forecastForm.accountingUnitId = unitId.value || opts.accountingUnits.value[0]?.value || ''
+  forecastForm.horizonDays = 30
+  forecastForm.fromDate = todayIso()
+  showForecast.value = true
+}
+
 async function runForecast() {
-  if (!unitId.value || forecastSaving.value) {
+  if (forecastSaving.value) return
+  const resolvedUnit = forecastForm.accountingUnitId || unitId.value
+  if (!resolvedUnit) {
     forecastError.value = 'Select an accounting unit first.'
     return
   }
@@ -84,7 +100,7 @@ async function runForecast() {
   forecastError.value = ''
   try {
     const res = await api.schedules.generate({
-      accountingUnitId: unitId.value,
+      accountingUnitId: resolvedUnit,
       horizonDays: Number(forecastForm.horizonDays || 30),
       fromDate: forecastForm.fromDate || todayIso(),
     })
@@ -105,6 +121,7 @@ const saving = ref(false)
 const formError = ref('')
 const previewNo = ref('')
 const form = reactive({
+  accountingUnitId: '',
   vehicleId: '',
   scheduleClass: 'heavy_machinery',
   workCategory: 'planned_repair',
@@ -122,11 +139,12 @@ const form = reactive({
 })
 
 async function openCreate() {
-  if (!unitId.value) { toast.error('Select an accounting unit first.'); return }
   editing.value = null
   formError.value = ''
   previewNo.value = ''
+  const defaultUnit = unitId.value || opts.accountingUnits.value[0]?.value || ''
   Object.assign(form, {
+    accountingUnitId: defaultUnit,
     vehicleId: opts.vehicles.value[0]?.value || '',
     scheduleClass: 'heavy_machinery',
     workCategory: 'planned_repair',
@@ -143,10 +161,12 @@ async function openCreate() {
     notes: '',
   })
   showModal.value = true
-  try {
-    const n = await api.schedules.nextNumber(unitId.value)
-    previewNo.value = n.nextNumber
-  } catch { /* ignore */ }
+  if (defaultUnit) {
+    try {
+      const n = await api.schedules.nextNumber(defaultUnit)
+      previewNo.value = n.nextNumber
+    } catch { /* ignore */ }
+  }
 }
 
 function openEdit(row: MaintenanceScheduleRecord) {
@@ -174,6 +194,11 @@ function openEdit(row: MaintenanceScheduleRecord) {
 
 async function save() {
   if (saving.value) return
+  const resolvedUnit = editing.value ? editing.value.accountingUnitId : (form.accountingUnitId || unitId.value)
+  if (!resolvedUnit) {
+    formError.value = 'Accounting unit is required.'
+    return
+  }
   if (!form.vehicleId || !form.scheduleDate) {
     formError.value = 'Vehicle and schedule date are required.'
     return
@@ -182,7 +207,7 @@ async function save() {
   formError.value = ''
   try {
     const body = {
-      accountingUnitId: editing.value ? editing.value.accountingUnitId : unitId.value,
+      accountingUnitId: resolvedUnit,
       vehicleId: form.vehicleId,
       scheduleClass: form.scheduleClass,
       workCategory: form.workCategory,
@@ -265,12 +290,8 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Maintenance schedules & forecast" subtitle="Forecasted PM services, heavy & light equipment schedules, planned repairs, breakdown tickets and SCM requisitions." icon="calendar-days">
-      <template #actions>
-        <div class="flex flex-wrap gap-2">
-          <BaseButton variant="secondary" icon="arrow-path" @click="showForecast = true">Run PM forecast</BaseButton>
-          <BaseButton icon="plus" @click="openCreate">Add schedule / repair</BaseButton>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="arrow-path" @click="openForecast">Run PM forecast</BaseButton>
+      <BaseButton icon="plus" @click="openCreate">Add schedule / repair</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -339,6 +360,9 @@ const columns = [
         <p class="text-xs text-ink-soft">
           Projects upcoming Minor &amp; Major PM services using each live vehicle's active PM trigger intervals and daily utilization schedule.
         </p>
+        <FormField label="Accounting unit" required>
+          <FleetSelect v-model="forecastForm.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+        </FormField>
         <div class="grid gap-3 sm:grid-cols-2">
           <FormField label="Start date" required><TextInput v-model="forecastForm.fromDate" type="date" /></FormField>
           <FormField label="Forecast horizon (days)" required><TextInput v-model="forecastForm.horizonDays" type="number" min="1" max="365" /></FormField>
@@ -354,6 +378,9 @@ const columns = [
     <ModalShell :open="showModal" :title="editing ? `Schedule ${editing.scheduleNumber}` : `New maintenance schedule ${previewNo ? `(${previewNo})` : ''}`" width="max-w-2xl" @close="showModal = false">
       <form class="space-y-3.5" @submit.prevent="save">
         <div class="grid gap-3 sm:grid-cols-2">
+          <FormField v-if="!editing" label="Accounting unit" required class="sm:col-span-2">
+            <FleetSelect v-model="form.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+          </FormField>
           <FormField label="Vehicle / equipment" required><FleetSelect v-model="form.vehicleId" :options="opts.vehicles.value" placeholder="Select vehicle…" :disabled="!!editing" /></FormField>
           <FormField label="Schedule class"><FleetSelect v-model="form.scheduleClass" :options="SCHEDULE_CLASSES" :allow-empty="false" /></FormField>
           <FormField label="Work category"><FleetSelect v-model="form.workCategory" :options="WORK_CATEGORIES" :allow-empty="false" /></FormField>

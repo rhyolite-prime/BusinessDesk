@@ -96,6 +96,8 @@ export async function fleetWorkshopRequest(
   const query = getQuery(event)
   const body = method === 'POST' || method === 'PUT' ? await readBody(event) : undefined
 
+  if (mode === 'schedules-generate' && resource !== 'schedules')
+    throw createError({ statusCode: 404, statusMessage: 'Unknown Fleet & Workshop action.' })
   if (mode === 'options' && !fleetOptionsResources.has(resource))
     throw createError({ statusCode: 404, statusMessage: 'Unknown fleet options resource.' })
   if (mode === 'next-number' && !fleetNextNumberResources.has(resource))

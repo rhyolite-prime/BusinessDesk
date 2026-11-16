@@ -20,8 +20,13 @@ const unitError = ref('')
 async function loadUnits() {
   unitError.value = ''
   try {
-    units.value = await fleet.units()
-    if (!unitId.value && units.value.length) unitId.value = units.value[0].id
+    let loaded = await fleet.units().catch(() => [] as FleetUnitRecord[])
+    if (!loaded.length) {
+      const vo = await fleet.vehicles.options()
+      loaded = vo.accountingUnits || []
+    }
+    units.value = loaded
+    if (!unitId.value && loaded[0]?.id) unitId.value = loaded[0].id
   } catch (e: any) {
     unitError.value = e?.data?.statusMessage || 'Could not load accounting units.'
   }

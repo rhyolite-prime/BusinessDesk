@@ -2,7 +2,7 @@
 import { useFleetUnitId, useFleetWorkshop } from '../../../features/fleet-workshop/useFleetWorkshop'
 import type { CrossModuleLinkRecord, GlSettingsOptions } from '../../../features/fleet-workshop/fleet-types'
 import FleetSelect from '../../../features/fleet-workshop/components/FleetSelect.vue'
-import { fleetErrorMessage, fleetStatusTone, humanLabel } from '../../../features/fleet-workshop/fleet-helpers'
+import { fleetErrorMessage, fleetStatusTone, formatFleetDate, humanLabel } from '../../../features/fleet-workshop/fleet-helpers'
 
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Fleet GL settings & handoffs' })
@@ -93,7 +93,11 @@ watch([unitId, activeTab, moduleFilter, statusFilter, linkPage], load)
 onMounted(load)
 
 async function saveSettings() {
-  if (!unitId.value || saving.value) return
+  if (saving.value) return
+  if (!unitId.value) {
+    error.value = 'Select an accounting unit first.'
+    return
+  }
   saving.value = true
   error.value = ''
   try {
@@ -135,7 +139,10 @@ const linkCols = [
 
 <template>
   <section class="space-y-5">
-    <PageHeader title="Fleet GL settings & module handoffs" subtitle="Configure per-unit Fleet expense, WIP, recovery, revenue and clearing GL accounts, and inspect ERP module handoffs." icon="cog-6-tooth" />
+    <PageHeader title="Fleet GL settings & module handoffs" subtitle="Configure per-unit Fleet expense, WIP, recovery, revenue and clearing GL accounts, and inspect ERP module handoffs." icon="cog-6-tooth">
+      <BaseButton variant="secondary" icon="arrow-path" :loading="loading" @click="load">Refresh</BaseButton>
+      <BaseButton v-if="activeTab === 'settings'" :loading="saving" @click="saveSettings">Save GL settings</BaseButton>
+    </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
@@ -216,7 +223,7 @@ const linkCols = [
         </div>
         <DataTable :columns="linkCols" :rows="links" :loading="loading" empty="No cross-module handoffs recorded yet.">
           <template #cell="{ col, row }">
-            <template v-if="col.key === 'createdAt'">{{ row.createdAt ? formatDate(row.createdAt) : '—' }}</template>
+            <template v-if="col.key === 'createdAt'">{{ formatFleetDate(row.createdAt) }}</template>
             <template v-else-if="col.key === 'sourceEntityType'">{{ humanLabel(row.sourceEntityType) }}</template>
             <template v-else-if="col.key === 'targetModule'">
               <div class="font-medium">{{ humanLabel(row.targetModule) }}</div>
