@@ -350,6 +350,8 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
   }
   const std::string q = search(query);
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_asset_groups WHERE tenant_id=$1 AND is_deleted=false "
         "AND ($2='' OR strpos(lower(code||' '||model||' '||model_type),lower($2))>0)",
@@ -369,8 +371,8 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
         "'componentCount',(SELECT count(*) FROM fwm_asset_group_components c WHERE c.tenant_id=g.tenant_id AND c.asset_group_id=g.id AND c.is_deleted=false)"
         ")::text AS record FROM fwm_asset_groups g WHERE g.tenant_id=$1 AND g.is_deleted=false "
         "AND ($2='' OR strpos(lower(g.code||' '||g.model||' '||g.model_type),lower($2))>0) "
-        "ORDER BY lower(g.code), g.id LIMIT $3 OFFSET $4",
-        who.tenantId, q, size, static_cast<long long>(page - 1) * size);
+        "ORDER BY lower(g.code), g.id LIMIT $3::bigint OFFSET $4::bigint",
+        who.tenantId, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -395,7 +397,7 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
       co_return fail("conflict", "Asset group is assigned to live fleet vehicles.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_asset_groups SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4 AND is_deleted=false RETURNING id",
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4::int AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
       co_return fail("conflict", "Asset group not found or modified concurrently.");
@@ -450,7 +452,7 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
       co_await db->execSqlCoro(
           "INSERT INTO fwm_asset_group_materials(tenant_id,asset_group_id,service_tier,item_id,"
           "uom_id,quantity,is_lubricant,notes,created_by_user_id) "
-          "VALUES($1::uuid,$2::uuid,$3,$4::uuid,$5::uuid,($6::text)::numeric,$7,$8,$9::uuid)",
+          "VALUES($1::uuid,$2::uuid,$3,$4::uuid,$5::uuid,($6::text)::numeric,$7::boolean,$8,$9::uuid)",
           who.tenantId, id, m["serviceTier"].asString(), m["itemId"].asString(), m["uomId"].asString(),
           m["quantity"].asString(), m["isLubricant"].asBool(), m["notes"].asString(), who.userId);
     }
@@ -497,7 +499,7 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
       co_await db->execSqlCoro(
           "INSERT INTO fwm_asset_group_components(tenant_id,asset_group_id,component_type,slot_label,"
           "expected_life_hours,is_required,notes,created_by_user_id) "
-          "VALUES($1::uuid,$2::uuid,$3,$4,($5::text)::numeric,$6,$7,$8::uuid)",
+          "VALUES($1::uuid,$2::uuid,$3,$4,($5::text)::numeric,$6::boolean,$7,$8::uuid)",
           who.tenantId, id, c["componentType"].asString(), c["slotLabel"].asString(),
           c["expectedLifeHours"].asString(), c["isRequired"].asBool(), c["notes"].asString(), who.userId);
     }
@@ -581,7 +583,7 @@ assetGroups(DbClientPtr db, const std::string &action, const std::string &id, Js
       "sunday_utilization=($3::jsonb->>'sundayUtilization')::numeric,"
       "description=$3::jsonb->>'description',is_active=($3::jsonb->>'isActive')::boolean,"
       "last_modified_at=now(),last_modified_by_user_id=$4::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5::int AND is_deleted=false RETURNING id",
       who.tenantId, id, json(body), who.userId, body["version"].asInt());
   if (updated.empty())
     co_return fail("conflict", "Asset group not found or modified concurrently.");
@@ -601,6 +603,8 @@ SELECT jsonb_build_object('id',p.id,'version',p.version,'pcode',p.pcode,'descrip
 FROM fwm_procedures p LEFT JOIN fwm_asset_groups g ON g.tenant_id=p.tenant_id AND g.id=p.asset_group_id AND g.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_procedures WHERE tenant_id=$1 AND is_deleted=false "
         "AND ($2='' OR strpos(lower(pcode||' '||description),lower($2))>0)",
@@ -609,8 +613,8 @@ FROM fwm_procedures p LEFT JOIN fwm_asset_groups g ON g.tenant_id=p.tenant_id AN
         std::string(selectOne) +
             " WHERE p.tenant_id=$1 AND p.is_deleted=false "
             "AND ($2='' OR strpos(lower(p.pcode||' '||p.description),lower($2))>0) "
-            "ORDER BY lower(p.pcode), p.id LIMIT $3 OFFSET $4",
-        who.tenantId, q, size, static_cast<long long>(page - 1) * size);
+            "ORDER BY lower(p.pcode), p.id LIMIT $3::bigint OFFSET $4::bigint",
+        who.tenantId, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -637,7 +641,7 @@ FROM fwm_procedures p LEFT JOIN fwm_asset_groups g ON g.tenant_id=p.tenant_id AN
       co_return fail("validation_error", "Procedure ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_procedures SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4 AND is_deleted=false RETURNING id",
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4::int AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
       co_return fail("conflict", "Procedure not found or changed.");
@@ -690,7 +694,7 @@ FROM fwm_procedures p LEFT JOIN fwm_asset_groups g ON g.tenant_id=p.tenant_id AN
       "service_category=$3::jsonb->>'serviceCategory',estimated_hours=($3::jsonb->>'estimatedHours')::numeric,"
       "asset_group_id=($3::jsonb->>'assetGroupId')::uuid,status=$3::jsonb->>'status',"
       "last_modified_at=now(),last_modified_by_user_id=$4::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5::int AND is_deleted=false RETURNING id",
       who.tenantId, id, json(body), who.userId, body["version"].asInt());
   if (updated.empty())
     co_return fail("conflict", "Procedure not found or modified concurrently.");
@@ -836,9 +840,11 @@ vehicles(DbClientPtr db, const std::string &action, const std::string &id, Json:
   const std::string unit = lower(trim(unitId));
   const std::string unitScope = uuidOrEmpty(unit);
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_vehicles v WHERE v.tenant_id=$1 AND v.is_deleted=false "
-        "AND ($2='' OR v.accounting_unit_id=$2::uuid) "
+        "AND ($2='' OR v.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR strpos(lower(v.asset_no||' '||v.registration_no||' '||v.make_model),lower($3))>0)",
         who.tenantId, unitScope, q);
     const auto rows = co_await db->execSqlCoro(
@@ -862,10 +868,10 @@ vehicles(DbClientPtr db, const std::string &action, const std::string &id, Json:
         "LEFT JOIN core_customers cu ON cu.tenant_id=v.tenant_id AND cu.id=v.customer_id AND cu.is_deleted=false "
         "LEFT JOIN hr_employee_biodata e ON e.tenant_id=v.tenant_id AND e.id=v.assigned_employee_id AND e.is_deleted=false "
         "LEFT JOIN core_cost_centers cc ON cc.tenant_id=v.tenant_id AND cc.id=v.cost_center_id AND cc.is_deleted=false "
-        "WHERE v.tenant_id=$1 AND v.is_deleted=false AND ($2='' OR v.accounting_unit_id=$2::uuid) "
+        "WHERE v.tenant_id=$1 AND v.is_deleted=false AND ($2='' OR v.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR strpos(lower(v.asset_no||' '||v.registration_no||' '||v.make_model),lower($3))>0) "
-        "ORDER BY v.asset_no, v.id LIMIT $4 OFFSET $5",
-        who.tenantId, unitScope, q, size, static_cast<long long>(page - 1) * size);
+        "ORDER BY v.asset_no, v.id LIMIT $4::bigint OFFSET $5::bigint",
+        who.tenantId, unitScope, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -890,7 +896,7 @@ vehicles(DbClientPtr db, const std::string &action, const std::string &id, Json:
       co_return fail("conflict", "Vehicle has workshop job cards; mark it inactive or decommissioned instead.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_vehicles SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4 AND is_deleted=false RETURNING id",
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4::int AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
       co_return fail("conflict", "Vehicle not found or modified concurrently.");
@@ -1192,7 +1198,7 @@ vehicles(DbClientPtr db, const std::string &action, const std::string &id, Json:
       "primary_meter_unit=$3::jsonb->>'primaryMeterUnit',current_meter_reading=($3::jsonb->>'currentMeterReading')::numeric,"
       "cumulative_meter_reading=($3::jsonb->>'cumulativeMeterReading')::numeric,notes=$3::jsonb->>'notes',"
       "last_modified_at=now(),last_modified_by_user_id=$4::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5::int AND is_deleted=false RETURNING id",
       who.tenantId, id, json(body), who.userId, body["version"].asInt());
   if (updated.empty())
     co_return fail("conflict", "Vehicle not found or modified concurrently.");
@@ -1235,6 +1241,8 @@ JOIN hr_employee_biodata e ON e.tenant_id=w.tenant_id AND e.id=w.employee_id AND
     co_return okRecord(out);
   }
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_workshop_employees w "
         "JOIN hr_employee_biodata e ON e.tenant_id=w.tenant_id AND e.id=w.employee_id AND e.is_deleted=false "
@@ -1245,8 +1253,8 @@ JOIN hr_employee_biodata e ON e.tenant_id=w.tenant_id AND e.id=w.employee_id AND
         std::string(selectSql) +
             " WHERE w.tenant_id=$1 AND w.is_deleted=false "
             "AND ($2='' OR strpos(lower(e.first_name||' '||e.last_name||' '||e.employee_identifier||' '||w.trade_role),lower($2))>0) "
-            "ORDER BY lower(e.first_name), lower(e.last_name), w.id LIMIT $3 OFFSET $4",
-        who.tenantId, q, size, static_cast<long long>(page - 1) * size);
+            "ORDER BY lower(e.first_name), lower(e.last_name), w.id LIMIT $3::bigint OFFSET $4::bigint",
+        who.tenantId, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -1273,7 +1281,7 @@ JOIN hr_employee_biodata e ON e.tenant_id=w.tenant_id AND e.id=w.employee_id AND
       co_return fail("validation_error", "ID and current version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_workshop_employees SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4 AND is_deleted=false RETURNING id",
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND version=$4::int AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
       co_return fail("conflict", "Workshop employee not found or modified concurrently.");
@@ -1343,7 +1351,7 @@ JOIN hr_employee_biodata e ON e.tenant_id=w.tenant_id AND e.id=w.employee_id AND
       "currency_id=($3::jsonb->>'currencyId')::uuid,bay_assignment=$3::jsonb->>'bayAssignment',"
       "certifications=$3::jsonb->'certifications',is_active=($3::jsonb->>'isActive')::boolean,"
       "notes=$3::jsonb->>'notes',last_modified_at=now(),last_modified_by_user_id=$4::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$5::int AND is_deleted=false RETURNING id",
       who.tenantId, id, json(body), who.userId, body["version"].asInt());
   if (updated.empty())
     co_return fail("conflict", "Workshop employee not found or modified concurrently.");

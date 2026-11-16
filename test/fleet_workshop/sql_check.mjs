@@ -107,3 +107,98 @@ for (const page of [
 }
 
 console.log('Fleet & Workshop SQL migration, CMake, and frontend/subscription parity checks passed')
+
+// 6. PostgreSQL / Drogon binary wire-protocol bind-type safety across domain_services/fleet_workshop/*.
+// Regression guard against SQLSTATE 22P03 ("insufficient data left in message" at PgBatchConnection.cc:625)
+// when 32-bit int or bool C++ args are sent to PostgreSQL parameters inferred as int8/int2/boolean.
+const fwmCppFiles = [
+  'domain_services/fleet_workshop/FleetWorkshopInternal.h',
+  'domain_services/fleet_workshop/FleetWorkshopMaster.cc',
+  'domain_services/fleet_workshop/FleetWorkshopOperations.cc',
+  'domain_services/fleet_workshop/FleetWorkshopJobs.cc',
+]
+let checkedExecCalls = 0
+for (const file of fwmCppFiles) {
+  const src = fs.readFileSync(file, 'utf8')
+  let pos = 0
+  while (true) {
+    const idx = src.indexOf('execSqlCoro(', pos)
+    if (idx === -1) break
+    let depth = 0
+    let i = idx + 'execSqlCoro('.length
+    let inStr = false
+    let esc = false
+    while (i < src.length) {
+      const ch = src[i]
+      if (inStr) {
+        if (esc) esc = false
+        else if (ch === '\\') esc = true
+        else if (ch === '"') inStr = false
+      } else {
+        if (ch === '"') inStr = true
+        else if (ch === '(') depth++
+        else if (ch === ')') {
+          if (depth === 0) break
+          depth--
+        }
+      }
+      i++
+    }
+    const call = src.slice(idx, i + 1)
+    pos = i + 1
+    checkedExecCalls++
+    const line = src.slice(0, idx).split('\n').length
+    const sql = [...call.matchAll(/"((?:[^"\\]|\\.)*)"/g)].map((m) => m[1]).join(' ')
+    const argsPart = call.slice('execSqlCoro('.length, -1).replace(/"(?:[^"\\]|\\.)*"/g, '""')
+
+    assert.equal(
+      /\b(LIMIT|OFFSET)\s+\$\d+(?!::bigint)\b/.test(sql),
+      false,
+      `${file}:${line} has LIMIT/OFFSET placeholder without ::bigint: ${sql}`,
+    )
+    assert.equal(
+      /\bversion=\$\d+(?!::int)\b/.test(sql),
+      false,
+      `${file}:${line} has version=$N without ::int: ${sql}`,
+    )
+    assert.equal(
+      /\(\$[0-9]+=''\s+OR\s+[a-z0-9_.]+\s*(?:=|>=|<=)\s*\$\d+::(?:uuid|date)\)/.test(sql),
+      false,
+      `${file}:${line} has unguarded empty-string ::uuid/::date filter without NULLIF: ${sql}`,
+    )
+    if (/\bLIMIT\s+\$\d+::bigint\b/.test(sql)) {
+      assert.equal(
+        /static_cast<long long>/.test(argsPart) || /\bsize\b/.test(argsPart),
+        false,
+        `${file}:${line} must pass int64_t limit/offset variables, not size/long long`,
+      )
+      assert.ok(
+        /\blimit,\s*offset\b/.test(argsPart),
+        `${file}:${line} must pass limit, offset (int64_t) to LIMIT/OFFSET`,
+      )
+    }
+    if (sql.includes('INSERT INTO fwm_document_sequences') && sql.includes('padding')) {
+      assert.ok(
+        sql.includes('($5::int)::smallint'),
+        `${file}:${line} padding bind must explicitly cast ($5::int)::smallint`,
+      )
+    }
+    if (
+      (sql.includes('INSERT INTO fwm_job_milestones') || sql.includes('UPDATE fwm_job_milestones')) &&
+      sql.includes('progress_pct')
+    ) {
+      assert.ok(
+        /\(\$(?:11|12)::int\)::smallint/.test(sql),
+        `${file}:${line} progress_pct bind must explicitly cast ::smallint`,
+      )
+    }
+    if (/\b(?:asBool\(\)|withinTol|scrapped)\b/.test(argsPart)) {
+      assert.ok(
+        /\$\d+::boolean\b/.test(sql),
+        `${file}:${line} bool bind must explicitly cast ::boolean`,
+      )
+    }
+  }
+}
+assert.ok(checkedExecCalls >= 90, `Expected >=90 execSqlCoro calls in fleet_workshop, checked ${checkedExecCalls}`)
+console.log(`PostgreSQL binary bind safety checks passed across ${checkedExecCalls} execSqlCoro calls`)

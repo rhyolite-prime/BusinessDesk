@@ -252,7 +252,7 @@ authorize(DbClientPtr db, const utils::AuditIdentity &who, bool write, bool &can
   const std::string sql =
       "SELECT u.is_tenant_admin_user FROM users u JOIN tenants t ON t.id=u.tenant_id "
       "AND t.is_deleted=false AND t.is_active=true "
-      "WHERE u.id=$1 AND u.tenant_id=$2 AND u.is_deleted=false AND u.is_active=true "
+      "WHERE u.id=$1::uuid AND u.tenant_id=$2::uuid AND u.is_deleted=false AND u.is_active=true "
       "AND u.is_locked_out=false AND u.is_host_admin_user=false" +
       std::string(write ? " FOR SHARE OF u,t" : "");
   const auto actor = co_await db->execSqlCoro(sql, who.userId, who.tenantId);
@@ -281,7 +281,7 @@ nextNumber(DbClientPtr tx, const utils::AuditIdentity &who, const std::string &u
            const std::string &docType, const std::string &defaultPrefix, int padding = 5) {
   const auto seq = co_await tx->execSqlCoro(
       "INSERT INTO fwm_document_sequences(tenant_id,accounting_unit_id,document_type,prefix,padding,"
-      "next_number,created_by_user_id) VALUES($1::uuid,$2::uuid,$3,$4,$5,2,$6::uuid) "
+      "next_number,created_by_user_id) VALUES($1::uuid,$2::uuid,$3,$4,($5::int)::smallint,2,$6::uuid) "
       "ON CONFLICT (tenant_id,accounting_unit_id,document_type) DO UPDATE "
       "SET next_number=fwm_document_sequences.next_number+1,last_modified_at=now(),"
       "last_modified_by_user_id=$6::uuid "

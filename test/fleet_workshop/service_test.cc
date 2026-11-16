@@ -1325,6 +1325,43 @@ int main() {
   assert(rUnavail->status == 503 && rUnavail->headers["Cache-Control"] == "no-store");
   schemaOk = true;
 
+  // 11. Regression guard for GET /api/v1/fleet-workshop-management/procedures?size=100
+  //     and all 15 paginated endpoints (LIMIT $n::bigint OFFSET $m::bigint + int64_t bind).
+  const size_t sizeBeforeListSweep = sqlLog.size();
+  for (const char *resName : {
+           "asset-groups", "procedures", "vehicles", "employees", "meter-changes",
+           "meter-readings", "fuel-logs", "fuel-tolerances", "lubricant-logs",
+           "major-components", "tyres", "schedules", "job-cards", "diary-entries",
+           "module-links"}) {
+    auto rPag =
+        ctrl.list(makeReq(drogon::Get, tenant, actor, nullptr, {{"page", "1"}, {"size", "100"}}),
+                  resName)
+            .get();
+    if (rPag->status != 200 || !rPag->body["success"].asBool()) {
+      std::cerr << "FAIL [ctrl.list " << resName << "?size=100]: status=" << rPag->status
+                << " body=" << rPag->body.toStyledString() << "\n";
+      std::abort();
+    }
+    assert(rPag->headers["Cache-Control"] == "no-store");
+  }
+  int limitQueriesChecked = 0;
+  for (size_t i = sizeBeforeListSweep; i < sqlLog.size(); ++i) {
+    if (sqlLog[i].find("LIMIT $") != std::string::npos) {
+      assert(sqlLog[i].find("::bigint") != std::string::npos);
+      assert(sqlLog[i].find("OFFSET $") != std::string::npos);
+      ++limitQueriesChecked;
+    }
+  }
+  assert(limitQueriesChecked == 15);
+  for (const auto &sql : sqlLog) {
+    if (sql.find("LIMIT $") != std::string::npos) {
+      assert(sql.find("::bigint") != std::string::npos);
+    }
+    if (sql.find("INSERT INTO fwm_document_sequences") != std::string::npos) {
+      assert(sql.find("($5::int)::smallint") != std::string::npos);
+    }
+  }
+
   std::cout << "All Fleet & Workshop service, cross-module & controller seam tests passed ("
             << sqlLog.size() << " SQL statements exercised)\n";
   return 0;
