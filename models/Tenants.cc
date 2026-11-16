@@ -237,6 +237,18 @@ const std::string Tenants::Cols::_is_active = "\"is_active\"";
 
 const std::string Tenants::Cols::_account_version = "\"account_version\"";
 
+const std::string Tenants::Cols::_has_subscribed_to_fleet_workshop_management = "\"has_subscribed_to_fleet_workshop_management\"";
+
+const std::string Tenants::Cols::_fleet_workshop_management_subscription_start_date = "\"fleet_workshop_management_subscription_start_date\"";
+
+const std::string Tenants::Cols::_fleet_workshop_management_subscription_end_date = "\"fleet_workshop_management_subscription_end_date\"";
+
+const std::string Tenants::Cols::_fleet_workshop_management_subscription_fee = "\"fleet_workshop_management_subscription_fee\"";
+
+const std::string Tenants::Cols::_fleet_workshop_management_billing_cycle = "\"fleet_workshop_management_billing_cycle\"";
+
+const std::string Tenants::Cols::_fleet_workshop_management_next_renewal_date = "\"fleet_workshop_management_next_renewal_date\"";
+
 
 const std::string Tenants::primaryKeyName = "id";
 
@@ -354,7 +366,13 @@ const std::vector<typename Tenants::MetaData> Tenants::metaData_={
 {"name","std::string","character varying",128,0,0,1},
 {"connection_string","std::string","character varying",1024,0,0,0},
 {"is_active","bool","boolean",1,0,0,1},
-{"account_version","int32_t","integer",4,0,0,1}
+{"account_version","int32_t","integer",4,0,0,1},
+{"has_subscribed_to_fleet_workshop_management","bool","boolean",1,0,0,1},
+{"fleet_workshop_management_subscription_start_date","::trantor::Date","timestamp without time zone",0,0,0,0},
+{"fleet_workshop_management_subscription_end_date","::trantor::Date","timestamp without time zone",0,0,0,0},
+{"fleet_workshop_management_subscription_fee","std::string","numeric",0,0,0,1},
+{"fleet_workshop_management_billing_cycle","std::string","character varying",50,0,0,0},
+{"fleet_workshop_management_next_renewal_date","::trantor::Date","timestamp without time zone",0,0,0,0}
 
 };
 const std::string &Tenants::getColumnName(size_t index) noexcept(false)
@@ -1895,11 +1913,104 @@ Tenants::Tenants(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
+        if(!r["has_subscribed_to_fleet_workshop_management"].isNull())
+        {
+
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(r["has_subscribed_to_fleet_workshop_management"].as<bool>());
+
+        }
+
+        if(!r["fleet_workshop_management_subscription_start_date"].isNull())
+        {
+            auto timeStr = r["fleet_workshop_management_subscription_start_date"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["fleet_workshop_management_subscription_end_date"].isNull())
+        {
+            auto timeStr = r["fleet_workshop_management_subscription_end_date"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        if(!r["fleet_workshop_management_subscription_fee"].isNull())
+        {
+
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(r["fleet_workshop_management_subscription_fee"].as<std::string>());
+
+        }
+
+        if(!r["fleet_workshop_management_billing_cycle"].isNull())
+        {
+
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(r["fleet_workshop_management_billing_cycle"].as<std::string>());
+
+        }
+
+        if(!r["fleet_workshop_management_next_renewal_date"].isNull())
+        {
+            auto timeStr = r["fleet_workshop_management_next_renewal_date"].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
     }
     else
     {
         size_t offset = (size_t)indexOffset;
-        if(offset + 109 > r.size())
+        if(offset + 115 > r.size())
         {
             LOG_FATAL << "Invalid SQL result for this model";
             return;
@@ -3543,13 +3654,112 @@ Tenants::Tenants(const Row &r, const ssize_t indexOffset) noexcept
 
         }
 
+        index = offset + 109;
+        if(!r[index].isNull())
+        {
+
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(r[index].as<bool>());
+
+        }
+
+        index = offset + 110;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 111;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
+        index = offset + 112;
+        if(!r[index].isNull())
+        {
+
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 113;
+        if(!r[index].isNull())
+        {
+
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(r[index].as<std::string>());
+
+        }
+
+        index = offset + 114;
+        if(!r[index].isNull())
+        {
+            auto timeStr = r[index].as<std::string>();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+
     }
 
 }
 
 Tenants::Tenants(const Json::Value &pJson, const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 109)
+    if(pMasqueradingVector.size() != 115)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -5388,6 +5598,117 @@ Tenants::Tenants(const Json::Value &pJson, const std::vector<std::string> &pMasq
         if(!pJson[pMasqueradingVector[108]].isNull())
         {
             accountVersion_=std::make_shared<int32_t>((int32_t)pJson[pMasqueradingVector[108]].asInt64());
+        }
+    }
+
+    if(!pMasqueradingVector[109].empty() && pJson.isMember(pMasqueradingVector[109]))
+    {
+        dirtyFlag_[109] = true;
+        if(!pJson[pMasqueradingVector[109]].isNull())
+        {
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(pJson[pMasqueradingVector[109]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[110].empty() && pJson.isMember(pMasqueradingVector[110]))
+    {
+        dirtyFlag_[110] = true;
+        if(!pJson[pMasqueradingVector[110]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[110]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[111].empty() && pJson.isMember(pMasqueradingVector[111]))
+    {
+        dirtyFlag_[111] = true;
+        if(!pJson[pMasqueradingVector[111]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[111]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[112].empty() && pJson.isMember(pMasqueradingVector[112]))
+    {
+        dirtyFlag_[112] = true;
+        if(!pJson[pMasqueradingVector[112]].isNull())
+        {
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(pJson[pMasqueradingVector[112]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[113].empty() && pJson.isMember(pMasqueradingVector[113]))
+    {
+        dirtyFlag_[113] = true;
+        if(!pJson[pMasqueradingVector[113]].isNull())
+        {
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(pJson[pMasqueradingVector[113]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[114].empty() && pJson.isMember(pMasqueradingVector[114]))
+    {
+        dirtyFlag_[114] = true;
+        if(!pJson[pMasqueradingVector[114]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[114]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
         }
     }
 
@@ -7232,12 +7553,123 @@ Tenants::Tenants(const Json::Value &pJson) noexcept(false)
         }
     }
 
+    if(pJson.isMember("has_subscribed_to_fleet_workshop_management"))
+    {
+        dirtyFlag_[109]=true;
+        if(!pJson["has_subscribed_to_fleet_workshop_management"].isNull())
+        {
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(pJson["has_subscribed_to_fleet_workshop_management"].asBool());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_start_date"))
+    {
+        dirtyFlag_[110]=true;
+        if(!pJson["fleet_workshop_management_subscription_start_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_subscription_start_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_end_date"))
+    {
+        dirtyFlag_[111]=true;
+        if(!pJson["fleet_workshop_management_subscription_end_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_subscription_end_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_fee"))
+    {
+        dirtyFlag_[112]=true;
+        if(!pJson["fleet_workshop_management_subscription_fee"].isNull())
+        {
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(pJson["fleet_workshop_management_subscription_fee"].asString());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_billing_cycle"))
+    {
+        dirtyFlag_[113]=true;
+        if(!pJson["fleet_workshop_management_billing_cycle"].isNull())
+        {
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(pJson["fleet_workshop_management_billing_cycle"].asString());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_next_renewal_date"))
+    {
+        dirtyFlag_[114]=true;
+        if(!pJson["fleet_workshop_management_next_renewal_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_next_renewal_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
 }
 
 void Tenants::updateByMasqueradedJson(const Json::Value &pJson,
                                             const std::vector<std::string> &pMasqueradingVector) noexcept(false)
 {
-    if(pMasqueradingVector.size() != 109)
+    if(pMasqueradingVector.size() != 115)
     {
         LOG_ERROR << "Bad masquerading vector";
         return;
@@ -9078,6 +9510,117 @@ void Tenants::updateByMasqueradedJson(const Json::Value &pJson,
         }
     }
 
+    if(!pMasqueradingVector[109].empty() && pJson.isMember(pMasqueradingVector[109]))
+    {
+        dirtyFlag_[109] = true;
+        if(!pJson[pMasqueradingVector[109]].isNull())
+        {
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(pJson[pMasqueradingVector[109]].asBool());
+        }
+    }
+
+    if(!pMasqueradingVector[110].empty() && pJson.isMember(pMasqueradingVector[110]))
+    {
+        dirtyFlag_[110] = true;
+        if(!pJson[pMasqueradingVector[110]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[110]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[111].empty() && pJson.isMember(pMasqueradingVector[111]))
+    {
+        dirtyFlag_[111] = true;
+        if(!pJson[pMasqueradingVector[111]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[111]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(!pMasqueradingVector[112].empty() && pJson.isMember(pMasqueradingVector[112]))
+    {
+        dirtyFlag_[112] = true;
+        if(!pJson[pMasqueradingVector[112]].isNull())
+        {
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(pJson[pMasqueradingVector[112]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[113].empty() && pJson.isMember(pMasqueradingVector[113]))
+    {
+        dirtyFlag_[113] = true;
+        if(!pJson[pMasqueradingVector[113]].isNull())
+        {
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(pJson[pMasqueradingVector[113]].asString());
+        }
+    }
+
+    if(!pMasqueradingVector[114].empty() && pJson.isMember(pMasqueradingVector[114]))
+    {
+        dirtyFlag_[114] = true;
+        if(!pJson[pMasqueradingVector[114]].isNull())
+        {
+            auto timeStr = pJson[pMasqueradingVector[114]].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
 }
 
 void Tenants::updateByJson(const Json::Value &pJson) noexcept(false)
@@ -10915,6 +11458,117 @@ void Tenants::updateByJson(const Json::Value &pJson) noexcept(false)
         if(!pJson["account_version"].isNull())
         {
             accountVersion_=std::make_shared<int32_t>((int32_t)pJson["account_version"].asInt64());
+        }
+    }
+
+    if(pJson.isMember("has_subscribed_to_fleet_workshop_management"))
+    {
+        dirtyFlag_[109] = true;
+        if(!pJson["has_subscribed_to_fleet_workshop_management"].isNull())
+        {
+            hasSubscribedToFleetWorkshopManagement_=std::make_shared<bool>(pJson["has_subscribed_to_fleet_workshop_management"].asBool());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_start_date"))
+    {
+        dirtyFlag_[110] = true;
+        if(!pJson["fleet_workshop_management_subscription_start_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_subscription_start_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionStartDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_end_date"))
+    {
+        dirtyFlag_[111] = true;
+        if(!pJson["fleet_workshop_management_subscription_end_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_subscription_end_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementSubscriptionEndDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_fee"))
+    {
+        dirtyFlag_[112] = true;
+        if(!pJson["fleet_workshop_management_subscription_fee"].isNull())
+        {
+            fleetWorkshopManagementSubscriptionFee_=std::make_shared<std::string>(pJson["fleet_workshop_management_subscription_fee"].asString());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_billing_cycle"))
+    {
+        dirtyFlag_[113] = true;
+        if(!pJson["fleet_workshop_management_billing_cycle"].isNull())
+        {
+            fleetWorkshopManagementBillingCycle_=std::make_shared<std::string>(pJson["fleet_workshop_management_billing_cycle"].asString());
+        }
+    }
+
+    if(pJson.isMember("fleet_workshop_management_next_renewal_date"))
+    {
+        dirtyFlag_[114] = true;
+        if(!pJson["fleet_workshop_management_next_renewal_date"].isNull())
+        {
+            auto timeStr = pJson["fleet_workshop_management_next_renewal_date"].asString();
+            struct tm stm;
+            memset(&stm,0,sizeof(stm));
+            stm.tm_isdst = -1;
+            auto p = strptime(timeStr.c_str(),"%Y-%m-%d %H:%M:%S",&stm);
+            time_t t = mktime(&stm);
+            size_t decimalNum = 0;
+            if(p)
+            {
+                if(*p=='.')
+                {
+                    std::string decimals(p+1,&timeStr[timeStr.length()]);
+                    while(decimals.length()<6)
+                    {
+                        decimals += "0";
+                    }
+                    decimalNum = (size_t)atol(decimals.c_str());
+                }
+                fleetWorkshopManagementNextRenewalDate_=std::make_shared<::trantor::Date>(t*1000000+decimalNum);
+            }
         }
     }
 
@@ -13363,6 +14017,138 @@ void Tenants::setAccountVersion(const int32_t &pAccountVersion) noexcept
     dirtyFlag_[108] = true;
 }
 
+const bool &Tenants::getValueOfHasSubscribedToFleetWorkshopManagement() const noexcept
+{
+    static const bool defaultValue = bool();
+    if(hasSubscribedToFleetWorkshopManagement_)
+        return *hasSubscribedToFleetWorkshopManagement_;
+    return defaultValue;
+}
+const std::shared_ptr<bool> &Tenants::getHasSubscribedToFleetWorkshopManagement() const noexcept
+{
+    return hasSubscribedToFleetWorkshopManagement_;
+}
+void Tenants::setHasSubscribedToFleetWorkshopManagement(const bool &pHasSubscribedToFleetWorkshopManagement) noexcept
+{
+    hasSubscribedToFleetWorkshopManagement_ = std::make_shared<bool>(pHasSubscribedToFleetWorkshopManagement);
+    dirtyFlag_[109] = true;
+}
+
+const ::trantor::Date &Tenants::getValueOfFleetWorkshopManagementSubscriptionStartDate() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(fleetWorkshopManagementSubscriptionStartDate_)
+        return *fleetWorkshopManagementSubscriptionStartDate_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &Tenants::getFleetWorkshopManagementSubscriptionStartDate() const noexcept
+{
+    return fleetWorkshopManagementSubscriptionStartDate_;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionStartDate(const ::trantor::Date &pFleetWorkshopManagementSubscriptionStartDate) noexcept
+{
+    fleetWorkshopManagementSubscriptionStartDate_ = std::make_shared<::trantor::Date>(pFleetWorkshopManagementSubscriptionStartDate);
+    dirtyFlag_[110] = true;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionStartDateToNull() noexcept
+{
+    fleetWorkshopManagementSubscriptionStartDate_.reset();
+    dirtyFlag_[110] = true;
+}
+
+const ::trantor::Date &Tenants::getValueOfFleetWorkshopManagementSubscriptionEndDate() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(fleetWorkshopManagementSubscriptionEndDate_)
+        return *fleetWorkshopManagementSubscriptionEndDate_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &Tenants::getFleetWorkshopManagementSubscriptionEndDate() const noexcept
+{
+    return fleetWorkshopManagementSubscriptionEndDate_;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionEndDate(const ::trantor::Date &pFleetWorkshopManagementSubscriptionEndDate) noexcept
+{
+    fleetWorkshopManagementSubscriptionEndDate_ = std::make_shared<::trantor::Date>(pFleetWorkshopManagementSubscriptionEndDate);
+    dirtyFlag_[111] = true;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionEndDateToNull() noexcept
+{
+    fleetWorkshopManagementSubscriptionEndDate_.reset();
+    dirtyFlag_[111] = true;
+}
+
+const std::string &Tenants::getValueOfFleetWorkshopManagementSubscriptionFee() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(fleetWorkshopManagementSubscriptionFee_)
+        return *fleetWorkshopManagementSubscriptionFee_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Tenants::getFleetWorkshopManagementSubscriptionFee() const noexcept
+{
+    return fleetWorkshopManagementSubscriptionFee_;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionFee(const std::string &pFleetWorkshopManagementSubscriptionFee) noexcept
+{
+    fleetWorkshopManagementSubscriptionFee_ = std::make_shared<std::string>(pFleetWorkshopManagementSubscriptionFee);
+    dirtyFlag_[112] = true;
+}
+void Tenants::setFleetWorkshopManagementSubscriptionFee(std::string &&pFleetWorkshopManagementSubscriptionFee) noexcept
+{
+    fleetWorkshopManagementSubscriptionFee_ = std::make_shared<std::string>(std::move(pFleetWorkshopManagementSubscriptionFee));
+    dirtyFlag_[112] = true;
+}
+
+const std::string &Tenants::getValueOfFleetWorkshopManagementBillingCycle() const noexcept
+{
+    static const std::string defaultValue = std::string();
+    if(fleetWorkshopManagementBillingCycle_)
+        return *fleetWorkshopManagementBillingCycle_;
+    return defaultValue;
+}
+const std::shared_ptr<std::string> &Tenants::getFleetWorkshopManagementBillingCycle() const noexcept
+{
+    return fleetWorkshopManagementBillingCycle_;
+}
+void Tenants::setFleetWorkshopManagementBillingCycle(const std::string &pFleetWorkshopManagementBillingCycle) noexcept
+{
+    fleetWorkshopManagementBillingCycle_ = std::make_shared<std::string>(pFleetWorkshopManagementBillingCycle);
+    dirtyFlag_[113] = true;
+}
+void Tenants::setFleetWorkshopManagementBillingCycle(std::string &&pFleetWorkshopManagementBillingCycle) noexcept
+{
+    fleetWorkshopManagementBillingCycle_ = std::make_shared<std::string>(std::move(pFleetWorkshopManagementBillingCycle));
+    dirtyFlag_[113] = true;
+}
+void Tenants::setFleetWorkshopManagementBillingCycleToNull() noexcept
+{
+    fleetWorkshopManagementBillingCycle_.reset();
+    dirtyFlag_[113] = true;
+}
+
+const ::trantor::Date &Tenants::getValueOfFleetWorkshopManagementNextRenewalDate() const noexcept
+{
+    static const ::trantor::Date defaultValue = ::trantor::Date();
+    if(fleetWorkshopManagementNextRenewalDate_)
+        return *fleetWorkshopManagementNextRenewalDate_;
+    return defaultValue;
+}
+const std::shared_ptr<::trantor::Date> &Tenants::getFleetWorkshopManagementNextRenewalDate() const noexcept
+{
+    return fleetWorkshopManagementNextRenewalDate_;
+}
+void Tenants::setFleetWorkshopManagementNextRenewalDate(const ::trantor::Date &pFleetWorkshopManagementNextRenewalDate) noexcept
+{
+    fleetWorkshopManagementNextRenewalDate_ = std::make_shared<::trantor::Date>(pFleetWorkshopManagementNextRenewalDate);
+    dirtyFlag_[114] = true;
+}
+void Tenants::setFleetWorkshopManagementNextRenewalDateToNull() noexcept
+{
+    fleetWorkshopManagementNextRenewalDate_.reset();
+    dirtyFlag_[114] = true;
+}
+
 void Tenants::updateId(const uint64_t id)
 {
 }
@@ -13479,7 +14265,13 @@ const std::vector<std::string> &Tenants::insertColumns() noexcept
         "name",
         "connection_string",
         "is_active",
-        "account_version"
+        "account_version",
+        "has_subscribed_to_fleet_workshop_management",
+        "fleet_workshop_management_subscription_start_date",
+        "fleet_workshop_management_subscription_end_date",
+        "fleet_workshop_management_subscription_fee",
+        "fleet_workshop_management_billing_cycle",
+        "fleet_workshop_management_next_renewal_date"
 
     };
     return inCols;
@@ -14796,6 +15588,78 @@ void Tenants::outputArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[109])
+    {
+        if(getHasSubscribedToFleetWorkshopManagement())
+        {
+            binder << getValueOfHasSubscribedToFleetWorkshopManagement();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[110])
+    {
+        if(getFleetWorkshopManagementSubscriptionStartDate())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionStartDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[111])
+    {
+        if(getFleetWorkshopManagementSubscriptionEndDate())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionEndDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[112])
+    {
+        if(getFleetWorkshopManagementSubscriptionFee())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionFee();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[113])
+    {
+        if(getFleetWorkshopManagementBillingCycle())
+        {
+            binder << getValueOfFleetWorkshopManagementBillingCycle();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[114])
+    {
+        if(getFleetWorkshopManagementNextRenewalDate())
+        {
+            binder << getValueOfFleetWorkshopManagementNextRenewalDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 
 const std::vector<std::string> Tenants::updateColumns() const
@@ -15345,6 +16209,36 @@ const std::vector<std::string> Tenants::updateColumns() const
     if(dirtyFlag_[108])
     {
         ret.push_back(getColumnName(108));
+    }
+
+    if(dirtyFlag_[109])
+    {
+        ret.push_back(getColumnName(109));
+    }
+
+    if(dirtyFlag_[110])
+    {
+        ret.push_back(getColumnName(110));
+    }
+
+    if(dirtyFlag_[111])
+    {
+        ret.push_back(getColumnName(111));
+    }
+
+    if(dirtyFlag_[112])
+    {
+        ret.push_back(getColumnName(112));
+    }
+
+    if(dirtyFlag_[113])
+    {
+        ret.push_back(getColumnName(113));
+    }
+
+    if(dirtyFlag_[114])
+    {
+        ret.push_back(getColumnName(114));
     }
 
     return ret;
@@ -16661,6 +17555,78 @@ void Tenants::updateArgs(drogon::orm::internal::SqlBinder &binder) const
         }
     }
 
+    if(dirtyFlag_[109])
+    {
+        if(getHasSubscribedToFleetWorkshopManagement())
+        {
+            binder << getValueOfHasSubscribedToFleetWorkshopManagement();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[110])
+    {
+        if(getFleetWorkshopManagementSubscriptionStartDate())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionStartDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[111])
+    {
+        if(getFleetWorkshopManagementSubscriptionEndDate())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionEndDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[112])
+    {
+        if(getFleetWorkshopManagementSubscriptionFee())
+        {
+            binder << getValueOfFleetWorkshopManagementSubscriptionFee();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[113])
+    {
+        if(getFleetWorkshopManagementBillingCycle())
+        {
+            binder << getValueOfFleetWorkshopManagementBillingCycle();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
+    if(dirtyFlag_[114])
+    {
+        if(getFleetWorkshopManagementNextRenewalDate())
+        {
+            binder << getValueOfFleetWorkshopManagementNextRenewalDate();
+        }
+        else
+        {
+            binder << nullptr;
+        }
+    }
+
 }
 Json::Value Tenants::toJson() const
 {
@@ -17865,6 +18831,72 @@ Json::Value Tenants::toJson() const
         ret["account_version"]=Json::Value();
     }
 
+    if(getHasSubscribedToFleetWorkshopManagement())
+    {
+
+        ret["has_subscribed_to_fleet_workshop_management"]=getValueOfHasSubscribedToFleetWorkshopManagement();
+
+    }
+    else
+    {
+        ret["has_subscribed_to_fleet_workshop_management"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionStartDate())
+    {
+
+        ret["fleet_workshop_management_subscription_start_date"]=getFleetWorkshopManagementSubscriptionStartDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_start_date"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionEndDate())
+    {
+
+        ret["fleet_workshop_management_subscription_end_date"]=getFleetWorkshopManagementSubscriptionEndDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_end_date"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionFee())
+    {
+
+        ret["fleet_workshop_management_subscription_fee"]=getValueOfFleetWorkshopManagementSubscriptionFee();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_fee"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementBillingCycle())
+    {
+
+        ret["fleet_workshop_management_billing_cycle"]=getValueOfFleetWorkshopManagementBillingCycle();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_billing_cycle"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementNextRenewalDate())
+    {
+
+        ret["fleet_workshop_management_next_renewal_date"]=getFleetWorkshopManagementNextRenewalDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_next_renewal_date"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -17877,7 +18909,7 @@ Json::Value Tenants::toMasqueradedJson(
     const std::vector<std::string> &pMasqueradingVector) const
 {
     Json::Value ret;
-    if(pMasqueradingVector.size() == 109)
+    if(pMasqueradingVector.size() == 115)
     {
 
         if(!pMasqueradingVector[0].empty())
@@ -19406,6 +20438,90 @@ Json::Value Tenants::toMasqueradedJson(
             }
         }
 
+        if(!pMasqueradingVector[109].empty())
+        {
+            if(getHasSubscribedToFleetWorkshopManagement())
+            {
+
+                ret[pMasqueradingVector[109]]=getValueOfHasSubscribedToFleetWorkshopManagement();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[109]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[110].empty())
+        {
+            if(getFleetWorkshopManagementSubscriptionStartDate())
+            {
+
+                ret[pMasqueradingVector[110]]=getFleetWorkshopManagementSubscriptionStartDate()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[110]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[111].empty())
+        {
+            if(getFleetWorkshopManagementSubscriptionEndDate())
+            {
+
+                ret[pMasqueradingVector[111]]=getFleetWorkshopManagementSubscriptionEndDate()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[111]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[112].empty())
+        {
+            if(getFleetWorkshopManagementSubscriptionFee())
+            {
+
+                ret[pMasqueradingVector[112]]=getValueOfFleetWorkshopManagementSubscriptionFee();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[112]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[113].empty())
+        {
+            if(getFleetWorkshopManagementBillingCycle())
+            {
+
+                ret[pMasqueradingVector[113]]=getValueOfFleetWorkshopManagementBillingCycle();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[113]]=Json::Value();
+            }
+        }
+
+        if(!pMasqueradingVector[114].empty())
+        {
+            if(getFleetWorkshopManagementNextRenewalDate())
+            {
+
+                ret[pMasqueradingVector[114]]=getFleetWorkshopManagementNextRenewalDate()->toDbStringLocal();
+
+            }
+            else
+            {
+                ret[pMasqueradingVector[114]]=Json::Value();
+            }
+        }
+
         return ret;
     }
     LOG_ERROR << "Masquerade failed";
@@ -20609,6 +21725,72 @@ Json::Value Tenants::toMasqueradedJson(
         ret["account_version"]=Json::Value();
     }
 
+    if(getHasSubscribedToFleetWorkshopManagement())
+    {
+
+        ret["has_subscribed_to_fleet_workshop_management"]=getValueOfHasSubscribedToFleetWorkshopManagement();
+
+    }
+    else
+    {
+        ret["has_subscribed_to_fleet_workshop_management"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionStartDate())
+    {
+
+        ret["fleet_workshop_management_subscription_start_date"]=getFleetWorkshopManagementSubscriptionStartDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_start_date"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionEndDate())
+    {
+
+        ret["fleet_workshop_management_subscription_end_date"]=getFleetWorkshopManagementSubscriptionEndDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_end_date"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementSubscriptionFee())
+    {
+
+        ret["fleet_workshop_management_subscription_fee"]=getValueOfFleetWorkshopManagementSubscriptionFee();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_subscription_fee"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementBillingCycle())
+    {
+
+        ret["fleet_workshop_management_billing_cycle"]=getValueOfFleetWorkshopManagementBillingCycle();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_billing_cycle"]=Json::Value();
+    }
+
+    if(getFleetWorkshopManagementNextRenewalDate())
+    {
+
+        ret["fleet_workshop_management_next_renewal_date"]=getFleetWorkshopManagementNextRenewalDate()->toDbStringLocal();
+
+    }
+    else
+    {
+        ret["fleet_workshop_management_next_renewal_date"]=Json::Value();
+    }
+
     return ret;
 }
 
@@ -21479,13 +22661,49 @@ bool Tenants::validateJsonForCreation(const Json::Value &pJson, std::string &err
             return false;
     }
 
+    if(pJson.isMember("has_subscribed_to_fleet_workshop_management"))
+    {
+        if(!validJsonOfField(109, "has_subscribed_to_fleet_workshop_management", pJson["has_subscribed_to_fleet_workshop_management"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_start_date"))
+    {
+        if(!validJsonOfField(110, "fleet_workshop_management_subscription_start_date", pJson["fleet_workshop_management_subscription_start_date"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_end_date"))
+    {
+        if(!validJsonOfField(111, "fleet_workshop_management_subscription_end_date", pJson["fleet_workshop_management_subscription_end_date"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_fee"))
+    {
+        if(!validJsonOfField(112, "fleet_workshop_management_subscription_fee", pJson["fleet_workshop_management_subscription_fee"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_billing_cycle"))
+    {
+        if(!validJsonOfField(113, "fleet_workshop_management_billing_cycle", pJson["fleet_workshop_management_billing_cycle"], err, true))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_next_renewal_date"))
+    {
+        if(!validJsonOfField(114, "fleet_workshop_management_next_renewal_date", pJson["fleet_workshop_management_next_renewal_date"], err, true))
+            return false;
+    }
+
     return true;
 }
 bool Tenants::validateMasqueradedJsonForCreation(const Json::Value &pJson,
                                                  const std::vector<std::string> &pMasqueradingVector,
                                                  std::string &err)
 {
-    if(pMasqueradingVector.size() != 109)
+    if(pMasqueradingVector.size() != 115)
     {
         err = "Bad masquerading vector";
         return false;
@@ -22792,6 +24010,66 @@ bool Tenants::validateMasqueradedJsonForCreation(const Json::Value &pJson,
 
       }
 
+      if(!pMasqueradingVector[109].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[109]))
+          {
+              if(!validJsonOfField(109, pMasqueradingVector[109], pJson[pMasqueradingVector[109]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[110].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[110]))
+          {
+              if(!validJsonOfField(110, pMasqueradingVector[110], pJson[pMasqueradingVector[110]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[111].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[111]))
+          {
+              if(!validJsonOfField(111, pMasqueradingVector[111], pJson[pMasqueradingVector[111]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[112].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[112]))
+          {
+              if(!validJsonOfField(112, pMasqueradingVector[112], pJson[pMasqueradingVector[112]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[113].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[113]))
+          {
+              if(!validJsonOfField(113, pMasqueradingVector[113], pJson[pMasqueradingVector[113]], err, true))
+                  return false;
+          }
+
+      }
+
+      if(!pMasqueradingVector[114].empty())
+      {
+          if(pJson.isMember(pMasqueradingVector[114]))
+          {
+              if(!validJsonOfField(114, pMasqueradingVector[114], pJson[pMasqueradingVector[114]], err, true))
+                  return false;
+          }
+
+      }
+
     }
     catch(const Json::LogicError &e)
     {
@@ -23463,13 +24741,49 @@ bool Tenants::validateJsonForUpdate(const Json::Value &pJson, std::string &err)
             return false;
     }
 
+    if(pJson.isMember("has_subscribed_to_fleet_workshop_management"))
+    {
+        if(!validJsonOfField(109, "has_subscribed_to_fleet_workshop_management", pJson["has_subscribed_to_fleet_workshop_management"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_start_date"))
+    {
+        if(!validJsonOfField(110, "fleet_workshop_management_subscription_start_date", pJson["fleet_workshop_management_subscription_start_date"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_end_date"))
+    {
+        if(!validJsonOfField(111, "fleet_workshop_management_subscription_end_date", pJson["fleet_workshop_management_subscription_end_date"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_subscription_fee"))
+    {
+        if(!validJsonOfField(112, "fleet_workshop_management_subscription_fee", pJson["fleet_workshop_management_subscription_fee"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_billing_cycle"))
+    {
+        if(!validJsonOfField(113, "fleet_workshop_management_billing_cycle", pJson["fleet_workshop_management_billing_cycle"], err, false))
+            return false;
+    }
+
+    if(pJson.isMember("fleet_workshop_management_next_renewal_date"))
+    {
+        if(!validJsonOfField(114, "fleet_workshop_management_next_renewal_date", pJson["fleet_workshop_management_next_renewal_date"], err, false))
+            return false;
+    }
+
     return true;
 }
 bool Tenants::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
                                                const std::vector<std::string> &pMasqueradingVector,
                                                std::string &err)
 {
-    if(pMasqueradingVector.size() != 109)
+    if(pMasqueradingVector.size() != 115)
     {
         err = "Bad masquerading vector";
         return false;
@@ -24133,6 +25447,42 @@ bool Tenants::validateMasqueradedJsonForUpdate(const Json::Value &pJson,
       if(!pMasqueradingVector[108].empty() && pJson.isMember(pMasqueradingVector[108]))
       {
           if(!validJsonOfField(108, pMasqueradingVector[108], pJson[pMasqueradingVector[108]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[109].empty() && pJson.isMember(pMasqueradingVector[109]))
+      {
+          if(!validJsonOfField(109, pMasqueradingVector[109], pJson[pMasqueradingVector[109]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[110].empty() && pJson.isMember(pMasqueradingVector[110]))
+      {
+          if(!validJsonOfField(110, pMasqueradingVector[110], pJson[pMasqueradingVector[110]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[111].empty() && pJson.isMember(pMasqueradingVector[111]))
+      {
+          if(!validJsonOfField(111, pMasqueradingVector[111], pJson[pMasqueradingVector[111]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[112].empty() && pJson.isMember(pMasqueradingVector[112]))
+      {
+          if(!validJsonOfField(112, pMasqueradingVector[112], pJson[pMasqueradingVector[112]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[113].empty() && pJson.isMember(pMasqueradingVector[113]))
+      {
+          if(!validJsonOfField(113, pMasqueradingVector[113], pJson[pMasqueradingVector[113]], err, false))
+              return false;
+      }
+
+      if(!pMasqueradingVector[114].empty() && pJson.isMember(pMasqueradingVector[114]))
+      {
+          if(!validJsonOfField(114, pMasqueradingVector[114], pJson[pMasqueradingVector[114]], err, false))
               return false;
       }
 
@@ -26034,6 +27384,106 @@ bool Tenants::validJsonOfField(size_t index,
             }
 
             if(!pJson.isInt())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 109:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isBool())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 110:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 111:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 112:
+
+            if(pJson.isNull())
+            {
+                err="The " + fieldName + " column cannot be null";
+                return false;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            break;
+
+        case 113:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
+            {
+                err="Type error in the "+fieldName+" field";
+                return false;
+            }
+
+            if(pJson.isString() && drogon::utils::utf8Length(pJson.asCString()) > 50)
+            {
+                err="String length exceeds limit for the " +
+                    fieldName +
+                    " field (the maximum value is 50)";
+                return false;
+            }
+
+            break;
+
+        case 114:
+
+            if(pJson.isNull())
+            {
+                return true;
+            }
+
+            if(!pJson.isString())
             {
                 err="Type error in the "+fieldName+" field";
                 return false;

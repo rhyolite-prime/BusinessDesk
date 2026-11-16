@@ -331,7 +331,7 @@ export const businessModules: BusinessModule[] = [
     domain: 'Operations',
     category: 'Fleet & workshop operations',
     description: 'Maintain the vehicle fleet, schedule servicing, run workshop jobs, and track parts, fuel, and fleet costs.',
-    readiness: 'preview',
+    readiness: 'live',
     icon: CarFront,
     metrics: [
       { label: 'Vehicles in fleet', context: 'Fleet register summary' },
@@ -360,5 +360,6 @@ export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string)
   if (moduleId === 'human-resource') return '/hr'
   if (moduleId === 'inventory') return '/inventory'
   if (moduleId === 'supply-chain') return '/supply-chain'
+  if (moduleId === 'fleet-workshop-management') return '/fleet-workshop'
   return `/modules/${moduleId}`
 }

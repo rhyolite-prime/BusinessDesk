@@ -17,5 +17,11 @@ public:
   static drogon::Task<dto::BaseApiResponse>
   execute(std::string op, std::string id, Json::Value body, int page, int size,
           std::string query, std::string unitId, utils::AuditIdentity who);
+  // Versioned cross-module contract: create a purchase requisition inside the
+  // caller's transaction (used by Fleet & Workshop Management for spare parts
+  // procurement); the caller owns commit/rollback.
+  static drogon::Task<dto::BaseApiResponse>
+  createRequisition(drogon::orm::DbClientPtr transaction, Json::Value payload,
+                    utils::AuditIdentity who);
 };
 } // namespace business_desk::domain_services
