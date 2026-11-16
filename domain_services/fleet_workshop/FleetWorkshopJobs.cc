@@ -139,7 +139,7 @@ fetchJobCard(DbClientPtr db, const utils::AuditIdentity &who, const std::string 
   auto out = parse(head[0]["record"].as<std::string>());
 
   const auto lines = co_await db->execSqlCoro(
-      "SELECT jsonb_build_object('id',l.id,'lineNumber',l.line_number,'lineType',l.line_type,"
+      "SELECT jsonb_build_object('id',l.id,'version',l.version,'lineNumber',l.line_number,'lineType',l.line_type,"
       "'sourceType',l.source_type,'description',l.description,'positionOrSide',l.position_or_side,"
       "'invItemId',l.inv_item_id,'itemCode',COALESCE(i.item_code,''),'uomId',l.uom_id,"
       "'warehouseId',l.warehouse_id,'invStockDocumentId',l.inv_stock_document_id,"
