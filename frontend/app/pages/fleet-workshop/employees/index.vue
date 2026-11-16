@@ -8,9 +8,26 @@ import { SKILL_LEVELS, TRADE_ROLES, fleetErrorMessage, humanLabel } from '../../
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Workshop technicians & drivers' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const opts = useFleetOptions()
 const toast = useToast()
+const hrOptions = ref<Array<{ value: string; label: string }>>([])
+const employeeOptions = computed(() => (hrOptions.value.length ? hrOptions.value : opts.employees.value))
+
+async function loadHrOptions() {
+  try {
+    const res = await api.employees.options()
+    if (res?.hrEmployees?.length) {
+      hrOptions.value = res.hrEmployees.map((e) => ({
+        value: e.id,
+        label: e.employeeIdentifier ? `${e.employeeIdentifier} — ${e.name}` : e.name,
+      }))
+    }
+  } catch {
+    // fallback to opts.employees
+  }
+}
 
 const rows = ref<WorkshopEmployeeRecord[]>([])
 const total = ref(0)
@@ -40,7 +57,11 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  void loadHrOptions()
+  if (route.query.new === '1') openCreate()
+})
 
 const showModal = ref(false)
 const editing = ref<WorkshopEmployeeRecord | null>(null)
@@ -64,7 +85,7 @@ function openCreate() {
   editing.value = null
   formError.value = ''
   Object.assign(form, {
-    employeeId: '',
+    employeeId: employeeOptions.value[0]?.value || '',
     tradeRole: 'mechanic',
     skillLevel: 'journeyman',
     hourlyCostRate: '0',
@@ -76,6 +97,7 @@ function openCreate() {
   })
   certifications.value = []
   showModal.value = true
+  void loadHrOptions()
 }
 
 async function openEdit(row: WorkshopEmployeeRecord) {
@@ -175,9 +197,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Workshop technicians & drivers" subtitle="Link HR employees to workshop trades, cost/charge rates, bay assignments and certifications." icon="users">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">Register workshop staff</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">Register workshop staff</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -226,7 +246,10 @@ const columns = [
       <form class="space-y-4" @submit.prevent="save">
         <div class="grid gap-3.5 sm:grid-cols-2">
           <FormField label="HR employee" required>
-            <FleetSelect v-model="form.employeeId" :options="opts.employees.value" placeholder="Select HR employee…" :disabled="!!editing" />
+            <FleetSelect v-model="form.employeeId" :options="employeeOptions" placeholder="Select HR employee…" :disabled="!!editing" />
+            <p v-if="!employeeOptions.length" class="mt-1 text-xs text-amber-700 dark:text-amber-300">
+              No HR employee records found yet. Create an employee in <NuxtLink to="/hr" class="font-semibold underline">Human Resources</NuxtLink> first.
+            </p>
           </FormField>
           <FormField label="Bay assignment"><TextInput v-model="form.bayAssignment" placeholder="e.g. Bay 2 — Heavy" /></FormField>
           <FormField label="Trade role" required><FleetSelect v-model="form.tradeRole" :options="TRADE_ROLES" :allow-empty="false" /></FormField>

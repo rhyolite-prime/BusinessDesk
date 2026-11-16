@@ -8,6 +8,7 @@ import { LUBRICANT_TYPES, fleetErrorMessage, fleetStatusTone, humanLabel, todayI
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Fuel & lubricants' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -72,7 +73,11 @@ async function load() {
 }
 
 watch([activeTab, vehicleFilter, unitId, fuelPage, tolPage, lubPage], load)
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') void openCreateFuel()
+  else if (route.query.new === 'lub') void openCreateLub()
+})
 
 /* ----------------------------- Fuel Log Modal ----------------------------- */
 const showFuelModal = ref(false)
@@ -81,6 +86,7 @@ const fuelSaving = ref(false)
 const fuelError = ref('')
 const fuelPreviewNo = ref('')
 const fuelForm = reactive({
+  accountingUnitId: '',
   vehicleId: '',
   driverEmployeeId: '',
   logDate: todayIso(),
@@ -97,12 +103,13 @@ const fuelForm = reactive({
 })
 
 async function openCreateFuel() {
-  if (!unitId.value) { toast.error('Select an accounting unit first.'); return }
   editingFuel.value = null
   fuelError.value = ''
   fuelPreviewNo.value = ''
+  const defaultUnit = unitId.value || opts.accountingUnits.value[0]?.value || ''
   Object.assign(fuelForm, {
-    vehicleId: opts.vehicles.value[0]?.value || '',
+    accountingUnitId: defaultUnit,
+    vehicleId: vehicleFilter.value || opts.vehicles.value[0]?.value || '',
     driverEmployeeId: '',
     logDate: todayIso(),
     warehouseId: opts.invWarehouses.value[0]?.value || '',
@@ -119,10 +126,12 @@ async function openCreateFuel() {
   onFuelVehicleChange(fuelForm.vehicleId)
   onFuelItemChange(fuelForm.fuelItemId)
   showFuelModal.value = true
-  try {
-    const n = await api.fuelLogs.nextNumber(unitId.value)
-    fuelPreviewNo.value = n.nextNumber
-  } catch { /* ignore */ }
+  if (defaultUnit) {
+    try {
+      const n = await api.fuelLogs.nextNumber(defaultUnit)
+      fuelPreviewNo.value = n.nextNumber
+    } catch { /* ignore */ }
+  }
 }
 
 function openEditFuel(row: FuelLogRecord) {
@@ -161,6 +170,11 @@ function onFuelItemChange(itemId: string) {
 
 async function saveFuel() {
   if (fuelSaving.value) return
+  const resolvedUnit = editingFuel.value ? editingFuel.value.accountingUnitId : (fuelForm.accountingUnitId || unitId.value)
+  if (!resolvedUnit) {
+    fuelError.value = 'Accounting unit is required.'
+    return
+  }
   if (!fuelForm.vehicleId || !fuelForm.quantityLitres) {
     fuelError.value = 'Vehicle and litres are required.'
     return
@@ -169,7 +183,7 @@ async function saveFuel() {
   fuelError.value = ''
   try {
     const body = {
-      accountingUnitId: editingFuel.value ? editingFuel.value.accountingUnitId : unitId.value,
+      accountingUnitId: resolvedUnit,
       vehicleId: fuelForm.vehicleId,
       driverEmployeeId: fuelForm.driverEmployeeId || null,
       logDate: fuelForm.logDate,
@@ -265,6 +279,7 @@ const lubSaving = ref(false)
 const lubError = ref('')
 const lubPreviewNo = ref('')
 const lubForm = reactive({
+  accountingUnitId: '',
   vehicleId: '',
   logDate: todayIso(),
   lubricantType: 'engine_oil',
@@ -279,11 +294,12 @@ const lubForm = reactive({
 })
 
 async function openCreateLub() {
-  if (!unitId.value) { toast.error('Select an accounting unit first.'); return }
   lubError.value = ''
   lubPreviewNo.value = ''
+  const defaultUnit = unitId.value || opts.accountingUnits.value[0]?.value || ''
   Object.assign(lubForm, {
-    vehicleId: opts.vehicles.value[0]?.value || '',
+    accountingUnitId: defaultUnit,
+    vehicleId: vehicleFilter.value || opts.vehicles.value[0]?.value || '',
     logDate: todayIso(),
     lubricantType: 'engine_oil',
     warehouseId: opts.invWarehouses.value[0]?.value || '',
@@ -295,14 +311,21 @@ async function openCreateLub() {
     isOilChange: false,
     notes: '',
   })
-  const v = opts.vehicleMap.value[lubForm.vehicleId]
-  if (v) lubForm.meterReading = v.currentMeterReading || '0'
+  onLubVehicleChange(lubForm.vehicleId)
   onLubItemChange(lubForm.itemId)
   showLubModal.value = true
-  try {
-    const n = await api.lubricantLogs.nextNumber(unitId.value)
-    lubPreviewNo.value = n.nextNumber
-  } catch { /* ignore */ }
+  if (defaultUnit) {
+    try {
+      const n = await api.lubricantLogs.nextNumber(defaultUnit)
+      lubPreviewNo.value = n.nextNumber
+    } catch { /* ignore */ }
+  }
+}
+
+function onLubVehicleChange(vehicleId: string) {
+  lubForm.vehicleId = vehicleId
+  const v = opts.vehicleMap.value[vehicleId]
+  if (v) lubForm.meterReading = v.currentMeterReading || '0'
 }
 
 function onLubItemChange(itemId: string) {
@@ -313,6 +336,11 @@ function onLubItemChange(itemId: string) {
 
 async function saveLub() {
   if (lubSaving.value) return
+  const resolvedUnit = lubForm.accountingUnitId || unitId.value
+  if (!resolvedUnit) {
+    lubError.value = 'Accounting unit is required.'
+    return
+  }
   if (!lubForm.vehicleId || !lubForm.quantity) {
     lubError.value = 'Vehicle and quantity are required.'
     return
@@ -321,7 +349,7 @@ async function saveLub() {
   lubError.value = ''
   try {
     await api.lubricantLogs.create({
-      accountingUnitId: unitId.value,
+      accountingUnitId: resolvedUnit,
       vehicleId: lubForm.vehicleId,
       logDate: lubForm.logDate,
       lubricantType: lubForm.lubricantType,
@@ -419,12 +447,8 @@ const lubCols = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Fuel & lubricants" subtitle="Daily fuel issues, variance tolerance checks, lubricant logs, and Inventory + GL posting." icon="arrow-path">
-      <template #actions>
-        <div class="flex flex-wrap gap-2">
-          <BaseButton variant="secondary" @click="openCreateLub">Log lubricant</BaseButton>
-          <BaseButton icon="plus" @click="openCreateFuel">Log fuel issue</BaseButton>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="plus" @click="openCreateLub">Log lubricant</BaseButton>
+      <BaseButton icon="plus" @click="openCreateFuel">Log fuel issue</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -531,6 +555,9 @@ const lubCols = [
     <ModalShell :open="showFuelModal" :title="editingFuel ? `Edit fuel log ${editingFuel.fuelLogNumber}` : `Log daily fuel issue ${fuelPreviewNo ? `(${fuelPreviewNo})` : ''}`" width="max-w-2xl" @close="showFuelModal = false">
       <form class="space-y-3.5" @submit.prevent="saveFuel">
         <div class="grid gap-3 sm:grid-cols-2">
+          <FormField v-if="!editingFuel" label="Accounting unit" required class="sm:col-span-2">
+            <FleetSelect v-model="fuelForm.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+          </FormField>
           <FormField label="Log date" required><TextInput v-model="fuelForm.logDate" type="date" /></FormField>
           <FormField label="Vehicle" required><FleetSelect :model-value="fuelForm.vehicleId" :options="opts.vehicles.value" placeholder="Select vehicle…" @update:model-value="onFuelVehicleChange" /></FormField>
           <FormField label="Driver / operator"><FleetSelect v-model="fuelForm.driverEmployeeId" :options="opts.employees.value" placeholder="None" /></FormField>
@@ -570,8 +597,11 @@ const lubCols = [
     <ModalShell :open="showLubModal" :title="`Log lubricant / oil issue ${lubPreviewNo ? `(${lubPreviewNo})` : ''}`" width="max-w-2xl" @close="showLubModal = false">
       <form class="space-y-3.5" @submit.prevent="saveLub">
         <div class="grid gap-3 sm:grid-cols-2">
+          <FormField label="Accounting unit" required class="sm:col-span-2">
+            <FleetSelect v-model="lubForm.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+          </FormField>
           <FormField label="Log date" required><TextInput v-model="lubForm.logDate" type="date" /></FormField>
-          <FormField label="Vehicle" required><FleetSelect v-model="lubForm.vehicleId" :options="opts.vehicles.value" placeholder="Select vehicle…" /></FormField>
+          <FormField label="Vehicle" required><FleetSelect :model-value="lubForm.vehicleId" :options="opts.vehicles.value" placeholder="Select vehicle…" @update:model-value="onLubVehicleChange" /></FormField>
           <FormField label="Lubricant type"><FleetSelect v-model="lubForm.lubricantType" :options="LUBRICANT_TYPES" :allow-empty="false" /></FormField>
           <FormField label="Warehouse"><FleetSelect v-model="lubForm.warehouseId" :options="opts.invWarehouses.value" placeholder="Optional warehouse…" /></FormField>
           <FormField label="Inventory item"><FleetSelect :model-value="lubForm.itemId" :options="opts.invItems.value" placeholder="Optional item…" @update:model-value="onLubItemChange" /></FormField>

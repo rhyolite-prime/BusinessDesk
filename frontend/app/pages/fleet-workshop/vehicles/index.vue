@@ -20,6 +20,7 @@ import {
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Asset register' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -72,7 +73,10 @@ watch(q, () => {
   clearTimeout(searchTimer)
   searchTimer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') void openCreate()
+})
 
 /* ----------------------------- Vehicle modal ------------------------------- */
 const showModal = ref(false)
@@ -82,6 +86,7 @@ const saving = ref(false)
 const formError = ref('')
 
 const form = reactive({
+  accountingUnitId: '',
   assetNo: '',
   registrationNo: '',
   assetGroupId: '',
@@ -137,6 +142,7 @@ const triggersError = ref('')
 
 function resetForm() {
   Object.assign(form, {
+    accountingUnitId: unitId.value || opts.accountingUnits.value[0]?.value || '',
     assetNo: '',
     registrationNo: '',
     assetGroupId: '',
@@ -188,22 +194,52 @@ function resetForm() {
 }
 
 async function openCreate() {
-  if (!unitId.value) {
-    toast.error('Select an accounting unit first.')
-    return
-  }
   editing.value = null
   formError.value = ''
   triggers.value = []
   modalTab.value = 'general'
   resetForm()
   showModal.value = true
-  try {
-    const n = await api.vehicles.nextNumber(unitId.value)
-    form.assetNo = n.nextNumber
-  } catch {
-    form.assetNo = ''
+  const targetUnit = form.accountingUnitId || unitId.value
+  if (targetUnit) {
+    try {
+      const n = await api.vehicles.nextNumber(targetUnit)
+      form.assetNo = n.nextNumber
+    } catch {
+      form.assetNo = ''
+    }
   }
+}
+
+async function onCreateUnitChange(nextUnit: string) {
+  if (!editing.value && nextUnit) {
+    if (!unitId.value) unitId.value = nextUnit
+    if (!form.assetNo.trim()) {
+      try {
+        const n = await api.vehicles.nextNumber(nextUnit)
+        form.assetNo = n.nextNumber
+      } catch {
+        // keep manual input
+      }
+    }
+  }
+}
+
+function onAssetGroupChange(groupId: string) {
+  if (editing.value || !groupId) return
+  const grp = opts.vehicleOptions.value.assetGroups.find((g) => g.id === groupId) as
+    | (typeof opts.vehicleOptions.value.assetGroups[number] & { defaultTriggerMetric?: string })
+    | undefined
+  if (!grp) return
+  if (!form.makeModel.trim() && grp.model) form.makeModel = grp.model
+  if (grp.defaultTriggerMetric && grp.defaultTriggerMetric !== 'dates') {
+    form.primaryMeterUnit = grp.defaultTriggerMetric
+  }
+  if (grp.assetClass === 'heavy_equipment' || grp.assetClass === 'mining_equipment') {
+    form.isHeavyMachinery = true
+  }
+  if (grp.assetClass === 'mining_equipment') form.isMiningEquipment = true
+  if (grp.assetClass === 'trailer') form.isTrailerUnit = true
 }
 
 async function openEdit(row: VehicleRecord, startTab: 'general' | 'triggers' = 'general') {
@@ -275,6 +311,11 @@ async function openEdit(row: VehicleRecord, startTab: 'general' | 'triggers' = '
 
 async function saveVehicle() {
   if (saving.value) return
+  const resolvedUnit = editing.value ? editing.value.accountingUnitId : (form.accountingUnitId || unitId.value)
+  if (!resolvedUnit) {
+    formError.value = 'Accounting unit is required.'
+    return
+  }
   if (!form.assetNo.trim()) {
     formError.value = 'Asset No. is required.'
     return
@@ -283,7 +324,7 @@ async function saveVehicle() {
   formError.value = ''
   try {
     const body: Record<string, unknown> = {
-      accountingUnitId: editing.value ? editing.value.accountingUnitId : unitId.value,
+      accountingUnitId: resolvedUnit,
       assetNo: form.assetNo.trim(),
       registrationNo: form.registrationNo.trim(),
       assetGroupId: form.assetGroupId || null,
@@ -470,9 +511,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Asset register" subtitle="Vehicles, heavy equipment, coupled trailers, PM triggers and Fixed Assets sync." icon="cube">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">Add vehicle / asset</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">Add vehicle / asset</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -581,9 +620,12 @@ const columns = [
 
       <form v-if="modalTab !== 'triggers'" class="space-y-4" @submit.prevent="saveVehicle">
         <div v-if="modalTab === 'general'" class="grid gap-3.5 sm:grid-cols-3">
+          <FormField v-if="!editing" label="Accounting unit" required class="sm:col-span-3">
+            <FleetSelect v-model="form.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" @update:model-value="onCreateUnitChange" />
+          </FormField>
           <FormField label="Asset No." required><TextInput v-model="form.assetNo" placeholder="e.g. DT93 or EQ-0001" /></FormField>
           <FormField label="Registration No."><TextInput v-model="form.registrationNo" placeholder="e.g. GC 913-21" /></FormField>
-          <FormField label="Asset group"><FleetSelect v-model="form.assetGroupId" :options="opts.assetGroups.value" placeholder="None" /></FormField>
+          <FormField label="Asset group"><FleetSelect v-model="form.assetGroupId" :options="opts.assetGroups.value" placeholder="None" @update:model-value="onAssetGroupChange" /></FormField>
           <FormField label="Make & model"><TextInput v-model="form.makeModel" placeholder="e.g. XCMG DUMP TRUCK" /></FormField>
           <FormField label="Model No."><TextInput v-model="form.modelNo" /></FormField>
           <FormField label="Ownership type" required><FleetSelect v-model="form.ownershipType" :options="OWNERSHIP_TYPES" :allow-empty="false" /></FormField>

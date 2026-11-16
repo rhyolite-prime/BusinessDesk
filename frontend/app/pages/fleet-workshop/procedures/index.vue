@@ -8,6 +8,7 @@ import { PROCEDURE_CATEGORIES, fleetErrorMessage, fleetStatusTone, humanLabel } 
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Procedure library' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const opts = useFleetOptions()
 const toast = useToast()
@@ -40,7 +41,10 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') openCreate()
+})
 
 const showModal = ref(false)
 const editing = ref<ProcedureRecord | null>(null)
@@ -167,9 +171,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Procedure library" subtitle="Standardized PCode work instructions, safety checks and task checklists." icon="document-text">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">Add procedure</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">Add procedure</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">

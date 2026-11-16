@@ -15,6 +15,7 @@ import {
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Asset groups & BOMs' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const opts = useFleetOptions()
 const toast = useToast()
@@ -47,7 +48,10 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') openCreate()
+})
 
 /* ----------------------------- Group modal -------------------------------- */
 const showModal = ref(false)
@@ -287,9 +291,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Asset groups & BOMs" subtitle="Equipment models, default service triggers, minor/major materials BOMs and component slots." icon="list-bullet">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">New asset group</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">New asset group</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">

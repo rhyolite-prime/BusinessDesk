@@ -13,6 +13,7 @@ import {
   MILESTONE_STATUSES,
   fleetErrorMessage,
   fleetStatusTone,
+  formatFleetDate,
   humanLabel,
   todayIso,
 } from '../../../features/fleet-workshop/fleet-helpers'
@@ -20,6 +21,7 @@ import {
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Job cards & major projects' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -70,7 +72,10 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') void openCreate()
+})
 
 /* ------------------------ Create / Edit Job Header ------------------------ */
 const showModal = ref(false)
@@ -80,6 +85,7 @@ const formError = ref('')
 const previewNo = ref('')
 
 const form = reactive({
+  accountingUnitId: '',
   vehicleId: '',
   coupledTrailerId: '',
   jobType: 'corrective_repair',
@@ -107,11 +113,12 @@ function onVehicleChange(vid: string) {
 }
 
 async function openCreate() {
-  if (!unitId.value) { toast.error('Select an accounting unit first.'); return }
   editing.value = null
   formError.value = ''
   previewNo.value = ''
+  const defaultUnit = unitId.value || opts.accountingUnits.value[0]?.value || ''
   Object.assign(form, {
+    accountingUnitId: defaultUnit,
     vehicleId: opts.vehicles.value[0]?.value || '',
     coupledTrailerId: '',
     jobType: 'corrective_repair',
@@ -133,10 +140,12 @@ async function openCreate() {
   })
   onVehicleChange(form.vehicleId)
   showModal.value = true
-  try {
-    const n = await api.jobCards.nextNumber(unitId.value)
-    previewNo.value = n.nextNumber
-  } catch { /* ignore */ }
+  if (defaultUnit) {
+    try {
+      const n = await api.jobCards.nextNumber(defaultUnit)
+      previewNo.value = n.nextNumber
+    } catch { /* ignore */ }
+  }
 }
 
 function openEdit(row: JobCardRecord) {
@@ -168,6 +177,11 @@ function openEdit(row: JobCardRecord) {
 
 async function saveHeader() {
   if (saving.value) return
+  const resolvedUnit = editing.value ? editing.value.accountingUnitId : (form.accountingUnitId || unitId.value)
+  if (!resolvedUnit) {
+    formError.value = 'Accounting unit is required.'
+    return
+  }
   if (!form.vehicleId) {
     formError.value = 'Vehicle / asset is required.'
     return
@@ -180,7 +194,7 @@ async function saveHeader() {
   formError.value = ''
   try {
     const body: Record<string, unknown> = {
-      accountingUnitId: editing.value ? editing.value.accountingUnitId : unitId.value,
+      accountingUnitId: resolvedUnit,
       vehicleId: form.vehicleId,
       coupledTrailerId: form.coupledTrailerId || null,
       jobType: form.jobType,
@@ -482,9 +496,20 @@ async function saveAssignments() {
   if (!detailJob.value || staffSaving.value) return
   staffSaving.value = true
   try {
+    const sanitized = assignmentsDraft.value
+      .filter((a) => a.employeeId)
+      .map((a) => ({
+        employeeId: a.employeeId,
+        roleOnJob: a.roleOnJob || 'mechanic',
+        hoursEstimated: String(a.hoursEstimated || '0'),
+        hoursWorked: String(a.hoursWorked || '0'),
+        hourlyCostRate: String(a.hourlyCostRate || '0'),
+        hourlyBillRate: String(a.hourlyBillRate || '0'),
+        workNotes: (a.workNotes || '').trim(),
+      }))
     detailJob.value = await api.jobCards.replaceAssignments(
       detailJob.value.id,
-      assignmentsDraft.value.filter((a) => a.employeeId),
+      sanitized,
     )
     assignmentsDraft.value = (detailJob.value.assignments || []).map((a) => ({ ...a }))
     toast.success('Technician assignments saved')
@@ -677,9 +702,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Job cards & major projects" subtitle="Open repairs, issue Inventory parts, assign staff, track major overhaul milestones, post to GL and hand off to AR/AP/POS." icon="document-text">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">Open job card</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">Open job card</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -758,6 +781,9 @@ const columns = [
     <ModalShell :open="showModal" :title="editing ? `Edit Job Card ${editing.jobNumber}` : `Open Job Card ${previewNo ? `(${previewNo})` : ''}`" width="max-w-3xl" @close="showModal = false">
       <form class="space-y-3.5" @submit.prevent="saveHeader">
         <div class="grid gap-3 sm:grid-cols-3">
+          <FormField v-if="!editing" label="Accounting unit" required class="sm:col-span-3">
+            <FleetSelect v-model="form.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+          </FormField>
           <FormField label="Vehicle / asset" required><FleetSelect :model-value="form.vehicleId" :options="opts.vehicles.value" placeholder="Select vehicle…" :disabled="!!editing" @update:model-value="onVehicleChange" /></FormField>
           <FormField label="Job type"><FleetSelect v-model="form.jobType" :options="JOB_TYPES" :allow-empty="false" /></FormField>
           <FormField label="Billing scope"><FleetSelect v-model="form.billingScope" :options="BILLING_SCOPES" :allow-empty="false" /></FormField>
@@ -992,7 +1018,7 @@ const columns = [
               <span class="ml-2 text-ink-soft">{{ ev.previousStatus ? `${humanLabel(ev.previousStatus)} -> ` : '' }}{{ humanLabel(ev.newStatus) }}</span>
               <span v-if="ev.reason" class="ml-2 text-ink-faint">· {{ ev.reason }}</span>
             </div>
-            <span class="text-ink-faint">{{ formatDate(ev.createdAt) }}</span>
+            <span class="text-ink-faint">{{ formatFleetDate(ev.createdAt) }}</span>
           </div>
         </div>
       </div>

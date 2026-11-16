@@ -8,6 +8,7 @@ import { COMPONENT_CONDITIONS, fleetErrorMessage, fleetStatusTone, humanLabel, t
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Major components & tyres' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -75,7 +76,14 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { compPage.value = 1; tyrePage.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') openCreateComp()
+  else if (route.query.new === 'tyre') {
+    activeTab.value = 'tyres'
+    openCreateTyre()
+  }
+})
 
 /* ------------------------ Major Component CRUD ---------------------------- */
 const showCompModal = ref(false)
@@ -348,6 +356,28 @@ async function openHistory(kind: 'component' | 'tyre', id: string, label: string
   }
 }
 
+const confirmRemove = ref<{ kind: 'component' | 'tyre'; id: string; label: string; version: number } | null>(null)
+const deletingItem = ref(false)
+async function performRemove() {
+  if (!confirmRemove.value || deletingItem.value) return
+  deletingItem.value = true
+  try {
+    if (confirmRemove.value.kind === 'component') {
+      await api.majorComponents.remove(confirmRemove.value.id, confirmRemove.value.version)
+      toast.success('Component deleted')
+    } else {
+      await api.tyres.remove(confirmRemove.value.id, confirmRemove.value.version)
+      toast.success('Tyre deleted')
+    }
+    confirmRemove.value = null
+    await load()
+  } catch (e) {
+    toast.error('Delete failed', fleetErrorMessage(e))
+  } finally {
+    deletingItem.value = false
+  }
+}
+
 const compCols = [
   { key: 'componentCode', label: 'Code / Serial No.' },
   { key: 'componentType', label: 'Type & description' },
@@ -370,12 +400,8 @@ const tyreCols = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Major components & tyres" subtitle="Track serialized engines, gearboxes and tyres across mounts, rotations, rebuilds, retreads and scrappage." icon="arrow-path">
-      <template #actions>
-        <div class="flex flex-wrap gap-2">
-          <BaseButton variant="secondary" @click="openCreateTyre">+ Register tyre</BaseButton>
-          <BaseButton icon="plus" @click="openCreateComp">Register component</BaseButton>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="plus" @click="openCreateTyre">Register tyre</BaseButton>
+      <BaseButton icon="plus" @click="openCreateComp">Register component</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -450,6 +476,7 @@ const tyreCols = [
             <BaseButton v-if="row.status !== 'scrapped'" size="sm" variant="danger" @click="openAction({ kind: 'component', id: row.id, label: row.componentCode, act: 'scrap' }, row.currentVehicleId)">Scrap</BaseButton>
             <BaseButton size="sm" variant="ghost" @click="openHistory('component', row.id, row.componentCode)">Timeline</BaseButton>
             <BaseButton size="sm" variant="ghost" @click="openEditComp(row)">Edit</BaseButton>
+            <BaseButton v-if="row.status === 'unassigned'" size="sm" variant="danger" @click="confirmRemove = { kind: 'component', id: row.id, label: row.componentCode, version: row.version }">Delete</BaseButton>
           </div>
         </template>
       </DataTable>
@@ -484,6 +511,7 @@ const tyreCols = [
             <BaseButton v-if="row.status !== 'scrapped'" size="sm" variant="danger" @click="openAction({ kind: 'tyre', id: row.id, label: row.serialNo, act: 'scrap' }, row.currentVehicleId)">Scrap</BaseButton>
             <BaseButton size="sm" variant="ghost" @click="openHistory('tyre', row.id, row.serialNo)">Timeline</BaseButton>
             <BaseButton size="sm" variant="ghost" @click="openEditTyre(row)">Edit</BaseButton>
+            <BaseButton v-if="row.status === 'in_stock'" size="sm" variant="danger" @click="confirmRemove = { kind: 'tyre', id: row.id, label: row.serialNo, version: row.version }">Delete</BaseButton>
           </div>
         </template>
       </DataTable>
@@ -585,5 +613,16 @@ const tyreCols = [
         </div>
       </div>
     </ModalShell>
+
+    <ConfirmDialog
+      :open="!!confirmRemove"
+      :title="`Delete ${confirmRemove?.kind === 'component' ? 'component' : 'tyre'}?`"
+      :message="`Delete ${confirmRemove?.label}?`"
+      confirm-label="Delete"
+      tone="danger"
+      :loading="deletingItem"
+      @confirm="performRemove"
+      @cancel="confirmRemove = null"
+    />
   </section>
 </template>

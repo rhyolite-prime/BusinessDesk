@@ -3,6 +3,14 @@ export const fleetErrorMessage = (e: any) =>
 
 export const todayIso = () => new Date().toISOString().slice(0, 10)
 
+export const formatFleetDate = (value?: string | null) => {
+  if (!value) return '—'
+  const isoDay = String(value).slice(0, 10)
+  const date = new Date(`${isoDay}T00:00:00`)
+  if (Number.isNaN(date.getTime())) return '—'
+  return new Intl.DateTimeFormat('en-US', { month: 'short', day: 'numeric', year: 'numeric' }).format(date)
+}
+
 export const humanLabel = (value?: string | null) => {
   if (!value) return '—'
   return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())

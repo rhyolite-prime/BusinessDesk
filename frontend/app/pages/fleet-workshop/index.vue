@@ -99,16 +99,18 @@ const attentionItems = computed(() => [
       subtitle="Asset availability, preventive schedules, workshop job costing, fuel tolerances and field diary entries."
       icon="cog-6-tooth"
     >
-      <template #actions>
-        <div class="flex flex-wrap gap-2">
-          <NuxtLink to="/fleet-workshop/diary" class="rounded-lg border border-line bg-surface px-3.5 py-2 text-xs font-semibold text-ink-soft hover:border-primary/40 hover:text-primary">
-            + Diary entry
-          </NuxtLink>
-          <NuxtLink to="/fleet-workshop/job-cards" class="rounded-lg bg-primary px-3.5 py-2 text-xs font-semibold text-white hover:opacity-95">
-            + Open job card
-          </NuxtLink>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="plus" to="/fleet-workshop/vehicles?new=1">
+        Register asset
+      </BaseButton>
+      <BaseButton variant="secondary" icon="plus" to="/fleet-workshop/diary?new=1">
+        Diary entry
+      </BaseButton>
+      <BaseButton variant="secondary" icon="plus" to="/fleet-workshop/schedules?new=1">
+        Add schedule
+      </BaseButton>
+      <BaseButton icon="plus" to="/fleet-workshop/job-cards?new=1">
+        Open job card
+      </BaseButton>
     </PageHeader>
 
     <p v-if="error" role="alert" class="rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300">
@@ -116,10 +118,10 @@ const attentionItems = computed(() => [
     </p>
 
     <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-      <StatCard label="Fleet vehicles" :value="dash.fleet.totalVehicles" :sub="`${dash.fleet.active} active · ${dash.fleet.heavyMachinery} heavy`" icon="cube" tone="primary" />
-      <StatCard label="Open job cards" :value="dash.workshop.openJobs" :sub="`${dash.workshop.majorProjects} major projects · ${dash.workshop.unbilledCustomerJobs} unbilled`" icon="document-text" tone="blue" />
-      <StatCard label="Workshop job cost" :value="formatCurrency(dash.workshop.jobCostTotal)" :sub="`Billable: ${formatCurrency(dash.workshop.billableTotal)}`" icon="banknotes" tone="green" />
-      <StatCard label="Unpaid diary ledger" :value="formatCurrency(dash.diary.unpaidAmount)" :sub="`${dash.diary.unpaidCount} entries unpaid · ${dash.fuel.toleranceAlerts} fuel alerts`" icon="pencil-square" tone="amber" />
+      <StatCard label="Fleet vehicles" :value="dash.fleet.totalVehicles" :hint="`${dash.fleet.active} active · ${dash.fleet.heavyMachinery} heavy`" icon="cube" tone="primary" />
+      <StatCard label="Open job cards" :value="dash.workshop.openJobs" :hint="`${dash.workshop.majorProjects} major projects · ${dash.workshop.unbilledCustomerJobs} unbilled`" icon="document-text" tone="blue" />
+      <StatCard label="Workshop job cost" :value="formatCurrency(dash.workshop.jobCostTotal)" :hint="`Billable: ${formatCurrency(dash.workshop.billableTotal)}`" icon="banknotes" tone="green" />
+      <StatCard label="Unpaid diary ledger" :value="formatCurrency(dash.diary.unpaidAmount)" :hint="`${dash.diary.unpaidCount} entries unpaid · ${dash.fuel.toleranceAlerts} fuel alerts`" icon="pencil-square" tone="amber" />
     </div>
 
     <div class="grid gap-6 lg:grid-cols-3">
