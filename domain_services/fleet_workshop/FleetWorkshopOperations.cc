@@ -22,7 +22,7 @@ drogon::Task<void> addComponentEvent(DbClientPtr tx, const utils::AuditIdentity 
   co_await tx->execSqlCoro(
       "INSERT INTO fwm_component_events(tenant_id,component_id,vehicle_id,event_type,event_date,"
       "cum_odo_reading,condition,scrapped,repair_cost,job_card_id,notes,version,created_by_user_id) "
-      "SELECT $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5::date,($6::text)::numeric,$7,$8,"
+      "SELECT $1::uuid,$2::uuid,NULLIF($3,'')::uuid,$4,$5::date,($6::text)::numeric,$7,$8::boolean,"
       "($9::text)::numeric,NULLIF($10,'')::uuid,$11,"
       "COALESCE((SELECT max(version) FROM fwm_component_events WHERE tenant_id=$1 AND component_id=$2::uuid),0)+1,"
       "$12::uuid",
@@ -55,6 +55,8 @@ drogon::Task<dto::BaseApiResponse>
 meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int page, int size,
              const std::string &query, const utils::AuditIdentity &who, bool canWrite) {
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string vid = body.isObject() && body["vehicleId"].isString()
                                 ? lower(trim(body["vehicleId"].asString()))
@@ -63,7 +65,7 @@ meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int pa
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_meter_changes mc "
         "JOIN fwm_vehicles v ON v.tenant_id=mc.tenant_id AND v.id=mc.vehicle_id AND v.is_deleted=false "
-        "WHERE mc.tenant_id=$1 AND mc.is_deleted=false AND ($2='' OR mc.vehicle_id=$2::uuid) "
+        "WHERE mc.tenant_id=$1 AND mc.is_deleted=false AND ($2='' OR mc.vehicle_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR strpos(lower(v.asset_no||' '||v.registration_no||' '||mc.replacement_label),lower($3))>0)",
         who.tenantId, vidScope, q);
     const auto rows = co_await db->execSqlCoro(
@@ -75,10 +77,10 @@ meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int pa
         "'cumulativeOffsetDelta',mc.cumulative_offset_delta::text,'notes',mc.notes)::text AS record "
         "FROM fwm_meter_changes mc "
         "JOIN fwm_vehicles v ON v.tenant_id=mc.tenant_id AND v.id=mc.vehicle_id AND v.is_deleted=false "
-        "WHERE mc.tenant_id=$1 AND mc.is_deleted=false AND ($2='' OR mc.vehicle_id=$2::uuid) "
+        "WHERE mc.tenant_id=$1 AND mc.is_deleted=false AND ($2='' OR mc.vehicle_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR strpos(lower(v.asset_no||' '||v.registration_no||' '||mc.replacement_label),lower($3))>0) "
-        "ORDER BY mc.change_date DESC, mc.created_at DESC LIMIT $4 OFFSET $5",
-        who.tenantId, vidScope, q, size, static_cast<long long>(page - 1) * size);
+        "ORDER BY mc.change_date DESC, mc.created_at DESC LIMIT $4::bigint OFFSET $5::bigint",
+        who.tenantId, vidScope, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -130,7 +132,7 @@ meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int pa
       "old_meter_reading,new_meter_reading,replacement_label,engine_changed,meter_stalled,"
       "cumulative_offset_delta,notes,created_by_user_id) "
       "VALUES($1::uuid,$2::uuid,$3::date,$4::date,($5::text)::numeric,($6::text)::numeric,"
-      "$7,$8,$9,($10::text)::numeric,$11,$12::uuid) RETURNING id",
+      "$7,$8::boolean,$9::boolean,($10::text)::numeric,$11,$12::uuid) RETURNING id",
       who.tenantId, body["vehicleId"].asString(), body["changeDate"].asString(),
       body["lastDateOnOldMeter"].asString(), body["oldMeterReading"].asString(),
       body["newMeterReading"].asString(), body["replacementLabel"].asString(),
@@ -139,8 +141,8 @@ meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int pa
 
   co_await db->execSqlCoro(
       "UPDATE fwm_vehicles SET current_meter_reading=($3::text)::numeric,"
-      "cumulative_meter_reading=($4::text)::numeric,is_meter_stalled=$5,"
-      "stalled_since_date=CASE WHEN $5 THEN $6::date ELSE NULL END,last_meter_log_date=$6::date,"
+      "cumulative_meter_reading=($4::text)::numeric,is_meter_stalled=$5::boolean,"
+      "stalled_since_date=CASE WHEN $5::boolean THEN $6::date ELSE NULL END,last_meter_log_date=$6::date,"
       "last_modified_at=now(),last_modified_by_user_id=$7::uuid,version=version+1 "
       "WHERE tenant_id=$1 AND id=$2::uuid AND is_deleted=false",
       who.tenantId, body["vehicleId"].asString(), body["newMeterReading"].asString(),
@@ -150,7 +152,7 @@ meterChanges(DbClientPtr db, const std::string &action, Json::Value body, int pa
       "INSERT INTO fwm_meter_readings(tenant_id,vehicle_id,log_date,reading,engine_run_delta,"
       "cumulative_reading,meter_unit,is_stalled_estimate,source,notes,created_by_user_id) "
       "VALUES($1::uuid,$2::uuid,$3::date,($4::text)::numeric,($5::text)::numeric,($6::text)::numeric,"
-      "$7,$8,'meter_change',$9,$10::uuid)",
+      "$7,$8::boolean,'meter_change',$9,$10::uuid)",
       who.tenantId, body["vehicleId"].asString(), body["changeDate"].asString(),
       body["newMeterReading"].asString(), dec6str(addedOnOld), dec6str(newCum),
       veh[0]["primary_meter_unit"].as<std::string>(), body["meterStalled"].asBool(),
@@ -221,13 +223,15 @@ drogon::Task<dto::BaseApiResponse>
 meterReadings(DbClientPtr db, const std::string &action, Json::Value body, int page, int size,
               const utils::AuditIdentity &who, bool canWrite) {
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string vid = body.isObject() && body["vehicleId"].isString()
                                 ? lower(trim(body["vehicleId"].asString()))
                                 : "";
     const std::string vidScope = uuidOrEmpty(vid);
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_meter_readings m "
-        "WHERE m.tenant_id=$1 AND m.is_deleted=false AND ($2='' OR m.vehicle_id=$2::uuid)",
+        "WHERE m.tenant_id=$1 AND m.is_deleted=false AND ($2='' OR m.vehicle_id=NULLIF($2,'')::uuid)",
         who.tenantId, vidScope);
     const auto rows = co_await db->execSqlCoro(
         "SELECT jsonb_build_object('id',m.id,'vehicleId',m.vehicle_id,'assetNo',v.asset_no,"
@@ -236,9 +240,9 @@ meterReadings(DbClientPtr db, const std::string &action, Json::Value body, int p
         "'meterUnit',m.meter_unit,'isStalledEstimate',m.is_stalled_estimate,'source',m.source,"
         "'notes',m.notes)::text AS record FROM fwm_meter_readings m "
         "JOIN fwm_vehicles v ON v.tenant_id=m.tenant_id AND v.id=m.vehicle_id AND v.is_deleted=false "
-        "WHERE m.tenant_id=$1 AND m.is_deleted=false AND ($2='' OR m.vehicle_id=$2::uuid) "
-        "ORDER BY m.log_date DESC, m.created_at DESC LIMIT $3 OFFSET $4",
-        who.tenantId, vidScope, size, static_cast<long long>(page - 1) * size);
+        "WHERE m.tenant_id=$1 AND m.is_deleted=false AND ($2='' OR m.vehicle_id=NULLIF($2,'')::uuid) "
+        "ORDER BY m.log_date DESC, m.created_at DESC LIMIT $3::bigint OFFSET $4::bigint",
+        who.tenantId, vidScope, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -276,7 +280,7 @@ meterReadings(DbClientPtr db, const std::string &action, Json::Value body, int p
       "INSERT INTO fwm_meter_readings(tenant_id,vehicle_id,log_date,reading,engine_run_delta,"
       "cumulative_reading,meter_unit,is_stalled_estimate,source,notes,created_by_user_id) "
       "VALUES($1::uuid,$2::uuid,$3::date,($4::text)::numeric,($5::text)::numeric,($6::text)::numeric,"
-      "$7,$8,$9,$10,$11::uuid) RETURNING id",
+      "$7,$8::boolean,$9,$10,$11::uuid) RETURNING id",
       who.tenantId, body["vehicleId"].asString(), body["logDate"].asString(),
       body["reading"].asString(), dec6str(delta), dec6str(newCum),
       veh[0]["primary_meter_unit"].as<std::string>(), body["isStalledEstimate"].asBool(),
@@ -284,8 +288,8 @@ meterReadings(DbClientPtr db, const std::string &action, Json::Value body, int p
   co_await db->execSqlCoro(
       "UPDATE fwm_vehicles SET current_meter_reading=($3::text)::numeric,"
       "cumulative_meter_reading=($4::text)::numeric,last_meter_log_date=$5::date,"
-      "is_meter_stalled=CASE WHEN $6 THEN true ELSE is_meter_stalled END,"
-      "stalled_since_date=CASE WHEN $6 AND stalled_since_date IS NULL THEN $5::date ELSE stalled_since_date END,"
+      "is_meter_stalled=CASE WHEN $6::boolean THEN true ELSE is_meter_stalled END,"
+      "stalled_since_date=CASE WHEN $6::boolean AND stalled_since_date IS NULL THEN $5::date ELSE stalled_since_date END,"
       "last_modified_at=now(),last_modified_by_user_id=$7::uuid,version=version+1 "
       "WHERE tenant_id=$1 AND id=$2::uuid AND is_deleted=false",
       who.tenantId, body["vehicleId"].asString(), body["reading"].asString(), dec6str(newCum),
@@ -328,23 +332,24 @@ JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_de
     const std::string vid = body.isObject() && body["vehicleId"].isString()
                                 ? lower(trim(body["vehicleId"].asString()))
                                 : "";
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string unitScope = uuidOrEmpty(unit);
     const std::string vidScope = uuidOrEmpty(vid);
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_fuel_logs f "
         "JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_deleted=false "
-        "WHERE f.tenant_id=$1 AND f.is_deleted=false AND ($2='' OR f.accounting_unit_id=$2::uuid) "
-        "AND ($3='' OR f.vehicle_id=$3::uuid) "
+        "WHERE f.tenant_id=$1 AND f.is_deleted=false AND ($2='' OR f.accounting_unit_id=NULLIF($2,'')::uuid) "
+        "AND ($3='' OR f.vehicle_id=NULLIF($3,'')::uuid) "
         "AND ($4='' OR strpos(lower(f.fuel_log_number||' '||v.asset_no||' '||v.registration_no||' '||f.station_or_pump),lower($4))>0)",
         who.tenantId, unitScope, vidScope, q);
     const auto rows = co_await db->execSqlCoro(
         std::string(selectOne) +
-            " WHERE f.tenant_id=$1 AND f.is_deleted=false AND ($2='' OR f.accounting_unit_id=$2::uuid) "
-            "AND ($3='' OR f.vehicle_id=$3::uuid) "
+            " WHERE f.tenant_id=$1 AND f.is_deleted=false AND ($2='' OR f.accounting_unit_id=NULLIF($2,'')::uuid) "
+            "AND ($3='' OR f.vehicle_id=NULLIF($3,'')::uuid) "
             "AND ($4='' OR strpos(lower(f.fuel_log_number||' '||v.asset_no||' '||v.registration_no||' '||f.station_or_pump),lower($4))>0) "
-            "ORDER BY f.log_date DESC, f.created_at DESC LIMIT $5 OFFSET $6",
-        who.tenantId, unitScope, vidScope, q, size,
-        static_cast<long long>(page - 1) * size);
+            "ORDER BY f.log_date DESC, f.created_at DESC LIMIT $5::bigint OFFSET $6::bigint",
+        who.tenantId, unitScope, vidScope, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -393,7 +398,7 @@ JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_de
       co_return fail("validation_error", "ID and current version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_fuel_logs SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -681,7 +686,7 @@ JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_de
         "VALUES($1::uuid,$2::uuid,$3,$4::uuid,$5::date,($6::text)::numeric,($7::text)::numeric,"
         "NULLIF($8,'')::uuid,NULLIF($9,'')::uuid,NULLIF($10,'')::uuid,($11::text)::numeric,"
         "($12::text)::numeric,($13::text)::numeric,NULLIF($14,'')::uuid,($15::text)::numeric,"
-        "($16::text)::numeric,($17::text)::numeric,$18,$19,NULLIF($20,'')::uuid,"
+        "($16::text)::numeric,($17::text)::numeric,$18::boolean,$19,NULLIF($20,'')::uuid,"
         "NULLIF($21,'')::uuid,NULLIF($22,'')::uuid,$23,NULLIF($24,'')::uuid,$25::uuid) RETURNING id",
         who.tenantId, effUnit, num, body["vehicleId"].asString(), body["logDate"].asString(),
         body["meterReading"].asString(), prevMeterStr,
@@ -702,10 +707,10 @@ JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_de
       "fuel_item_id=NULLIF($5,'')::uuid,uom_id=NULLIF($6,'')::uuid,warehouse_id=NULLIF($7,'')::uuid,"
       "quantity_litres=($8::text)::numeric,unit_cost=($9::text)::numeric,total_cost=($10::text)::numeric,"
       "actual_consumption_rate=($11::text)::numeric,variance_pct=($12::text)::numeric,"
-      "within_tolerance=$13,station_or_pump=$14,driver_employee_id=NULLIF($15,'')::uuid,"
+      "within_tolerance=$13::boolean,station_or_pump=$14,driver_employee_id=NULLIF($15,'')::uuid,"
       "cost_center_id=NULLIF($16,'')::uuid,supplier_id=NULLIF($17,'')::uuid,notes=$18,"
       "last_modified_at=now(),last_modified_by_user_id=$19::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$20 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$20::int AND is_deleted=false RETURNING id",
       who.tenantId, id, body["logDate"].asString(), body["meterReading"].asString(),
       optStr(body, "fuelItemId"), optStr(body, "uomId"), optStr(body, "warehouseId"),
       body["quantityLitres"].asString(), body["unitCost"].asString(), body["totalCost"].asString(),
@@ -722,6 +727,8 @@ JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id AND v.is_de
 
 drogon::Task<dto::BaseApiResponse>
 fuelTolerances(DbClientPtr db, const utils::AuditIdentity &who, int page, int size, bool canWrite) {
+  const int64_t limit = size;
+  const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
   const auto cnt = co_await db->execSqlCoro(
       "SELECT count(*) AS total FROM fwm_fuel_logs WHERE tenant_id=$1 AND is_deleted=false "
       "AND within_tolerance=false",
@@ -735,8 +742,8 @@ fuelTolerances(DbClientPtr db, const utils::AuditIdentity &who, int page, int si
       "'toleranceAbovePct',v.tolerance_above_pct::text,'stationOrPump',f.station_or_pump)::text AS record "
       "FROM fwm_fuel_logs f JOIN fwm_vehicles v ON v.tenant_id=f.tenant_id AND v.id=f.vehicle_id "
       "WHERE f.tenant_id=$1 AND f.is_deleted=false AND f.within_tolerance=false "
-      "ORDER BY abs(f.variance_pct) DESC, f.log_date DESC LIMIT $2 OFFSET $3",
-      who.tenantId, size, static_cast<long long>(page - 1) * size);
+      "ORDER BY abs(f.variance_pct) DESC, f.log_date DESC LIMIT $2::bigint OFFSET $3::bigint",
+      who.tenantId, limit, offset);
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
   for (const auto &row : rows)
@@ -769,20 +776,22 @@ FROM fwm_lubricant_logs l
 JOIN fwm_vehicles v ON v.tenant_id=l.tenant_id AND v.id=l.vehicle_id AND v.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string unitScope = uuidOrEmpty(unit);
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_lubricant_logs l "
         "JOIN fwm_vehicles v ON v.tenant_id=l.tenant_id AND v.id=l.vehicle_id AND v.is_deleted=false "
-        "WHERE l.tenant_id=$1 AND l.is_deleted=false AND ($2='' OR l.accounting_unit_id=$2::uuid) "
+        "WHERE l.tenant_id=$1 AND l.is_deleted=false AND ($2='' OR l.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR strpos(lower(l.lubricant_log_number||' '||v.asset_no||' '||v.registration_no||' '||l.lubricant_type),lower($3))>0)",
         who.tenantId, unitScope, q);
     const auto rows = co_await db->execSqlCoro(
         std::string(selectOne) +
-            " WHERE l.tenant_id=$1 AND l.is_deleted=false AND ($2='' OR l.accounting_unit_id=$2::uuid) "
+            " WHERE l.tenant_id=$1 AND l.is_deleted=false AND ($2='' OR l.accounting_unit_id=NULLIF($2,'')::uuid) "
             "AND ($3='' OR strpos(lower(l.lubricant_log_number||' '||v.asset_no||' '||v.registration_no||' '||l.lubricant_type),lower($3))>0) "
-            "ORDER BY l.log_date DESC, l.created_at DESC LIMIT $4 OFFSET $5",
-        who.tenantId, unitScope, q, size, static_cast<long long>(page - 1) * size);
+            "ORDER BY l.log_date DESC, l.created_at DESC LIMIT $4::bigint OFFSET $5::bigint",
+        who.tenantId, unitScope, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -831,7 +840,7 @@ JOIN fwm_vehicles v ON v.tenant_id=l.tenant_id AND v.id=l.vehicle_id AND v.is_de
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_lubricant_logs SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -979,7 +988,7 @@ JOIN fwm_vehicles v ON v.tenant_id=l.tenant_id AND v.id=l.vehicle_id AND v.is_de
       "total_cost,currency_id,is_oil_change,cost_center_id,notes,request_key,created_by_user_id) "
       "VALUES($1::uuid,$2::uuid,$3,$4::uuid,$5::date,($6::text)::numeric,$7,NULLIF($8,'')::uuid,"
       "NULLIF($9,'')::uuid,NULLIF($10,'')::uuid,($11::text)::numeric,($12::text)::numeric,"
-      "($13::text)::numeric,NULLIF($14,'')::uuid,$15,NULLIF($16,'')::uuid,$17,NULLIF($18,'')::uuid,$19::uuid) RETURNING id",
+      "($13::text)::numeric,NULLIF($14,'')::uuid,$15::boolean,NULLIF($16,'')::uuid,$17,NULLIF($18,'')::uuid,$19::uuid) RETURNING id",
       who.tenantId, effUnit, num, body["vehicleId"].asString(), body["logDate"].asString(),
       body["meterReading"].asString(), body["lubricantType"].asString(),
       optStr(body, "itemId"), optStr(body, "uomId"), optStr(body, "warehouseId"),
@@ -1035,6 +1044,8 @@ FROM fwm_major_components c
 LEFT JOIN fwm_vehicles v ON v.tenant_id=c.tenant_id AND v.id=c.current_vehicle_id AND v.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string status = body.isObject() && body["status"].isString() ? trim(body["status"].asString()) : "";
     const auto cnt = co_await db->execSqlCoro(
@@ -1045,8 +1056,8 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=c.tenant_id AND v.id=c.current_vehicle_i
         std::string(selectOne) +
             " WHERE c.tenant_id=$1 AND c.is_deleted=false AND ($2='' OR c.status=$2) "
             "AND ($3='' OR strpos(lower(c.component_code||' '||c.serial_no||' '||c.component_type||' '||c.description),lower($3))>0) "
-            "ORDER BY lower(c.component_type), lower(c.component_code) LIMIT $4 OFFSET $5",
-        who.tenantId, status, q, size, static_cast<long long>(page - 1) * size);
+            "ORDER BY lower(c.component_type), lower(c.component_code) LIMIT $4::bigint OFFSET $5::bigint",
+        who.tenantId, status, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -1066,7 +1077,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=c.tenant_id AND v.id=c.current_vehicle_i
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_major_components SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='unassigned' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='unassigned' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -1217,7 +1228,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=c.tenant_id AND v.id=c.current_vehicle_i
       "purchase_cost=($10::text)::numeric,inv_item_id=NULLIF($11,'')::uuid,"
       "inv_serial_id=NULLIF($12,'')::uuid,notes=$13,"
       "last_modified_at=now(),last_modified_by_user_id=$14::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$15 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$15::int AND is_deleted=false RETURNING id",
       who.tenantId, id, body["componentCode"].asString(), body["serialNo"].asString(),
       body["componentType"].asString(), body["description"].asString(),
       body["manufacturer"].asString(), body["condition"].asString(),
@@ -1272,6 +1283,8 @@ FROM fwm_tyres t
 LEFT JOIN fwm_vehicles v ON v.tenant_id=t.tenant_id AND v.id=t.current_vehicle_id AND v.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string status = body.isObject() && body["status"].isString() ? trim(body["status"].asString()) : "";
     const auto cnt = co_await db->execSqlCoro(
@@ -1282,8 +1295,8 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=t.tenant_id AND v.id=t.current_vehicle_i
         std::string(selectOne) +
             " WHERE t.tenant_id=$1 AND t.is_deleted=false AND ($2='' OR t.status=$2) "
             "AND ($3='' OR strpos(lower(t.serial_no||' '||t.brand||' '||t.size_spec||' '||t.purchase_location),lower($3))>0) "
-            "ORDER BY t.status, lower(t.serial_no) LIMIT $4 OFFSET $5",
-        who.tenantId, status, q, size, static_cast<long long>(page - 1) * size);
+            "ORDER BY t.status, lower(t.serial_no) LIMIT $4::bigint OFFSET $5::bigint",
+        who.tenantId, status, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -1303,7 +1316,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=t.tenant_id AND v.id=t.current_vehicle_i
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_tyres SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='in_stock' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='in_stock' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -1455,7 +1468,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=t.tenant_id AND v.id=t.current_vehicle_i
       "current_tread_depth_mm=($9::text)::numeric,purchase_cost=($10::text)::numeric,"
       "supplier_id=NULLIF($11,'')::uuid,purchase_location=$12,notes=$13,"
       "last_modified_at=now(),last_modified_by_user_id=$14::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$15 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$15::int AND is_deleted=false RETURNING id",
       who.tenantId, id, body["serialNo"].asString(), body["brand"].asString(),
       body["sizeSpec"].asString(), body["pattern"].asString(),
       optStr(body, "invItemId"), optStr(body, "invSerialId"),
@@ -1492,6 +1505,8 @@ JOIN fwm_vehicles v ON v.tenant_id=s.tenant_id AND v.id=s.vehicle_id AND v.is_de
 LEFT JOIN fwm_procedures p ON p.tenant_id=s.tenant_id AND p.id=s.procedure_id AND p.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string cls = body.isObject() && body["scheduleClass"].isString() ? trim(body["scheduleClass"].asString()) : "";
     const std::string cat = body.isObject() && body["workCategory"].isString() ? trim(body["workCategory"].asString()) : "";
@@ -1499,18 +1514,17 @@ LEFT JOIN fwm_procedures p ON p.tenant_id=s.tenant_id AND p.id=s.procedure_id AN
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_maintenance_schedules s "
         "JOIN fwm_vehicles v ON v.tenant_id=s.tenant_id AND v.id=s.vehicle_id AND v.is_deleted=false "
-        "WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.accounting_unit_id=$2::uuid) "
+        "WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR s.schedule_class=$3) AND ($4='' OR s.work_category=$4) "
         "AND ($5='' OR strpos(lower(s.schedule_number||' '||v.asset_no||' '||v.registration_no||' '||s.special_conditions),lower($5))>0)",
         who.tenantId, unitScope, cls, cat, q);
     const auto rows = co_await db->execSqlCoro(
         std::string(selectOne) +
-            " WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.accounting_unit_id=$2::uuid) "
+            " WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.accounting_unit_id=NULLIF($2,'')::uuid) "
             "AND ($3='' OR s.schedule_class=$3) AND ($4='' OR s.work_category=$4) "
             "AND ($5='' OR strpos(lower(s.schedule_number||' '||v.asset_no||' '||v.registration_no||' '||s.special_conditions),lower($5))>0) "
-            "ORDER BY COALESCE(s.modified_service_date,s.schedule_date), v.asset_no LIMIT $6 OFFSET $7",
-        who.tenantId, unitScope, cls, cat, q, size,
-        static_cast<long long>(page - 1) * size);
+            "ORDER BY COALESCE(s.modified_service_date,s.schedule_date), v.asset_no LIMIT $6::bigint OFFSET $7::bigint",
+        who.tenantId, unitScope, cls, cat, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -1774,7 +1788,7 @@ LEFT JOIN fwm_procedures p ON p.tenant_id=s.tenant_id AND p.id=s.procedure_id AN
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_maintenance_schedules SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND job_card_id IS NULL AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND job_card_id IS NULL AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -1859,7 +1873,7 @@ LEFT JOIN fwm_procedures p ON p.tenant_id=s.tenant_id AND p.id=s.procedure_id AN
       "projected_engine_run=($10::text)::numeric,special_conditions=$11,"
       "procedure_id=NULLIF($12,'')::uuid,start_time=$13,status=$14,notes=$15,"
       "last_modified_at=now(),last_modified_by_user_id=$16::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$17 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND version=$17::int AND is_deleted=false RETURNING id",
       who.tenantId, id, body["scheduleClass"].asString(), body["workCategory"].asString(),
       body["serviceType"].asString(), body["scheduleDate"].asString(),
       optStr(body, "modifiedServiceDate"),

@@ -220,12 +220,14 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
   const std::string unit = lower(trim(unitId));
   const std::string unitScope = uuidOrEmpty(unit);
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string status = body.isObject() && body["status"].isString() ? trim(body["status"].asString()) : "";
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_job_cards j "
         "JOIN fwm_vehicles v ON v.tenant_id=j.tenant_id AND v.id=j.vehicle_id AND v.is_deleted=false "
-        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.accounting_unit_id=$2::uuid) "
+        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR j.status=$3) "
         "AND ($4='' OR strpos(lower(j.job_number||' '||v.asset_no||' '||v.registration_no||' '||j.reported_fault),lower($4))>0)",
         who.tenantId, unitScope, status, q);
@@ -240,12 +242,11 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
         "FROM fwm_job_cards j "
         "JOIN fwm_vehicles v ON v.tenant_id=j.tenant_id AND v.id=j.vehicle_id AND v.is_deleted=false "
         "LEFT JOIN core_customers cu ON cu.tenant_id=j.tenant_id AND cu.id=j.customer_id AND cu.is_deleted=false "
-        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.accounting_unit_id=$2::uuid) "
+        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR j.status=$3) "
         "AND ($4='' OR strpos(lower(j.job_number||' '||v.asset_no||' '||v.registration_no||' '||j.reported_fault),lower($4))>0) "
-        "ORDER BY j.opened_date DESC, j.created_at DESC LIMIT $5 OFFSET $6",
-        who.tenantId, unitScope, status, q, size,
-        static_cast<long long>(page - 1) * size);
+        "ORDER BY j.opened_date DESC, j.created_at DESC LIMIT $5::bigint OFFSET $6::bigint",
+        who.tenantId, unitScope, status, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -287,7 +288,7 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_job_cards SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -382,7 +383,7 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
           "NULLIF($10,'')::uuid,NULLIF($11,'')::uuid,NULLIF($12,'')::uuid,NULLIF($13,'')::uuid,"
           "NULLIF($14,'')::uuid,NULLIF($15,'')::uuid,NULLIF($16,'')::uuid,($17::text)::numeric,"
           "($18::text)::numeric,($19::text)::numeric,($20::text)::numeric,($21::text)::numeric,"
-          "$22,$23,$24,COALESCE(NULLIF($25,'')::date,CURRENT_DATE),$26::uuid",
+          "$22::boolean,$23::boolean,$24,COALESCE(NULLIF($25,'')::date,CURRENT_DATE),$26::uuid",
           who.tenantId, id, body["lineType"].asString(), body["sourceType"].asString(),
           body["description"].asString(), body["positionOrSide"].asString(),
           optStr(body, "invItemId"), optStr(body, "uomId"), optStr(body, "warehouseId"),
@@ -404,9 +405,9 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
           "gl_expense_account_id=NULLIF($16,'')::uuid,gl_revenue_account_id=NULLIF($17,'')::uuid,"
           "quantity=($18::text)::numeric,unit_cost=($19::text)::numeric,line_cost=($20::text)::numeric,"
           "unit_price=($21::text)::numeric,line_billable_amount=($22::text)::numeric,"
-          "is_billable=$23,is_paid=$24,location_note=$25,entry_date=COALESCE(NULLIF($26,'')::date,entry_date),"
+          "is_billable=$23::boolean,is_paid=$24::boolean,location_note=$25,entry_date=COALESCE(NULLIF($26,'')::date,entry_date),"
           "last_modified_at=now(),last_modified_by_user_id=$27::uuid,version=version+1 "
-          "WHERE tenant_id=$1 AND job_card_id=$2::uuid AND id=$3::uuid AND stock_issued=false AND version=$28 AND is_deleted=false RETURNING id",
+          "WHERE tenant_id=$1 AND job_card_id=$2::uuid AND id=$3::uuid AND stock_issued=false AND version=$28::int AND is_deleted=false RETURNING id",
           who.tenantId, id, subId, body["lineType"].asString(), body["sourceType"].asString(),
           body["description"].asString(), body["positionOrSide"].asString(),
           optStr(body, "invItemId"), optStr(body, "uomId"), optStr(body, "warehouseId"),
@@ -574,8 +575,8 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
           "owner_employee_id,planned_start_date,planned_end_date,actual_start_date,actual_end_date,"
           "progress_pct,status,depends_on_milestone_id,deliverables,blocker_notes,sort_order,created_by_user_id) "
           "VALUES($1::uuid,$2::uuid,$3,$4,$5,NULLIF($6,'')::uuid,NULLIF($7,'')::date,"
-          "NULLIF($8,'')::date,NULLIF($9,'')::date,NULLIF($10,'')::date,$11,$12,"
-          "NULLIF($13,'')::uuid,$14,$15,$16,$17::uuid)",
+          "NULLIF($8,'')::date,NULLIF($9,'')::date,NULLIF($10,'')::date,($11::int)::smallint,$12,"
+          "NULLIF($13,'')::uuid,$14,$15,$16::int,$17::uuid)",
           who.tenantId, id, body["milestoneCode"].asString(), body["title"].asString(),
           body["phase"].asString(),
           optStr(body, "ownerEmployeeId"), optStr(body, "plannedStartDate"),
@@ -596,10 +597,10 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
           "UPDATE fwm_job_milestones SET milestone_code=$4,title=$5,phase=$6,"
           "owner_employee_id=NULLIF($7,'')::uuid,planned_start_date=NULLIF($8,'')::date,"
           "planned_end_date=NULLIF($9,'')::date,actual_start_date=NULLIF($10,'')::date,"
-          "actual_end_date=NULLIF($11,'')::date,progress_pct=$12,status=$13,"
+          "actual_end_date=NULLIF($11,'')::date,progress_pct=($12::int)::smallint,status=$13,"
           "depends_on_milestone_id=NULLIF($14,'')::uuid,deliverables=$15,blocker_notes=$16,"
-          "sort_order=$17,last_modified_at=now(),last_modified_by_user_id=$18::uuid,version=version+1 "
-          "WHERE tenant_id=$1 AND job_card_id=$2::uuid AND id=$3::uuid AND version=$19 AND is_deleted=false RETURNING id",
+          "sort_order=$17::int,last_modified_at=now(),last_modified_by_user_id=$18::uuid,version=version+1 "
+          "WHERE tenant_id=$1 AND job_card_id=$2::uuid AND id=$3::uuid AND version=$19::int AND is_deleted=false RETURNING id",
           who.tenantId, id, subId, body["milestoneCode"].asString(), body["title"].asString(),
           body["phase"].asString(),
           optStr(body, "ownerEmployeeId"), optStr(body, "plannedStartDate"),
@@ -620,7 +621,7 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_job_milestones SET is_deleted=true,last_modified_at=now(),last_modified_by_user_id=$4::uuid,"
         "version=version+1 WHERE tenant_id=$1 AND job_card_id=$2::uuid AND id=$3::uuid "
-        "AND version=$5 AND is_deleted=false RETURNING id",
+        "AND version=$5::int AND is_deleted=false RETURNING id",
         who.tenantId, id, subId, who.userId, body["version"].asInt());
     if (del.empty())
       co_return fail("conflict", "Milestone not found or modified concurrently.");
@@ -1330,7 +1331,7 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
         "payment_status,request_key,created_by_user_id) "
         "VALUES($1::uuid,$2::uuid,$3,$4::uuid,NULLIF($5,'')::uuid,$6,$7,NULLIF($8,'')::uuid,"
         "NULLIF($9,'')::uuid,NULLIF($10,'')::uuid,NULLIF($11,'')::uuid,NULLIF($12,'')::uuid,"
-        "$13::uuid,$14::date,($15::text)::numeric,($16::text)::numeric,$17,$18,$19,$20,$21,$22,$23,"
+        "$13::uuid,$14::date,($15::text)::numeric,($16::text)::numeric,$17,$18,$19,$20,$21,$22::boolean,$23,"
         "NULLIF($24,'')::uuid,$25::uuid) RETURNING id",
         who.tenantId, effUnit, jobNum, body["vehicleId"].asString(), trId,
         body["jobType"].asString(), body["billingScope"].asString(),
@@ -1350,9 +1351,9 @@ jobCards(DbClientPtr db, const std::string &action, const std::string &id, const
       "customer_id=NULLIF($6,'')::uuid,cost_center_id=NULLIF($7,'')::uuid,warehouse_id=NULLIF($8,'')::uuid,"
       "opened_date=$9::date,meter_reading_in=($10::text)::numeric,downtime_hours=($11::text)::numeric,"
       "location_site=$12,reported_fault=$13,diagnosis=$14,work_performed=$15,priority=$16,"
-      "is_major_project=$17,payment_status=$18,last_modified_at=now(),last_modified_by_user_id=$19::uuid,"
+      "is_major_project=$17::boolean,payment_status=$18,last_modified_at=now(),last_modified_by_user_id=$19::uuid,"
       "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status NOT IN('closed','cancelled') "
-      "AND version=$20 AND is_deleted=false RETURNING id",
+      "AND version=$20::int AND is_deleted=false RETURNING id",
       who.tenantId, id, optStr(body, "coupledTrailerId"),
       body["jobType"].asString(), body["billingScope"].asString(),
       optStr(body, "customerId"), optStr(body, "costCenterId"), optStr(body, "warehouseId"),
@@ -1414,23 +1415,24 @@ FROM fwm_diary_entries d
 LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.is_deleted=false)";
 
   if (action == "list") {
+    const int64_t limit = size;
+    const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
     const std::string q = search(query);
     const std::string paidParam =
         body.isObject() && body["isPaid"].isString() ? trim(body["isPaid"].asString()) : "";
     const auto cnt = co_await db->execSqlCoro(
         "SELECT count(*) AS total FROM fwm_diary_entries d "
-        "WHERE d.tenant_id=$1 AND d.is_deleted=false AND ($2='' OR d.accounting_unit_id=$2::uuid) "
+        "WHERE d.tenant_id=$1 AND d.is_deleted=false AND ($2='' OR d.accounting_unit_id=NULLIF($2,'')::uuid) "
         "AND ($3='' OR d.is_paid=($3='true')) "
         "AND ($4='' OR strpos(lower(d.entry_number||' '||d.registration_no_snapshot||' '||d.description||' '||d.location_or_vendor),lower($4))>0)",
         who.tenantId, unitScope, paidParam, q);
     const auto rows = co_await db->execSqlCoro(
         std::string(selectOne) +
-            " WHERE d.tenant_id=$1 AND d.is_deleted=false AND ($2='' OR d.accounting_unit_id=$2::uuid) "
+            " WHERE d.tenant_id=$1 AND d.is_deleted=false AND ($2='' OR d.accounting_unit_id=NULLIF($2,'')::uuid) "
             "AND ($3='' OR d.is_paid=($3='true')) "
             "AND ($4='' OR strpos(lower(d.entry_number||' '||d.registration_no_snapshot||' '||d.description||' '||d.location_or_vendor),lower($4))>0) "
-            "ORDER BY d.entry_date DESC, d.created_at DESC LIMIT $5 OFFSET $6",
-        who.tenantId, unitScope, paidParam, q, size,
-        static_cast<long long>(page - 1) * size);
+            "ORDER BY d.entry_date DESC, d.created_at DESC LIMIT $5::bigint OFFSET $6::bigint",
+        who.tenantId, unitScope, paidParam, q, limit, offset);
     dto::BaseApiResponse r;
     r.result["data"] = Json::arrayValue;
     for (const auto &row : rows)
@@ -1472,7 +1474,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.
       co_return fail("validation_error", "ID and version required.");
     const auto del = co_await db->execSqlCoro(
         "UPDATE fwm_diary_entries SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3::uuid,"
-        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='logged' AND version=$4 "
+        "version=version+1 WHERE tenant_id=$1 AND id=$2::uuid AND status='logged' AND version=$4::int "
         "AND is_deleted=false RETURNING id",
         who.tenantId, id, who.userId, body["version"].asInt());
     if (del.empty())
@@ -1634,7 +1636,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.
           "line_cost,is_paid,location_note,entry_date,created_by_user_id) "
           "SELECT $1::uuid,$2::uuid,COALESCE((SELECT max(line_number) FROM fwm_job_card_lines WHERE tenant_id=$1 AND job_card_id=$2::uuid),0)+1,"
           "$3,$4,$5,$6,NULLIF($7,'')::uuid,NULLIF($8,'')::uuid,NULLIF($9,'')::uuid,"
-          "($10::text)::numeric,($11::text)::numeric,($12::text)::numeric,$13,$14,$15::date,$16::uuid "
+          "($10::text)::numeric,($11::text)::numeric,($12::text)::numeric,$13::boolean,$14,$15::date,$16::uuid "
           "RETURNING id",
           who.tenantId, jobId, lineType, srcType, d[0]["description"].as<std::string>(),
           d[0]["position_or_side"].as<std::string>(),
@@ -1712,7 +1714,7 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.
         "currency_id,is_paid,paid_at,payment_reference,notes,created_by_user_id) "
         "VALUES($1::uuid,$2::uuid,$3,$4::date,NULLIF($5,'')::uuid,$6,$7,$8,$9,$10,"
         "NULLIF($11,'')::uuid,NULLIF($12,'')::uuid,NULLIF($13,'')::uuid,($14::text)::numeric,"
-        "($15::text)::numeric,($16::text)::numeric,$17::uuid,$18,CASE WHEN $18 THEN now() ELSE NULL END,"
+        "($15::text)::numeric,($16::text)::numeric,$17::uuid,$18::boolean,CASE WHEN $18::boolean THEN now() ELSE NULL END,"
         "$19,$20,$21::uuid) RETURNING id",
         who.tenantId, effUnit, num, body["entryDate"].asString(),
         optStr(body, "vehicleId"),
@@ -1730,9 +1732,9 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.
       "registration_no_snapshot=$5,entry_category=$6,description=$7,position_or_side=$8,"
       "location_or_vendor=$9,supplier_id=NULLIF($10,'')::uuid,inv_item_id=NULLIF($11,'')::uuid,"
       "employee_id=NULLIF($12,'')::uuid,quantity=($13::text)::numeric,unit_amount=($14::text)::numeric,"
-      "total_amount=($15::text)::numeric,is_paid=$16,payment_reference=$17,notes=$18,"
+      "total_amount=($15::text)::numeric,is_paid=$16::boolean,payment_reference=$17,notes=$18,"
       "last_modified_at=now(),last_modified_by_user_id=$19::uuid,version=version+1 "
-      "WHERE tenant_id=$1 AND id=$2::uuid AND status='logged' AND version=$20 AND is_deleted=false RETURNING id",
+      "WHERE tenant_id=$1 AND id=$2::uuid AND status='logged' AND version=$20::int AND is_deleted=false RETURNING id",
       who.tenantId, id, body["entryDate"].asString(),
       optStr(body, "vehicleId"),
       body["registrationNoSnapshot"].asString(), body["entryCategory"].asString(),
@@ -1750,6 +1752,8 @@ LEFT JOIN fwm_vehicles v ON v.tenant_id=d.tenant_id AND v.id=d.vehicle_id AND v.
 drogon::Task<dto::BaseApiResponse>
 moduleLinksList(DbClientPtr db, Json::Value body, int page, int size, const utils::AuditIdentity &who,
                 bool canWrite) {
+  const int64_t limit = size;
+  const int64_t offset = (static_cast<int64_t>(page) - 1) * limit;
   const std::string targetMod =
       body.isObject() && body["targetModule"].isString() ? trim(body["targetModule"].asString()) : "";
   const std::string status =
@@ -1760,7 +1764,7 @@ moduleLinksList(DbClientPtr db, Json::Value body, int page, int size, const util
           : "";
   const auto cnt = co_await db->execSqlCoro(
       "SELECT count(*) AS total FROM fwm_cross_module_links WHERE tenant_id=$1 AND is_deleted=false "
-      "AND ($2='' OR target_module=$2) AND ($3='' OR handoff_status=$3) AND ($4='' OR source_entity_id=$4::uuid)",
+      "AND ($2='' OR target_module=$2) AND ($3='' OR handoff_status=$3) AND ($4='' OR source_entity_id=NULLIF($4,'')::uuid)",
       who.tenantId, targetMod, status, srcId);
   const auto rows = co_await db->execSqlCoro(
       "SELECT jsonb_build_object('id',id,'accountingUnitId',accounting_unit_id,"
@@ -1770,9 +1774,9 @@ moduleLinksList(DbClientPtr db, Json::Value body, int page, int size, const util
       "'currencyId',currency_id,'journalBatchId',journal_batch_id,'payload',payload,"
       "'createdAt',created_at,'postedAt',posted_at)::text AS record "
       "FROM fwm_cross_module_links WHERE tenant_id=$1 AND is_deleted=false "
-      "AND ($2='' OR target_module=$2) AND ($3='' OR handoff_status=$3) AND ($4='' OR source_entity_id=$4::uuid) "
-      "ORDER BY created_at DESC LIMIT $5 OFFSET $6",
-      who.tenantId, targetMod, status, srcId, size, static_cast<long long>(page - 1) * size);
+      "AND ($2='' OR target_module=$2) AND ($3='' OR handoff_status=$3) AND ($4='' OR source_entity_id=NULLIF($4,'')::uuid) "
+      "ORDER BY created_at DESC LIMIT $5::bigint OFFSET $6::bigint",
+      who.tenantId, targetMod, status, srcId, limit, offset);
   dto::BaseApiResponse r;
   r.result["data"] = Json::arrayValue;
   for (const auto &row : rows)
@@ -1835,9 +1839,9 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "FROM fwm_maintenance_schedules s "
         "JOIN fwm_vehicles v ON v.tenant_id=s.tenant_id AND v.id=s.vehicle_id "
         "LEFT JOIN fwm_asset_groups g ON g.tenant_id=v.tenant_id AND g.id=v.asset_group_id "
-        "WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.vehicle_id=$2::uuid) "
-        "AND ($3='' OR v.asset_group_id=$3::uuid) "
-        "AND ($4='' OR s.schedule_date>=$4::date) AND ($5='' OR s.schedule_date<=$5::date) "
+        "WHERE s.tenant_id=$1 AND s.is_deleted=false AND ($2='' OR s.vehicle_id=NULLIF($2,'')::uuid) "
+        "AND ($3='' OR v.asset_group_id=NULLIF($3,'')::uuid) "
+        "AND ($4='' OR s.schedule_date>=NULLIF($4,'')::date) AND ($5='' OR s.schedule_date<=NULLIF($5,'')::date) "
         "ORDER BY s.schedule_date, v.asset_no",
         who.tenantId, vid, gid, df, dt, fxRate);
     for (const auto &row : rows)
@@ -1854,9 +1858,9 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "WHERE l.tenant_id=v.tenant_id AND l.vehicle_id=v.id AND l.is_deleted=false),0)*($6::text)::numeric,6)::text"
         ")::text AS record FROM fwm_vehicles v "
         "LEFT JOIN fwm_fuel_logs f ON f.tenant_id=v.tenant_id AND f.vehicle_id=v.id AND f.is_deleted=false "
-        "AND ($4='' OR f.log_date>=$4::date) AND ($5='' OR f.log_date<=$5::date) "
-        "WHERE v.tenant_id=$1 AND v.is_deleted=false AND ($2='' OR v.id=$2::uuid) "
-        "AND ($3='' OR v.asset_group_id=$3::uuid) GROUP BY v.id ORDER BY v.asset_no",
+        "AND ($4='' OR f.log_date>=NULLIF($4,'')::date) AND ($5='' OR f.log_date<=NULLIF($5,'')::date) "
+        "WHERE v.tenant_id=$1 AND v.is_deleted=false AND ($2='' OR v.id=NULLIF($2,'')::uuid) "
+        "AND ($3='' OR v.asset_group_id=NULLIF($3,'')::uuid) GROUP BY v.id ORDER BY v.asset_no",
         who.tenantId, vid, gid, df, dt, fxRate);
     for (const auto &row : rows)
       out["rows"].append(parse(row["record"].as<std::string>()));
@@ -1872,9 +1876,9 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "'totalCostConverted',round(j.total_cost*($6::text)::numeric,6)::text,"
         "'billableTotalConverted',round(j.billable_grand_total*($6::text)::numeric,6)::text)::text AS record "
         "FROM fwm_job_cards j JOIN fwm_vehicles v ON v.tenant_id=j.tenant_id AND v.id=j.vehicle_id "
-        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.vehicle_id=$2::uuid) "
-        "AND ($3='' OR v.asset_group_id=$3::uuid) AND ($4='' OR j.opened_date>=$4::date) "
-        "AND ($5='' OR j.opened_date<=$5::date) ORDER BY j.opened_date DESC, j.job_number DESC",
+        "WHERE j.tenant_id=$1 AND j.is_deleted=false AND ($2='' OR j.vehicle_id=NULLIF($2,'')::uuid) "
+        "AND ($3='' OR v.asset_group_id=NULLIF($3,'')::uuid) AND ($4='' OR j.opened_date>=NULLIF($4,'')::date) "
+        "AND ($5='' OR j.opened_date<=NULLIF($5,'')::date) ORDER BY j.opened_date DESC, j.job_number DESC",
         who.tenantId, vid, gid, df, dt, fxRate);
     for (const auto &row : rows)
       out["rows"].append(parse(row["record"].as<std::string>()));
@@ -1887,7 +1891,7 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "'purchaseCostConverted',round(t.purchase_cost*($3::text)::numeric,6)::text,"
         "'purchaseLocation',t.purchase_location)::text AS record "
         "FROM fwm_tyres t LEFT JOIN fwm_vehicles v ON v.tenant_id=t.tenant_id AND v.id=t.current_vehicle_id "
-        "WHERE t.tenant_id=$1 AND t.is_deleted=false AND ($2='' OR t.current_vehicle_id=$2::uuid) "
+        "WHERE t.tenant_id=$1 AND t.is_deleted=false AND ($2='' OR t.current_vehicle_id=NULLIF($2,'')::uuid) "
         "ORDER BY t.status, lower(t.serial_no)",
         who.tenantId, vid, fxRate);
     for (const auto &row : rows)
@@ -1901,7 +1905,7 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "'accumulatedHours',c.accumulated_hours::text,"
         "'repairCostConverted',round(c.cumulative_repair_cost*($3::text)::numeric,6)::text)::text AS record "
         "FROM fwm_major_components c LEFT JOIN fwm_vehicles v ON v.tenant_id=c.tenant_id AND v.id=c.current_vehicle_id "
-        "WHERE c.tenant_id=$1 AND c.is_deleted=false AND ($2='' OR c.current_vehicle_id=$2::uuid) "
+        "WHERE c.tenant_id=$1 AND c.is_deleted=false AND ($2='' OR c.current_vehicle_id=NULLIF($2,'')::uuid) "
         "ORDER BY c.component_type, c.component_code",
         who.tenantId, vid, fxRate);
     for (const auto &row : rows)
@@ -1915,7 +1919,7 @@ reportsRun(DbClientPtr db, Json::Value body, const utils::AuditIdentity &who) {
         "'cumulativeMeterReading',v.cumulative_meter_reading::text,"
         "'isMeterStalled',v.is_meter_stalled,'stalledSinceDate',v.stalled_since_date)::text AS record "
         "FROM fwm_vehicles v WHERE v.tenant_id=$1 AND v.is_deleted=false "
-        "AND ($2='' OR v.id=$2::uuid) AND ($3='' OR v.asset_group_id=$3::uuid) ORDER BY v.asset_no",
+        "AND ($2='' OR v.id=NULLIF($2,'')::uuid) AND ($3='' OR v.asset_group_id=NULLIF($3,'')::uuid) ORDER BY v.asset_no",
         who.tenantId, vid, gid);
     for (const auto &row : rows)
       out["rows"].append(parse(row["record"].as<std::string>()));
