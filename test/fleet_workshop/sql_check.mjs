@@ -60,4 +60,50 @@ assert.ok(feNav.includes("to: '/modules/fleet-workshop-management'"))
 const scmH = fs.readFileSync('domain_services/supply_chain/SupplyChainService.h', 'utf8')
 assert.ok(scmH.includes('createRequisition(drogon::orm::DbClientPtr transaction'))
 
+// 5. Frontend Fleet & Workshop workspace, catalog readiness, BFF routes, and pages exist.
+assert.ok(feCatalog.includes("id: 'fleet-workshop-management'") && feCatalog.includes("readiness: 'live'"))
+assert.ok(feCatalog.includes("if (moduleId === 'fleet-workshop-management') return '/fleet-workshop'"))
+assert.ok(fs.readFileSync('frontend/app/pages/modules/[module].vue', 'utf8').includes("'/fleet-workshop'"))
+assert.ok(fs.existsSync('frontend/app/layouts/admin-fleet.vue'))
+assert.ok(fs.existsSync('frontend/server/utils/fleet-workshop-api.ts'))
+for (const apiRoute of [
+  'dashboard/summary.get.ts',
+  'gl-settings.get.ts',
+  'gl-settings.put.ts',
+  'gl-settings/options.get.ts',
+  'reports.get.ts',
+  'schedules/generate.post.ts',
+  '[resource]/index.get.ts',
+  '[resource]/index.post.ts',
+  '[resource]/next-number.get.ts',
+  '[resource]/options.get.ts',
+  '[resource]/[id].get.ts',
+  '[resource]/[id].put.ts',
+  '[resource]/[id].delete.ts',
+  '[resource]/[id]/[sub].get.ts',
+  '[resource]/[id]/[sub].post.ts',
+  '[resource]/[id]/[sub].put.ts',
+  '[resource]/[id]/[sub]/[subId].put.ts',
+  '[resource]/[id]/[sub]/[subId].delete.ts',
+]) {
+  assert.ok(fs.existsSync(`frontend/server/api/fleet-workshop/${apiRoute}`), `Missing Nitro API route ${apiRoute}`)
+}
+for (const page of [
+  'index.vue',
+  'vehicles/index.vue',
+  'asset-groups/index.vue',
+  'procedures/index.vue',
+  'employees/index.vue',
+  'meters/index.vue',
+  'fuel-lubs/index.vue',
+  'components-tyres/index.vue',
+  'schedules/index.vue',
+  'diary/index.vue',
+  'job-cards/index.vue',
+  'reports/index.vue',
+  'settings/index.vue',
+]) {
+  assert.ok(fs.existsSync(`frontend/app/pages/fleet-workshop/${page}`), `Missing Fleet & Workshop page ${page}`)
+}
+
 console.log('Fleet & Workshop SQL migration, CMake, and frontend/subscription parity checks passed')
