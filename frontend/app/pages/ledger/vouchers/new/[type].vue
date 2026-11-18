@@ -3,6 +3,7 @@ import { ArrowLeft, Calculator, Check, ChevronDown, Plus, Save, Trash2 } from '@
 import { voucherRateDisplay, voucherRateInput } from '../../../../features/ledger/voucher-rate-input'
 import { employeeLineFlags } from '../../../../features/ledger/employee-line-flags'
 import { useVoucherLookups } from '../../../../features/ledger/useVoucherLookups'
+import { voucherBankGlOptions } from '../../../../features/ledger/voucher-bank-options'
 import {
   calculateVoucher,
   defaultVoucherTaxes,
@@ -329,9 +330,11 @@ const activeAccounts = computed(() =>
     )
     .map((a) => ({ ...a, name: a.accountName })),
 )
-const bankOptions = activeAccounts
+const bankOptions = computed(() =>
+  voucherBankGlOptions(activeAccounts.value, banks.value, unitId.value),
+)
 const matchingBanks = computed(() =>
-  banks.value.filter((b) => b.accountId === form.bankGlAccountId),
+  banks.value.filter((b) => b.isActive && b.accountingUnitId === unitId.value && b.accountId === form.bankGlAccountId),
 )
 const lineAccounts = computed(() =>
   activeAccounts.value.filter((a) => a.id !== form.bankGlAccountId),
@@ -373,7 +376,7 @@ function bankName(id: string) {
   return bank ? `${bank.bankName} · ${bank.accountNumber}` : ''
 }
 function onBankAccountChange() {
-  const account = activeAccounts.value.find(
+  const account = bankOptions.value.find(
     (a) => a.id === form.bankGlAccountId,
   )
   form.bankGlAccountName = account
@@ -788,8 +791,8 @@ const validationErrors = computed(() => {
     errors.push(
       `Enter a valid ${isReceipt.value ? 'receipt' : 'payment'} date.`,
     )
-  if (!activeAccounts.value.some((a) => a.id === form.bankGlAccountId))
-    errors.push('Choose an active bank or cash G/L account.')
+  if (!bankOptions.value.some((a) => a.id === form.bankGlAccountId))
+    errors.push('Choose an active G/L account with an active linked bank account in this accounting unit.')
   if (!matchingBanks.value.some((b) => b.id === form.bankAccountId))
     errors.push(
       'Choose an active linked bank/cash record, or configure one in Bank Accounts before saving.',
@@ -1069,12 +1072,13 @@ async function saveDraft(preview: boolean) {
     <section class="rounded-xl border border-slate-200/80 bg-white p-5 dark:border-slate-800 dark:bg-[#15201e] sm:p-6">
       <div class="flex flex-col justify-between gap-2 sm:flex-row sm:items-start"><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Voucher header</h2><p class="mt-1 text-[11px] text-slate-500">Voucher and batch numbers are assigned when the draft is first saved.</p></div><span class="inline-flex w-fit rounded-full bg-slate-100 px-2.5 py-1 text-[10px] font-medium text-slate-500 dark:bg-slate-800 dark:text-slate-300">{{ typeInfo.prefix }} · General Ledger</span></div>
       <p v-if="accountsPending" role="status" class="mt-3 text-xs text-slate-500">Loading live voucher configuration…</p>
+      <p v-else-if="!accountError && !bankOptions.length" role="status" class="mt-3 text-xs text-amber-700 dark:text-amber-300">No active bank-linked G/L accounts are available in this accounting unit. Configure a link in <NuxtLink to="/ledger/bank-accounts" class="font-semibold underline">Bank Accounts</NuxtLink> before saving.</p>
       <div class="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         <AccountControlPicker show-label v-if="type === 'supplier-payment'" kind="suppliers" label="Supplier / payee *" :model-value="form.payeeId" :options="supplierChoices" :disabled="supplierPickersDisabled" @update:model-value="value => { form.payeeId = value; onSupplierChange() }" />
         <label v-else class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ typeInfo.payeeLabel }} <span class="text-rose-500">*</span></span><select v-model="form.payeeId" @change="onSupplierChange" :aria-label="typeInfo.payeeLabel" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900"><option value="" disabled>Select {{ typeInfo.payeeLabel.toLowerCase() }}</option><option v-for="payee in payees" :key="payee.id" :value="payee.id">{{ payee.name }} · {{ payee.code }}</option></select></label>
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Entry date <span class="text-rose-500">*</span></span><input v-model="form.entryDate" type="date" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
         <AccountControlPicker show-label v-if="type === 'supplier-payment'" kind="accounts" label="Bank / cash G/L *" :model-value="form.bankGlAccountId" :options="bankGlChoices" :disabled="supplierPickersDisabled" @update:model-value="value => { form.bankGlAccountId = value; onBankAccountChange() }" />
-        <label v-else class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bank / cash G/L <span class="text-rose-500">*</span></span><select v-model="form.bankGlAccountId" aria-label="Bank / cash G/L" required class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" @change="onBankAccountChange"><option value="" disabled>Select chart account</option><option v-for="bank in bankOptions" :key="bank.id" :value="bank.id">{{ bank.accountNumber }} — {{ bank.name }}</option></select></label>
+        <label v-else class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Bank / cash G/L <span class="text-rose-500">*</span></span><select v-model="form.bankGlAccountId" aria-label="Bank / cash G/L" required :disabled="supplierPickersDisabled" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" @change="onBankAccountChange"><option value="" disabled>Select linked bank G/L</option><option v-for="bank in bankOptions" :key="bank.id" :value="bank.id">{{ bank.accountNumber }} — {{ bank.name }}</option></select></label>
         <label v-if="matchingBanks.length>1" class="block text-xs font-semibold">Linked bank account<select v-model="form.bankAccountId" aria-label="Linked bank account" required class="mt-2 h-10 w-full rounded-lg border border-slate-200 bg-transparent px-3 dark:border-slate-700" @change="form.bankAccountName=bankName(form.bankAccountId)"><option value="">Select linked bank account</option><option v-for="bank in matchingBanks" :key="bank.id" :value="bank.id">{{bank.bankName}} · {{bank.accountNumber}}</option></select></label>
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Transaction currency <span class="text-rose-500">*</span></span><select v-model="form.currencyCode" aria-label="Transaction currency" class="h-10 w-full rounded-lg border border-slate-200 bg-white px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" @change="onCurrencyChange"><option value="" disabled>Select currency</option><option v-for="currency in ledgerCurrencyOptions" :key="currency.code" :value="currency.code">{{ currency.code }} · {{ currency.name }}</option></select></label>
         <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">{{ isReceipt ? 'Receipt date' : 'Payment date' }} <span class="text-rose-500">*</span></span><input v-if="isReceipt" v-model="form.receiptDate" type="date" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /><input v-else v-model="form.paymentDate" type="date" required class="h-10 w-full rounded-lg border border-slate-200 px-3 text-xs outline-none focus:border-brand-500 dark:border-slate-700 dark:bg-slate-900" /></label>
