@@ -35,6 +35,10 @@ if (initialModule.id === 'fleet-workshop-management') {
   await navigateTo('/fleet-workshop', { replace: true })
 }
 
+if (initialModule.id === 'document-management') {
+  await navigateTo('/documents', { replace: true })
+}
+
 const activeModule = computed(() => getBusinessModule(route.params.module) ?? initialModule)
 const setupSteps = [
   { title: 'Connect operational data', description: 'Link the module to its service and business records.', icon: Database },
