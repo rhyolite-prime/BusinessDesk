@@ -9050,12 +9050,12 @@ void CoreCompanyProfiles::getTenants(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-Users CoreCompanyProfiles::getCreatedByUser(const DbClientPtr &clientPtr) const {
+Users CoreCompanyProfiles::getDeletedByUser(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from users where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *createdByUserId_ << Mode::Blocking >>
+        binder << *deletedByUserId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -9070,13 +9070,13 @@ Users CoreCompanyProfiles::getCreatedByUser(const DbClientPtr &clientPtr) const 
     return Users(r[0]);
 }
 
-void CoreCompanyProfiles::getCreatedByUser(const DbClientPtr &clientPtr,
+void CoreCompanyProfiles::getDeletedByUser(const DbClientPtr &clientPtr,
                                            const std::function<void(Users)> &rcb,
                                            const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from users where id = $1";
     *clientPtr << sql
-               << *createdByUserId_
+               << *deletedByUserId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {
@@ -9138,12 +9138,12 @@ void CoreCompanyProfiles::getLastModifiedByUser(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-Users CoreCompanyProfiles::getDeletedByUser(const DbClientPtr &clientPtr) const {
+Users CoreCompanyProfiles::getCreatedByUser(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from users where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *deletedByUserId_ << Mode::Blocking >>
+        binder << *createdByUserId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -9158,13 +9158,13 @@ Users CoreCompanyProfiles::getDeletedByUser(const DbClientPtr &clientPtr) const 
     return Users(r[0]);
 }
 
-void CoreCompanyProfiles::getDeletedByUser(const DbClientPtr &clientPtr,
+void CoreCompanyProfiles::getCreatedByUser(const DbClientPtr &clientPtr,
                                            const std::function<void(Users)> &rcb,
                                            const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from users where id = $1";
     *clientPtr << sql
-               << *deletedByUserId_
+               << *createdByUserId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {

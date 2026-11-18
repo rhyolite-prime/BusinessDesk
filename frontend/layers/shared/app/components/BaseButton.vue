@@ -6,8 +6,9 @@ const props = withDefaults(defineProps<{
   to?: string
   block?: boolean
   disabled?: boolean
+  loading?: boolean
   type?: 'button' | 'submit'
-}>(), { variant: 'primary', size: 'md', type: 'button' })
+}>(), { variant: 'primary', size: 'md', type: 'button', loading: false })
 
 const cls = computed(() => [
   'inline-flex items-center justify-center gap-2 font-medium rounded-lg transition-all',
@@ -26,12 +27,13 @@ const cls = computed(() => [
 </script>
 
 <template>
-  <NuxtLink v-if="to && !disabled" :to="to" :class="cls">
+  <NuxtLink v-if="to && !disabled && !loading" :to="to" :class="cls">
     <AppIcon v-if="icon" :name="icon" :size="size === 'sm' ? 15 : 17" />
     <slot />
   </NuxtLink>
-  <button v-else :type="type" :disabled="disabled" :class="cls">
-    <AppIcon v-if="icon" :name="icon" :size="size === 'sm' ? 15 : 17" />
+  <button v-else :type="type" :disabled="disabled || loading" :aria-busy="loading || undefined" :class="cls">
+    <AppIcon v-if="loading" name="arrow-path" :size="size === 'sm' ? 15 : 17" class="animate-spin" />
+    <AppIcon v-else-if="icon" :name="icon" :size="size === 'sm' ? 15 : 17" />
     <slot />
   </button>
 </template>

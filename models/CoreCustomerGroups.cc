@@ -2679,12 +2679,12 @@ void CoreCustomerGroups::getTenants(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-Users CoreCustomerGroups::getCreatedByUser(const DbClientPtr &clientPtr) const {
+Users CoreCustomerGroups::getDeletedByUser(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from users where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *createdByUserId_ << Mode::Blocking >>
+        binder << *deletedByUserId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -2699,13 +2699,13 @@ Users CoreCustomerGroups::getCreatedByUser(const DbClientPtr &clientPtr) const {
     return Users(r[0]);
 }
 
-void CoreCustomerGroups::getCreatedByUser(const DbClientPtr &clientPtr,
+void CoreCustomerGroups::getDeletedByUser(const DbClientPtr &clientPtr,
                                           const std::function<void(Users)> &rcb,
                                           const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from users where id = $1";
     *clientPtr << sql
-               << *createdByUserId_
+               << *deletedByUserId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {
@@ -2767,12 +2767,12 @@ void CoreCustomerGroups::getLastModifiedByUser(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-Users CoreCustomerGroups::getDeletedByUser(const DbClientPtr &clientPtr) const {
+Users CoreCustomerGroups::getCreatedByUser(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from users where id = $1";
     Result r(nullptr);
     {
         auto binder = *clientPtr << sql;
-        binder << *deletedByUserId_ << Mode::Blocking >>
+        binder << *createdByUserId_ << Mode::Blocking >>
             [&r](const Result &result) { r = result; };
         binder.exec();
     }
@@ -2787,13 +2787,13 @@ Users CoreCustomerGroups::getDeletedByUser(const DbClientPtr &clientPtr) const {
     return Users(r[0]);
 }
 
-void CoreCustomerGroups::getDeletedByUser(const DbClientPtr &clientPtr,
+void CoreCustomerGroups::getCreatedByUser(const DbClientPtr &clientPtr,
                                           const std::function<void(Users)> &rcb,
                                           const ExceptionCallback &ecb) const
 {
     static const std::string sql = "select * from users where id = $1";
     *clientPtr << sql
-               << *deletedByUserId_
+               << *createdByUserId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {

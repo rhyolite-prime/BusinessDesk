@@ -165,12 +165,8 @@ const embeddedReport = computed<EmbeddedReport>(() => {
 <template>
   <section class="space-y-5">
     <PageHeader title="Fleet & workshop reports" subtitle="6-tab operational & cost reporting with exchange-rate conversion, PDF, Excel, Word and print export." icon="chart-bar-square">
-      <template #actions>
-        <div class="flex gap-2">
-          <BaseButton variant="secondary" icon="arrow-path" :loading="loading" @click="runReport">Run report</BaseButton>
-          <BaseButton icon="document-text" :disabled="!rows.length" @click="showViewer = true">Print / Export PDF &amp; Excel</BaseButton>
-        </div>
-      </template>
+      <BaseButton variant="secondary" icon="arrow-path" :loading="loading" @click="runReport">Run report</BaseButton>
+      <BaseButton icon="document-text" :disabled="!rows.length" @click="showViewer = true">Print / Export PDF &amp; Excel</BaseButton>
     </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
@@ -192,12 +188,12 @@ const embeddedReport = computed<EmbeddedReport>(() => {
         <FormField label="Asset group"><FleetSelect v-model="assetGroupId" :options="opts.assetGroups.value" placeholder="All groups" /></FormField>
         <FormField label="Date from"><TextInput v-model="dateFrom" type="date" /></FormField>
         <FormField label="Date to"><TextInput v-model="dateTo" type="date" /></FormField>
-        <FormField label="Exchange rate (FX)">
-          <div class="flex gap-2">
+        <div class="flex items-end gap-2">
+          <FormField label="Exchange rate (FX)" class="flex-1">
             <TextInput v-model="exchangeRate" type="number" step="any" />
-            <BaseButton size="sm" @click="runReport">Apply</BaseButton>
-          </div>
-        </FormField>
+          </FormField>
+          <BaseButton size="sm" class="mb-0.5" @click="runReport">Apply</BaseButton>
+        </div>
       </div>
 
       <p v-if="error" role="alert" class="p-4 text-sm text-rose-600">{{ error }}</p>

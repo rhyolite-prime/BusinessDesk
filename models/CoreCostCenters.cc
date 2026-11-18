@@ -2732,50 +2732,6 @@ void CoreCostCenters::getCreatedByUser(const DbClientPtr &clientPtr,
                >> ecb;
 }
 
-Users CoreCostCenters::getLastModifiedByUser(const DbClientPtr &clientPtr) const {
-    static const std::string sql = "select * from users where id = $1";
-    Result r(nullptr);
-    {
-        auto binder = *clientPtr << sql;
-        binder << *lastModifiedByUserId_ << Mode::Blocking >>
-            [&r](const Result &result) { r = result; };
-        binder.exec();
-    }
-    if (r.size() == 0)
-    {
-        throw UnexpectedRows("0 rows found");
-    }
-    else if (r.size() > 1)
-    {
-        throw UnexpectedRows("Found more than one row");
-    }
-    return Users(r[0]);
-}
-
-void CoreCostCenters::getLastModifiedByUser(const DbClientPtr &clientPtr,
-                                            const std::function<void(Users)> &rcb,
-                                            const ExceptionCallback &ecb) const
-{
-    static const std::string sql = "select * from users where id = $1";
-    *clientPtr << sql
-               << *lastModifiedByUserId_
-               >> [rcb = std::move(rcb), ecb](const Result &r){
-                    if (r.size() == 0)
-                    {
-                        ecb(UnexpectedRows("0 rows found"));
-                    }
-                    else if (r.size() > 1)
-                    {
-                        ecb(UnexpectedRows("Found more than one row"));
-                    }
-                    else
-                    {
-                        rcb(Users(r[0]));
-                    }
-               }
-               >> ecb;
-}
-
 Users CoreCostCenters::getDeletedByUser(const DbClientPtr &clientPtr) const {
     static const std::string sql = "select * from users where id = $1";
     Result r(nullptr);
@@ -2803,6 +2759,50 @@ void CoreCostCenters::getDeletedByUser(const DbClientPtr &clientPtr,
     static const std::string sql = "select * from users where id = $1";
     *clientPtr << sql
                << *deletedByUserId_
+               >> [rcb = std::move(rcb), ecb](const Result &r){
+                    if (r.size() == 0)
+                    {
+                        ecb(UnexpectedRows("0 rows found"));
+                    }
+                    else if (r.size() > 1)
+                    {
+                        ecb(UnexpectedRows("Found more than one row"));
+                    }
+                    else
+                    {
+                        rcb(Users(r[0]));
+                    }
+               }
+               >> ecb;
+}
+
+Users CoreCostCenters::getLastModifiedByUser(const DbClientPtr &clientPtr) const {
+    static const std::string sql = "select * from users where id = $1";
+    Result r(nullptr);
+    {
+        auto binder = *clientPtr << sql;
+        binder << *lastModifiedByUserId_ << Mode::Blocking >>
+            [&r](const Result &result) { r = result; };
+        binder.exec();
+    }
+    if (r.size() == 0)
+    {
+        throw UnexpectedRows("0 rows found");
+    }
+    else if (r.size() > 1)
+    {
+        throw UnexpectedRows("Found more than one row");
+    }
+    return Users(r[0]);
+}
+
+void CoreCostCenters::getLastModifiedByUser(const DbClientPtr &clientPtr,
+                                            const std::function<void(Users)> &rcb,
+                                            const ExceptionCallback &ecb) const
+{
+    static const std::string sql = "select * from users where id = $1";
+    *clientPtr << sql
+               << *lastModifiedByUserId_
                >> [rcb = std::move(rcb), ecb](const Result &r){
                     if (r.size() == 0)
                     {

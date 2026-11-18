@@ -2,7 +2,7 @@
 import { useFleetUnitId, useFleetWorkshop } from '../../../features/fleet-workshop/useFleetWorkshop'
 import type { CrossModuleLinkRecord, GlSettingsOptions } from '../../../features/fleet-workshop/fleet-types'
 import FleetSelect from '../../../features/fleet-workshop/components/FleetSelect.vue'
-import { fleetErrorMessage, fleetStatusTone, humanLabel } from '../../../features/fleet-workshop/fleet-helpers'
+import { fleetErrorMessage, fleetStatusTone, formatFleetDate, humanLabel } from '../../../features/fleet-workshop/fleet-helpers'
 
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Fleet GL settings & handoffs' })
@@ -17,7 +17,11 @@ const saving = ref(false)
 const error = ref('')
 
 const options = ref<GlSettingsOptions>({ accountingUnitId: '', accounts: [], warehouses: [] })
-const accountOpts = computed(() => options.value.accounts.map((a) => ({ value: a.id, label: `${a.accountNumber} — ${a.name}` })))
+const accountOpts = computed(() => options.value.accounts.map((a) => ({
+  id: a.id,
+  label: `${a.accountNumber} — ${a.name}`,
+  type: 'GL accounts',
+})))
 const warehouseOpts = computed(() => options.value.warehouses.map((w) => ({ value: w.id, label: `${w.code} — ${w.name}` })))
 
 const form = reactive({
@@ -93,7 +97,11 @@ watch([unitId, activeTab, moduleFilter, statusFilter, linkPage], load)
 onMounted(load)
 
 async function saveSettings() {
-  if (!unitId.value || saving.value) return
+  if (saving.value) return
+  if (!unitId.value) {
+    error.value = 'Select an accounting unit first.'
+    return
+  }
   saving.value = true
   error.value = ''
   try {
@@ -135,7 +143,10 @@ const linkCols = [
 
 <template>
   <section class="space-y-5">
-    <PageHeader title="Fleet GL settings & module handoffs" subtitle="Configure per-unit Fleet expense, WIP, recovery, revenue and clearing GL accounts, and inspect ERP module handoffs." icon="cog-6-tooth" />
+    <PageHeader title="Fleet GL settings & module handoffs" subtitle="Configure per-unit Fleet expense, WIP, recovery, revenue and clearing GL accounts, and inspect ERP module handoffs." icon="cog-6-tooth">
+      <BaseButton variant="secondary" icon="arrow-path" :loading="loading" @click="load">Refresh</BaseButton>
+      <BaseButton v-if="activeTab === 'settings'" :loading="saving" @click="saveSettings">Save GL settings</BaseButton>
+    </PageHeader>
 
     <div class="rounded-2xl border border-line bg-surface shadow-sm">
       <div class="flex flex-wrap items-center justify-between gap-3 border-b border-line p-4">
@@ -166,18 +177,18 @@ const linkCols = [
           <FormField label="Default parts / fuel warehouse"><FleetSelect v-model="form.defaultWarehouseId" :options="warehouseOpts" placeholder="None" /></FormField>
           <FormField label="Default workshop labour rate"><TextInput v-model="form.defaultLabourRate" type="number" step="any" /></FormField>
           <FormField label="Default tax rate (fraction e.g. 0.15)"><TextInput v-model="form.defaultTaxRate" type="number" step="any" /></FormField>
-          <FormField label="Repairs & maintenance expense"><FleetSelect v-model="form.repairsExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Fuel expense account"><FleetSelect v-model="form.fuelExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Lubricants expense account"><FleetSelect v-model="form.lubricantsExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Tyres expense account"><FleetSelect v-model="form.tyresExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Outsourced repairs expense"><FleetSelect v-model="form.outsourcedRepairsExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Electrical services expense"><FleetSelect v-model="form.electricalExpenseAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Internal labour recovery"><FleetSelect v-model="form.internalLabourRecoveryAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Workshop labour revenue"><FleetSelect v-model="form.workshopLabourRevenueAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Workshop parts revenue"><FleetSelect v-model="form.workshopPartsRevenueAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Workshop WIP account"><FleetSelect v-model="form.workshopWipAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Fleet clearing (AP)"><FleetSelect v-model="form.fleetClearingApAccountId" :options="accountOpts" placeholder="None" /></FormField>
-          <FormField label="Fleet receivable (AR)"><FleetSelect v-model="form.fleetReceivableArAccountId" :options="accountOpts" placeholder="None" /></FormField>
+          <AccountControlPicker show-label v-model="form.repairsExpenseAccountId" kind="accounts" label="Repairs & maintenance expense" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.fuelExpenseAccountId" kind="accounts" label="Fuel expense account" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.lubricantsExpenseAccountId" kind="accounts" label="Lubricants expense account" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.tyresExpenseAccountId" kind="accounts" label="Tyres expense account" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.outsourcedRepairsExpenseAccountId" kind="accounts" label="Outsourced repairs expense" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.electricalExpenseAccountId" kind="accounts" label="Electrical services expense" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.internalLabourRecoveryAccountId" kind="accounts" label="Internal labour recovery" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.workshopLabourRevenueAccountId" kind="accounts" label="Workshop labour revenue" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.workshopPartsRevenueAccountId" kind="accounts" label="Workshop parts revenue" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.workshopWipAccountId" kind="accounts" label="Workshop WIP account" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.fleetClearingApAccountId" kind="accounts" label="Fleet clearing (AP)" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
+          <AccountControlPicker show-label v-model="form.fleetReceivableArAccountId" kind="accounts" label="Fleet receivable (AR)" :options="accountOpts" empty-label="None" :disabled="loading || saving" />
         </div>
         <div class="flex justify-end border-t border-line pt-4">
           <BaseButton type="submit" :loading="saving">Save GL settings</BaseButton>
@@ -216,7 +227,7 @@ const linkCols = [
         </div>
         <DataTable :columns="linkCols" :rows="links" :loading="loading" empty="No cross-module handoffs recorded yet.">
           <template #cell="{ col, row }">
-            <template v-if="col.key === 'createdAt'">{{ row.createdAt ? formatDate(row.createdAt) : '—' }}</template>
+            <template v-if="col.key === 'createdAt'">{{ formatFleetDate(row.createdAt) }}</template>
             <template v-else-if="col.key === 'sourceEntityType'">{{ humanLabel(row.sourceEntityType) }}</template>
             <template v-else-if="col.key === 'targetModule'">
               <div class="font-medium">{{ humanLabel(row.targetModule) }}</div>

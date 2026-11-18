@@ -72,7 +72,7 @@ for (const apiRoute of [
   'gl-settings.put.ts',
   'gl-settings/options.get.ts',
   'reports.get.ts',
-  'schedules/generate.post.ts',
+  '[resource]/generate.post.ts',
   '[resource]/index.get.ts',
   '[resource]/index.post.ts',
   '[resource]/next-number.get.ts',
@@ -88,6 +88,41 @@ for (const apiRoute of [
 ]) {
   assert.ok(fs.existsSync(`frontend/server/api/fleet-workshop/${apiRoute}`), `Missing Nitro API route ${apiRoute}`)
 }
+
+// 5b. Guard against Nitro radix3 static-prefix shadowing of dynamic [resource] routes.
+const fwmApiSrc = fs.readFileSync('frontend/server/utils/fleet-workshop-api.ts', 'utf8')
+const resourceSetBody = fwmApiSrc.match(/fleetWorkshopResources\s*=\s*new Set\(\[([\s\S]*?)\]\)/)[1]
+const fwmResources = [...resourceSetBody.matchAll(/'([^']+)'/g)].map((m) => m[1])
+assert.equal(fwmResources.length, 16, `Expected 16 fleetWorkshopResources, got ${fwmResources.length}`)
+for (const resName of fwmResources) {
+  assert.equal(
+    fs.existsSync(`frontend/server/api/fleet-workshop/${resName}`),
+    false,
+    `Static directory frontend/server/api/fleet-workshop/${resName} shadows [resource] in Nitro radix3 router`,
+  )
+}
+
+// 5c. Guard that every Fleet & Workshop data workspace exposes visible record-creation triggers & forms.
+const pageHeaderSrc = fs.readFileSync('frontend/layers/shared/app/components/PageHeader.vue', 'utf8')
+assert.ok(pageHeaderSrc.includes('<slot />'), 'PageHeader.vue must render default slot')
+for (const dataPage of [
+  'vehicles/index.vue',
+  'asset-groups/index.vue',
+  'procedures/index.vue',
+  'employees/index.vue',
+  'meters/index.vue',
+  'fuel-lubs/index.vue',
+  'components-tyres/index.vue',
+  'schedules/index.vue',
+  'diary/index.vue',
+  'job-cards/index.vue',
+]) {
+  const pgSrc = fs.readFileSync(`frontend/app/pages/fleet-workshop/${dataPage}`, 'utf8')
+  assert.equal(pgSrc.includes('<template #actions>'), false, `${dataPage} should use PageHeader default slot`)
+  assert.ok(pgSrc.includes('<ModalShell'), `${dataPage} must include ModalShell form`)
+  assert.ok(pgSrc.includes('@submit.prevent='), `${dataPage} must include submit handler form`)
+}
+
 for (const page of [
   'index.vue',
   'vehicles/index.vue',

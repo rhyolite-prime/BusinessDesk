@@ -8,6 +8,7 @@ import { DIARY_CATEGORIES, fleetErrorMessage, fleetStatusTone, humanLabel, today
 definePageMeta({ layout: 'admin-fleet' })
 useHead({ title: 'Workshop diary ledger' })
 
+const route = useRoute()
 const api = useFleetWorkshop()
 const unitId = useFleetUnitId()
 const opts = useFleetOptions()
@@ -51,7 +52,10 @@ watch(q, () => {
   clearTimeout(timer)
   timer = setTimeout(() => { page.value = 1; void load() }, 250)
 })
-onMounted(load)
+onMounted(() => {
+  void load()
+  if (route.query.new === '1') void openCreate()
+})
 
 /* ------------------------ Create / Edit Diary Entry ----------------------- */
 const showModal = ref(false)
@@ -60,6 +64,7 @@ const saving = ref(false)
 const formError = ref('')
 const previewNo = ref('')
 const form = reactive({
+  accountingUnitId: '',
   entryDate: todayIso(),
   vehicleId: '',
   registrationNoSnapshot: '',
@@ -93,11 +98,12 @@ function onVehicleChange(vid: string) {
 }
 
 async function openCreate() {
-  if (!unitId.value) { toast.error('Select an accounting unit first.'); return }
   editing.value = null
   formError.value = ''
   previewNo.value = ''
+  const defaultUnit = unitId.value || opts.accountingUnits.value[0]?.value || ''
   Object.assign(form, {
+    accountingUnitId: defaultUnit,
     entryDate: todayIso(),
     vehicleId: '',
     registrationNoSnapshot: '',
@@ -116,10 +122,12 @@ async function openCreate() {
     notes: '',
   })
   showModal.value = true
-  try {
-    const n = await api.diaryEntries.nextNumber(unitId.value)
-    previewNo.value = n.nextNumber
-  } catch { /* ignore */ }
+  if (defaultUnit) {
+    try {
+      const n = await api.diaryEntries.nextNumber(defaultUnit)
+      previewNo.value = n.nextNumber
+    } catch { /* ignore */ }
+  }
 }
 
 function openEdit(row: DiaryEntryRecord) {
@@ -149,6 +157,11 @@ function openEdit(row: DiaryEntryRecord) {
 
 async function save() {
   if (saving.value) return
+  const resolvedUnit = editing.value ? editing.value.accountingUnitId : (form.accountingUnitId || unitId.value)
+  if (!editing.value && !resolvedUnit) {
+    formError.value = 'Accounting unit is required.'
+    return
+  }
   if (!form.description.trim()) {
     formError.value = 'Description is required.'
     return
@@ -178,7 +191,7 @@ async function save() {
       await api.diaryEntries.update(editing.value.id, { ...base, version: editing.value.version })
       toast.success('Diary entry updated')
     } else {
-      await api.diaryEntries.create({ accountingUnitId: unitId.value, ...base })
+      await api.diaryEntries.create({ accountingUnitId: resolvedUnit, ...base })
       toast.success('Diary entry logged')
     }
     showModal.value = false
@@ -338,9 +351,7 @@ const columns = [
 <template>
   <section class="space-y-5">
     <PageHeader title="Workshop diary ledger" subtitle="Fast field & workshop notebook for repairs, parts, workmanship and cash payouts — split across vehicles and promote to Job Cards." icon="pencil-square">
-      <template #actions>
-        <BaseButton icon="plus" @click="openCreate">New diary entry</BaseButton>
-      </template>
+      <BaseButton icon="plus" @click="openCreate">New diary entry</BaseButton>
     </PageHeader>
 
     <div class="grid gap-4 sm:grid-cols-3">
@@ -418,6 +429,9 @@ const columns = [
     <ModalShell :open="showModal" :title="editing ? `Diary entry ${editing.entryNumber}` : `New workshop diary entry ${previewNo ? `(${previewNo})` : ''}`" width="max-w-2xl" @close="showModal = false">
       <form class="space-y-3.5" @submit.prevent="save">
         <div class="grid gap-3 sm:grid-cols-2">
+          <FormField v-if="!editing" label="Accounting unit" required class="sm:col-span-2">
+            <FleetSelect v-model="form.accountingUnitId" :options="opts.accountingUnits.value" placeholder="Select accounting unit…" />
+          </FormField>
           <FormField label="Entry date" required><TextInput v-model="form.entryDate" type="date" /></FormField>
           <FormField label="Category"><FleetSelect v-model="form.entryCategory" :options="DIARY_CATEGORIES" :allow-empty="false" /></FormField>
           <FormField label="Vehicle (optional if splitting later)"><FleetSelect :model-value="form.vehicleId" :options="opts.vehicles.value" placeholder="Unassigned / multi-vehicle" @update:model-value="onVehicleChange" /></FormField>

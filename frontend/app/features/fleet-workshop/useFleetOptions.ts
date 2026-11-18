@@ -31,6 +31,10 @@ export function useFleetOptions() {
   const invWarehouses = ref<FleetSelectOption[]>([])
   const openPeriods = ref<FleetSelectOption[]>([])
 
+  const accountingUnits = computed<FleetSelectOption[]>(() => {
+    const source = units.value.length ? units.value : vehicleOptions.value.accountingUnits
+    return source.map((u) => ({ value: u.id, label: `${u.code} — ${u.name}` }))
+  })
   const assetGroups = computed<FleetSelectOption[]>(() =>
     vehicleOptions.value.assetGroups.map((g) => ({ value: g.id, label: `${g.code} — ${g.model}` })),
   )
@@ -73,6 +77,12 @@ export function useFleetOptions() {
       api.request<{ data: Array<{ id: string; code: string; name?: string }> }>('/api/inventory/uoms', { query: { size: 200 } }).catch(() => ({ data: [] })),
     ])
     vehicleOptions.value = vo
+    if (!units.value.length && vo.accountingUnits?.length) {
+      units.value = vo.accountingUnits
+    }
+    if (!unitId.value && units.value[0]?.id) {
+      unitId.value = units.value[0].id
+    }
     vehicleList.value = vehs.items
     vehicles.value = vehs.items.map((v) => ({
       value: v.id,
@@ -124,6 +134,7 @@ export function useFleetOptions() {
   return {
     unitId,
     units,
+    accountingUnits,
     vehicleOptions,
     vehicles,
     vehicleMap,

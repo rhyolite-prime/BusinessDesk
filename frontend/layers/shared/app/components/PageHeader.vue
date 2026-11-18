@@ -13,7 +13,8 @@ defineProps<{ title: string; subtitle?: string; icon?: string }>()
         <p v-if="subtitle" class="text-sm text-ink-faint mt-0.5">{{ subtitle }}</p>
       </div>
     </div>
-    <div class="flex items-center gap-2 flex-wrap">
+    <div v-if="$slots.default || $slots.actions" class="flex items-center gap-2 flex-wrap">
+      <slot name="actions" />
       <slot />
     </div>
   </div>
