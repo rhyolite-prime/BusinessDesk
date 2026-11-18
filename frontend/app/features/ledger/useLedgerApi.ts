@@ -1,11 +1,9 @@
 import type { AccountDetail, AccountDetailInput } from './account-detail-types'
 import { standardAccountTypes } from './setup-data'
-import type { AccountsResponse, DashboardResponse, LedgerAccount } from './types'
+import type { AccountsResponse, DashboardFilters, DashboardOptions, DashboardResponse, LedgerAccount } from './types'
 
 export function useLedgerApi() {
   const requestFetch = useRequestFetch()
-  const getRequest = <T>(path: string, query?: Record<string, string>) =>
-    requestFetch<T>(`/api/ledger/${path}`, query ? { query } : undefined)
   const selectedUnit = useState<string>('ledger-accounting-unit', () => '')
   // Older ledger pickers retain their display shape, but read only live,
   // explicitly scoped accounts. Never silently choose a unit or use demo rows.
@@ -32,7 +30,8 @@ export function useLedgerApi() {
   }
 
   return {
-    dashboard: () => getRequest<DashboardResponse>('dashboard'),
+    dashboard: (filters: DashboardFilters, signal?: AbortSignal) => requestFetch<DashboardResponse>('/api/ledger/dashboard', { query: filters, signal }),
+    dashboardOptions: () => requestFetch<DashboardOptions>('/api/ledger/dashboard/options'),
     accounts: accountOptions,
     createAccount: (input: AccountDetailInput) =>
       requestFetch<AccountDetail>('/api/ledger/accounts', { method: 'POST', body: input }),

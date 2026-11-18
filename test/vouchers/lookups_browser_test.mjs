@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {calculateVoucher} from '../../frontend/app/features/ledger/voucher-tax.ts'
-let checks=0,fail=false,failEmployees=false,failCustomers=false,failSave=false,failCompany=false
+let checks=0,fail=false,failEmployees=false,failCustomers=false,failSave=false,failCompany=false,noBankLinks=false
 let stored=null, savedInput=null, catalogMode=false, catalogRows=[]
 const seen=[],check=(v,label)=>{assert.ok(v,label);checks++}
 const id=n=>`90000000-0000-4000-8000-${String(n).padStart(12,'0')}`
@@ -60,7 +60,13 @@ const upstream=http.createServer(async(req,res)=>{
   if(url.searchParams.get('accountingUnitId')===id(41))return paged([{id:id(42),accountNumber:'9990',accountName:'Other unit GL',status:'active',accountType:0}])
   return paged(url.searchParams.get('pageNo')==='2'?[{id:bank,accountNumber:'1010',accountName:'API Operating Bank',status:'active',accountType:0},{id:debit,accountNumber:'2100',accountName:'API Payables',status:'active',accountType:1},{id:id(43),accountNumber:'9980',accountName:'Inactive GL',status:'inactive',accountType:0},{id:id(44),accountNumber:'9970',accountName:'Foreign GL',status:'active',accountType:0,currencyId:eur}]:Array.from({length:100},(_,i)=>({id:id(1000+i),accountNumber:String(3000+i),accountName:`Extra GL ${i}`,status:'active',accountType:4})),2)
  }
- if(p==='/api/v1/ledger/bank-accounts')return send(200,{data:[{id:id(8),accountId:bank,bankName:'API Bank',accountNumber:'00042',isActive:true}]})
+ if(p==='/api/v1/ledger/bank-accounts')return send(200,{data:noBankLinks?[]:url.searchParams.get('accountingUnitId')===id(41)?[{id:id(9),accountingUnitId:id(41),accountId:id(42),bankName:'Other bank',accountNumber:'OTHER-42',isActive:true}]:[
+  {id:id(8),accountingUnitId:unit,accountId:bank,bankName:'API Bank',accountNumber:'00042',isActive:true},
+  {id:id(81),accountingUnitId:unit,accountId:debit,bankName:'Inactive link',accountNumber:'OFF',isActive:false},
+  {id:id(82),accountingUnitId:id(41),accountId:id(1099),bankName:'Wrong unit link',accountNumber:'OTHER',isActive:true},
+  {id:id(83),accountingUnitId:unit,accountId:id(43),bankName:'Inactive GL link',accountNumber:'INACTIVE',isActive:true},
+  {id:id(84),accountingUnitId:unit,accountId:id(44),bankName:'Foreign GL link',accountNumber:'EUR',isActive:true},
+ ]})
  send(404,null)
 })
 await new Promise(r=>upstream.listen(0,'0.0.0.0',r))
@@ -104,7 +110,7 @@ try{
     if(keyboard)await input.press('Enter');else await page.getByRole('listbox').getByRole('option',{name:option,exact:true}).click()
   }
   async function saveVoucher(edit=false,preview=false){
-    await page.getByRole('button',{name:edit?'Update draft':'Save as draft',exact:true}).click()
+    await page.getByRole('button',{name:edit?'Update':'Save',exact:true}).click()
     await page.getByRole('menuitem',{name:preview?'Save and Preview':'Save',exact:true}).click()
   }
   let quoteCalls=0
@@ -130,7 +136,7 @@ try{
   }
 
   await picker('Bank / cash G/L').click()
-  check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===102,'bank picker loads all account pages and excludes inactive/foreign accounts')
+  check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===1,'supplier bank picker loads all account pages but only offers active bank-linked GLs in the posting unit')
   await page.getByRole('combobox',{name:'Search GL accounts',exact:true}).fill('1010')
   await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option',{name:'1010 — API Operating Bank',exact:true}).click()
   await openPicker('Debit GL line 1')
@@ -257,12 +263,15 @@ try{
   await page.getByLabel('Enable CST',{exact:true}).uncheck()
   await page.getByLabel('Withholding applies to line 2',{exact:true}).uncheck()
   check(await page.getByLabel('Withholding applies to line 1',{exact:true}).isChecked(),'reset does not alter other line flags')
+  check(await page.getByLabel('Enable NHIL',{exact:true}).isChecked()&&await page.getByLabel('NHIL rate',{exact:true}).inputValue()==='3','unchecking one row preserves taxes while another withheld row remains')
+  await page.getByLabel('Withholding applies to line 1',{exact:true}).uncheck()
   for (const label of ['NHIL','GETFund levy','VAT','CST','COVID levy','Income withholding','VAT withholding']) {
-    check(!await page.getByLabel(`Enable ${label}`,{exact:true}).isChecked()&&await page.getByLabel(`${label} rate`,{exact:true}).inputValue()==='0'&&(await taxAmount(label)).includes('0.00'),`unchecking any row clears ${label} rate, checkbox and amount`)
+    check(!await page.getByLabel(`Enable ${label}`,{exact:true}).isChecked()&&await page.getByLabel(`${label} rate`,{exact:true}).inputValue()==='0'&&(await taxAmount(label)).includes('0.00'),`unchecking the final withheld row clears ${label} rate, checkbox and amount`)
   }
   check(await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'reset disables withholding account pickers')
   check(await page.getByRole('button',{name:'Remove retention',exact:true}).count()===1,'reset leaves unrelated retentions intact')
   await page.getByRole('button',{name:'Remove retention',exact:true}).click()
+  await page.getByLabel('Withholding applies to line 1',{exact:true}).check()
   await page.getByLabel('Withholding applies to line 2',{exact:true}).check()
   for (const [label,rate] of [['NHIL','2.5'],['GETFund levy','2.5'],['VAT','15'],['Income withholding','5'],['VAT withholding','7']]) {
     check(await page.getByLabel(`Enable ${label}`,{exact:true}).isChecked()&&await page.getByLabel(`${label} rate`,{exact:true}).inputValue()===rate,`checking after reset restores ${label} default`)
@@ -295,13 +304,13 @@ try{
   await page.getByRole('alert').filter({hasText:'voucher'}).waitFor()
   check(await page.getByRole('dialog',{name:'Voucher preview'}).count()===0&&page.url().includes('/new/supplier-payment'),'failed save never opens a preview or navigates')
   failSave=false
-  await page.getByRole('button',{name:'Save as draft',exact:true}).click()
+  await page.getByRole('button',{name:'Save',exact:true}).click()
   check(await page.getByRole('menuitem',{name:'Save',exact:true}).isVisible()&&await page.getByRole('menuitem',{name:'Save and Preview',exact:true}).isVisible(),'save dropdown offers both actions')
   check(await page.getByRole('menuitem',{name:'Save',exact:true}).evaluate(el=>el===document.activeElement),'opening save menu focuses first action')
   await page.keyboard.press('ArrowDown')
   check(await page.getByRole('menuitem',{name:'Save and Preview',exact:true}).evaluate(el=>el===document.activeElement),'arrow keys navigate save menu')
   await page.keyboard.press('Escape')
-  check(await page.getByRole('button',{name:'Save as draft',exact:true}).evaluate(el=>el===document.activeElement),'closing save menu restores focus')
+  check(await page.getByRole('button',{name:'Save',exact:true}).evaluate(el=>el===document.activeElement),'closing save menu restores focus')
   check(await page.getByRole('menu',{name:'Save voucher'}).count()===0,'Escape dismisses save menu')
   await saveVoucher(false,true)
   const dialog=page.getByRole('dialog',{name:'Voucher preview'})
@@ -352,8 +361,8 @@ try{
   await page.getByLabel('Withholding applies to line 1',{exact:true}).check()
   check((await picker('Income withholding credit account').innerText()).includes('3098 — Extra GL 98')&&(await picker('VAT withholding credit account').innerText()).includes('2100 — API Payables'),'reset retains selected credit accounts for reuse')
   await page.getByLabel('Enable VAT',{exact:true}).uncheck()
-  await page.getByRole('button',{name:'Update draft',exact:true}).click()
-  await page.waitForURL('**/ledger/vouchers')
+  await saveVoucher(true)
+  await page.waitForURL('**/ledger/vouchers?type=*')
   check(!savedInput.taxes.vat.enabled&&savedInput.taxes.vat.rate==='0'&&stored.taxSummary.vat==='0.000000'&&stored.taxSummary.base==='114.290000','saved payload and calculated snapshot retain individually cleared VAT')
   await page.goto(base+`/ledger/vouchers/new/supplier-payment?id=${id(21)}`)
   await picker('Supplier / payee').filter({hasText:'API Supplier'}).waitFor()
@@ -412,7 +421,7 @@ try{
   stored.taxes.incomeWithholding.accountId=id(43)
   await page.goto(base+`/ledger/vouchers/new/supplier-payment?id=${id(21)}`)
   await picker('Bank / cash G/L').filter({hasText:'API Operating Bank'}).waitFor()
-  check((await picker('Income withholding credit account').innerText()).includes('Unavailable account (replace)')&&await page.getByRole('button',{name:'Update draft',exact:true}).isDisabled(),'inactive stored withholding account displays unavailable notice and blocks saving until replaced')
+  check((await picker('Income withholding credit account').innerText()).includes('Unavailable account (replace)')&&await page.getByRole('button',{name:'Update',exact:true}).isDisabled(),'inactive stored withholding account displays unavailable notice and blocks saving until replaced')
   await choose('Income withholding credit account','Search GL accounts','3098','3098 — Extra GL 98')
   await saveVoucher(true)
   await page.waitForURL('**/ledger/vouchers?type=*')
@@ -441,11 +450,18 @@ try{
   await page.getByLabel('Enable VAT withholding',{exact:true}).check()
   check(await picker('Bank / cash G/L').isDisabled()&&await picker('Supplier / payee').isDisabled()&&await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'failed catalog disables pickers rather than showing demo or stale options')
   fail=false
+  noBankLinks=true;await page.reload()
+  await page.getByText('No active bank-linked G/L accounts are available in this accounting unit.',{exact:false}).waitFor()
+  await picker('Bank / cash G/L').click()
+  check(await page.getByRole('listbox',{name:'GL accounts',exact:true}).getByRole('option').count()===0,'no configured bank links leaves supplier bank GL picker empty, not all chart accounts')
+  await page.keyboard.press('Escape');noBankLinks=false
   check(!seen.some(x=>x.p==='/api/v1/shared/employees/options'),'supplier voucher does not request employee biodata options')
   await page.goto(base+'/ledger/vouchers/new/employee-payment')
   const employeeSelect=page.getByLabel('Employee / payee',{exact:true})
   await employeeSelect.locator('option').filter({hasText:'Database Employee Two'}).waitFor({state:'attached'})
   check(await employeeSelect.locator('option').count()===3,'employee dropdown loads all API pages without demo employees')
+  await page.getByLabel('Bank / cash G/L',{exact:true}).locator(`option[value="${bank}"]`).waitFor({state:'attached'})
+  check(await page.getByLabel('Bank / cash G/L',{exact:true}).locator('option').count()===2,'employee header bank GL offers only the bank-linked GL plus placeholder')
   check(seen.some(x=>x.p==='/api/v1/shared/employees/options'&&x.query.includes('pageNo=2')),'employee totalCount pagination loads the second page')
   check(await rateInput.inputValue()==='1.0000','employee voucher base rate displays four decimals')
   await employeeSelect.selectOption(id(62))
@@ -516,6 +532,8 @@ try{
   const customerSelect=page.getByLabel('Customer',{exact:true})
   await customerSelect.locator('option').filter({hasText:'Live Customer'}).waitFor({state:'attached'})
   check(await customerSelect.locator('option').count()===2,'receipt customers are live, active, paginated and posting-unit scoped without demos')
+  await page.getByLabel('Bank / cash G/L',{exact:true}).locator(`option[value="${bank}"]`).waitFor({state:'attached'})
+  check(await page.getByLabel('Bank / cash G/L',{exact:true}).locator('option').count()===2,'customer receipt header bank GL offers only the bank-linked GL plus placeholder')
   check(seen.some(x=>x.p==='/api/v1/shared/customers'&&x.query.includes('pageNo=2')),'customer catalog follows pagination')
   check(await rateInput.inputValue()==='1.0000','customer receipt base rate displays four decimals')
   await page.getByLabel('Credit GL line 1',{exact:true}).locator(`option[value="${debit}"]`).waitFor({state:'attached'})

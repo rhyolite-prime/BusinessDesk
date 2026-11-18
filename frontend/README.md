@@ -7,7 +7,7 @@ From this directory, install dependencies and run the development server:
 ```sh
 pnpm install --frozen-lockfile
 export NUXT_AUTH_API_BASE_URL=http://localhost:5004
-# Optional: set NUXT_LEDGER_API_BASE_URL to use a real ledger service.
+# Optional: set NUXT_LEDGER_API_BASE_URL if the ledger API uses a different origin.
 npm run dev
 ```
 
@@ -32,14 +32,16 @@ Apply backend migration `004_tenant_totp.sql` and configure backend `custom_conf
 before enabling 2FA. See [deployment, API contract and tests](../docs/tenant-two-factor-authentication.md).
 JWT/challenge cookies remain HttpOnly, and browser calls use same-origin `/api`.
 
-With the ledger upstream unset, development Journal data still uses seeded,
-in-memory mocks **after real authentication**. The Journal mock accounts and
-sample entries are in `server/utils/ledger-demo.ts`. Legacy mock signup and settings
-authenticator setup do not provision real accounts; use the backend management APIs.
+The Journal editor/register and ledger dashboard use authenticated live APIs,
+with the ledger origin falling back to the auth origin. They do not load the
+legacy account fixtures retained in `server/utils/ledger-demo.ts`. Legacy mock
+signup and settings authenticator setup do not provision real accounts; use the
+backend management APIs.
 
 ## Validate the Add line behavior
 
-Open **General Ledger → Journal entries → New**. In development, the **Local journal test data** panel loads mock scenarios into the draft. Load a scenario, then click **Add line**:
+Use a disposable test tenant/database. Open **General Ledger → Journal entries →
+New**, enter one of these sets of draft amounts manually, then click **Add line**:
 
 | Scenario | Starting totals (GHS) | Expected new line |
 | --- | ---: | --- |
@@ -48,9 +50,25 @@ Open **General Ledger → Journal entries → New**. In development, the **Local
 | Balanced GHS | Debit 1,250; credit 1,250 | Debit and credit stay empty |
 | USD / GHS FX | USD debit 100 × 12.5; GHS credit 400 | GHS credit 850 at rate 1 |
 
-The test panel is only rendered by the development build; it does not create a journal until you save. Drafts and sequence changes are kept in server memory and reset when the dev server restarts.
+Unsaved form edits do not create a journal. Saving persists the draft to the
+configured backend; it is not an in-memory mock that resets with the dev server.
 
 The active Nuxt Journal editor and its Add line implementation are in `app/pages/ledger/journals/new.vue`. `cs-template/GeneralLedger/js/journal.js` is a legacy MVC reference, not the runtime script for the Nuxt app.
+
+## Live ledger dashboard and voucher bank GLs
+
+`/ledger` now uses the real tenant ledger API, including in development and when
+public demo mode is enabled. It never falls back to seeded balances or invented
+trend percentages. Date ranges/presets, accounting unit, hierarchical cost center,
+transaction source/currency and activity-status filters are supported. Financial
+indicators are posted-only; end-date balances retain opening history, while
+income/expenses use the selected period. Connection errors and genuinely empty
+records have distinct states. Deploy the new C++ dashboard endpoints alongside
+Nuxt; see [calculation policy, API and tests](../docs/ledger-dashboard.md).
+
+All supplier, employee and customer receipt voucher header bank GL selectors
+show only active eligible GLs with active linked Bank Accounts in the selected
+accounting unit. Other allocation/withholding/retention GL choices are unchanged.
 
 ## Account Heads
 

@@ -1,18 +1,45 @@
+export type JournalStatusCode = 'draft' | 'pending_approval' | 'approved' | 'posted' | 'rejected' | 'voided' | 'reversed'
+
+export interface DashboardFilters {
+  accountingUnitId: string
+  dateFrom: string
+  dateTo: string
+  costCenterId: string
+  includeChildCostCenters: boolean
+  source: string
+  currencyId: string
+  /** Activity only; financial indicators always use posted entries. */
+  status: JournalStatusCode | ''
+}
+
+export interface DashboardOptions {
+  accountingUnits: { id: string; name: string; code: string; baseCurrency: string; fiscalYearStartMonth: number }[]
+  costCenters: { id: string; name: string; parentId: string | null }[]
+  currencies: { id: string; name: string; code: string }[]
+  sources: string[]
+}
+
 export interface LedgerMetric {
   key: string
   label: string
   amount: string
   currency: string
-  changeLabel: string
-  direction: 'up' | 'down' | 'neutral'
-  note?: string
+  note: string
 }
 
 export interface DashboardResponse {
   accountingUnit: { id: string; name: string; code: string; baseCurrency: string }
   asOf: string
+  filters: DashboardFilters
   metrics: LedgerMetric[]
-  cashPosition: { label: string; amount: string; currency: string; change: string }[]
+  cashPosition: { label: string; amount: string; currency: string }[]
+  postedLineCount: number
+  unclassifiedLineCount: number
+  reclassifiedLineCount: number
+  journalCount: number
+  pendingApprovalCount: number
+  journalStatuses: { status: JournalStatusCode; label: string; count: number }[]
+  pendingJournals: JournalSummary[]
   recentJournals: JournalSummary[]
 }
 
@@ -56,7 +83,7 @@ export interface JournalSummary {
   source: string
   debit: string
   credit: string
-  status: 'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Reversed'
+  status: 'Draft' | 'Pending approval' | 'Approved' | 'Posted' | 'Rejected' | 'Voided' | 'Reversed'
   preparer: string
   organizationUnitName?: string
   isMultiCurrency?: boolean
