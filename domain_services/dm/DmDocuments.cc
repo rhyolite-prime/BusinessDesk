@@ -62,7 +62,7 @@ drogon::Task<dto::BaseApiResponse> listDocuments(DbClientPtr db, const std::stri
 
   // Count query
   std::string countSql = "SELECT COUNT(d.id)::int AS total FROM dm_documents d " + where;
-  drogon::orm::Result countRows;
+  std::optional<drogon::orm::Result> countRows;
   if (params.size() == 1) countRows = co_await db->execSqlCoro(countSql, params[0]);
   else if (params.size() == 2) countRows = co_await db->execSqlCoro(countSql, params[0], params[1]);
   else if (params.size() == 3) countRows = co_await db->execSqlCoro(countSql, params[0], params[1], params[2]);
@@ -70,7 +70,7 @@ drogon::Task<dto::BaseApiResponse> listDocuments(DbClientPtr db, const std::stri
   else if (params.size() == 5) countRows = co_await db->execSqlCoro(countSql, params[0], params[1], params[2], params[3], params[4]);
   else countRows = co_await db->execSqlCoro(countSql, params[0], params[1], params[2], params[3], params[4], params[5]);
 
-  int totalCount = countRows.empty() ? 0 : countRows[0]["total"].as<int>();
+  int totalCount = (!countRows || countRows->empty()) ? 0 : (*countRows)[0]["total"].as<int>();
 
   // Data query
   std::string dataSql =
@@ -86,7 +86,7 @@ drogon::Task<dto::BaseApiResponse> listDocuments(DbClientPtr db, const std::stri
       "LEFT JOIN dm_templates t ON t.id=d.template_id AND t.is_deleted=false "
       + where + " ORDER BY d.created_at DESC LIMIT " + std::to_string(limit) + "::bigint OFFSET " + std::to_string(offset) + "::bigint";
 
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   if (params.size() == 1) rows = co_await db->execSqlCoro(dataSql, params[0]);
   else if (params.size() == 2) rows = co_await db->execSqlCoro(dataSql, params[0], params[1]);
   else if (params.size() == 3) rows = co_await db->execSqlCoro(dataSql, params[0], params[1], params[2]);
@@ -95,8 +95,9 @@ drogon::Task<dto::BaseApiResponse> listDocuments(DbClientPtr db, const std::stri
   else rows = co_await db->execSqlCoro(dataSql, params[0], params[1], params[2], params[3], params[4], params[5]);
 
   Json::Value items(Json::arrayValue);
-  for (const auto &row : rows) {
-    Json::Value item(Json::objectValue);
+  if (rows) {
+    for (const auto &row : *rows) {
+      Json::Value item(Json::objectValue);
     item["id"] = row["id"].as<std::string>();
     item["accountingUnitId"] = row["accounting_unit_id"].as<std::string>();
     item["folderId"] = row["folder_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["folder_id"].as<std::string>());
@@ -126,6 +127,7 @@ drogon::Task<dto::BaseApiResponse> listDocuments(DbClientPtr db, const std::stri
     item["version"] = row["version"].as<int>();
     item["createdAt"] = row["created_at"].as<std::string>();
     items.append(std::move(item));
+  }
   }
 
   r.result["data"] = items;

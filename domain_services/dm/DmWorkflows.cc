@@ -209,31 +209,33 @@ drogon::Task<dto::BaseApiResponse> listWorkflows(DbClientPtr db, const std::stri
       "LEFT JOIN users u3 ON u3.id=w.created_by_user_id "
       + where + " ORDER BY w.created_at DESC LIMIT " + std::to_string(limit) + "::bigint OFFSET " + std::to_string(offset) + "::bigint";
 
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   if (params.size() == 1) rows = co_await db->execSqlCoro(sql, params[0]);
   else if (params.size() == 2) rows = co_await db->execSqlCoro(sql, params[0], params[1]);
   else if (params.size() == 3) rows = co_await db->execSqlCoro(sql, params[0], params[1], params[2]);
   else rows = co_await db->execSqlCoro(sql, params[0], params[1], params[2], params[3]);
 
   Json::Value items(Json::arrayValue);
-  for (const auto &row : rows) {
-    Json::Value item(Json::objectValue);
-    item["id"] = row["id"].as<std::string>();
-    item["documentId"] = row["document_id"].as<std::string>();
-    item["documentNumber"] = row["document_number"].as<std::string>();
-    item["documentTitle"] = row["document_title"].as<std::string>();
-    item["versionLabel"] = row["version_label"].as<std::string>();
-    item["stepName"] = row["step_name"].as<std::string>();
-    item["status"] = row["status"].as<std::string>();
-    item["assignedToUserId"] = row["assigned_to_user_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["assigned_to_user_id"].as<std::string>());
-    item["assigneeName"] = row["assignee_name"].isNull() ? Json::Value("") : Json::Value(row["assignee_name"].as<std::string>());
-    item["decidedByUserId"] = row["decided_by_user_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["decided_by_user_id"].as<std::string>());
-    item["deciderName"] = row["decider_name"].isNull() ? Json::Value("") : Json::Value(row["decider_name"].as<std::string>());
-    item["decidedAt"] = row["decided_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["decided_at"].as<std::string>());
-    item["comments"] = row["comments"].as<std::string>();
-    item["creatorName"] = row["creator_name"].isNull() ? Json::Value("") : Json::Value(row["creator_name"].as<std::string>());
-    item["createdAt"] = row["created_at"].as<std::string>();
-    items.append(std::move(item));
+  if (rows) {
+    for (const auto &row : *rows) {
+      Json::Value item(Json::objectValue);
+      item["id"] = row["id"].as<std::string>();
+      item["documentId"] = row["document_id"].as<std::string>();
+      item["documentNumber"] = row["document_number"].as<std::string>();
+      item["documentTitle"] = row["document_title"].as<std::string>();
+      item["versionLabel"] = row["version_label"].as<std::string>();
+      item["stepName"] = row["step_name"].as<std::string>();
+      item["status"] = row["status"].as<std::string>();
+      item["assignedToUserId"] = row["assigned_to_user_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["assigned_to_user_id"].as<std::string>());
+      item["assigneeName"] = row["assignee_name"].isNull() ? Json::Value("") : Json::Value(row["assignee_name"].as<std::string>());
+      item["decidedByUserId"] = row["decided_by_user_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["decided_by_user_id"].as<std::string>());
+      item["deciderName"] = row["decider_name"].isNull() ? Json::Value("") : Json::Value(row["decider_name"].as<std::string>());
+      item["decidedAt"] = row["decided_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["decided_at"].as<std::string>());
+      item["comments"] = row["comments"].as<std::string>();
+      item["creatorName"] = row["creator_name"].isNull() ? Json::Value("") : Json::Value(row["creator_name"].as<std::string>());
+      item["createdAt"] = row["created_at"].as<std::string>();
+      items.append(std::move(item));
+    }
   }
 
   r.result["data"] = items;
@@ -573,26 +575,28 @@ drogon::Task<dto::BaseApiResponse> listAudit(DbClientPtr db, const std::string &
       "LEFT JOIN dm_documents d ON d.id=a.document_id "
       + where + " ORDER BY a.created_at DESC LIMIT " + std::to_string(limit) + "::bigint OFFSET " + std::to_string(offset) + "::bigint";
 
-  drogon::orm::Result rows;
+  std::optional<drogon::orm::Result> rows;
   if (params.size() == 1) rows = co_await db->execSqlCoro(sql, params[0]);
   else if (params.size() == 2) rows = co_await db->execSqlCoro(sql, params[0], params[1]);
   else if (params.size() == 3) rows = co_await db->execSqlCoro(sql, params[0], params[1], params[2]);
   else rows = co_await db->execSqlCoro(sql, params[0], params[1], params[2], params[3]);
 
   Json::Value items(Json::arrayValue);
-  for (const auto &row : rows) {
-    Json::Value item(Json::objectValue);
-    item["id"] = row["id"].as<std::string>();
-    item["documentId"] = row["document_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["document_id"].as<std::string>());
-    item["folderId"] = row["folder_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["folder_id"].as<std::string>());
-    item["documentNumber"] = row["document_number"].isNull() ? Json::Value("") : Json::Value(row["document_number"].as<std::string>());
-    item["documentTitle"] = row["document_title"].isNull() ? Json::Value("") : Json::Value(row["document_title"].as<std::string>());
-    item["eventType"] = row["event_type"].as<std::string>();
-    item["userId"] = row["user_id"].as<std::string>();
-    item["userName"] = row["user_name"].as<std::string>();
-    item["details"] = parse(row["details"].as<std::string>());
-    item["createdAt"] = row["created_at"].as<std::string>();
-    items.append(std::move(item));
+  if (rows) {
+    for (const auto &row : *rows) {
+      Json::Value item(Json::objectValue);
+      item["id"] = row["id"].as<std::string>();
+      item["documentId"] = row["document_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["document_id"].as<std::string>());
+      item["folderId"] = row["folder_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["folder_id"].as<std::string>());
+      item["documentNumber"] = row["document_number"].isNull() ? Json::Value("") : Json::Value(row["document_number"].as<std::string>());
+      item["documentTitle"] = row["document_title"].isNull() ? Json::Value("") : Json::Value(row["document_title"].as<std::string>());
+      item["eventType"] = row["event_type"].as<std::string>();
+      item["userId"] = row["user_id"].as<std::string>();
+      item["userName"] = row["user_name"].as<std::string>();
+      item["details"] = parse(row["details"].as<std::string>());
+      item["createdAt"] = row["created_at"].as<std::string>();
+      items.append(std::move(item));
+    }
   }
 
   r.result["data"] = items;
