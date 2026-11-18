@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/gl/AccountingPeriodService.cc
         domain_services/reports/FinancialReportService.cc
         domain_services/gl/JournalService.cc
+        domain_services/gl/LedgerDashboardService.cc
         domain_services/gl/SupplierVoucherService.cc
         domain_services/tenants/TenantAccountService.cc
         domain_services/gl/BudgetService.cc
