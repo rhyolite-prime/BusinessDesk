@@ -6,6 +6,7 @@
 #include <drogon/orm/CoroMapper.h>
 #include <cstdio>
 #include <iomanip>
+#include <optional>
 #include <set>
 #include <sstream>
 #include <string>

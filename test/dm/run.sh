@@ -3,9 +3,11 @@ set -euo pipefail
 cd "$(dirname "$0")/../.."
 : "${JSONCPP_SOURCE_DIR:=/tmp/jsoncpp}"
 if [ ! -f "$JSONCPP_SOURCE_DIR/dist/jsoncpp.cpp" ]; then
-  if [ -d "/tmp/jsoncpp/dist" ]; then
-    JSONCPP_SOURCE_DIR=/tmp/jsoncpp
+  if [ ! -d "/tmp/jsoncpp" ]; then
+    git clone --depth 1 https://github.com/open-source-parsers/jsoncpp /tmp/jsoncpp
   fi
+  (cd /tmp/jsoncpp && python3 amalgamate.py)
+  JSONCPP_SOURCE_DIR=/tmp/jsoncpp
 fi
 
 work=$(mktemp -d)
@@ -33,7 +35,14 @@ s += '''
 #include <stdexcept>
 namespace drogon::orm {
 using Row = drogon::TestRow;
-using Result = drogon::TestResult;
+struct Result : drogon::TestResult {
+  Result() = delete;
+  Result(drogon::TestResult r) : drogon::TestResult(std::move(r)) {}
+  Result(const Result &) = default;
+  Result(Result &&) noexcept = default;
+  Result &operator=(const Result &) = default;
+  Result &operator=(Result &&) noexcept = default;
+};
 using DbClientPtr = std::shared_ptr<drogon::TestDb>;
 using Transaction = drogon::TestTransaction;
 struct Failure : std::runtime_error { using std::runtime_error::runtime_error; };
