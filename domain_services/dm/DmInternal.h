@@ -91,27 +91,38 @@ inline std::string nextVersionLabel(const std::string &current, bool major) {
 
 inline drogon::Task<std::string> generateDocNumber(DbClientPtr db, const std::string &tenantId,
                                                    const std::string &unitId, const std::string &userId) {
-  auto seqs = co_await db->execSqlCoro(
+  const bool hasUnit = !unitId.empty() && uuid(unitId);
+  std::string seqSql =
       "SELECT id, prefix, next_number, padding FROM dm_document_sequences "
-      "WHERE tenant_id=$1 AND sequence_type='DOC' AND is_deleted=false "
-      "AND (accounting_unit_id=$2 OR accounting_unit_id IS NULL) "
-      "ORDER BY accounting_unit_id NULLS LAST LIMIT 1::bigint FOR UPDATE",
-      tenantId, unitId);
+      "WHERE tenant_id=$1 AND sequence_type='DOC' AND is_deleted=false ";
+  if (hasUnit) {
+    seqSql += "AND (accounting_unit_id=$2::uuid OR accounting_unit_id IS NULL) ";
+  } else {
+    seqSql += "AND accounting_unit_id IS NULL ";
+  }
+  seqSql += "ORDER BY accounting_unit_id NULLS LAST LIMIT 1::bigint FOR UPDATE";
+
+  std::optional<drogon::orm::Result> seqs;
+  if (hasUnit) {
+    seqs = co_await db->execSqlCoro(seqSql, tenantId, unitId);
+  } else {
+    seqs = co_await db->execSqlCoro(seqSql, tenantId);
+  }
 
   std::string prefix = "DOC-";
   int nextNum = 1;
   int pad = 4;
 
-  if (seqs.empty()) {
+  if (!seqs || seqs->empty()) {
     co_await db->execSqlCoro(
         "INSERT INTO dm_document_sequences (tenant_id, accounting_unit_id, sequence_type, prefix, next_number, padding, created_by_user_id) "
         "VALUES ($1, NULLIF($2, '')::uuid, 'DOC', 'DOC-', 2, ($3::int)::smallint, $4)",
-        tenantId, unitId, pad, userId);
+        tenantId, hasUnit ? unitId : "", pad, userId);
   } else {
-    prefix = seqs[0]["prefix"].as<std::string>();
-    nextNum = seqs[0]["next_number"].as<int>();
-    pad = seqs[0]["padding"].as<int>();
-    std::string seqId = seqs[0]["id"].as<std::string>();
+    prefix = (*seqs)[0]["prefix"].as<std::string>();
+    nextNum = (*seqs)[0]["next_number"].as<int>();
+    pad = (*seqs)[0]["padding"].as<int>();
+    std::string seqId = (*seqs)[0]["id"].as<std::string>();
     co_await db->execSqlCoro(
         "UPDATE dm_document_sequences SET next_number=next_number+1, last_modified_at=now(), last_modified_by_user_id=$1 "
         "WHERE id=$2",

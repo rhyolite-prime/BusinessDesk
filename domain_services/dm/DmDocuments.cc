@@ -293,7 +293,7 @@ drogon::Task<dto::BaseApiResponse> createDocument(DbClientPtr db, const std::str
       "(tenant_id, accounting_unit_id, folder_id, template_id, document_number, title, file_name, "
       "description, language, mime_type, file_size, file_hash, content_text, storage_path, version_label, "
       "status, tags, attributes, retention_policy_id, retention_date, created_by_user_id) "
-      "VALUES ($1, $2, NULLIF($3, '')::uuid, NULLIF($4, '')::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '1.0', "
+      "VALUES ($1, NULLIF($2, '')::uuid, NULLIF($3, '')::uuid, NULLIF($4, '')::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '1.0', "
       "'draft', $15::jsonb, $16::jsonb, NULLIF($17, '')::uuid, " + retDateClause + ", $18) "
       "RETURNING id, document_number, version_label, version, created_at";
 

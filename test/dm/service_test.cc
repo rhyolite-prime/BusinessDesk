@@ -206,13 +206,13 @@ int main() {
     }
 
     // Dashboard summary
-    if (sql.find("COUNT(id)::int AS total_documents") != std::string::npos) {
+    if (sql.find("AS total_documents") != std::string::npos) {
       return {{rowObj({
           {"total_documents", 120}, {"total_storage_bytes", Json::Int64(1073741824)},
           {"pending_approvals", 4}, {"active_checkouts", 2}, {"expired_documents", 1}
       })}};
     }
-    if (sql.find("COUNT(id)::int AS total_folders") != std::string::npos) {
+    if (sql.find("AS total_folders") != std::string::npos) {
       return {{rowObj({{"total_folders", 15}})}};
     }
     if (sql.find("GROUP BY status") != std::string::npos) {
@@ -590,6 +590,24 @@ int main() {
   auto getReq = makeReq(drogon::Get, tenant, actor);
   auto getResp = controller.get(getReq, "folders", folderId).get();
   assert(getResp->status == drogon::k200OK);
+
+  // Regression tests for empty ?accountingUnitId and unit-filtered summary
+  auto fReqEmpty = makeReq(drogon::Get, tenant, actor, nullptr, {{"accountingUnitId", ""}});
+  auto fRespEmpty = controller.list(fReqEmpty, "folders").get();
+  assert(fRespEmpty->status == drogon::k200OK);
+
+  auto dashReqUnit = makeReq(drogon::Get, tenant, actor, nullptr, {{"accountingUnitId", unit}});
+  auto dashRespUnit = controller.dashboard(dashReqUnit).get();
+  assert(dashRespUnit->status == drogon::k200OK);
+
+  auto fListNoUnit = DmService::execute("folders.list", "", "", Json::Value(Json::objectValue), 1, 20, "", "", who).get();
+  assert(fListNoUnit.success);
+
+  auto trashNoUnit = DmService::execute("trash.list", "", "", Json::Value(Json::objectValue), 1, 20, "", "", who).get();
+  assert(trashNoUnit.success);
+
+  auto numNoUnit = DmService::execute("next-number", "", "", Json::Value(Json::objectValue), 1, 20, "", "", who).get();
+  assert(numNoUnit.success);
 
   std::cout << "All Document Management service, repository & controller seam tests passed ("
             << sqlLog.size() << " SQL statements exercised)\n";

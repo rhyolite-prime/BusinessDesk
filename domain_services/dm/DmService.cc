@@ -90,46 +90,50 @@ DmService::execute(std::string op, std::string id, std::string subId, Json::Valu
 
   // Reads: executed directly on db connection
   if (!isWrite) {
-    if (op == "dashboard.summary")
-      co_return co_await dm_workflows::getSummary(db, tenantId, unitId);
-    if (op == "next-number") {
-      dto::BaseApiResponse r;
-      r.success = true;
-      r.result["nextNumber"] = co_await generateDocNumber(db, tenantId, unitId, who.userId);
-      co_return r;
-    }
-    if (op == "folders.list")
-      co_return co_await dm_folders::listFolders(db, tenantId, unitId);
-    if (op == "folders.get")
-      co_return co_await dm_folders::getFolder(db, tenantId, id);
-    if (op == "templates.list")
-      co_return co_await dm_folders::listTemplates(db, tenantId);
-    if (op == "templates.get")
-      co_return co_await dm_folders::getTemplate(db, tenantId, id);
-    if (op == "retention-policies.list")
-      co_return co_await dm_folders::listRetentionPolicies(db, tenantId);
-    if (op == "retention-policies.get")
-      co_return co_await dm_folders::getRetentionPolicy(db, tenantId, id);
-    if (op == "documents.list")
-      co_return co_await dm_documents::listDocuments(db, tenantId, unitId, body, page, size, who);
-    if (op == "documents.get")
-      co_return co_await dm_documents::getDocument(db, tenantId, id, who);
-    if (op == "documents.versions.list")
-      co_return co_await dm_documents::listVersions(db, tenantId, id);
-    if (op == "workflows.list")
-      co_return co_await dm_workflows::listWorkflows(db, tenantId, id, body, page, size, who);
-    if (op == "documents.notes.list")
-      co_return co_await dm_workflows::listNotes(db, tenantId, id);
-    if (op == "documents.relations.list")
-      co_return co_await dm_workflows::listRelations(db, tenantId, id);
-    if (op == "saved-searches.list")
-      co_return co_await dm_documents::listSavedSearches(db, tenantId, who);
-    if (op == "trash.list")
-      co_return co_await dm_workflows::listTrash(db, tenantId, unitId);
-    if (op == "audit.list")
-      co_return co_await dm_workflows::listAudit(db, tenantId, body, page, size);
+    try {
+      if (op == "dashboard.summary")
+        co_return co_await dm_workflows::getSummary(db, tenantId, unitId);
+      if (op == "next-number") {
+        dto::BaseApiResponse r;
+        r.success = true;
+        r.result["nextNumber"] = co_await generateDocNumber(db, tenantId, unitId, who.userId);
+        co_return r;
+      }
+      if (op == "folders.list")
+        co_return co_await dm_folders::listFolders(db, tenantId, unitId);
+      if (op == "folders.get")
+        co_return co_await dm_folders::getFolder(db, tenantId, id);
+      if (op == "templates.list")
+        co_return co_await dm_folders::listTemplates(db, tenantId);
+      if (op == "templates.get")
+        co_return co_await dm_folders::getTemplate(db, tenantId, id);
+      if (op == "retention-policies.list")
+        co_return co_await dm_folders::listRetentionPolicies(db, tenantId);
+      if (op == "retention-policies.get")
+        co_return co_await dm_folders::getRetentionPolicy(db, tenantId, id);
+      if (op == "documents.list")
+        co_return co_await dm_documents::listDocuments(db, tenantId, unitId, body, page, size, who);
+      if (op == "documents.get")
+        co_return co_await dm_documents::getDocument(db, tenantId, id, who);
+      if (op == "documents.versions.list")
+        co_return co_await dm_documents::listVersions(db, tenantId, id);
+      if (op == "workflows.list")
+        co_return co_await dm_workflows::listWorkflows(db, tenantId, id, body, page, size, who);
+      if (op == "documents.notes.list")
+        co_return co_await dm_workflows::listNotes(db, tenantId, id);
+      if (op == "documents.relations.list")
+        co_return co_await dm_workflows::listRelations(db, tenantId, id);
+      if (op == "saved-searches.list")
+        co_return co_await dm_documents::listSavedSearches(db, tenantId, who);
+      if (op == "trash.list")
+        co_return co_await dm_workflows::listTrash(db, tenantId, unitId);
+      if (op == "audit.list")
+        co_return co_await dm_workflows::listAudit(db, tenantId, body, page, size);
 
-    co_return fail("not_found", "Unknown Document Management read operation: " + op);
+      co_return fail("not_found", "Unknown Document Management read operation: " + op);
+    } catch (const std::exception &e) {
+      co_return fail("database_error", std::string("Database error: ") + e.what());
+    }
   }
 
   // Writes: run within transaction
