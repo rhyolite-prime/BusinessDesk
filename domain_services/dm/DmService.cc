@@ -64,6 +64,11 @@ DmService::execute(std::string op, std::string id, std::string subId, Json::Valu
                    utils::AuditIdentity who) {
   using namespace dm_internal;
 
+  if (!body.isObject())
+    body = Json::Value(Json::objectValue);
+  if (!query.empty() && (!body.isMember("q") || body["q"].asString().empty()))
+    body["q"] = query;
+
   auto db = drogon::app().getDbClient();
   if (!(co_await checkDmSchemaReady(db)))
     co_return fail("schema_not_ready",
