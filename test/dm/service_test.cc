@@ -72,6 +72,7 @@ int main() {
   auto db = drogon::app().getDbClient();
   db->execute = [&](const std::string &sql,
                     const std::vector<Json::Value> &args) -> drogon::TestResult {
+    (void)args;
     sqlLog.push_back(sql);
 
     if (sql.find("UPDATE dm_documents SET status='under_review'") != std::string::npos) {

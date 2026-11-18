@@ -53,7 +53,7 @@ hc = m / 'drogon/HttpController.h'
 hc.write_text(hc.read_text().replace('#define ADD_METHOD_TO(...)', '#define ADD_METHOD_TO(...) static_assert(true)'))
 PY
 
-g++ -std=c++20 -O0 -Wall -Wextra -Wpedantic -Wno-unused-parameter -Werror=return-type \
+g++ -std=c++20 -O0 -Wall -Wextra -Wpedantic -Werror=return-type \
   -I"$work/mocks" -I. -I"$JSONCPP_SOURCE_DIR/dist" \
   test/dm/service_test.cc \
   controllers/DmController.cc \
