@@ -44,14 +44,15 @@ inline drogon::Task<bool> checkDmSchemaReady(DbClientPtr db) {
 inline drogon::Task<std::string> getUserName(DbClientPtr db, std::string userId) {
   if (!uuid(userId))
     co_return "";
-  auto rows = co_await db->execSqlCoro("SELECT user_name, name, surname FROM users WHERE id=$1", userId);
+  auto rows = co_await db->execSqlCoro("SELECT username, first_name, last_name FROM users WHERE id=$1", userId);
   if (rows.empty())
     co_return "";
-  std::string name = rows[0]["name"].as<std::string>();
-  std::string surname = rows[0]["surname"].as<std::string>();
-  std::string uname = rows[0]["user_name"].as<std::string>();
-  if (!name.empty() || !surname.empty())
-    co_return trim(name + " " + surname);
+  std::string first = rows[0]["first_name"].isNull() ? "" : rows[0]["first_name"].as<std::string>();
+  std::string last = rows[0]["last_name"].isNull() ? "" : rows[0]["last_name"].as<std::string>();
+  std::string uname = rows[0]["username"].isNull() ? "" : rows[0]["username"].as<std::string>();
+  std::string fullName = trim(first + " " + last);
+  if (!fullName.empty())
+    co_return fullName;
   co_return uname;
 }
 

@@ -112,8 +112,8 @@ int main() {
       return {{rowObj({{"is_tenant_admin_user", isAdmin}})}};
     }
 
-    if (sql.find("SELECT user_name, name, surname FROM users") != std::string::npos) {
-      return {{rowObj({{"user_name", "admin"}, {"name", "Admin"}, {"surname", "User"}})}};
+    if (sql.find("SELECT username, first_name, last_name FROM users") != std::string::npos) {
+      return {{rowObj({{"username", "admin"}, {"first_name", "Admin"}, {"last_name", "User"}})}};
     }
 
     // Sequences

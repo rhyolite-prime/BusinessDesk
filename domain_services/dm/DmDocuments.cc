@@ -608,7 +608,8 @@ drogon::Task<dto::BaseApiResponse> listVersions(DbClientPtr db, const std::strin
 
   auto rows = co_await db->execSqlCoro(
       "SELECT v.id, v.version_label, v.file_name, v.file_size, v.file_hash, v.mime_type, "
-      "v.comment, v.created_at, v.created_by_user_id, u.user_name "
+      "v.comment, v.created_at, v.created_by_user_id, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u.first_name, u.last_name)), ''), u.username, 'System') AS user_name "
       "FROM dm_document_versions v "
       "LEFT JOIN users u ON u.id=v.created_by_user_id "
       "WHERE v.tenant_id=$1 AND v.document_id=$2 AND v.is_deleted=false "
