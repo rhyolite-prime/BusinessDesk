@@ -10,35 +10,47 @@ drogon::Task<dto::BaseApiResponse> listFolders(DbClientPtr db, const std::string
   dto::BaseApiResponse r;
   r.success = true;
 
-  auto rows = co_await db->execSqlCoro(
+  const bool hasUnit = !unitId.empty() && uuid(unitId);
+  std::string sql =
       "SELECT f.id, f.tenant_id, f.accounting_unit_id, f.parent_id, f.name, f.description, "
       "f.color, f.icon, f.path, f.is_system, f.version, f.created_at, f.last_modified_at, "
       "COUNT(d.id)::int AS document_count "
       "FROM dm_folders f "
       "LEFT JOIN dm_documents d ON d.folder_id=f.id AND d.is_deleted=false "
-      "WHERE f.tenant_id=$1 AND f.is_deleted=false "
-      "AND (f.accounting_unit_id=$2 OR f.accounting_unit_id IS NULL) "
-      "GROUP BY f.id "
-      "ORDER BY f.path ASC, lower(f.name) ASC",
-      tenantId, unitId);
+      "WHERE f.tenant_id=$1 AND f.is_deleted=false ";
+
+  if (hasUnit) {
+    sql += "AND (f.accounting_unit_id=$2::uuid OR f.accounting_unit_id IS NULL) ";
+  }
+
+  sql += "GROUP BY f.id ORDER BY f.path ASC, lower(f.name) ASC";
+
+  std::optional<drogon::orm::Result> rows;
+  if (hasUnit) {
+    rows = co_await db->execSqlCoro(sql, tenantId, unitId);
+  } else {
+    rows = co_await db->execSqlCoro(sql, tenantId);
+  }
 
   Json::Value items(Json::arrayValue);
-  for (const auto &row : rows) {
-    Json::Value item(Json::objectValue);
-    item["id"] = row["id"].as<std::string>();
-    item["parentId"] = row["parent_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["parent_id"].as<std::string>());
-    item["accountingUnitId"] = row["accounting_unit_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["accounting_unit_id"].as<std::string>());
-    item["name"] = row["name"].as<std::string>();
-    item["description"] = row["description"].as<std::string>();
-    item["color"] = row["color"].as<std::string>();
-    item["icon"] = row["icon"].as<std::string>();
-    item["path"] = row["path"].as<std::string>();
-    item["isSystem"] = row["is_system"].as<bool>();
-    item["documentCount"] = row["document_count"].as<int>();
-    item["version"] = row["version"].as<int>();
-    item["createdAt"] = row["created_at"].as<std::string>();
-    item["lastModifiedAt"] = row["last_modified_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["last_modified_at"].as<std::string>());
-    items.append(std::move(item));
+  if (rows) {
+    for (const auto &row : *rows) {
+      Json::Value item(Json::objectValue);
+      item["id"] = row["id"].as<std::string>();
+      item["parentId"] = row["parent_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["parent_id"].as<std::string>());
+      item["accountingUnitId"] = row["accounting_unit_id"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["accounting_unit_id"].as<std::string>());
+      item["name"] = row["name"].as<std::string>();
+      item["description"] = row["description"].as<std::string>();
+      item["color"] = row["color"].as<std::string>();
+      item["icon"] = row["icon"].as<std::string>();
+      item["path"] = row["path"].as<std::string>();
+      item["isSystem"] = row["is_system"].as<bool>();
+      item["documentCount"] = row["document_count"].as<int>();
+      item["version"] = row["version"].as<int>();
+      item["createdAt"] = row["created_at"].as<std::string>();
+      item["lastModifiedAt"] = row["last_modified_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["last_modified_at"].as<std::string>());
+      items.append(std::move(item));
+    }
   }
 
   r.result["data"] = items;

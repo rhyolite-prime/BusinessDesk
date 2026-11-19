@@ -293,7 +293,7 @@ drogon::Task<dto::BaseApiResponse> createDocument(DbClientPtr db, const std::str
       "(tenant_id, accounting_unit_id, folder_id, template_id, document_number, title, file_name, "
       "description, language, mime_type, file_size, file_hash, content_text, storage_path, version_label, "
       "status, tags, attributes, retention_policy_id, retention_date, created_by_user_id) "
-      "VALUES ($1, $2, NULLIF($3, '')::uuid, NULLIF($4, '')::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '1.0', "
+      "VALUES ($1, NULLIF($2, '')::uuid, NULLIF($3, '')::uuid, NULLIF($4, '')::uuid, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, '1.0', "
       "'draft', $15::jsonb, $16::jsonb, NULLIF($17, '')::uuid, " + retDateClause + ", $18) "
       "RETURNING id, document_number, version_label, version, created_at";
 
@@ -608,7 +608,8 @@ drogon::Task<dto::BaseApiResponse> listVersions(DbClientPtr db, const std::strin
 
   auto rows = co_await db->execSqlCoro(
       "SELECT v.id, v.version_label, v.file_name, v.file_size, v.file_hash, v.mime_type, "
-      "v.comment, v.created_at, v.created_by_user_id, u.user_name "
+      "v.comment, v.created_at, v.created_by_user_id, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u.first_name, u.last_name)), ''), u.username, 'System') AS user_name "
       "FROM dm_document_versions v "
       "LEFT JOIN users u ON u.id=v.created_by_user_id "
       "WHERE v.tenant_id=$1 AND v.document_id=$2 AND v.is_deleted=false "

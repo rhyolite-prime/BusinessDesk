@@ -201,7 +201,9 @@ drogon::Task<dto::BaseApiResponse> listWorkflows(DbClientPtr db, const std::stri
       "SELECT w.id, w.document_id, w.step_name, w.status, w.assigned_to_user_id, "
       "w.decided_by_user_id, w.decided_at, w.comments, w.created_at, w.created_by_user_id, "
       "d.document_number, d.title AS document_title, d.version_label, "
-      "u1.user_name AS assignee_name, u2.user_name AS decider_name, u3.user_name AS creator_name "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u1.first_name, u1.last_name)), ''), u1.username, '') AS assignee_name, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u2.first_name, u2.last_name)), ''), u2.username, '') AS decider_name, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u3.first_name, u3.last_name)), ''), u3.username, '') AS creator_name "
       "FROM dm_workflows w "
       "JOIN dm_documents d ON d.id=w.document_id AND d.is_deleted=false "
       "LEFT JOIN users u1 ON u1.id=w.assigned_to_user_id "
@@ -252,7 +254,7 @@ drogon::Task<dto::BaseApiResponse> listNotes(DbClientPtr db, const std::string &
     co_return fail("validation_error", "A valid document ID is required.");
 
   auto rows = co_await db->execSqlCoro(
-      "SELECT n.id, n.note_text, n.created_at, n.user_id, u.user_name, u.name, u.surname "
+      "SELECT n.id, n.note_text, n.created_at, n.user_id, u.username, u.first_name, u.last_name "
       "FROM dm_document_notes n "
       "LEFT JOIN users u ON u.id=n.user_id "
       "WHERE n.tenant_id=$1 AND n.document_id=$2 AND n.is_deleted=false "
@@ -265,11 +267,12 @@ drogon::Task<dto::BaseApiResponse> listNotes(DbClientPtr db, const std::string &
     item["id"] = row["id"].as<std::string>();
     item["noteText"] = row["note_text"].as<std::string>();
     item["userId"] = row["user_id"].as<std::string>();
-    std::string fullName = row["name"].isNull() ? "" : row["name"].as<std::string>();
-    std::string surname = row["surname"].isNull() ? "" : row["surname"].as<std::string>();
-    std::string uName = row["user_name"].isNull() ? "User" : row["user_name"].as<std::string>();
-    if (!fullName.empty() || !surname.empty())
-      item["userName"] = trim(fullName + " " + surname);
+    std::string first = row["first_name"].isNull() ? "" : row["first_name"].as<std::string>();
+    std::string last = row["last_name"].isNull() ? "" : row["last_name"].as<std::string>();
+    std::string uName = row["username"].isNull() ? "User" : row["username"].as<std::string>();
+    std::string fullName = trim(first + " " + last);
+    if (!fullName.empty())
+      item["userName"] = fullName;
     else
       item["userName"] = uName;
     item["createdAt"] = row["created_at"].as<std::string>();
@@ -425,50 +428,76 @@ drogon::Task<dto::BaseApiResponse> listTrash(DbClientPtr db, const std::string &
   dto::BaseApiResponse r;
   r.success = true;
 
+  const bool hasUnit = !unitId.empty() && uuid(unitId);
+
   // Deleted documents
-  auto docRows = co_await db->execSqlCoro(
+  std::string docSql =
       "SELECT d.id, d.document_number, d.title, d.file_name, d.version_label, d.file_size, "
-      "d.deleted_at, u.user_name AS deleted_by "
+      "d.deleted_at, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u.first_name, u.last_name)), ''), u.username, 'System') AS deleted_by "
       "FROM dm_documents d "
       "LEFT JOIN users u ON u.id=d.deleted_by_user_id "
-      "WHERE d.tenant_id=$1 AND d.is_deleted=true AND (d.accounting_unit_id=$2 OR d.accounting_unit_id IS NULL) "
-      "ORDER BY d.deleted_at DESC LIMIT 100::bigint",
-      tenantId, unitId);
+      "WHERE d.tenant_id=$1 AND d.is_deleted=true ";
+  if (hasUnit) {
+    docSql += "AND (d.accounting_unit_id=$2::uuid OR d.accounting_unit_id IS NULL) ";
+  }
+  docSql += "ORDER BY d.deleted_at DESC LIMIT 100::bigint";
+
+  std::optional<drogon::orm::Result> docRows;
+  if (hasUnit) {
+    docRows = co_await db->execSqlCoro(docSql, tenantId, unitId);
+  } else {
+    docRows = co_await db->execSqlCoro(docSql, tenantId);
+  }
 
   Json::Value docs(Json::arrayValue);
-  for (const auto &row : docRows) {
-    Json::Value item(Json::objectValue);
-    item["id"] = row["id"].as<std::string>();
-    item["type"] = "document";
-    item["documentNumber"] = row["document_number"].as<std::string>();
-    item["title"] = row["title"].as<std::string>();
-    item["fileName"] = row["file_name"].as<std::string>();
-    item["versionLabel"] = row["version_label"].as<std::string>();
-    item["fileSize"] = Json::Int64(row["file_size"].as<int64_t>());
-    item["deletedAt"] = row["deleted_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["deleted_at"].as<std::string>());
-    item["deletedBy"] = row["deleted_by"].isNull() ? Json::Value("System") : Json::Value(row["deleted_by"].as<std::string>());
-    docs.append(std::move(item));
+  if (docRows) {
+    for (const auto &row : *docRows) {
+      Json::Value item(Json::objectValue);
+      item["id"] = row["id"].as<std::string>();
+      item["type"] = "document";
+      item["documentNumber"] = row["document_number"].as<std::string>();
+      item["title"] = row["title"].as<std::string>();
+      item["fileName"] = row["file_name"].as<std::string>();
+      item["versionLabel"] = row["version_label"].as<std::string>();
+      item["fileSize"] = Json::Int64(row["file_size"].as<int64_t>());
+      item["deletedAt"] = row["deleted_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["deleted_at"].as<std::string>());
+      item["deletedBy"] = row["deleted_by"].isNull() ? Json::Value("System") : Json::Value(row["deleted_by"].as<std::string>());
+      docs.append(std::move(item));
+    }
   }
 
   // Deleted folders
-  auto folderRows = co_await db->execSqlCoro(
-      "SELECT f.id, f.name, f.path, f.deleted_at, u.user_name AS deleted_by "
+  std::string folderSql =
+      "SELECT f.id, f.name, f.path, f.deleted_at, "
+      "COALESCE(NULLIF(btrim(concat_ws(' ', u.first_name, u.last_name)), ''), u.username, 'System') AS deleted_by "
       "FROM dm_folders f "
       "LEFT JOIN users u ON u.id=f.deleted_by_user_id "
-      "WHERE f.tenant_id=$1 AND f.is_deleted=true AND (f.accounting_unit_id=$2 OR f.accounting_unit_id IS NULL) "
-      "ORDER BY f.deleted_at DESC LIMIT 100::bigint",
-      tenantId, unitId);
+      "WHERE f.tenant_id=$1 AND f.is_deleted=true ";
+  if (hasUnit) {
+    folderSql += "AND (f.accounting_unit_id=$2::uuid OR f.accounting_unit_id IS NULL) ";
+  }
+  folderSql += "ORDER BY f.deleted_at DESC LIMIT 100::bigint";
+
+  std::optional<drogon::orm::Result> folderRows;
+  if (hasUnit) {
+    folderRows = co_await db->execSqlCoro(folderSql, tenantId, unitId);
+  } else {
+    folderRows = co_await db->execSqlCoro(folderSql, tenantId);
+  }
 
   Json::Value folders(Json::arrayValue);
-  for (const auto &row : folderRows) {
-    Json::Value item(Json::objectValue);
-    item["id"] = row["id"].as<std::string>();
-    item["type"] = "folder";
-    item["title"] = row["name"].as<std::string>();
-    item["path"] = row["path"].as<std::string>();
-    item["deletedAt"] = row["deleted_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["deleted_at"].as<std::string>());
-    item["deletedBy"] = row["deleted_by"].isNull() ? Json::Value("System") : Json::Value(row["deleted_by"].as<std::string>());
-    folders.append(std::move(item));
+  if (folderRows) {
+    for (const auto &row : *folderRows) {
+      Json::Value item(Json::objectValue);
+      item["id"] = row["id"].as<std::string>();
+      item["type"] = "folder";
+      item["title"] = row["name"].as<std::string>();
+      item["path"] = row["path"].as<std::string>();
+      item["deletedAt"] = row["deleted_at"].isNull() ? Json::Value(Json::nullValue) : Json::Value(row["deleted_at"].as<std::string>());
+      item["deletedBy"] = row["deleted_by"].isNull() ? Json::Value("System") : Json::Value(row["deleted_by"].as<std::string>());
+      folders.append(std::move(item));
+    }
   }
 
   r.result["documents"] = docs;
@@ -612,29 +641,32 @@ drogon::Task<dto::BaseApiResponse> getSummary(DbClientPtr db, const std::string 
   dto::BaseApiResponse r;
   r.success = true;
 
-  std::string unitFilter = "";
-  if (!unitId.empty() && uuid(unitId))
-    unitFilter = " AND accounting_unit_id='" + unitId + "'";
+  std::string unitDocFilter = "";
+  std::string unitFolderFilter = "";
+  if (!unitId.empty() && uuid(unitId)) {
+    unitDocFilter = " AND d.accounting_unit_id='" + unitId + "'";
+    unitFolderFilter = " AND f.accounting_unit_id='" + unitId + "'";
+  }
 
   // Counts & stats
   auto stats = co_await db->execSqlCoro(
       "SELECT "
-      "COUNT(id)::int AS total_documents, "
-      "COALESCE(SUM(file_size), 0)::bigint AS total_storage_bytes, "
-      "COUNT(CASE WHEN status='under_review' THEN 1 END)::int AS pending_approvals, "
-      "COUNT(CASE WHEN is_checked_out=true THEN 1 END)::int AS active_checkouts, "
-      "COUNT(CASE WHEN is_expired=true THEN 1 END)::int AS expired_documents "
-      "FROM dm_documents WHERE tenant_id=$1 AND is_deleted=false" + unitFilter,
+      "COUNT(d.id)::int AS total_documents, "
+      "COALESCE(SUM(d.file_size), 0)::bigint AS total_storage_bytes, "
+      "COUNT(CASE WHEN d.status='under_review' THEN 1 END)::int AS pending_approvals, "
+      "COUNT(CASE WHEN d.is_checked_out=true THEN 1 END)::int AS active_checkouts, "
+      "COUNT(CASE WHEN d.is_expired=true THEN 1 END)::int AS expired_documents "
+      "FROM dm_documents d WHERE d.tenant_id=$1 AND d.is_deleted=false" + unitDocFilter,
       tenantId);
 
   auto folderStats = co_await db->execSqlCoro(
-      "SELECT COUNT(id)::int AS total_folders FROM dm_folders WHERE tenant_id=$1 AND is_deleted=false" + unitFilter,
+      "SELECT COUNT(f.id)::int AS total_folders FROM dm_folders f WHERE f.tenant_id=$1 AND f.is_deleted=false" + unitFolderFilter,
       tenantId);
 
   // Status breakdown
   auto statusRows = co_await db->execSqlCoro(
-      "SELECT status, COUNT(id)::int AS count FROM dm_documents WHERE tenant_id=$1 AND is_deleted=false" + unitFilter +
-      " GROUP BY status ORDER BY count DESC",
+      "SELECT d.status, COUNT(d.id)::int AS count FROM dm_documents d WHERE d.tenant_id=$1 AND d.is_deleted=false" + unitDocFilter +
+      " GROUP BY d.status ORDER BY count DESC",
       tenantId);
   Json::Value statusObj(Json::objectValue);
   for (const auto &row : statusRows) {
@@ -645,7 +677,7 @@ drogon::Task<dto::BaseApiResponse> getSummary(DbClientPtr db, const std::string 
   auto tmplRows = co_await db->execSqlCoro(
       "SELECT COALESCE(t.name, 'General') AS template_name, COUNT(d.id)::int AS count "
       "FROM dm_documents d LEFT JOIN dm_templates t ON t.id=d.template_id "
-      "WHERE d.tenant_id=$1 AND d.is_deleted=false" + unitFilter +
+      "WHERE d.tenant_id=$1 AND d.is_deleted=false" + unitDocFilter +
       " GROUP BY template_name ORDER BY count DESC LIMIT 8::bigint",
       tenantId);
   Json::Value tmplObj(Json::objectValue);

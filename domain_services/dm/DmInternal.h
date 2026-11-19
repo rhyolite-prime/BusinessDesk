@@ -44,14 +44,15 @@ inline drogon::Task<bool> checkDmSchemaReady(DbClientPtr db) {
 inline drogon::Task<std::string> getUserName(DbClientPtr db, std::string userId) {
   if (!uuid(userId))
     co_return "";
-  auto rows = co_await db->execSqlCoro("SELECT user_name, name, surname FROM users WHERE id=$1", userId);
+  auto rows = co_await db->execSqlCoro("SELECT username, first_name, last_name FROM users WHERE id=$1", userId);
   if (rows.empty())
     co_return "";
-  std::string name = rows[0]["name"].as<std::string>();
-  std::string surname = rows[0]["surname"].as<std::string>();
-  std::string uname = rows[0]["user_name"].as<std::string>();
-  if (!name.empty() || !surname.empty())
-    co_return trim(name + " " + surname);
+  std::string first = rows[0]["first_name"].isNull() ? "" : rows[0]["first_name"].as<std::string>();
+  std::string last = rows[0]["last_name"].isNull() ? "" : rows[0]["last_name"].as<std::string>();
+  std::string uname = rows[0]["username"].isNull() ? "" : rows[0]["username"].as<std::string>();
+  std::string fullName = trim(first + " " + last);
+  if (!fullName.empty())
+    co_return fullName;
   co_return uname;
 }
 
@@ -91,27 +92,38 @@ inline std::string nextVersionLabel(const std::string &current, bool major) {
 
 inline drogon::Task<std::string> generateDocNumber(DbClientPtr db, const std::string &tenantId,
                                                    const std::string &unitId, const std::string &userId) {
-  auto seqs = co_await db->execSqlCoro(
+  const bool hasUnit = !unitId.empty() && uuid(unitId);
+  std::string seqSql =
       "SELECT id, prefix, next_number, padding FROM dm_document_sequences "
-      "WHERE tenant_id=$1 AND sequence_type='DOC' AND is_deleted=false "
-      "AND (accounting_unit_id=$2 OR accounting_unit_id IS NULL) "
-      "ORDER BY accounting_unit_id NULLS LAST LIMIT 1::bigint FOR UPDATE",
-      tenantId, unitId);
+      "WHERE tenant_id=$1 AND sequence_type='DOC' AND is_deleted=false ";
+  if (hasUnit) {
+    seqSql += "AND (accounting_unit_id=$2::uuid OR accounting_unit_id IS NULL) ";
+  } else {
+    seqSql += "AND accounting_unit_id IS NULL ";
+  }
+  seqSql += "ORDER BY accounting_unit_id NULLS LAST LIMIT 1::bigint FOR UPDATE";
+
+  std::optional<drogon::orm::Result> seqs;
+  if (hasUnit) {
+    seqs = co_await db->execSqlCoro(seqSql, tenantId, unitId);
+  } else {
+    seqs = co_await db->execSqlCoro(seqSql, tenantId);
+  }
 
   std::string prefix = "DOC-";
   int nextNum = 1;
   int pad = 4;
 
-  if (seqs.empty()) {
+  if (!seqs || seqs->empty()) {
     co_await db->execSqlCoro(
         "INSERT INTO dm_document_sequences (tenant_id, accounting_unit_id, sequence_type, prefix, next_number, padding, created_by_user_id) "
         "VALUES ($1, NULLIF($2, '')::uuid, 'DOC', 'DOC-', 2, ($3::int)::smallint, $4)",
-        tenantId, unitId, pad, userId);
+        tenantId, hasUnit ? unitId : "", pad, userId);
   } else {
-    prefix = seqs[0]["prefix"].as<std::string>();
-    nextNum = seqs[0]["next_number"].as<int>();
-    pad = seqs[0]["padding"].as<int>();
-    std::string seqId = seqs[0]["id"].as<std::string>();
+    prefix = (*seqs)[0]["prefix"].as<std::string>();
+    nextNum = (*seqs)[0]["next_number"].as<int>();
+    pad = (*seqs)[0]["padding"].as<int>();
+    std::string seqId = (*seqs)[0]["id"].as<std::string>();
     co_await db->execSqlCoro(
         "UPDATE dm_document_sequences SET next_number=next_number+1, last_modified_at=now(), last_modified_by_user_id=$1 "
         "WHERE id=$2",
