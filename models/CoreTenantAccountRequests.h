@@ -240,15 +240,15 @@ class CoreTenantAccountRequests
                     const std::function<void(Tenants)> &rcb,
                     const drogon::orm::ExceptionCallback &ecb) const;
 
-    Users getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr,
-                               const std::function<void(Users)> &rcb,
-                               const drogon::orm::ExceptionCallback &ecb) const;
-
     Users getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
     void getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(Users)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
+
+    Users getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getLastModifiedByUser(const drogon::orm::DbClientPtr &clientPtr,
+                               const std::function<void(Users)> &rcb,
+                               const drogon::orm::ExceptionCallback &ecb) const;
 
   private:
     friend drogon::orm::Mapper<CoreTenantAccountRequests>;

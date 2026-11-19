@@ -262,8 +262,8 @@ class CoreBanks
                     const std::function<void(Tenants)> &rcb,
                     const drogon::orm::ExceptionCallback &ecb) const;
 
-    Users getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr,
+    Users getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(Users)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
 
@@ -272,8 +272,8 @@ class CoreBanks
                                const std::function<void(Users)> &rcb,
                                const drogon::orm::ExceptionCallback &ecb) const;
 
-    Users getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
-    void getCreatedByUser(const drogon::orm::DbClientPtr &clientPtr,
+    Users getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr) const;
+    void getDeletedByUser(const drogon::orm::DbClientPtr &clientPtr,
                           const std::function<void(Users)> &rcb,
                           const drogon::orm::ExceptionCallback &ecb) const;
 
