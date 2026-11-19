@@ -274,17 +274,18 @@ export const businessModules: BusinessModule[] = [
     domain: 'Operations',
     category: 'Records & approvals',
     description: 'Organize business documents, versions, access, approvals, retention, and fast retrieval.',
-    readiness: 'preview',
+    readiness: 'live',
     icon: Files,
     metrics: [
-      { label: 'Documents indexed', context: 'Records library' },
+      { label: 'Documents indexed', context: 'Active records & files' },
       { label: 'Pending approvals', context: 'Document review queue' },
-      { label: 'Recent uploads', context: 'Latest records activity' },
+      { label: 'Active checkouts', context: 'Locked for editing' },
     ],
     workflows: [
-      { title: 'Document library', description: 'Classify, organize, and retrieve business records.' },
+      { title: 'Folder explorer', description: 'Organize files in hierarchical folders with breadcrumbs and metadata.' },
+      { title: 'Version control', description: 'Check-in, check-out, lock documents, and maintain full revision history.' },
       { title: 'Review & approvals', description: 'Route documents for review and maintain decision history.' },
-      { title: 'Retention & access', description: 'Apply retention policies and role-based document access.' },
+      { title: 'Search & templates', description: 'Find records instantly with parametric search and template metadata.' },
     ],
   },
   {
@@ -361,5 +362,6 @@ export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string)
   if (moduleId === 'inventory') return '/inventory'
   if (moduleId === 'supply-chain') return '/supply-chain'
   if (moduleId === 'fleet-workshop-management') return '/fleet-workshop'
+  if (moduleId === 'document-management') return '/documents'
   return `/modules/${moduleId}`
 }
