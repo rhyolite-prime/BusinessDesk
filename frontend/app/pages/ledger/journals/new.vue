@@ -291,6 +291,42 @@ async function addLine() {
     suggestedDeficits.set(line, deficit)
     refreshSuggestion(line)
   }
+
+  if (lines.value.length >= 2) {
+    for (let i = lines.value.length - 1; i >= 0; i--) {
+      const ref = lines.value[i]!.referenceNumber
+      if (ref && ref.trim()) {
+        line.referenceNumber = ref
+        break
+      }
+    }
+
+    for (let i = lines.value.length - 1; i >= 0; i--) {
+      const ou = lines.value[i]!.costCenterId
+      if (ou !== null && ou !== undefined && ou !== '') {
+        line.costCenterId = ou
+        break
+      }
+    }
+
+    for (let i = lines.value.length - 1; i >= 0; i--) {
+      const l = lines.value[i]!
+      if (l.description && l.description.trim() && manualLineDescriptions.has(toRaw(l))) {
+        line.description = l.description
+        manualLineDescriptions.add(toRaw(line))
+        break
+      }
+    }
+
+    for (let i = lines.value.length - 1; i >= 0; i--) {
+      const dt = lines.value[i]!.transactionDate
+      if (dt && realDate(dt)) {
+        line.transactionDate = dt
+        break
+      }
+    }
+  }
+
   const scope = version,
     request = ++scrollRequest
   lines.value.push(line)
@@ -426,6 +462,104 @@ const issues = computed(() => {
     e.push('Base totals exceed numeric(20,6).')
   return e
 })
+const secondRowEdited = reactive({
+  referenceNumber: false,
+  costCenterId: false,
+  description: false,
+  transactionDate: false,
+})
+const lastSyncedRow2 = reactive({
+  referenceNumber: '',
+  costCenterId: null as string | null,
+  description: '',
+  transactionDate: '',
+})
+
+function onInputReference(line: JournalLine, index: number) {
+  if (index === 0 && !original.value && lines.value[1]) {
+    if (!secondRowEdited.referenceNumber && lines.value[1].referenceNumber === lastSyncedRow2.referenceNumber) {
+      lines.value[1].referenceNumber = line.referenceNumber
+      lastSyncedRow2.referenceNumber = line.referenceNumber
+    }
+  } else if (index === 1) {
+    secondRowEdited.referenceNumber = true
+  }
+}
+
+function onSelectCostCenter(line: JournalLine, index: number, value: string | null) {
+  line.costCenterId = value || null
+  if (index === 0 && !original.value && lines.value[1]) {
+    if (!secondRowEdited.costCenterId && lines.value[1].costCenterId === lastSyncedRow2.costCenterId) {
+      lines.value[1].costCenterId = line.costCenterId
+      lastSyncedRow2.costCenterId = line.costCenterId
+    }
+  } else if (index === 1) {
+    secondRowEdited.costCenterId = true
+  }
+}
+
+function onInputDescription(line: JournalLine, index: number) {
+  manualLineDescriptions.add(toRaw(line))
+  if (index === 0 && !original.value && lines.value[1]) {
+    if (!secondRowEdited.description && lines.value[1].description === lastSyncedRow2.description) {
+      lines.value[1].description = line.description
+      manualLineDescriptions.add(toRaw(lines.value[1]))
+      lastSyncedRow2.description = line.description
+    }
+  } else if (index === 1) {
+    secondRowEdited.description = true
+  }
+}
+
+function onInputTransactionDate(line: JournalLine, index: number) {
+  if (index === 0 && !original.value && lines.value[1]) {
+    if (!secondRowEdited.transactionDate && lines.value[1].transactionDate === lastSyncedRow2.transactionDate) {
+      lines.value[1].transactionDate = line.transactionDate
+      lastSyncedRow2.transactionDate = line.transactionDate
+    }
+  } else if (index === 1) {
+    secondRowEdited.transactionDate = true
+  }
+}
+
+watch(
+  [
+    () => lines.value[0]?.referenceNumber,
+    () => lines.value[0]?.costCenterId,
+    () => lines.value[0]?.description,
+    () => lines.value[0]?.transactionDate,
+  ],
+  ([refNo, ou, desc, transDate]) => {
+    if (!loaded.value || readonly.value || original.value || lines.value.length < 2) return
+    const first = lines.value[0]
+    const second = lines.value[1]
+    if (!first || !second) return
+
+    if (refNo !== undefined && !secondRowEdited.referenceNumber && second.referenceNumber === lastSyncedRow2.referenceNumber) {
+      second.referenceNumber = refNo
+      lastSyncedRow2.referenceNumber = refNo
+    }
+
+    if (ou !== undefined && !secondRowEdited.costCenterId && second.costCenterId === lastSyncedRow2.costCenterId) {
+      second.costCenterId = ou
+      lastSyncedRow2.costCenterId = ou
+    }
+
+    if (desc !== undefined && (manualLineDescriptions.has(toRaw(first)) || desc.trim() !== '')) {
+      if (!secondRowEdited.description && second.description === lastSyncedRow2.description) {
+        second.description = desc
+        manualLineDescriptions.add(toRaw(second))
+        lastSyncedRow2.description = desc
+      }
+    }
+
+    if (transDate !== undefined && !secondRowEdited.transactionDate && second.transactionDate === lastSyncedRow2.transactionDate) {
+      second.transactionDate = transDate
+      lastSyncedRow2.transactionDate = transDate
+    }
+  },
+  { flush: 'sync' }
+)
 async function load() {
   const current = ++version,
     unit = unitId.value
@@ -468,6 +602,17 @@ async function load() {
           : mixedCostCenters
     }
     lines.value = row ? row.lines.map((l) => ({ ...l })) : [blank(), blank()]
+    while (lines.value.length < 2) {
+      lines.value.push(blank())
+    }
+    secondRowEdited.referenceNumber = false
+    secondRowEdited.costCenterId = false
+    secondRowEdited.description = false
+    secondRowEdited.transactionDate = false
+    lastSyncedRow2.referenceNumber = lines.value[0]?.referenceNumber || ''
+    lastSyncedRow2.costCenterId = lines.value[0]?.costCenterId || null
+    lastSyncedRow2.description = lines.value[0]?.description || ''
+    lastSyncedRow2.transactionDate = lines.value[0]?.transactionDate || form.batchDate
     manualHeaderDescription.value = Boolean(row?.description.trim())
     if (row)
       for (const line of lines.value)
@@ -721,6 +866,7 @@ async function save() {
                 >Transaction date
                 <input
                   v-model="l.transactionDate"
+                  @input="onInputTransactionDate(l, i)"
                   required
                   type="date"
                   min="1900-01-01"
@@ -877,12 +1023,13 @@ async function save() {
               class="journal-detail-fields mt-3 grid grid-cols-1 items-end gap-3 sm:grid-cols-2 xl:grid-cols-8"
             >
               <div class="min-w-0 xl:col-span-2">
-                <AccountControlPicker show-label :model-value="l.costCenterId || ''" kind="cost-centers" :options="centerChoices" :disabled="loading || saving || readonly" @update:model-value="value => l.costCenterId = value || null" />
+                <AccountControlPicker show-label :model-value="l.costCenterId || ''" kind="cost-centers" :options="centerChoices" :disabled="loading || saving || readonly" @update:model-value="value => onSelectCostCenter(l, i, value)" />
               </div>
               <label class="min-w-0 text-[11px]"
                 >Reference
                 <input
                   v-model="l.referenceNumber"
+                  @input="onInputReference(l, i)"
                   maxlength="40"
                   class="journal-input"
                 />
@@ -899,7 +1046,7 @@ async function save() {
                 >Line description
                 <input
                   v-model="l.description"
-                  @input="manualLineDescriptions.add(toRaw(l))"
+                  @input="onInputDescription(l, i)"
                   maxlength="300"
                   class="journal-input"
                 />
