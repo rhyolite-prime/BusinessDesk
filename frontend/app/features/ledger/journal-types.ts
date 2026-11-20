@@ -59,6 +59,16 @@ export const emptyJournalOptions = (): JournalOptions => ({
   costCenters: [],
   periods: [],
 })
+export interface JournalFilterParams {
+  dateFrom?: string
+  dateTo?: string
+  startDate?: string
+  endDate?: string
+  status?: string
+  search?: string
+  pageNo?: number
+  pageSize?: number
+}
 export function journalLineInput(line: JournalLine) {
   const {
     id,

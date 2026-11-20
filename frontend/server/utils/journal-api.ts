@@ -59,6 +59,21 @@ export async function journalRequest(
         query: {
           accountingUnitId: unit,
           ...(method === 'DELETE' ? { version: query.version } : {}),
+          ...(mode === 'list'
+            ? {
+                ...(query.pageNo ? { pageNo: query.pageNo } : {}),
+                ...(query.pageSize ? { pageSize: query.pageSize } : {}),
+                ...(query.search ? { search: query.search } : {}),
+                ...(query.query ? { query: query.query } : {}),
+                ...(query.status ? { status: query.status } : {}),
+                ...(query.dateFrom ? { dateFrom: query.dateFrom } : {}),
+                ...(query.dateTo ? { dateTo: query.dateTo } : {}),
+                ...(query.startDate ? { startDate: query.startDate } : {}),
+                ...(query.endDate ? { endDate: query.endDate } : {}),
+                ...(query.from ? { from: query.from } : {}),
+                ...(query.to ? { to: query.to } : {}),
+              }
+            : {}),
         },
         retry: 0,
         timeout: 15000,
