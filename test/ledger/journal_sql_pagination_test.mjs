@@ -17,7 +17,9 @@ const check = (ok, label) => {
 
 // 1. C++ Backend SQL search and pagination checks
 check(serviceCc.includes('count(*)::bigint AS count FROM gl_journal_batches b'), 'SQL count query for total matching journals')
-check(serviceCc.includes('LIMIT $7 OFFSET $8'), 'SQL pagination with LIMIT and OFFSET parameters')
+check(serviceCc.includes('LIMIT $7::bigint OFFSET $8::bigint'), 'SQL pagination with explicitly typed ::bigint parameters')
+check(serviceCc.includes('const int64_t limitParam'), 'limitParam typed as int64_t to match PostgreSQL bigint')
+check(serviceCc.includes('const int64_t offsetParam'), 'offsetParam typed as int64_t to match PostgreSQL bigint')
 check(serviceCc.includes('result.result["pageNo"]=pageNo'), 'result returns pageNo')
 check(serviceCc.includes('result.result["pageSize"]=pageSize'), 'result returns pageSize')
 check(serviceCc.includes('result.result["totalPages"]'), 'result returns totalPages')
