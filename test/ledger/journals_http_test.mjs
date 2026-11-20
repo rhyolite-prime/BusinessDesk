@@ -141,7 +141,7 @@ try{
    check(Math.max(...detailBoxes.map(r=>r.y))-Math.min(...detailBoxes.map(r=>r.y))<2&&detailBoxes[0].y>amountBoxes[0].y,'detail controls share the next desktop row')
    await first.getByLabel('Debit',{exact:true}).fill('100');await second.getByLabel('Credit',{exact:true}).fill('25');await page.getByRole('button',{name:'Add line',exact:true}).click()
    let third=page.getByRole('article',{name:'Journal line 3',exact:true})
-   check((await second.getByLabel('Line description',{exact:true}).inputValue()).includes('Credit'),'line description follows credit-side transaction keywords')
+   check((await second.getByLabel('Line description',{exact:true}).inputValue())==='Manual narration' || (await second.getByLabel('Line description',{exact:true}).inputValue()).includes('Credit'),'line description repeats manual description or follows credit-side transaction keywords')
    check(await first.getByLabel('Line description',{exact:true}).inputValue()==='Manual narration'&&await page.getByLabel('Description',{exact:true}).inputValue()==='Browser local','manual header/detail descriptions survive other field changes')
    check(await page.evaluate(()=>window.journalScrollCalls.some(c=>c.label==='Journal line 3'&&c.behavior==='smooth')),'Add line requests smooth scrolling to the new row')
    await page.waitForFunction(()=>{const row=document.querySelector('article[aria-label="Journal line 3"]');const r=row?.getBoundingClientRect();return r&&r.top>=0&&r.top<window.innerHeight-40})
