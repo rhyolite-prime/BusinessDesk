@@ -115,10 +115,11 @@ inline drogon::Task<std::string> generateDocNumber(DbClientPtr db, const std::st
   int pad = 4;
 
   if (!seqs || seqs->empty()) {
+    std::string unitParam = hasUnit ? unitId : "";
     co_await db->execSqlCoro(
         "INSERT INTO dm_document_sequences (tenant_id, accounting_unit_id, sequence_type, prefix, next_number, padding, created_by_user_id) "
         "VALUES ($1, NULLIF($2, '')::uuid, 'DOC', 'DOC-', 2, ($3::int)::smallint, $4)",
-        tenantId, hasUnit ? unitId : "", pad, userId);
+        tenantId, unitParam, pad, userId);
   } else {
     prefix = (*seqs)[0]["prefix"].as<std::string>();
     nextNum = (*seqs)[0]["next_number"].as<int>();

@@ -584,7 +584,8 @@ drogon::Task<dto::BaseApiResponse> bookmarkDocument(DbClientPtr db, const std::s
 
   bool isBookmarked = false;
   if (!existing.empty()) {
-    co_await db->execSqlCoro("DELETE FROM dm_bookmarks WHERE id=$1", existing[0]["id"].as<std::string>());
+    std::string bookmarkId = existing[0]["id"].as<std::string>();
+    co_await db->execSqlCoro("DELETE FROM dm_bookmarks WHERE id=$1", bookmarkId);
     isBookmarked = false;
   } else {
     co_await db->execSqlCoro(
@@ -661,16 +662,19 @@ drogon::Task<dto::BaseApiResponse> revertVersion(DbClientPtr db, const std::stri
   const std::string newLabel = nextVersionLabel(currentLabel, false);
   const std::string restoredLabel = targetVer[0]["version_label"].as<std::string>();
   const std::string comment = "Reverted to version " + restoredLabel;
+  const std::string rFileName = targetVer[0]["file_name"].as<std::string>();
+  const int64_t rFileSize = targetVer[0]["file_size"].as<int64_t>();
+  const std::string rFileHash = targetVer[0]["file_hash"].as<std::string>();
+  const std::string rMimeType = targetVer[0]["mime_type"].as<std::string>();
+  const std::string rContentText = targetVer[0]["content_text"].as<std::string>();
+  const std::string rStoragePath = targetVer[0]["storage_path"].as<std::string>();
 
   // Insert new version reflecting the revert
   co_await db->execSqlCoro(
       "INSERT INTO dm_document_versions "
       "(tenant_id, document_id, version_label, file_name, file_size, file_hash, mime_type, comment, content_text, storage_path, created_by_user_id) "
       "VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)",
-      tenantId, docId, newLabel, targetVer[0]["file_name"].as<std::string>(),
-      targetVer[0]["file_size"].as<int64_t>(), targetVer[0]["file_hash"].as<std::string>(),
-      targetVer[0]["mime_type"].as<std::string>(), comment,
-      targetVer[0]["content_text"].as<std::string>(), targetVer[0]["storage_path"].as<std::string>(), who.userId);
+      tenantId, docId, newLabel, rFileName, rFileSize, rFileHash, rMimeType, comment, rContentText, rStoragePath, who.userId);
 
   // Update document
   co_await db->execSqlCoro(
