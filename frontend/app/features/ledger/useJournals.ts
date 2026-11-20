@@ -1,4 +1,4 @@
-import type { Journal, JournalOptions } from './journal-types'
+import type { Journal, JournalOptions, JournalFilterParams } from './journal-types'
 export function useJournals() {
   const request = useRequestFetch()
   const unitId = useState<string>('ledger-accounting-unit', () => '')
@@ -57,10 +57,27 @@ export function useJournals() {
         '/api/ledger/journals/next-number',
         { query: { accountingUnitId: unit } },
       ),
-    list: (unit = unitId.value) =>
-      request<{ items: Journal[]; total: number }>('/api/ledger/journals', {
-        query: { accountingUnitId: unit },
-      }),
+    list: (unit = unitId.value, filters?: JournalFilterParams) => {
+      const from = filters?.dateFrom || filters?.startDate
+      const to = filters?.dateTo || filters?.endDate
+      return request<{
+        items: Journal[]
+        total: number
+        pageNo?: number
+        pageSize?: number
+        totalPages?: number
+      }>('/api/ledger/journals', {
+        query: {
+          accountingUnitId: unit,
+          ...(from ? { dateFrom: from } : {}),
+          ...(to ? { dateTo: to } : {}),
+          ...(filters?.status ? { status: filters?.status } : {}),
+          ...(filters?.search ? { search: filters?.search } : {}),
+          ...(filters?.pageNo ? { pageNo: filters?.pageNo } : {}),
+          ...(filters?.pageSize ? { pageSize: filters?.pageSize } : {}),
+        },
+      })
+    },
     get: (id: string, unit = unitId.value) =>
       request<Journal>(`/api/ledger/journals/${id}`, {
         query: { accountingUnitId: unit },
