@@ -5,6 +5,12 @@ drogon::Task<drogon::HttpResponsePtr> handle(drogon::HttpRequestPtr req,std::str
     if(req->getMethod()==drogon::Options){auto r=drogon::HttpResponse::newHttpResponse();r->setStatusCode(drogon::k204NoContent);co_return r;}
     Json::Value body;if(req->getJsonObject())body=*req->getJsonObject();
     std::string unit=req->getParameter("accountingUnitId");
+    if(op=="list"){
+        for(auto k:{"search","query","status","dateFrom","dateTo","startDate","endDate","from","to","pageNo","pageSize"}){
+            const auto v=req->getParameter(k);
+            if(!v.empty())body[k]=v;
+        }
+    }
     if((op=="create"||op=="update"||op=="post"||op=="validate")&&body.isObject()&&body["accountingUnitId"].isString()){if(!unit.empty()&&unit!=body["accountingUnitId"].asString())body["scopeMismatch"]=true;unit=body["accountingUnitId"].asString();}
     if(op=="delete"){
         body["accountingUnitId"]=unit;const auto version=req->getParameter("version");

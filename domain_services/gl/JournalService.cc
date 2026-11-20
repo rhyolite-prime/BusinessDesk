@@ -132,7 +132,40 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db,const std::string& op,cons
   if(counter>2147483647)co_return fail("conflict","Journal system number is exhausted.");
   result.result["batchNumber"]=batchFormat(settings[0],counter);result.result["reserved"]=false;result.success=true;co_return result;
  }
- if(op=="list"){auto rows=co_await db->execSqlCoro(selection()+" ORDER BY b.batch_date DESC,b.created_at DESC,b.id",who.tenantId,unit);result.result["items"]=Json::arrayValue;for(auto& r:rows)result.result["items"].append(decode(r));result.result["total"]=Json::UInt64(rows.size());result.success=true;co_return result;}
+ if(op=="list"){
+  std::string search=input.get("search",input.get("query","")).asString();
+  std::string status=input.get("status","").asString();
+  std::string dateFrom=input.get("dateFrom",input.get("startDate",input.get("from",""))).asString();
+  std::string dateTo=input.get("dateTo",input.get("endDate",input.get("to",""))).asString();
+  if(search.size()>200)search=search.substr(0,200);
+  int pageNo=1;
+  if(input.isMember("pageNo")){
+   if(input["pageNo"].isInt())pageNo=std::max(1,input["pageNo"].asInt());
+   else if(input["pageNo"].isString()&&!input["pageNo"].asString().empty()){try{pageNo=std::max(1,std::stoi(input["pageNo"].asString()));}catch(...){pageNo=1;}}
+  }
+  int pageSize=20;
+  if(input.isMember("pageSize")){
+   if(input["pageSize"].isInt())pageSize=std::clamp(input["pageSize"].asInt(),1,200);
+   else if(input["pageSize"].isString()&&!input["pageSize"].asString().empty()){try{pageSize=std::clamp(std::stoi(input["pageSize"].asString()),1,200);}catch(...){pageSize=20;}}
+  }
+  bool paginated=input.isMember("pageNo")||input.isMember("pageSize")||!search.empty()||!status.empty()||!dateFrom.empty()||!dateTo.empty();
+  const std::string tenantId=who.tenantId,unitId=unit,searchParam=search,statusParam=status,fromParam=dateFrom,toParam=dateTo;
+  std::string filter=" WHERE b.tenant_id=$1 AND b.accounting_unit_id=$2 AND b.is_deleted=false AND b.transaction_source='general_journal' AND ($3='' OR b.status=$3) AND ($4='' OR b.batch_date>=$4::date) AND ($5='' OR b.batch_date<=$5::date) AND ($6='' OR (strpos(lower(b.batch_number||' '||COALESCE(b.batch_description,'')),lower($6))>0 OR EXISTS(SELECT 1 FROM gl_journal_lines l LEFT JOIN gl_accounts a ON a.id=l.account_id AND a.tenant_id=l.tenant_id AND a.accounting_unit_id=l.accounting_unit_id AND a.is_deleted=false LEFT JOIN core_cost_centers cc ON cc.id=l.organization_unit_id AND cc.tenant_id=l.tenant_id AND cc.is_deleted=false WHERE l.tenant_id=b.tenant_id AND l.accounting_unit_id=b.accounting_unit_id AND l.journal_batch_id=b.id AND l.is_deleted=false AND strpos(lower(COALESCE(l.reference_number,'')||' '||COALESCE(l.description,'')||' '||COALESCE(l.cheque_number,'')||' '||COALESCE(l.organization_unit_name,'')||' '||COALESCE(l.account_name,'')||' '||COALESCE(a.account_number,'')||' '||COALESCE(a.account_name,'')||' '||COALESCE(cc.name,'')),lower($6))>0)))";
+  auto countRows=co_await db->execSqlCoro("SELECT count(*)::bigint AS count FROM gl_journal_batches b"+filter,tenantId,unitId,statusParam,fromParam,toParam,searchParam);
+  uint64_t totalCount=countRows.empty()?0:countRows[0]["count"].as<uint64_t>();
+  int limitParam=paginated?pageSize:(totalCount>0?static_cast<int>(std::min<uint64_t>(totalCount,1000)):20);
+  int offsetParam=paginated?(pageNo-1)*pageSize:0;
+  auto rows=co_await db->execSqlCoro("SELECT "+projection()+" FROM gl_journal_batches b"+filter+" ORDER BY b.batch_date DESC,b.created_at DESC,b.id LIMIT $7 OFFSET $8",tenantId,unitId,statusParam,fromParam,toParam,searchParam,limitParam,offsetParam);
+  result.result["items"]=Json::arrayValue;
+  for(auto& r:rows)result.result["items"].append(decode(r));
+  result.result["total"]=Json::UInt64(totalCount);
+  result.result["pageNo"]=pageNo;
+  result.result["pageSize"]=pageSize;
+  uint64_t totalPages=pageSize>0?(totalCount+pageSize-1)/pageSize:1;
+  result.result["totalPages"]=Json::UInt64(std::max<uint64_t>(1,totalPages));
+  result.success=true;
+  co_return result;
+ }
  Json::Value current;
  if(op=="get"||op=="update"||op=="delete"||op=="post"){
   const std::string select=selection()+" AND b.id=$3"+std::string(write?" FOR UPDATE OF b":"");auto rows=co_await db->execSqlCoro(select,who.tenantId,unit,id);if(rows.empty())co_return fail("not_found","Journal not found.");current=decode(rows[0]);
