@@ -1,8 +1,10 @@
 # Voucher entry: live lookup wiring
 
-`/ledger/vouchers/new/supplier-payment` now reads tenant-authenticated APIs rather
-than the former supplier, bank, currency, organization and account fixtures.
-No migration is needed beyond existing migrations through 016.
+The supplier-payment, employee-payment and customer-receipt editors under
+`/ledger/vouchers/new/` read tenant-authenticated catalogs rather than payee,
+bank, currency, organization and account fixtures. The header Bank GL restriction
+requires no new migration; deploy each voucher type's existing persistence and
+payee migrations as described in [Voucher posting](supplier-voucher-posting.md).
 
 - Accounting unit: active `/api/ledger/accounting-units` records; unit base currency
   is authoritative for conversion and all local-currency labels (not fixed GHS).
@@ -10,12 +12,21 @@ No migration is needed beyond existing migrations through 016.
   suppliers and restricting choices to their posting unit. Selecting a supplier
   defaults the empty debit allocation to its configured AP liability GL and uses
   its catalog currency. Existing entered allocations are not overwritten.
-- Bank/cash GL, debit GL and retention GL: active chart-of-account details from
-  `/api/ledger/accounts?accountingUnitId=...`, traversing pagination. Bank GL IDs
-  are real chart account IDs, never bank-directory IDs or demo IDs. For the existing
-  voucher-save contract, the selected GL must have a real active Bank Account
-  configuration; its bank record ID/name are resolved from the bank-account API.
-  Missing configuration is an explicit validation error, not a fabricated ID.
+- Bank/cash GL: on **supplier payment, employee payment and customer receipt**
+  headers, only eligible active base-currency GLs with at least one **active linked
+  Bank Account in the selected accounting unit** are offered. GL and bank catalogs
+  are intersected by their real `accountId`, not account names or directory IDs;
+  duplicate bank links do not duplicate a GL choice. Inactive, unlinked and
+  out-of-unit links are excluded. A sole matching bank record is selected
+  automatically; multiple linked records retain the bank-account selector. An
+  empty intersection displays a Bank Accounts configuration prompt and blocks
+  saving—never falls back to the full chart. Drafts with unavailable bank GLs
+  must be corrected before saving. Server-side linked-bank validation remains
+  authoritative for preview/save/post.
+- Debit/credit allocation, withholding and retention GLs retain their existing
+  active chart-of-account choices from
+  `/api/ledger/accounts?accountingUnitId=...`, traversing pagination. The bank
+  restriction applies only to the voucher header, not every GL field.
 - Currency: active global catalog `/api/shared/currencies`, with paging.
 - Organizational unit: tenant cost centers from `/api/shared/cost-centers`, with
   hierarchy paths and no default demo organization. Empty selection is allowed.
@@ -76,12 +87,11 @@ Automatic suggestions update while untouched. A manual description is preserved;
 **Use suggested description** explicitly replaces it. Existing draft descriptions
 are not automatically rewritten.
 
-This change wires entry lookups and rate suggestions into the **existing voucher
-save/edit transport**; it does not implement a new C++ voucher posting/approval
-service. Employee/customer payee catalogs and legacy demo voucher normalization
-are outside this supplier-lookup task. Production voucher persistence must be
-provided by the configured voucher API; configuring these lookups does not imply
-that the existing save/approve/post endpoints have been deployed.
+These entry lookups and rate suggestions use the **existing voucher save/edit
+transport**. The Bank GL restriction does not change posting or approval rules.
+Deploy the configured voucher API and its existing feature migrations; frontend
+lookup wiring alone does not deploy the save/approve/post endpoints. Employee
+and customer payee behavior is described below.
 
 Verification:
 
@@ -90,6 +100,7 @@ npm --prefix frontend run typecheck
 npm --prefix frontend run build
 node --experimental-strip-types test/vouchers/description_test.mjs
 node --experimental-strip-types test/vouchers/rate_input_test.mjs
+node --experimental-strip-types test/vouchers/bank_gl_options_test.mjs
 VOUCHER_BROWSER_DEPS=/path/to/playwright-core-and-@sparticuz/chromium \
   node test/vouchers/lookups_browser_test.mjs
 ```

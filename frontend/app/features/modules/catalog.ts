@@ -2,9 +2,9 @@ import {
   Banknote,
   BookOpenCheck,
   Boxes,
+  CarFront,
   Factory,
   Files,
-  FolderKanban,
   Handshake,
   Home,
   PackageCheck,
@@ -274,17 +274,18 @@ export const businessModules: BusinessModule[] = [
     domain: 'Operations',
     category: 'Records & approvals',
     description: 'Organize business documents, versions, access, approvals, retention, and fast retrieval.',
-    readiness: 'preview',
+    readiness: 'live',
     icon: Files,
     metrics: [
-      { label: 'Documents indexed', context: 'Records library' },
+      { label: 'Documents indexed', context: 'Active records & files' },
       { label: 'Pending approvals', context: 'Document review queue' },
-      { label: 'Recent uploads', context: 'Latest records activity' },
+      { label: 'Active checkouts', context: 'Locked for editing' },
     ],
     workflows: [
-      { title: 'Document library', description: 'Classify, organize, and retrieve business records.' },
+      { title: 'Folder explorer', description: 'Organize files in hierarchical folders with breadcrumbs and metadata.' },
+      { title: 'Version control', description: 'Check-in, check-out, lock documents, and maintain full revision history.' },
       { title: 'Review & approvals', description: 'Route documents for review and maintain decision history.' },
-      { title: 'Retention & access', description: 'Apply retention policies and role-based document access.' },
+      { title: 'Search & templates', description: 'Find records instantly with parametric search and template metadata.' },
     ],
   },
   {
@@ -326,22 +327,22 @@ export const businessModules: BusinessModule[] = [
     ],
   },
   {
-    id: 'project-management',
-    name: 'Project Management',
+    id: 'fleet-workshop-management',
+    name: 'Fleet & Workshop Management',
     domain: 'Operations',
-    category: 'Projects & delivery',
-    description: 'Plan project portfolios, coordinate tasks and milestones, manage delivery budgets, and monitor team capacity.',
-    readiness: 'preview',
-    icon: FolderKanban,
+    category: 'Fleet & workshop operations',
+    description: 'Maintain the vehicle fleet, schedule servicing, run workshop jobs, and track parts, fuel, and fleet costs.',
+    readiness: 'live',
+    icon: CarFront,
     metrics: [
-      { label: 'Active projects', context: 'Project portfolio summary' },
-      { label: 'Milestones at risk', context: 'Delivery health and due dates' },
-      { label: 'Team capacity', context: 'Resource planning overview' },
+      { label: 'Vehicles in fleet', context: 'Fleet register summary' },
+      { label: 'Open work orders', context: 'Workshop job queue' },
+      { label: 'Servicing due', context: 'Upcoming maintenance' },
     ],
     workflows: [
-      { title: 'Project portfolio', description: 'Organize project charters, owners, priorities, and delivery plans.' },
-      { title: 'Tasks & milestones', description: 'Coordinate responsibilities, dependencies, deadlines, and status updates.' },
-      { title: 'Time & cost controls', description: 'Compare planned budgets and capacity with actual project delivery.' },
+      { title: 'Fleet register', description: 'Maintain vehicle records, assignments, drivers, and availability.' },
+      { title: 'Workshop & servicing', description: 'Schedule jobs, allocate workshop bays, and record labour and parts.' },
+      { title: 'Fuel & fleet costs', description: 'Monitor fuel consumption, trip logs, and cost per vehicle.' },
     ],
   },
 ]
@@ -360,5 +361,7 @@ export function moduleDashboardPath(module: Pick<BusinessModule, 'id'> | string)
   if (moduleId === 'human-resource') return '/hr'
   if (moduleId === 'inventory') return '/inventory'
   if (moduleId === 'supply-chain') return '/supply-chain'
+  if (moduleId === 'fleet-workshop-management') return '/fleet-workshop'
+  if (moduleId === 'document-management') return '/documents'
   return `/modules/${moduleId}`
 }

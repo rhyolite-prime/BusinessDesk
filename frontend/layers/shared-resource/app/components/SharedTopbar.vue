@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { ArrowRight, Bell, ChevronDown, LayoutGrid, LogOut, Menu, Moon, Search, Sun, X } from '@lucide/vue'
+import { dashboardDateRange } from '../../../../app/features/ledger/dashboard-filters'
 
 interface SearchNavigationItem {
   label: string
@@ -37,6 +38,16 @@ const notificationJournals = ref<Array<{ id: string; batchNumber: string; descri
 const notificationsLoading = ref(false)
 const notificationsLoaded = ref(false)
 const notificationsError = ref(false)
+const notificationUnit = useState<string>('ledger-accounting-unit', () => '')
+let notificationGeneration = 0
+watch([notificationUnit, () => `${user.value?.accountId}:${user.value?.username}`], () => {
+  notificationGeneration++
+  notificationJournals.value = []
+  notificationsLoaded.value = false
+  notificationsLoading.value = false
+  notificationsError.value = false
+  notificationsOpen.value = false
+})
 
 const currentName = computed(() => user.value?.displayName || user.value?.username || 'BusinessDesk user')
 const avatarInitials = computed(() => currentName.value.split(/\s+/).filter(Boolean).slice(0, 2).map((part) => part.charAt(0).toUpperCase()).join('') || 'BD')
@@ -102,18 +113,21 @@ async function toggleNotifications() {
   searchFocused.value = false
   if (!notificationsOpen.value || notificationsLoaded.value || notificationsLoading.value) return
 
+  if (!notificationUnit.value) { notificationsError.value = true; return }
+  const generation = ++notificationGeneration
   notificationsLoading.value = true
   notificationsError.value = false
   try {
-    const response = await $fetch<{ recentJournals: Array<{ id: string; batchNumber: string; description: string; date: string; status: string }> }>('/api/ledger/dashboard')
-    notificationJournals.value = response.recentJournals
-      .filter((journal) => journal.status === 'Pending approval')
-      .slice(0, 4)
+    const response = await $fetch<{ pendingJournals: Array<{ id: string; batchNumber: string; description: string; date: string }> }>('/api/ledger/dashboard', {
+      query: { accountingUnitId: notificationUnit.value, dateFrom: '1900-01-01', dateTo: dashboardDateRange('year-to-date').dateTo, status: 'pending_approval' },
+    })
+    if (generation !== notificationGeneration) return
+    notificationJournals.value = response.pendingJournals.slice(0, 4)
     notificationsLoaded.value = true
   } catch {
-    notificationsError.value = true
+    if (generation === notificationGeneration) notificationsError.value = true
   } finally {
-    notificationsLoading.value = false
+    if (generation === notificationGeneration) notificationsLoading.value = false
   }
 }
 
@@ -220,7 +234,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
           <button
             type="button"
             class="relative rounded-lg p-2 text-ink-soft transition hover:bg-canvas"
-            :aria-label="notificationJournals.length ? `${notificationJournals.length} recent journal approvals` : 'Notifications'"
+            :aria-label="notificationJournals.length ? `${notificationJournals.length} journal approvals` : 'Notifications'"
             :aria-expanded="notificationsOpen"
             @click="toggleNotifications"
           >
@@ -232,12 +246,12 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
               <div class="flex items-center justify-between border-b border-line px-4 py-3">
                 <div>
                   <p class="text-sm font-semibold text-ink">Awaiting approval</p>
-                  <p class="mt-0.5 text-[11px] text-ink-faint">Latest journal entries</p>
+                  <p class="mt-0.5 text-[11px] text-ink-faint">Oldest pending batches · through today</p>
                 </div>
-                <Badge v-if="notificationJournals.length" tone="amber" size="sm">{{ notificationJournals.length }} recent</Badge>
+                <Badge v-if="notificationJournals.length" tone="amber" size="sm">{{ notificationJournals.length }} listed</Badge>
               </div>
-              <div v-if="notificationsLoading" class="px-4 py-7 text-center text-xs text-ink-faint">Loading recent approvals…</div>
-              <div v-else-if="notificationsError" class="px-4 py-7 text-center text-xs text-rose-600">Unable to load approvals. Close and reopen to retry.</div>
+              <div v-if="notificationsLoading" class="px-4 py-7 text-center text-xs text-ink-faint">Loading approvals…</div>
+              <div v-else-if="notificationsError" class="px-4 py-7 text-center text-xs text-rose-600">{{ notificationUnit ? 'Unable to load approvals. Close and reopen to retry.' : 'Select an accounting unit on the ledger dashboard first.' }}</div>
               <div v-else-if="notificationJournals.length" class="max-h-72 divide-y divide-line overflow-y-auto">
                 <NuxtLink v-for="journal in notificationJournals" :key="journal.id" to="/ledger/journals" class="block px-4 py-3 transition hover:bg-primary-soft/40" @click="notificationsOpen = false">
                   <span class="block truncate text-xs font-semibold text-ink">{{ journal.description }}</span>
@@ -250,7 +264,7 @@ onBeforeUnmount(() => document.removeEventListener('click', handleDocumentClick)
               <div v-else class="px-4 py-7 text-center">
                 <span class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-canvas text-ink-faint"><Bell :size="18" /></span>
                 <p class="mt-3 text-xs font-semibold text-ink">All caught up</p>
-                <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">No recent journal entries are awaiting approval.</p>
+                <p class="mt-1 text-[11px] leading-relaxed text-ink-faint">No journal batches are awaiting approval in this accounting unit.</p>
               </div>
               <NuxtLink to="/ledger/journals" class="block border-t border-line px-4 py-2.5 text-center text-xs font-semibold text-primary transition hover:bg-primary-soft/60" @click="notificationsOpen = false">
                 Open journal register <ArrowRight :size="13" class="ml-1 inline" />

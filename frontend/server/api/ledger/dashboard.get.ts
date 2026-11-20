@@ -1,6 +1,3 @@
-import { demoDashboard } from '../../utils/ledger-demo'
-import { getLedgerResource } from '../../utils/ledger-api'
+import { ledgerDashboardRequest } from '../../utils/ledger-dashboard-api'
 
-export default defineEventHandler((event) =>
-  getLedgerResource(event, 'dashboard', {}, () => demoDashboard),
-)
+export default defineEventHandler(event => ledgerDashboardRequest(event))

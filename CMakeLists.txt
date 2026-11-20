@@ -26,6 +26,7 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/gl/AccountingPeriodService.cc
         domain_services/reports/FinancialReportService.cc
         domain_services/gl/JournalService.cc
+        domain_services/gl/LedgerDashboardService.cc
         domain_services/gl/SupplierVoucherService.cc
         domain_services/tenants/TenantAccountService.cc
         domain_services/gl/BudgetService.cc
@@ -75,6 +76,17 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/inventory/InventoryStock.cc
         domain_services/supply_chain/SupplyChainService.h
         domain_services/supply_chain/SupplyChainService.cc
+        domain_services/fleet_workshop/FleetWorkshopService.h
+        domain_services/fleet_workshop/FleetWorkshopInternal.h
+        domain_services/fleet_workshop/FleetWorkshopMaster.cc
+        domain_services/fleet_workshop/FleetWorkshopOperations.cc
+        domain_services/fleet_workshop/FleetWorkshopJobs.cc
+        domain_services/dm/DmService.h
+        domain_services/dm/DmInternal.h
+        domain_services/dm/DmFolders.cc
+        domain_services/dm/DmDocuments.cc
+        domain_services/dm/DmWorkflows.cc
+        domain_services/dm/DmService.cc
 )
 
 # ##############################################################################

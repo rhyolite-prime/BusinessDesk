@@ -13,8 +13,8 @@ export default defineNuxtPlugin(() => {
   addItem('operations', { label: 'Manufacturing', to: '/modules/manufacturing', icon: 'building-office' })
   addItem('operations', { label: 'Point of Sale', to: '/modules/point-of-sale', icon: 'credit-card' })
   addItem('operations', { label: 'Customer Relationship Management', to: '/modules/customer-relationship-management', icon: 'users' })
-  addItem('operations', { label: 'Project Management', to: '/modules/project-management', icon: 'list-bullet' })
-  addItem('operations', { label: 'Document Management', to: '/modules/document-management', icon: 'document-text' })
+  addItem('operations', { label: 'Fleet & Workshop Management', to: '/modules/fleet-workshop-management', icon: 'cog-6-tooth' })
+  addItem('operations', { label: 'Document Management', to: '/documents', icon: 'document-text' })
   addItem('operations', { label: 'Print Intelligence', to: '/modules/print-intelligence', icon: 'list-bullet' })
 
   register('people', { label: 'People & education', icon: 'users', order: 3 })

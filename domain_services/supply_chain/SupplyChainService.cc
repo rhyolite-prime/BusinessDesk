@@ -306,9 +306,9 @@ drogon::Task<dto::BaseApiResponse> getRequisition(DbClientPtr db, const utils::A
   r.success = true;
   co_return r;
 }
-drogon::Task<dto::BaseApiResponse> createRequisition(DbClientPtr tx,
-                                                     const utils::AuditIdentity &who,
-                                                     Json::Value b) {
+drogon::Task<dto::BaseApiResponse> createRequisitionImpl(DbClientPtr tx,
+                                                         const utils::AuditIdentity &who,
+                                                         Json::Value b) {
   if (const auto p = validateRequisition(b, false); !p.empty())
     co_return fail("validation_error", p);
   if (b["requestId"].isString()) {
@@ -429,6 +429,12 @@ drogon::Task<dto::BaseApiResponse> updateRequisition(DbClientPtr tx,
     record["notes"] = l["notes"].asString();
     payloads.push_back(Json::writeString(Json::StreamWriterBuilder{}, record));
   }
+  const std::string reqBy =
+      b["requiredByDate"].isString() ? trim(b["requiredByDate"].asString()) : "";
+  const std::string ccId =
+      b["costCenterId"].isString() ? lower(b["costCenterId"].asString()) : "";
+  const std::string whId =
+      b["warehouseId"].isString() ? lower(b["warehouseId"].asString()) : "";
   co_await tx->execSqlCoro(
       "UPDATE scm_purchase_requisitions SET request_date=$4::date,"
       "required_by_date=NULLIF($5::text,'')::date,priority=$6,cost_center_id=NULLIF($7::text,'')::uuid,"
@@ -436,10 +442,7 @@ drogon::Task<dto::BaseApiResponse> updateRequisition(DbClientPtr tx,
       "version=version+1,last_modified_at=now(),last_modified_by_user_id=$3 "
       "WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND is_deleted=false",
       who.tenantId, id, who.userId, trim(b["requestDate"].asString()),
-      b["requiredByDate"].isString() ? trim(b["requiredByDate"].asString()) : "",
-      b["priority"].asString(), b["costCenterId"].isString() ? lower(b["costCenterId"].asString()) : "",
-      b["warehouseId"].isString() ? lower(b["warehouseId"].asString()) : "", b["purpose"].asString(),
-      q6(estimated));
+      reqBy, b["priority"].asString(), ccId, whId, b["purpose"].asString(), q6(estimated));
   co_await tx->execSqlCoro(
       "UPDATE scm_purchase_requisition_lines SET is_deleted=true,deleted_at=now(),deleted_by_user_id=$3,"
       "last_modified_at=now(),last_modified_by_user_id=$3 WHERE tenant_id=$1 AND requisition_id=$2::uuid "
@@ -863,6 +866,10 @@ drogon::Task<dto::BaseApiResponse> updateOrder(DbClientPtr tx, const utils::Audi
     currency = supplier[0]["currency_id"].as<std::string>();
   }
   const long double grand = subTotal - discountTotal + taxTotal;
+  const std::string quotId =
+      b["quotationId"].isString() ? lower(b["quotationId"].asString()) : "";
+  const std::string expDate =
+      b["expectedDeliveryDate"].isString() ? trim(b["expectedDeliveryDate"].asString()) : "";
   co_await tx->execSqlCoro(
       "UPDATE scm_purchase_orders SET supplier_id=$4::uuid,quotation_id=NULLIF($5::text,'')::uuid,"
       "order_date=$6::date,expected_delivery_date=NULLIF($7::text,'')::date,warehouse_id=$8::uuid,"
@@ -872,9 +879,7 @@ drogon::Task<dto::BaseApiResponse> updateOrder(DbClientPtr tx, const utils::Audi
       "notes=$19,version=version+1,last_modified_at=now(),last_modified_by_user_id=$3 "
       "WHERE tenant_id=$1 AND id=$2::uuid AND status='draft' AND is_deleted=false",
       who.tenantId, id, who.userId, lower(b["supplierId"].asString()),
-      b["quotationId"].isString() ? lower(b["quotationId"].asString()) : "",
-      trim(b["orderDate"].asString()),
-      b["expectedDeliveryDate"].isString() ? trim(b["expectedDeliveryDate"].asString()) : "",
+      quotId, trim(b["orderDate"].asString()), expDate,
       lower(b["warehouseId"].asString()), currency, b["exchangeRate"].asString(),
       b["incoterm"].asString(), b["paymentTermsDays"].asInt(), q6(subTotal), q6(discountTotal),
       q6(taxTotal), q6(grand), q6(grand * std::stold(b["exchangeRate"].asString())),
@@ -997,7 +1002,8 @@ drogon::Task<dto::BaseApiResponse> orderTransition(DbClientPtr tx, const utils::
   else
     co_await tx->execSqlCoro(sql, who.tenantId, id, who.userId);
   const std::string next = action == "submit" ? "submitted" : action == "approve" ? "approved" : action == "reject" ? "rejected" : action == "send" ? "sent" : action == "cancel" ? "cancelled" : "closed";
-  co_await scmEvent(tx, who, "purchase_order", id, action == "send" ? "sent" : action + "ed", status, next, reason);
+  const std::string evVerb = action == "send" ? std::string("sent") : action + "ed";
+  co_await scmEvent(tx, who, "purchase_order", id, evVerb, status, next, reason);
   co_return co_await getOrder(tx, who, id, true);
 }
 // ---------------------------------------------------------------------------
@@ -1630,7 +1636,7 @@ SupplyChainService::execute(std::string op, std::string id, Json::Value body, in
         result = authz;
       } else if (resource == "requisitions") {
         if (action == "create")
-          result = co_await createRequisition(tx, who, body);
+          result = co_await createRequisitionImpl(tx, who, body);
         else if (action == "update")
           result = co_await updateRequisition(tx, who, id, body);
         else if (action == "delete")
@@ -1683,5 +1689,19 @@ SupplyChainService::execute(std::string op, std::string id, Json::Value body, in
     co_return fail("database_error",
                    "Supply chain service unavailable. Verify migrations 032-035 are installed.");
   }
+}
+drogon::Task<dto::BaseApiResponse>
+SupplyChainService::createRequisition(drogon::orm::DbClientPtr transaction,
+                                      Json::Value payload,
+                                      utils::AuditIdentity who) {
+  if (!uuid(who.tenantId) || !uuid(who.userId))
+    co_return fail("unauthorized", "Trusted tenant scope required.");
+  static const std::vector<std::string> requiredTables{
+      "scm_document_sequences", "scm_procurement_events",
+      "scm_purchase_requisitions", "scm_purchase_requisition_lines"};
+  if (!(co_await inventory_internal::schemaReady(transaction, requiredTables)))
+    co_return fail("schema_not_ready",
+                   "Supply chain upgrade required. Apply 032_procurement_requisitions.sql.");
+  co_return co_await createRequisitionImpl(transaction, who, std::move(payload));
 }
 } // namespace business_desk::domain_services

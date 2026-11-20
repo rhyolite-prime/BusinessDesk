@@ -36,6 +36,8 @@ INSERT INTO tenants (
     property_rentals_subscription_fee,
     has_subscribed_to_document_management,
     document_management_subscription_fee,
+    has_subscribed_to_fleet_workshop_management,
+    fleet_workshop_management_subscription_fee,
     is_direct_debit_enabled,
     id,
     tenancy_name,
@@ -45,6 +47,8 @@ INSERT INTO tenants (
     creation_time
 ) VALUES (
     false,
+    false,
+    0,
     false,
     0,
     false,

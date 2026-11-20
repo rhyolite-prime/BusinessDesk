@@ -21,7 +21,8 @@ const std::vector<std::string> modules = {"gl",
                                           "core_banking",
                                           "supply_chain",
                                           "property_rentals",
-                                          "document_management"};
+                                          "document_management",
+                                          "fleet_workshop_management"};
 bool uuid(const std::string &s) {
   return std::regex_match(
              s, std::regex(
@@ -359,6 +360,7 @@ std::string TenantAccountService::moduleForPath(const std::string &p) {
            {"supply-chain", "supply_chain"},
            {"property-rentals", "property_rentals"},
            {"document-management", "document_management"},
+           {"fleet-workshop-management", "fleet_workshop_management"},
            {"core-banking", "core_banking"}}) {
     auto prefix = "/api/v1/" + path;
     if (p == prefix || p.starts_with(prefix + "/"))
