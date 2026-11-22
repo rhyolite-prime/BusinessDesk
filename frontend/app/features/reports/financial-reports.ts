@@ -57,7 +57,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
  let columns:ReportColumn[]=[],sections:ReportSection[]=[]
  let unknownComparison:{from:string;to:string}|null=null
  let trialTotals:{debit:bigint;credit:bigint}|null=null
- const cols=(labels:string[])=>{columns=labels.map((title,i)=>({key:String(i),title,width:labels.length===1?100:i===0?(labels.length>6?14:32):(100-(labels.length>6?14:32))/(labels.length-1)}))}
+ const cols=(labels:string[],firstWidth?:number)=>{const w0=firstWidth??(labels.length>6?14:(labels[0]==='Classification / account'||(kind==='income-basic'&&labels[0]==='Account'))?75:32);columns=labels.map((title,i)=>({key:String(i),title,width:labels.length===1?100:i===0?w0:(100-w0)/(labels.length-1)}))}
  const section=(title:string,rows:string[][])=>sections.push({title,rows})
  const accountLabel=(a:ReportAccount)=>`${a.number} · ${a.name}`
  const totals=(rows:ReportLine[])=>[money(sum(rows.map(l=>micros(l.debit)))),money(sum(rows.map(l=>micros(l.credit))))]
@@ -107,7 +107,7 @@ export function financialReport(snapshot:FinancialSnapshot, filters:FinancialFil
   trialTotals={debit:dr,credit:cr}
   if(dr!==cr)warnings.push('Trial balance does not balance in the selected scope. Investigate missing/opening entries or cost-center allocation.')
  }else if(kind==='balance-sheet'){
-  cols(['Classification / account','Balance (base)'])
+  cols(['Classification / account','Balance (base)'],75)
   const balances=new Map(accountList.map(a=>[a.id,net(byAccount.get(a.id)||[])]))
   const typeTotal=(type:number)=>sum(accountList.filter(a=>a.type===type).map(a=>balances.get(a.id)!))
   for(const type of [0,1,2])section(typeNames[type]!,accountList.filter(a=>a.type===type&&balances.get(a.id)!==0n).map(a=>[accountLabel(a),money(type===0?balances.get(a.id)!:-balances.get(a.id)!)]))

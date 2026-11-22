@@ -3,7 +3,38 @@ import type { EmbeddedReport } from '../reports/report-types'
 
 export interface VoucherReportCell { text: string; span?: number; bold?: boolean; align?: 'left' | 'center' | 'right' }
 export interface VoucherReportRow { cells: VoucherReportCell[]; header?: boolean }
-export interface VoucherReport extends EmbeddedReport { voucherRows: VoucherReportRow[] }
+
+export interface VoucherCompanyProfile {
+  companyName?: string
+  companyLogoUrl?: string
+  address?: string
+  phoneNo?: string
+}
+
+export interface VoucherReceiptData {
+  receiptNo: string
+  date: string
+  batchNo: string
+  rv: string
+  regNo?: string
+  receivedFrom: string
+  theSumOf: string
+  being: string
+  chequeNo: string
+  amountPaid: string
+  currency: string
+  admin: string
+  printedOn: string
+}
+
+export interface VoucherReport extends EmbeddedReport {
+  voucherRows: VoucherReportRow[]
+  voucherType?: LedgerVoucher['type']
+  companyLogoUrl?: string
+  companyAddress?: string
+  companyPhone?: string
+  receiptData?: VoucherReceiptData
+}
 
 const amount = (value: string | undefined) => {
   if (!value || !/^\d+(\.\d+)?$/.test(value)) return '—'
@@ -63,9 +94,27 @@ export function voucherAmountInWords(value: string, currency: string): string {
 const cell = (text: string, span = 1, bold = false, align: VoucherReportCell['align'] = 'left'): VoucherReportCell => ({ text, span, bold, align })
 const date = (v?: string) => v || '—'
 
+function formatReceiptDate(value: Date | string | undefined, timeZone = 'UTC'): string {
+  if (!value) return '—'
+  const d = value instanceof Date ? value : new Date(value)
+  if (!Number.isFinite(d.getTime())) return String(value)
+  try {
+    const parts = new Intl.DateTimeFormat('en-GB', { day: '2-digit', month: 'short', year: 'numeric', timeZone }).formatToParts(d)
+    const part = (type: string) => parts.find(p => p.type === type)?.value || ''
+    return `${part('day')}-${part('month')}-${part('year')}`
+  } catch {
+    return String(value)
+  }
+}
+
 /** An immutable report made from the server's saved voucher and calculation snapshot. */
-export function voucherReport(voucher: LedgerVoucher, companyName = ''): VoucherReport {
+export function voucherReport(voucher: LedgerVoucher, companyInfo: string | VoucherCompanyProfile = ''): VoucherReport {
   if (!voucher.taxSummary || !voucher.id || !Array.isArray(voucher.lines)) throw new Error('The saved voucher did not include its calculation snapshot.')
+  const profile: VoucherCompanyProfile = typeof companyInfo === 'string' ? { companyName: companyInfo } : (companyInfo || {})
+  const companyName = profile.companyName || ''
+  const companyLogoUrl = profile.companyLogoUrl || ''
+  const companyAddress = profile.address || ''
+  const companyPhone = profile.phoneNo || ''
   const currency = voucher.baseCurrencyCode || voucher.currencyCode
   const receipt = voucher.type === 'customer-receipt'
   const title = receipt ? 'RECEIPT VOUCHER' : 'PAYMENT VOUCHER'
@@ -96,5 +145,44 @@ export function voucherReport(voucher: LedgerVoucher, companyName = ''): Voucher
     rows.push({ cells: [cell('Retention details', 7, true)] })
     for (const retention of voucher.retentions) rows.push({ cells: [cell(retention.description || 'Retention', 3), cell(`${retention.isPercentage ? `${retention.value}%` : 'Fixed'} · ${[retention.accountNumber, retention.accountName].filter(Boolean).join(' — ') || '—'}`, 3), cell(amount(retention.amount), 1, false, 'right')] })
   }
-  return { id: `voucher-${voucher.voucherNumber || voucher.id}`.replace(/[^a-zA-Z0-9_-]/g, '-'), title, companyName: companyName || 'Company profile not available', subtitle: [ `Voucher ${voucher.voucherNumber}`, voucher.status?.toLowerCase() === 'draft' ? '' : voucher.status, `Base currency ${currency}` ].filter(Boolean).join(' · '), generatedAt: voucher.updatedAt || voucher.createdAt || '', columns: [], sections: [{ title: '', rows: voucher.lines.map(line => [line.description]) }], landscape: true, voucherRows: rows }
+
+  let receiptData: VoucherReceiptData | undefined
+  if (receipt) {
+    const d = new Date()
+    const months = ['January','February','March','April','May','June','July','August','September','October','November','December']
+    const printedOn = `${String(d.getUTCDate()).padStart(2, '0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`
+    const sumWords = voucherAmountInWords(summary.net, currency).replace(/ Only$/i, ' ONLY')
+    receiptData = {
+      receiptNo: voucher.voucherNumber || '—',
+      date: formatReceiptDate(voucher.receiptDate || voucher.entryDate),
+      batchNo: voucher.batchNumber || '—',
+      rv: voucher.lines[0]?.referenceNumber || voucher.voucherNumber || '—',
+      regNo: voucher.lines[0]?.invoiceNumber || voucher.lines[0]?.referenceNumber || '',
+      receivedFrom: voucher.payeeName || '—',
+      theSumOf: sumWords,
+      being: voucher.description || voucher.lines[0]?.description || 'Customer Receipt',
+      chequeNo: voucher.chequeNumber || (voucher.mode?.toLowerCase() === 'cheque' ? '—' : (voucher.mode?.toUpperCase() || '—')),
+      amountPaid: `${currency} ${amount(summary.net)}`,
+      currency,
+      admin: voucher.preparer || 'Admin',
+      printedOn,
+    }
+  }
+
+  return {
+    id: `voucher-${voucher.voucherNumber || voucher.id}`.replace(/[^a-zA-Z0-9_-]/g, '-'),
+    title,
+    companyName: companyName || 'Company profile not available',
+    subtitle: [ `Voucher ${voucher.voucherNumber}`, voucher.status?.toLowerCase() === 'draft' ? '' : voucher.status, `Base currency ${currency}` ].filter(Boolean).join(' · '),
+    generatedAt: voucher.updatedAt || voucher.createdAt || '',
+    columns: [],
+    sections: [{ title: '', rows: voucher.lines.map(line => [line.description]) }],
+    landscape: !receipt,
+    voucherRows: rows,
+    voucherType: voucher.type,
+    companyLogoUrl,
+    companyAddress,
+    companyPhone,
+    receiptData,
+  }
 }

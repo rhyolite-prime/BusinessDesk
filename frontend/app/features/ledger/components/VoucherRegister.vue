@@ -7,12 +7,14 @@ import {
   Eye,
   FilePenLine,
   Plus,
+  Printer,
   Search,
   Send,
   ShieldCheck,
   Trash2,
   X,
 } from '@lucide/vue'
+import VoucherPreviewModal from '../../../components/VoucherPreviewModal.vue'
 import { formatLedgerAmount, parseLedgerAmount } from '../money'
 import type {
   LedgerVoucher,
@@ -35,6 +37,7 @@ const statusFilter = ref('')
 const showCreateMenu = ref(false)
 const selectedIds = ref(new Set<string>())
 const selectedVoucher = ref<LedgerVoucher | null>(null)
+const previewVoucher = ref<LedgerVoucher | null>(null)
 const actionConfirmation = ref<{
   action: 'submit' | 'approve' | 'post' | 'delete'
   ids: string[]
@@ -401,8 +404,8 @@ function exportCsv() {
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
             <tr v-if="pending"><td :colspan="history ? 14 : 10" class="px-5 py-12 text-center text-xs text-slate-400">Loading voucher batches…</td></tr>
             <tr v-for="voucher in vouchers" :key="voucher.id" class="group transition hover:bg-slate-50/60 dark:hover:bg-slate-900/40">
-              <td class="px-4 py-4"><input type="checkbox" :checked="selectedIds.has(voucher.id)" :aria-label="`Select ${voucher.voucherNumber}`" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="toggleVoucher(voucher.id)" /></td>
-              <td class="px-4 py-4"><span class="block font-mono text-[11px] font-semibold text-brand-700 dark:text-brand-300">{{ voucher.voucherNumber }}</span><span class="mt-1 block text-[10px] text-slate-400">{{ voucherTypeInfo(voucher.type).shortLabel }} · {{ voucher.batchNumber }}</span></td>
+              <td v-if="!history" class="px-4 py-4"><input type="checkbox" :checked="selectedIds.has(voucher.id)" :aria-label="`Select ${voucher.voucherNumber}`" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="toggleVoucher(voucher.id)" /></td>
+              <td class="px-4 py-4"><span class="block font-mono text-[11px] font-semibold text-brand-700 dark:text-brand-300">{{ voucher.receiptNo || voucher.voucherNumber }}</span><span class="mt-1 block text-[10px] text-slate-400">{{ voucherTypeInfo(voucher.type).shortLabel }} · {{ voucher.batchNumber }}</span></td>
               <td class="max-w-[230px] px-4 py-4"><span class="block truncate text-xs font-semibold text-slate-800 dark:text-slate-200">{{ voucher.payeeName }}</span><span class="mt-1 block truncate text-[10px] text-slate-400">{{ voucher.description || 'No description' }}</span></td>
               <td class="px-4 py-4 text-xs text-slate-500">{{ formatDate(voucher.entryDate) }}</td>
               <td class="max-w-[190px] px-4 py-4"><span class="block truncate text-xs text-slate-600 dark:text-slate-300">{{ voucher.bankGlAccountName }}</span><span v-if="voucher.multiCurrency" class="mt-1 block text-[10px] text-slate-400">{{ voucher.currencyCode }} · rate {{ voucher.exchangeRate }}</span></td>
@@ -415,6 +418,7 @@ function exportCsv() {
               <td class="px-4 py-4 text-right text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{{ formatCurrency(voucher.netAmount, voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
               <td class="px-4 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="statusClass(voucher.status)">{{ voucher.status }}</span></td>
               <td class="px-4 py-4"><div class="flex justify-end gap-1">
+                <button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" :aria-label="`Preview ${voucher.voucherNumber}`" title="Preview voucher" @click="previewVoucher = voucher"><Printer :size="14" /></button>
                 <button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" :aria-label="`View ${voucher.voucherNumber}`" title="View details" @click="selectedVoucher = voucher"><Eye :size="14" /></button>
                 <NuxtLink v-if="voucher.status === 'Draft'" :to="`/ledger/vouchers/new/${voucher.type}?id=${encodeURIComponent(voucher.id)}`" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Edit ${voucher.voucherNumber}`" title="Edit draft"><FilePenLine :size="14" /></NuxtLink>
                 <button v-if="voucher.status === 'Draft'" type="button" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Submit ${voucher.voucherNumber}`" title="Submit for approval" @click="requestVoucherAction(voucher, 'submit')"><Send :size="14" /></button>
@@ -441,7 +445,7 @@ function exportCsv() {
 
     <div v-if="selectedVoucher" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" @click.self="selectedVoucher = null">
       <section class="max-h-[92vh] w-full max-w-5xl overflow-y-auto rounded-2xl border border-slate-200 bg-white shadow-2xl dark:border-slate-800 dark:bg-[#15201e]">
-        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 p-5 backdrop-blur dark:border-slate-800 dark:bg-[#15201e]/95 sm:px-6"><div><p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">{{ voucherTypeInfo(selectedVoucher.type).label }}</p><h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{{ selectedVoucher.voucherNumber }}</h2><p class="mt-1 text-xs text-slate-500">Batch {{ selectedVoucher.batchNumber }} · {{ selectedVoucher.status }}</p></div><button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close details" @click="selectedVoucher = null"><X :size="16" /></button></div>
+        <div class="sticky top-0 z-10 flex items-start justify-between gap-4 border-b border-slate-100 bg-white/95 p-5 backdrop-blur dark:border-slate-800 dark:bg-[#15201e]/95 sm:px-6"><div><p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-400">{{ voucherTypeInfo(selectedVoucher.type).label }}</p><h2 class="mt-1 text-lg font-semibold text-slate-900 dark:text-white">{{ selectedVoucher.receiptNo || selectedVoucher.voucherNumber }}</h2><p class="mt-1 text-xs text-slate-500"><span v-if="selectedVoucher.receiptNo && selectedVoucher.receiptNo !== selectedVoucher.batchNumber">Receipt {{ selectedVoucher.receiptNo }} · </span>Batch {{ selectedVoucher.batchNumber }} · {{ selectedVoucher.status }}</p></div><div class="flex items-center gap-2"><button type="button" class="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-200 dark:hover:bg-slate-700" title="Print or preview voucher" @click="previewVoucher = selectedVoucher"><Printer :size="14" /> Preview / Print</button><button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close details" @click="selectedVoucher = null"><X :size="16" /></button></div></div>
         <div class="space-y-5 p-5 sm:p-6">
           <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             <div><span class="block text-[10px] font-semibold uppercase tracking-wide text-slate-400">Payee / customer</span><span class="mt-1 block text-xs font-semibold text-slate-800 dark:text-slate-200">{{ selectedVoucher.payeeName }}</span></div>
@@ -490,5 +494,7 @@ function exportCsv() {
     <div v-if="actionConfirmation" class="fixed inset-0 z-[60] flex items-center justify-center bg-slate-950/50 p-4" @click.self="!actionPending && (actionConfirmation = null)">
       <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-[#15201e] sm:p-6"><div class="flex items-start gap-3"><span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-amber-50 text-amber-700 dark:bg-amber-900/25 dark:text-amber-300"><ShieldCheck :size="17" /></span><div><h2 class="text-sm font-semibold text-slate-900 dark:text-white">Confirm voucher action</h2><p class="mt-1.5 text-xs leading-5 text-slate-500">Are you sure you want to {{ actionConfirmation.label }}? The workflow status rules will be enforced.</p></div></div><p v-if="actionError" class="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ actionError }}</p><div class="mt-5 flex justify-end gap-2"><button type="button" :disabled="actionPending" class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300" @click="actionConfirmation = null">Cancel</button><button type="button" :disabled="actionPending" class="inline-flex h-9 items-center gap-2 rounded-lg bg-brand-700 px-3.5 text-xs font-semibold text-white hover:bg-brand-800 disabled:opacity-50" @click="executeAction"><span v-if="actionPending" class="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />{{ actionPending ? 'Working…' : 'Confirm' }}</button></div></section>
     </div>
+
+    <VoucherPreviewModal v-if="previewVoucher" :voucher="previewVoucher" @close="previewVoucher = null" />
   </div>
 </template>
