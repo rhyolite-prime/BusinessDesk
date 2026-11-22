@@ -57,13 +57,18 @@ The downgrade keeps line audit/deletion fields (to avoid resurrecting archived a
 - Compile `test/vouchers/math_driver.cc` with JsonCpp; run `VOUCHER_MATH_DRIVER=/path/to/driver node --experimental-strip-types test/vouchers/math_test.mjs`: known results plus generated exact C++/TypeScript parity vectors (including cent ties, FX, mixed flagged rows, CST/COVID, limits and invalid inputs).
 - Build Nuxt, then `LD_LIBRARY_PATH=/path/to/browser/libs node --experimental-strip-types test/vouchers/lookups_browser_test.mjs`: real browser/Nuxt with a controlled authenticated upstream, checking lookups, taxes, withholding credits, period selection, live saves, post response unwrapping and cross-origin rejection. Not a deployed C++ HTTP end-to-end claim.
 
-### Supplier voucher numbering
+### Voucher numbering
 
 Creating a supplier-payment voucher requires a live tenant System numbers entry
 in the General Ledger module (`module_id=1`) with key `gl-voucher-batch-id`.
-Its prefix, suffix, format pattern, padding and last number determine the batch
-number. The pattern must contain exactly one `{NO}` and may also contain
+Creating a customer-receipt voucher requires a live tenant System numbers entry
+in the General Ledger module (`module_id=1`) with key `gl-receipt-voucher-id`.
+Their prefix, suffix, format pattern, padding and last number determine the batch
+and receipt number. For customer receipt vouchers, this sets the authoritative
+receipt number, which is stored in the voucher payload under `receiptNo` (and
+`receiptNumber`) and is indexed and searchable in the voucher register.
+The pattern must contain exactly one `{NO}` and may also contain
 `{PREFIX}` and `{SUFFIX}`; the resulting number must fit 40 bytes. The counter
 is advanced transactionally when the voucher is saved, not on preview, update,
-or an idempotent retry. Configure the tenant entry before saving a new supplier
-voucher. Employee-payment and customer-receipt numbering is unchanged.
+or an idempotent retry. Configure the tenant entry before saving a new voucher.
+Employee-payment numbering is unchanged.

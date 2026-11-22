@@ -198,6 +198,8 @@ export function normalizeVoucherInput(body: Partial<CreateLedgerVoucherInput>): 
     multiCurrency,
     chequeNumber,
     description,
+    ...(isReceipt && body.receiptNo ? { receiptNo: String(body.receiptNo).trim() } : {}),
+    ...(isReceipt && body.receiptNumber ? { receiptNumber: String(body.receiptNumber).trim() } : {}),
     totalAmount: formatLedgerAmount(totalUnits),
     foreignTotal: formatLedgerAmount(foreignTotalUnits),
     retentionsTotal: formatLedgerAmount(retentionsTotalUnits),

@@ -64,6 +64,8 @@ export interface LedgerVoucher {
   id: string
   voucherNumber: string
   batchNumber: string
+  receiptNo?: string
+  receiptNumber?: string
   type: LedgerVoucherType
   payeeId: string
   payeeName: string
@@ -135,6 +137,8 @@ export interface CreateLedgerVoucherInput {
   multiCurrency: boolean
   chequeNumber: string
   description: string
+  receiptNo?: string
+  receiptNumber?: string
   lines: LedgerVoucherLineInput[]
   retentions: LedgerVoucherRetentionInput[]
 }
