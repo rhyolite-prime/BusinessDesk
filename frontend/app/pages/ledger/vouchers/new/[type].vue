@@ -1034,6 +1034,32 @@ async function saveDraft(preview: boolean) {
     saving.value = false
   }
 }
+
+const showDeleteConfirmation = ref(false)
+const deleting = ref(false)
+const deleteError = ref('')
+
+async function deleteDraft() {
+  if (!editing.value || !existingVoucher.value || existingVoucher.value.version === undefined || deleting.value) return
+  deleting.value = true
+  deleteError.value = ''
+  try {
+    await voucherApi.remove(editingId.value, existingVoucher.value.version)
+    showDeleteConfirmation.value = false
+    await navigateTo(voucherRegisterLocation())
+  } catch (e: unknown) {
+    const fetchError = e as {
+      statusMessage?: string
+      data?: { statusMessage?: string }
+    }
+    deleteError.value =
+      fetchError.data?.statusMessage ||
+      fetchError.statusMessage ||
+      'The voucher draft could not be deleted.'
+  } finally {
+    deleting.value = false
+  }
+}
 </script>
 
 <template>
@@ -1140,15 +1166,52 @@ async function saveDraft(preview: boolean) {
 
     <div v-if="validationErrors.length" class="rounded-xl border border-amber-200 bg-amber-50/70 px-4 py-3 dark:border-amber-900/50 dark:bg-amber-950/20"><p class="text-xs font-semibold text-amber-900 dark:text-amber-200">Complete the required voucher details:</p><ul class="mt-2 list-inside list-disc space-y-1 text-[11px] text-amber-800 dark:text-amber-300"><li v-for="message in validationErrors" :key="message">{{ message }}</li></ul></div>
     <p v-if="saveError" role="alert" class="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ saveError }} <NuxtLink v-if="savedVoucher" :to="voucherRegisterLocation()" class="font-semibold underline">Back to vouchers</NuxtLink></p>
-    <div class="flex flex-col-reverse justify-end gap-2 sm:flex-row">
-      <NuxtLink :to="voucherRegisterLocation()" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</NuxtLink>
-      <div ref="saveMenu" class="relative" @keydown="saveMenuKeydown">
-        <button ref="saveButton" type="button" :disabled="!canSave" :aria-expanded="showSaveMenu" aria-haspopup="menu" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50" @click="showSaveMenu ? showSaveMenu = false : openSaveMenu()"><Save :size="14" />{{ saving ? 'Saving…' : editing ? 'Update' : 'Save' }}<ChevronDown :size="14" /></button>
-        <div v-if="showSaveMenu" role="menu" aria-label="Save voucher" class="absolute bottom-full right-0 z-30 mb-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
-          <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(false)">Save</button>
-          <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(true)">Save and Preview</button>
+    <div class="flex flex-col-reverse justify-between gap-2 sm:flex-row sm:items-center">
+      <div>
+        <button
+          v-if="editing && existingVoucher?.status === 'Draft'"
+          type="button"
+          :disabled="deleting || saving"
+          class="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-rose-200 bg-white px-4 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-rose-900/60 dark:bg-slate-900 dark:text-rose-400 dark:hover:bg-rose-950/30"
+          @click="showDeleteConfirmation = true"
+        >
+          <Trash2 :size="14" />
+          {{ deleting ? 'Deleting…' : 'Delete draft' }}
+        </button>
+      </div>
+      <div class="flex flex-col-reverse gap-2 sm:flex-row">
+        <NuxtLink :to="voucherRegisterLocation()" class="inline-flex h-10 items-center justify-center rounded-lg border border-slate-200 px-5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-300 dark:hover:bg-slate-800">Cancel</NuxtLink>
+        <div ref="saveMenu" class="relative" @keydown="saveMenuKeydown">
+          <button ref="saveButton" type="button" :disabled="!canSave" :aria-expanded="showSaveMenu" aria-haspopup="menu" class="inline-flex h-10 w-full items-center justify-center gap-2 rounded-lg bg-brand-700 px-5 text-xs font-semibold text-white shadow-sm hover:bg-brand-800 disabled:cursor-not-allowed disabled:opacity-50" @click="showSaveMenu ? showSaveMenu = false : openSaveMenu()"><Save :size="14" />{{ saving ? 'Saving…' : editing ? 'Update' : 'Save' }}<ChevronDown :size="14" /></button>
+          <div v-if="showSaveMenu" role="menu" aria-label="Save voucher" class="absolute bottom-full right-0 z-30 mb-2 w-52 overflow-hidden rounded-lg border border-slate-200 bg-white py-1 shadow-xl dark:border-slate-700 dark:bg-slate-900">
+            <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(false)">Save</button>
+            <button role="menuitem" type="button" class="block w-full px-4 py-3 text-left text-sm hover:bg-slate-50 dark:hover:bg-slate-800" @click="saveDraft(true)">Save and Preview</button>
+          </div>
         </div>
       </div>
+    </div>
+    <div v-if="showDeleteConfirmation" class="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/50 p-4" @click.self="!deleting && (showDeleteConfirmation = false)">
+      <section class="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-800 dark:bg-[#15201e] sm:p-6">
+        <div class="flex items-start gap-3">
+          <span class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-rose-50 text-rose-600 dark:bg-rose-950/40 dark:text-rose-400">
+            <Trash2 :size="17" />
+          </span>
+          <div>
+            <h2 class="text-sm font-semibold text-slate-900 dark:text-white">Delete voucher draft</h2>
+            <p class="mt-1.5 text-xs leading-5 text-slate-500">
+              Are you sure you want to delete draft voucher <strong class="text-slate-700 dark:text-slate-300">{{ existingVoucher?.voucherNumber || 'this draft' }}</strong>? This action cannot be undone.
+            </p>
+          </div>
+        </div>
+        <p v-if="deleteError" class="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700 dark:border-rose-900/60 dark:bg-rose-950/30 dark:text-rose-200">{{ deleteError }}</p>
+        <div class="mt-5 flex justify-end gap-2">
+          <button type="button" :disabled="deleting" class="h-9 rounded-lg border border-slate-200 px-3 text-xs font-semibold text-slate-600 disabled:opacity-50 dark:border-slate-700 dark:text-slate-300" @click="showDeleteConfirmation = false">Cancel</button>
+          <button type="button" :disabled="deleting" class="inline-flex h-9 items-center gap-2 rounded-lg bg-rose-600 px-3.5 text-xs font-semibold text-white hover:bg-rose-700 disabled:opacity-50" @click="deleteDraft">
+            <span v-if="deleting" class="h-3 w-3 animate-spin rounded-full border-2 border-white/40 border-t-white" />
+            {{ deleting ? 'Deleting…' : 'Delete draft' }}
+          </button>
+        </div>
+      </section>
     </div>
     <VoucherPreviewModal v-if="previewVoucher" :voucher="previewVoucher" @close="closeVoucherPreview" />
   </div>
