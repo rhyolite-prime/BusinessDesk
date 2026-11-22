@@ -586,6 +586,7 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
       result.result["proposedJournal"] = prepared.proposal;
       co_return result;
     }
+    std::string payload, calculation, proposal;
     if (op == "create") {
       std::string number;
       if (b["type"] == "supplier-payment") {
@@ -631,9 +632,9 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
             who.tenantId, unit, who.userId);
         number = std::string("EPV-") + seq[0]["number"].as<std::string>();
       }
-      const std::string payload = json(prepared.source),
-                        calculation = json(prepared.calc),
-                        proposal = json(prepared.proposal);
+      payload = json(prepared.source);
+      calculation = json(prepared.calc);
+      proposal = json(prepared.proposal);
       auto saved = co_await db->execSqlCoro(
           R"(INSERT INTO gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,voucher_entry_date,payment_date,mode_of_payment,voucher_type,currency_id,buy_rate,supplier_id,supplier_name,bank_account_id,gross_amount,net_amount,total_withheld,total_vat_withheld,total_retained,base_amount,total_vat_amount,source_payload,calculation,proposed_journal,posting_period_id,idempotency_key,request_hash,created_by_user_id)
  VALUES($1,$2,$3,($4::jsonb->>'entryDate')::date,COALESCE($4::jsonb->>'receiptDate',$4::jsonb->>'paymentDate')::date,$4::jsonb->>'mode',$4::jsonb->>'type',(SELECT id FROM core_currencies WHERE code=$4::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),($4::jsonb->>'exchangeRate')::numeric,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN ($4::jsonb->>'payeeId')::uuid END,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN $4::jsonb->>'payeeName' END,($4::jsonb->>'bankAccountId')::uuid,($5::jsonb->>'gross')::numeric,($5::jsonb->>'net')::numeric,($5::jsonb->>'incomeWithholding')::numeric,($5::jsonb->>'vatWithholding')::numeric,($5::jsonb->>'retained')::numeric,($5::jsonb->>'base')::numeric,($5::jsonb->>'vat')::numeric,$4::jsonb,$5::jsonb,$6::jsonb,($4::jsonb->>'periodId')::uuid,$4::jsonb->>'requestId',md5($7::jsonb::text),$8) RETURNING id)",
@@ -656,9 +657,9 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
           prepared.source["receiptNumber"] = current["batchNumber"];
         }
       }
-      const std::string payload = json(prepared.source),
-                        calculation = json(prepared.calc),
-                        proposal = json(prepared.proposal);
+      payload = json(prepared.source);
+      calculation = json(prepared.calc);
+      proposal = json(prepared.proposal);
       co_await db->execSqlCoro(
           R"(UPDATE gl_payment_vouchers SET voucher_entry_date=($3::jsonb->>'entryDate')::date,payment_date=COALESCE($3::jsonb->>'receiptDate',$3::jsonb->>'paymentDate')::date,mode_of_payment=$3::jsonb->>'mode',currency_id=(SELECT id FROM core_currencies WHERE code=$3::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),buy_rate=($3::jsonb->>'exchangeRate')::numeric,supplier_id=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN ($3::jsonb->>'payeeId')::uuid END,supplier_name=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN $3::jsonb->>'payeeName' END,bank_account_id=($3::jsonb->>'bankAccountId')::uuid,gross_amount=($4::jsonb->>'gross')::numeric,net_amount=($4::jsonb->>'net')::numeric,total_withheld=($4::jsonb->>'incomeWithholding')::numeric,total_vat_withheld=($4::jsonb->>'vatWithholding')::numeric,total_retained=($4::jsonb->>'retained')::numeric,base_amount=($4::jsonb->>'base')::numeric,total_vat_amount=($4::jsonb->>'vat')::numeric,source_payload=$3::jsonb,calculation=$4::jsonb,proposed_journal=$5::jsonb,posting_period_id=($3::jsonb->>'periodId')::uuid,version=version+1,last_modified_at=now(),last_modified_by_user_id=$6 WHERE tenant_id=$1 AND id=$2 AND is_deleted=false)",
           who.tenantId, id, payload, calculation, proposal, who.userId);
