@@ -51,6 +51,78 @@ assert.ok(!xml.includes('Draft'),'Word does not display draft status')
 assert.ok(xml.includes('Line 89 =1+1')&&xml.includes('97.20')&&xml.includes('All Shall Pass'),'Word contains all rows and saved totals')
 const receipt=voucherReport({...voucher,type:'customer-receipt',receiptDate:'2026-05-22'},'Example Company')
 assert.equal(receipt.title,'RECEIPT VOUCHER');assert.equal(receipt.voucherRows[1].cells[0].text,'Received from')
+
+// Customer receipt Official Receipt redesign checks
+const receiptVoucher = {
+  ...voucher,
+  type: 'customer-receipt',
+  voucherNumber: 'TTU25538RCT',
+  batchNumber: 'R28924V',
+  receiptDate: '2026-07-09',
+  payeeName: 'YEBOAH VICTORIA AFRIYIE',
+  description: 'Rental of Auditorium',
+  chequeNumber: '342432',
+  lines: [{ ...lines[0], invoiceNumber: 'sdfsd', referenceNumber: 'ASW342D', localAmount: '5214.320000' }],
+  taxSummary: { ...voucher.taxSummary, net: '5214.320000' },
+  preparer: 'Admin',
+}
+
+// 1. Without logo (null/empty)
+const receiptWithoutLogo = voucherReport(receiptVoucher, { companyName: 'SISCO-DEMO-UNLICENSED', address: 'P.O. Box 256', phoneNo: '0312021227/8 Fax: 0312021227' })
+assert.equal(receiptWithoutLogo.landscape, false)
+assert.equal(receiptWithoutLogo.receiptData.receiptNo, 'TTU25538RCT')
+assert.equal(receiptWithoutLogo.receiptData.date, '09-Jul-2026')
+assert.equal(receiptWithoutLogo.receiptData.batchNo, 'R28924V')
+assert.equal(receiptWithoutLogo.receiptData.rv, 'ASW342D')
+assert.equal(receiptWithoutLogo.receiptData.regNo, 'sdfsd')
+assert.equal(receiptWithoutLogo.receiptData.receivedFrom, 'YEBOAH VICTORIA AFRIYIE')
+assert.equal(receiptWithoutLogo.receiptData.being, 'Rental of Auditorium')
+assert.equal(receiptWithoutLogo.receiptData.chequeNo, '342432')
+assert.ok(receiptWithoutLogo.receiptData.theSumOf.endsWith('ONLY'))
+assert.equal(receiptWithoutLogo.receiptData.amountPaid, 'GHS 5,214.32')
+assert.equal(receiptWithoutLogo.receiptData.admin, 'Admin')
+
+const receiptPdfDef = voucherPdfDefinition(receiptWithoutLogo)
+assert.equal(receiptPdfDef.pageOrientation, 'portrait')
+assert.equal(receiptPdfDef.pageSize, 'A4')
+
+const receiptPdfBytes = await createVoucherPdf(receiptWithoutLogo)
+assert.equal(Buffer.from(receiptPdfBytes).subarray(0, 4).toString(), '%PDF')
+const receiptDoc = await pdfjs.getDocument({ data: receiptPdfBytes.slice(), disableWorker: true }).promise
+assert.equal(receiptDoc.numPages, 1, 'Two receipts fit on a single A4 portrait page')
+let receiptText = ''
+for (let i = 1; i <= receiptDoc.numPages; i++) {
+  receiptText += (await (await receiptDoc.getPage(i)).getTextContent()).items.map(x => x.str || '').join(' ')
+}
+assert.ok(receiptText.includes('OFFICIAL RECEIPT'), 'Receipt PDF contains OFFICIAL RECEIPT')
+assert.ok(receiptText.includes('Receipt From :'), 'Receipt PDF contains Receipt From :')
+assert.ok(receiptText.includes('The Sum of'), 'Receipt PDF contains The Sum of')
+assert.ok(receiptText.includes('being'), 'Receipt PDF contains being')
+assert.ok(receiptText.includes('Cheque No'), 'Receipt PDF contains Cheque No')
+assert.ok(receiptText.includes('Amount Paid'), 'Receipt PDF contains Amount Paid')
+assert.ok(receiptText.includes('YEBOAH VICTORIA AFRIYIE'), 'Receipt PDF contains customer name')
+assert.ok(receiptText.includes('Rental of Auditorium'), 'Receipt PDF contains purpose')
+assert.ok(receiptText.includes('342432'), 'Receipt PDF contains cheque number')
+assert.ok(receiptText.includes('GHS 5,214.32'), 'Receipt PDF contains amount paid')
+assert.ok(receiptText.includes('Report Printed On'), 'Receipt PDF contains Report Printed On')
+assert.ok(receiptText.includes('BusinessDesk · G/L'), 'Receipt PDF contains system title')
+assert.ok(receiptText.includes('Page 1 of 1'), 'Receipt PDF contains Page 1 of 1')
+assert.ok(receiptText.includes('Admin'), 'Receipt PDF contains Admin signature')
+await receiptDoc.destroy()
+
+// 2. With logo (base64 data URL)
+const sampleLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
+const receiptWithLogo = voucherReport(receiptVoucher, { companyName: 'SISCO-DEMO-UNLICENSED', companyLogoUrl: sampleLogo, address: 'P.O. Box 256', phoneNo: '0312021227' })
+assert.equal(receiptWithLogo.companyLogoUrl, sampleLogo)
+const receiptWithLogoPdf = await createVoucherPdf(receiptWithLogo)
+const receiptWithLogoDoc = await pdfjs.getDocument({ data: receiptWithLogoPdf.slice(), disableWorker: true }).promise
+assert.equal(receiptWithLogoDoc.numPages, 1, 'Receipt with logo fits on 1 page')
+await receiptWithLogoDoc.destroy()
+
+const receiptXlsx = await createVoucherExcel(receiptWithoutLogo)
+assert.ok(receiptXlsx.size > 0, 'Receipt Excel export succeeds')
+const receiptDocx = await createVoucherWord(receiptWithoutLogo)
+assert.ok(receiptDocx.size > 0, 'Receipt Word export succeeds')
 const fx=voucherReport({...voucher,multiCurrency:true,currencyCode:'USD',baseCurrencyCode:'GHS',exchangeRate:'1.2345678901',lines:[{...lines[0],foreignAmount:'99.123456'}]},'Example Company')
 assert.equal(fx.voucherRows[2].cells[1].text,'Ninety-Seven Ghana Cedi and 20 Pesewas Only','amount in words uses the base currency')
 assert.ok(fx.voucherRows[5].cells[6].text.includes('USD 99.123456'),'foreign source amount is shown without losing precision')

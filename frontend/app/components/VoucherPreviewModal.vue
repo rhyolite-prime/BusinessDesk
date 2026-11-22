@@ -30,10 +30,12 @@ onMounted(async () => {
   const oldOverflow = document.body.style.overflow
   document.body.style.overflow = 'hidden'
   onCleanup = () => { document.body.style.overflow = oldOverflow }
-  let companyName = ''
-  try { companyName = (await $fetch<{ companyName?: string }>('/api/shared/company-profile', { timeout: 4000, retry: 0 }))?.companyName || '' } catch { /* A missing profile must not undo a successful save. */ }
+  let companyProfile: { companyName?: string; companyLogoUrl?: string; address?: string; phoneNo?: string } = {}
+  try {
+    companyProfile = (await $fetch<{ companyName?: string; companyLogoUrl?: string; address?: string; phoneNo?: string }>('/api/shared/company-profile', { timeout: 4000, retry: 0 })) || {}
+  } catch { /* A missing profile must not undo a successful save. */ }
   if (disposed) return
-  try { report.value = voucherReport(props.voucher, companyName) }
+  try { report.value = voucherReport(props.voucher, companyProfile) }
   catch { error.value = 'The voucher was saved, but its preview could not be prepared. Return to the voucher register and review the saved record.' }
   finally { loading.value = false }
 })
