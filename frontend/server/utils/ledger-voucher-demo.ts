@@ -322,6 +322,9 @@ export function transitionDemoVoucher(id: string, action: VoucherTransition, upd
   const transition = allowed[action]
   if (voucher.status !== transition.from) return undefined
   voucher.status = transition.to
+  if (action === 'post' && !voucher.journalId) {
+    voucher.journalId = `journal-batch-${voucher.id.replace('voucher-', '')}`
+  }
   voucher.updatedAt = updatedAt
   return cloneVoucher(voucher)
 }

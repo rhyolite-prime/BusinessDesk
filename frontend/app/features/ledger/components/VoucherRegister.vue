@@ -26,7 +26,7 @@ import { voucherTypeMetadata, voucherTypeInfo, isLedgerVoucherType } from '../vo
 import { taxKeys, taxLabels } from '../voucher-tax'
 import { useLedgerVoucherApi } from '../useLedgerVoucherApi'
 
-defineProps<{ history?: boolean }>()
+const props = defineProps<{ history?: boolean }>()
 
 const api = useLedgerVoucherApi()
 const search = ref('')
@@ -263,6 +263,25 @@ function proposedJournal(voucher: LedgerVoucher) {
   return lines
 }
 
+function voucherGetflNhil(voucher: LedgerVoucher): string {
+  const getfund = voucher.taxSummary?.getfund ?? '0'
+  const nhil = voucher.taxSummary?.nhil ?? '0'
+  const sum = (parseLedgerAmount(getfund, true) ?? 0n) + (parseLedgerAmount(nhil, true) ?? 0n)
+  return formatLedgerAmount(sum)
+}
+
+function voucherVat(voucher: LedgerVoucher): string {
+  return voucher.taxSummary?.vat ?? (voucher as any).totalVatAmount ?? '0.000000'
+}
+
+function voucherWithheld(voucher: LedgerVoucher): string {
+  return voucher.taxSummary?.incomeWithholding ?? (voucher as any).totalWithheld ?? '0.000000'
+}
+
+function voucherVatWh(voucher: LedgerVoucher): string {
+  return voucher.taxSummary?.vatWithholding ?? (voucher as any).totalVatWithheld ?? '0.000000'
+}
+
 function exportCsv() {
   const header = [
     'Voucher no',
@@ -274,6 +293,7 @@ function exportCsv() {
     'Source currency',
     'Base currency',
     'Total (base)',
+    ...(props.history ? ['GETFL+NHIL', 'VAT', 'WITHHELD', 'VAT WH'] : []),
     'Net (base)',
     'Status',
   ]
@@ -287,6 +307,14 @@ function exportCsv() {
     voucher.currencyCode,
     voucher.baseCurrencyCode || voucher.currencyCode,
     voucher.totalAmount,
+    ...(props.history
+      ? [
+          voucherGetflNhil(voucher),
+          voucherVat(voucher),
+          voucherWithheld(voucher),
+          voucherVatWh(voucher),
+        ]
+      : []),
     voucher.netAmount,
     voucher.status,
   ])
@@ -299,7 +327,7 @@ function exportCsv() {
   )
   const link = document.createElement('a')
   link.href = url
-  link.download = 'general-ledger-vouchers.csv'
+  link.download = props.history ? 'voucher-history.csv' : 'general-ledger-vouchers.csv'
   link.click()
   URL.revokeObjectURL(url)
 }
@@ -341,7 +369,7 @@ function exportCsv() {
             <label class="relative"><select v-model="statusFilter" class="h-10 appearance-none rounded-lg border border-slate-200 bg-white pl-3 pr-8 text-xs font-medium text-slate-600 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"><option value="">All statuses</option><option value="draft">Draft</option><option value="pending approval">Pending approval</option><option value="approved">Approved</option><option value="posted">Posted</option><option value="reversed">Reversed</option><option value="voided">Voided</option></select><ChevronDown :size="13" class="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400" /></label>
           </div>
         </div>
-        <div v-if="!history && selectedIds.size" class="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 bg-brand-50/70 px-3 py-2 dark:border-brand-900/40 dark:bg-brand-950/20">
+        <div v-if="selectedIds.size" class="mt-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-brand-100 bg-brand-50/70 px-3 py-2 dark:border-brand-900/40 dark:bg-brand-950/20">
           <span class="text-[11px] font-semibold text-brand-800 dark:text-brand-200">{{ selectedIds.size }} voucher{{ selectedIds.size === 1 ? '' : 's' }} selected</span>
           <div class="flex flex-wrap gap-2">
             <button v-if="selectedStatus === 'Draft'" type="button" class="inline-flex h-8 items-center gap-1.5 rounded-md bg-brand-700 px-3 text-[10px] font-semibold text-white hover:bg-brand-800" @click="requestAction('submit', [...selectedIds], 'submit selected drafts for approval')"><Send :size="12" /> Submit for approval</button>
@@ -354,10 +382,27 @@ function exportCsv() {
       </div>
 
       <div class="overflow-x-auto">
-        <table class="w-full min-w-[1120px] text-left">
-          <thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50"><tr><th v-if="!history" class="w-10 px-4 py-3"><input type="checkbox" :checked="allVisibleSelected" aria-label="Select all visible vouchers" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="toggleVisible" /></th><th class="px-4 py-3">Voucher number</th><th class="px-4 py-3">Payee / description</th><th class="px-4 py-3">Entry date</th><th class="px-4 py-3">Bank / cash G/L</th><th class="px-4 py-3">Mode</th><th class="px-4 py-3 text-right">Total · base</th><th class="px-4 py-3 text-right">Net · base</th><th class="px-4 py-3">Status</th><th class="px-4 py-3 text-right">Actions</th></tr></thead>
+        <table class="w-full text-left" :class="history ? 'min-w-[1440px]' : 'min-w-[1120px]'">
+          <thead class="bg-slate-50/70 text-[10px] font-semibold uppercase tracking-[0.1em] text-slate-400 dark:bg-slate-900/50">
+            <tr>
+              <th class="w-10 px-4 py-3"><input type="checkbox" :checked="allVisibleSelected" aria-label="Select all visible vouchers" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="toggleVisible" /></th>
+              <th class="px-4 py-3">Voucher number</th>
+              <th class="px-4 py-3">Payee / description</th>
+              <th class="px-4 py-3">Entry date</th>
+              <th class="px-4 py-3">Bank / cash G/L</th>
+              <th class="px-4 py-3">Mode</th>
+              <th class="px-4 py-3 text-right">Total · base</th>
+              <th v-if="history" class="px-4 py-3 text-right">GETFL+NHIL</th>
+              <th v-if="history" class="px-4 py-3 text-right">VAT</th>
+              <th v-if="history" class="px-4 py-3 text-right">WITHHELD</th>
+              <th v-if="history" class="px-4 py-3 text-right">VAT WH</th>
+              <th class="px-4 py-3 text-right">Net · base</th>
+              <th class="px-4 py-3">Status</th>
+              <th class="px-4 py-3 text-right">Actions</th>
+            </tr>
+          </thead>
           <tbody class="divide-y divide-slate-100 dark:divide-slate-800">
-            <tr v-if="pending"><td :colspan="history ? 9 : 10" class="px-5 py-12 text-center text-xs text-slate-400">Loading voucher batches…</td></tr>
+            <tr v-if="pending"><td :colspan="history ? 14 : 10" class="px-5 py-12 text-center text-xs text-slate-400">Loading voucher batches…</td></tr>
             <tr v-for="voucher in vouchers" :key="voucher.id" class="group transition hover:bg-slate-50/60 dark:hover:bg-slate-900/40">
               <td v-if="!history" class="px-4 py-4"><input type="checkbox" :checked="selectedIds.has(voucher.id)" :aria-label="`Select ${voucher.voucherNumber}`" class="rounded border-slate-300 text-brand-700 focus:ring-brand-500" @change="toggleVoucher(voucher.id)" /></td>
               <td class="px-4 py-4"><span class="block font-mono text-[11px] font-semibold text-brand-700 dark:text-brand-300">{{ voucher.receiptNo || voucher.voucherNumber }}</span><span class="mt-1 block text-[10px] text-slate-400">{{ voucherTypeInfo(voucher.type).shortLabel }} · {{ voucher.batchNumber }}</span></td>
@@ -366,19 +411,23 @@ function exportCsv() {
               <td class="max-w-[190px] px-4 py-4"><span class="block truncate text-xs text-slate-600 dark:text-slate-300">{{ voucher.bankGlAccountName }}</span><span v-if="voucher.multiCurrency" class="mt-1 block text-[10px] text-slate-400">{{ voucher.currencyCode }} · rate {{ voucher.exchangeRate }}</span></td>
               <td class="px-4 py-4 text-xs text-slate-500">{{ voucher.mode }}</td>
               <td class="px-4 py-4 text-right text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(voucher.totalAmount, voucher.baseCurrencyCode || voucher.currencyCode) }}<span v-if="voucher.foreignTotal !== '0.000000'" class="mt-1 block text-[10px] text-slate-400">{{ formatCurrency(voucher.foreignTotal, voucher.currencyCode) }}</span></td>
+              <td v-if="history" class="px-4 py-4 text-right text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(voucherGetflNhil(voucher), voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
+              <td v-if="history" class="px-4 py-4 text-right text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(voucherVat(voucher), voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
+              <td v-if="history" class="px-4 py-4 text-right text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(voucherWithheld(voucher), voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
+              <td v-if="history" class="px-4 py-4 text-right text-xs font-medium tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(voucherVatWh(voucher), voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
               <td class="px-4 py-4 text-right text-xs font-semibold tabular-nums text-emerald-700 dark:text-emerald-300">{{ formatCurrency(voucher.netAmount, voucher.baseCurrencyCode || voucher.currencyCode) }}</td>
               <td class="px-4 py-4"><span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="statusClass(voucher.status)">{{ voucher.status }}</span></td>
               <td class="px-4 py-4"><div class="flex justify-end gap-1">
                 <button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" :aria-label="`Preview ${voucher.voucherNumber}`" title="Preview voucher" @click="previewVoucher = voucher"><Printer :size="14" /></button>
                 <button type="button" class="rounded-md p-2 text-slate-400 hover:bg-slate-100 hover:text-slate-700 dark:hover:bg-slate-800 dark:hover:text-white" :aria-label="`View ${voucher.voucherNumber}`" title="View details" @click="selectedVoucher = voucher"><Eye :size="14" /></button>
-                <NuxtLink v-if="!history && voucher.status === 'Draft'" :to="`/ledger/vouchers/new/${voucher.type}?id=${encodeURIComponent(voucher.id)}`" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Edit ${voucher.voucherNumber}`" title="Edit draft"><FilePenLine :size="14" /></NuxtLink>
-                <button v-if="!history && voucher.status === 'Draft'" type="button" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Submit ${voucher.voucherNumber}`" title="Submit for approval" @click="requestVoucherAction(voucher, 'submit')"><Send :size="14" /></button>
-                <button v-if="!history && voucher.status === 'Pending approval'" type="button" class="rounded-md p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30" :aria-label="`Approve ${voucher.voucherNumber}`" title="Approve" @click="requestVoucherAction(voucher, 'approve')"><ShieldCheck :size="14" /></button>
-                <button v-if="!history && voucher.status === 'Approved'" type="button" class="rounded-md p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" :aria-label="`Post ${voucher.voucherNumber}`" title="Post to General Ledger" @click="requestVoucherAction(voucher, 'post')"><Check :size="14" /></button>
-                <button v-if="!history && voucher.status === 'Draft'" type="button" class="rounded-md p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30" :aria-label="`Delete ${voucher.voucherNumber}`" title="Delete draft" @click="requestVoucherAction(voucher, 'delete')"><Trash2 :size="14" /></button>
+                <NuxtLink v-if="voucher.status === 'Draft'" :to="`/ledger/vouchers/new/${voucher.type}?id=${encodeURIComponent(voucher.id)}`" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Edit ${voucher.voucherNumber}`" title="Edit draft"><FilePenLine :size="14" /></NuxtLink>
+                <button v-if="voucher.status === 'Draft'" type="button" class="rounded-md p-2 text-slate-400 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-950/30 dark:hover:text-brand-300" :aria-label="`Submit ${voucher.voucherNumber}`" title="Submit for approval" @click="requestVoucherAction(voucher, 'submit')"><Send :size="14" /></button>
+                <button v-if="voucher.status === 'Pending approval'" type="button" class="rounded-md p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950/30" :aria-label="`Approve ${voucher.voucherNumber}`" title="Approve" @click="requestVoucherAction(voucher, 'approve')"><ShieldCheck :size="14" /></button>
+                <button v-if="voucher.status === 'Approved'" type="button" class="rounded-md p-2 text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30" :aria-label="`Post ${voucher.voucherNumber}`" title="Post to General Ledger" @click="requestVoucherAction(voucher, 'post')"><Check :size="14" /></button>
+                <button v-if="voucher.status === 'Draft'" type="button" class="rounded-md p-2 text-rose-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30" :aria-label="`Delete ${voucher.voucherNumber}`" title="Delete draft" @click="requestVoucherAction(voucher, 'delete')"><Trash2 :size="14" /></button>
               </div></td>
             </tr>
-            <tr v-if="!pending && !vouchers.length"><td :colspan="history ? 9 : 10" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No vouchers match</p><p class="mt-1 text-xs text-slate-400">Adjust the filters or create a new voucher.</p></td></tr>
+            <tr v-if="!pending && !vouchers.length"><td :colspan="history ? 14 : 10" class="px-5 py-12 text-center"><p class="text-sm font-semibold text-slate-700 dark:text-slate-200">No vouchers match</p><p class="mt-1 text-xs text-slate-400">Adjust the filters or create a new voucher.</p></td></tr>
           </tbody>
         </table>
       </div>
@@ -411,7 +460,33 @@ function exportCsv() {
           <div v-if="selectedVoucher.taxSummary" class="grid grid-cols-2 gap-3 rounded-lg border border-slate-200 p-3 text-xs dark:border-slate-800"><div><span class="block text-slate-500">Taxable base</span><strong>{{ formatCurrency(selectedVoucher.taxSummary.base, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</strong></div><div v-for="key in taxKeys" :key="key"><span class="block text-slate-500">{{ taxLabels[key] }}</span><strong>{{ formatCurrency(selectedVoucher.taxSummary[key], selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</strong></div></div>
           <div><h3 class="text-xs font-semibold text-slate-900 dark:text-white">Voucher line items</h3><div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"><table class="w-full min-w-[760px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-900/60"><tr><th class="px-3 py-2.5">Invoice / reference</th><th class="px-3 py-2.5">G/L account</th><th class="px-3 py-2.5">Description</th><th class="px-3 py-2.5">Org unit</th><th class="px-3 py-2.5 text-right">Local amount · base</th><th v-if="selectedVoucher.multiCurrency" class="px-3 py-2.5 text-right">Foreign amount</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in selectedVoucher.lines" :key="line.id || `allocation-${index}`"><td class="px-3 py-3 text-slate-600 dark:text-slate-300"><span v-if="line.invoiceNumber" class="block">Inv: {{ line.invoiceNumber }}</span><span class="block text-[10px] text-slate-400">Ref: {{ line.referenceNumber || '—' }}</span></td><td class="px-3 py-3 text-slate-700 dark:text-slate-300">{{ line.accountNumber }} — {{ line.accountName }}</td><td class="px-3 py-3 text-slate-600 dark:text-slate-400">{{ line.description || '—' }}</td><td class="px-3 py-3 text-slate-600 dark:text-slate-400">{{ line.organizationUnitName || '—' }}</td><td class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(line.localAmount, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td v-if="selectedVoucher.multiCurrency" class="px-3 py-3 text-right tabular-nums text-slate-700 dark:text-slate-300">{{ formatCurrency(line.foreignAmount, selectedVoucher.currencyCode) }}</td></tr></tbody></table></div></div>
           <div v-if="selectedVoucher.retentions.length"><h3 class="text-xs font-semibold text-slate-900 dark:text-white">Retentions</h3><div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"><table class="w-full min-w-[520px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-900/60"><tr><th class="px-3 py-2.5">Retention</th><th class="px-3 py-2.5">Credit G/L</th><th class="px-3 py-2.5 text-right">Basis</th><th class="px-3 py-2.5 text-right">Amount · base</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(retention, index) in selectedVoucher.retentions" :key="retention.id || `retention-${index}`"><td class="px-3 py-3">{{ retention.description }}</td><td class="px-3 py-3">{{ retention.accountNumber }} — {{ retention.accountName }}</td><td class="px-3 py-3 text-right">{{ retention.value }}{{ retention.isPercentage ? '%' : ' ' + (selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ formatCurrency(retention.amount, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td></tr></tbody></table></div></div>
-          <div><h3 class="text-xs font-semibold text-slate-900 dark:text-white">Proposed journal entry</h3><p class="mt-1 text-[10px] text-slate-500">Posting will create a balanced General Ledger batch from these lines.</p><div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"><table class="w-full min-w-[620px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-900/60"><tr><th class="px-3 py-2.5">Account</th><th class="px-3 py-2.5">Description</th><th class="px-3 py-2.5 text-right">Debit · base</th><th class="px-3 py-2.5 text-right">Credit · base</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in proposedJournal(selectedVoucher)" :key="`${selectedVoucher.id}-gl-${index}`"><td class="px-3 py-3">{{ line.account }}</td><td class="px-3 py-3 text-slate-500">{{ line.description }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.debit === '0.000000' ? '—' : formatCurrency(line.debit, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.credit === '0.000000' ? '—' : formatCurrency(line.credit, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td></tr></tbody><tfoot class="bg-slate-50 font-semibold dark:bg-slate-900/60"><tr><td colspan="2" class="px-3 py-2.5 text-right">Totals</td><td class="px-3 py-2.5 text-right tabular-nums">{{ formatCurrency(sumAmount(proposedJournal(selectedVoucher).map((line) => line.debit)), selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td class="px-3 py-2.5 text-right tabular-nums">{{ formatCurrency(sumAmount(proposedJournal(selectedVoucher).map((line) => line.credit)), selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td></tr></tfoot></table></div></div>
+          <div><h3 class="text-xs font-semibold text-slate-900 dark:text-white">Proposed journal entry</h3><p class="mt-1 text-[10px] text-slate-500">{{ selectedVoucher.status === 'Posted' ? 'This journal entry has been posted directly to the General Ledger in a posted state and has updated account balances.' : 'Posting will create a balanced General Ledger batch directly in the journal in a posted state, immediately affecting account balances.' }}</p><div v-if="selectedVoucher.journalId" class="mt-2 flex items-center justify-between rounded-lg border border-emerald-200 bg-emerald-50/70 px-3.5 py-2 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/20 dark:text-emerald-300"><span>Posted General Ledger journal batch linked ({{ selectedVoucher.journalId }})</span><NuxtLink to="/ledger/journals" class="font-semibold underline hover:text-emerald-900 dark:hover:text-emerald-200">View in Journals &rarr;</NuxtLink></div><div class="mt-2 overflow-x-auto rounded-lg border border-slate-200 dark:border-slate-800"><table class="w-full min-w-[620px] text-left text-xs"><thead class="bg-slate-50 text-[10px] uppercase tracking-wide text-slate-400 dark:bg-slate-900/60"><tr><th class="px-3 py-2.5">Account</th><th class="px-3 py-2.5">Description</th><th class="px-3 py-2.5 text-right">Debit · base</th><th class="px-3 py-2.5 text-right">Credit · base</th></tr></thead><tbody class="divide-y divide-slate-100 dark:divide-slate-800"><tr v-for="(line, index) in proposedJournal(selectedVoucher)" :key="`${selectedVoucher.id}-gl-${index}`"><td class="px-3 py-3">{{ line.account }}</td><td class="px-3 py-3 text-slate-500">{{ line.description }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.debit === '0.000000' ? '—' : formatCurrency(line.debit, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td class="px-3 py-3 text-right tabular-nums">{{ line.credit === '0.000000' ? '—' : formatCurrency(line.credit, selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td></tr></tbody><tfoot class="bg-slate-50 font-semibold dark:bg-slate-900/60"><tr><td colspan="2" class="px-3 py-2.5 text-right">Totals</td><td class="px-3 py-2.5 text-right tabular-nums">{{ formatCurrency(sumAmount(proposedJournal(selectedVoucher).map((line) => line.debit)), selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td><td class="px-3 py-2.5 text-right tabular-nums">{{ formatCurrency(sumAmount(proposedJournal(selectedVoucher).map((line) => line.credit)), selectedVoucher.baseCurrencyCode || selectedVoucher.currencyCode) }}</td></tr></tfoot></table></div></div>
+        </div>
+        <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 bg-slate-50/70 p-4 dark:border-slate-800 dark:bg-slate-900/40 sm:px-6">
+          <div class="flex items-center gap-2">
+            <span class="text-xs text-slate-500">Status:</span>
+            <span class="inline-flex rounded-full px-2.5 py-1 text-[10px] font-semibold" :class="statusClass(selectedVoucher.status)">{{ selectedVoucher.status }}</span>
+          </div>
+          <div class="flex flex-wrap items-center gap-2">
+            <NuxtLink v-if="selectedVoucher.status === 'Draft'" :to="`/ledger/vouchers/new/${selectedVoucher.type}?id=${encodeURIComponent(selectedVoucher.id)}`" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-3 text-xs font-semibold text-slate-700 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200" @click="selectedVoucher = null">
+              <FilePenLine :size="13" /> Edit draft
+            </NuxtLink>
+            <button v-if="selectedVoucher.status === 'Draft'" type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg border border-rose-200 bg-white px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:border-rose-900/50 dark:bg-slate-900 dark:text-rose-400" @click="requestVoucherAction(selectedVoucher, 'delete')">
+              <Trash2 :size="13" /> Delete draft
+            </button>
+            <button v-if="selectedVoucher.status === 'Draft'" type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-brand-700 px-3.5 text-xs font-semibold text-white hover:bg-brand-800" @click="requestVoucherAction(selectedVoucher, 'submit')">
+              <Send :size="13" /> Submit for approval
+            </button>
+            <button v-if="selectedVoucher.status === 'Pending approval'" type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3.5 text-xs font-semibold text-white hover:bg-blue-700" @click="requestVoucherAction(selectedVoucher, 'approve')">
+              <ShieldCheck :size="13" /> Approve
+            </button>
+            <button v-if="selectedVoucher.status === 'Approved'" type="button" class="inline-flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-3.5 text-xs font-semibold text-white hover:bg-emerald-700" @click="requestVoucherAction(selectedVoucher, 'post')">
+              <Check :size="13" /> Post to General Ledger
+            </button>
+            <button type="button" class="h-9 rounded-lg border border-slate-200 bg-white px-3.5 text-xs font-semibold text-slate-600 hover:bg-slate-50 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300" @click="selectedVoucher = null">
+              Close
+            </button>
+          </div>
         </div>
       </section>
     </div>
