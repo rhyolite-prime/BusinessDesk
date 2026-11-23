@@ -18,7 +18,7 @@ export interface LedgerPettyCashBatch {
   batchNumber: string
   sourceDocumentNumber: string
   pettyCashAccountId: string
-  batchOriginator: string
+  batchOriginator?: string
   currencyCode: string
   exchangeRate: string
   journalMode: LedgerPettyCashJournalMode
@@ -29,6 +29,7 @@ export interface LedgerPettyCashBatch {
 
 export type SaveLedgerPettyCashInput = Omit<LedgerPettyCashBatch, 'id' | 'status' | 'createdAt'> & {
   id?: string
+  batchOriginator?: string
 }
 
 const pettyCashSeed: LedgerPettyCashBatch[] = [
@@ -40,7 +41,7 @@ const pettyCashSeed: LedgerPettyCashBatch[] = [
     pettyCashAccountId: 'acc-12307',
     batchOriginator: 'Leticia',
     currencyCode: 'GHS',
-    exchangeRate: '1.0000000000',
+    exchangeRate: '1.0000',
     journalMode: 'non-consolidated',
     status: 'draft',
     createdAt: '2026-05-11T10:42:00.000Z',
@@ -105,7 +106,7 @@ const pettyCashSeed: LedgerPettyCashBatch[] = [
     pettyCashAccountId: 'acc-1000',
     batchOriginator: 'Kwame Osei',
     currencyCode: 'GHS',
-    exchangeRate: '1.0000000000',
+    exchangeRate: '1.0000',
     journalMode: 'consolidated',
     status: 'posted',
     createdAt: '2026-10-10T15:06:00.000Z',
@@ -177,5 +178,13 @@ export function useLedgerPettyCash() {
     return true
   }
 
-  return { batches, nextBatchNumber, saveBatch, postBatch }
+  function deleteBatch(id: string) {
+    const index = batches.value.findIndex((item) => item.id === id)
+    if (index === -1) return false
+    if (batches.value[index]?.status === 'posted') return false
+    batches.value.splice(index, 1)
+    return true
+  }
+
+  return { batches, nextBatchNumber, saveBatch, postBatch, deleteBatch }
 }
