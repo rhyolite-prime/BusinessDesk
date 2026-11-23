@@ -6,6 +6,7 @@ import { buildAccountHeadTree } from '../../../features/ledger/account-head-tree
 import { joinAccountHierarchyPaths } from '../../../features/ledger/account-hierarchy-label'
 import { sortAccountControlsByType } from '../../../features/ledger/account-control-order'
 import type { AccountDetail, AccountDetailInput } from '../../../features/ledger/account-detail-types'
+import { getNextAvailableAccountNumber } from '../../../features/ledger/account-number'
 definePageMeta({ layout: 'admin-ledger' })
 useHead({ title: 'Chart of Account Details' })
 const request = useRequestFetch()
@@ -79,19 +80,52 @@ onMounted(async () => {
   } catch (e) { error.value = message(e); loading.value = false }
 })
 onUnmounted(() => { version++ })
+const isInitializingForm = ref(false)
+
+function applyNextAccountNumber(controlId: string) {
+  if (!controlId) {
+    form.accountNumber = ''
+    return
+  }
+  const control = controls.value.find(row => row.id === controlId)
+  if (control) {
+    form.accountNumber = getNextAvailableAccountNumber(control, accounts.value, editingId.value)
+  }
+}
+
+function onAccountControlSelected(controlId: string) {
+  applyNextAccountNumber(controlId)
+}
+
+watch(() => form.accountHeaderId, (newId, oldId) => {
+  if (!showForm.value || isInitializingForm.value) return
+  if (newId && newId !== oldId) {
+    applyNextAccountNumber(newId)
+  }
+})
+
 function openCreate() {
   editingId.value = null; saveError.value = ''
-  Object.assign(form, { accountingUnitId: unitId.value, accountHeaderId: eligibleControls.value[0]?.id || '', accountNumber: '', accountName: '', currencyId: null, status: 'active', allowManualPosting: true, isControlAccount: false })
+  isInitializingForm.value = true
+  const initialControlId = eligibleControls.value[0]?.id || ''
+  Object.assign(form, { accountingUnitId: unitId.value, accountHeaderId: initialControlId, accountNumber: '', accountName: '', currencyId: null, status: 'active', allowManualPosting: true, isControlAccount: false })
+  applyNextAccountNumber(initialControlId)
   showForm.value = true
+  void nextTick(() => {
+    isInitializingForm.value = false
+  })
 }
 async function openEdit(id: string) {
   if (saving.value || loading.value) return
   saving.value = true; error.value = ''; saveError.value = ''
   try {
     const row = await request<AccountDetail>(`/api/ledger/accounts/${id}`, { query: { accountingUnitId: unitId.value } })
+    isInitializingForm.value = true
     editingId.value = row.id
     Object.assign(form, { accountingUnitId: unitId.value, accountHeaderId: row.accountHeaderId, accountNumber: row.accountNumber, accountName: row.accountName, currencyId: row.currencyId, status: row.status, allowManualPosting: row.allowManualPosting, isControlAccount: row.isControlAccount })
     showForm.value = true
+    await nextTick()
+    isInitializingForm.value = false
   } catch (e) { error.value = message(e) }
   finally { saving.value = false }
 }
@@ -217,7 +251,7 @@ async function remove() {
           <button :disabled="saving" class="rounded-lg p-2 text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800" aria-label="Close dialog" @click="showForm = false"><X :size="17" /></button>
         </div>
         <form class="mt-5 space-y-4" @submit.prevent="save"><fieldset :disabled="saving" class="space-y-4">
-          <AccountControlPicker show-label v-model="form.accountHeaderId" :options="controlOptions" :disabled="saving || loading" />
+          <AccountControlPicker show-label v-model="form.accountHeaderId" :options="controlOptions" :disabled="saving || loading" @update:model-value="onAccountControlSelected" />
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Account number</span><input v-model="form.accountNumber" required maxlength="80" inputmode="numeric" pattern="[0-9]+" class="h-10 w-full rounded-lg border border-slate-200 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100 dark:border-slate-700 dark:bg-slate-900 dark:focus:ring-brand-900/30" /><span v-if="selectedControl" class="mt-1 block text-[10px] text-slate-400">Allowed range: {{ selectedControl.minAccount }}–{{ selectedControl.maxAccount }}. Leading zeros are normalized.</span></label>
             <label class="block"><span class="mb-1.5 block text-[11px] font-semibold text-slate-600 dark:text-slate-300">Standard account type</span><input :value="selectedType" readonly class="h-10 w-full rounded-lg border border-slate-200 bg-slate-50 px-3 text-sm text-slate-500 outline-none dark:border-slate-700 dark:bg-slate-800" /></label>

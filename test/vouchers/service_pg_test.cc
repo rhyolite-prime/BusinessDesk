@@ -689,15 +689,43 @@ int main() {
   tampered = cr;
   tampered["lines"][0]["isImprest"] = true;
   check(!call("create", "", tampered).success, "receipt imprest rejected");
-  const auto beforeReceiptNumber = sql("SELECT COALESCE((SELECT next_number FROM gl_supplier_voucher_sequences WHERE tenant_id=$1 AND accounting_unit_id=$2),1) AS next_number", {tenant, unit})[0].value["next_number"].asInt();
+  check(call("create", "", cr).error["message"].asString().find("gl-receipt-voucher-id") != std::string::npos,
+        "missing customer receipt voucher numbering is actionable");
+  auto receiptTemplate = sql(
+      "INSERT INTO core_system_numbers(module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) "
+      "VALUES(1,'Receipt Voucher','gl-receipt-voucher-id','CRV-','','{PREFIX}{NO}{SUFFIX}',4,0,$1) RETURNING id",
+      {actor})[0].value["id"];
+  sql("INSERT INTO core_system_numbers(tenant_id,source_template_id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,created_by_user_id) "
+      "SELECT $1,id,module_id,item_name,key,prefix,suffix,format_pattern,padding,last_no,$2 FROM core_system_numbers WHERE id=$3",
+      {tenant, actor, receiptTemplate});
+  sql("UPDATE core_system_numbers SET format_pattern='{BAD}' WHERE tenant_id=$1 AND key='gl-receipt-voucher-id'", {tenant});
+  check(call("create", "", cr).error["message"].asString().find("gl-receipt-voucher-id") != std::string::npos,
+        "invalid receipt numbering configuration is rejected");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-receipt-voucher-id'", {tenant})[0].value["last_no"].asInt() == 0,
+        "invalid receipt format consumes no number");
+  sql("UPDATE core_system_numbers SET format_pattern='{PREFIX}{NO}{SUFFIX}' WHERE tenant_id=$1 AND key='gl-receipt-voucher-id'", {tenant});
   auto createdReceipt = call("create", "", cr);
   if (!createdReceipt.success)
     std::cerr << createdReceipt.toJson() << std::endl;
   check(
       createdReceipt.success &&
-          createdReceipt.result["batchNumber"].asString() == "CRV-" + std::to_string(beforeReceiptNumber) &&
+          createdReceipt.result["batchNumber"].asString() == "CRV-0001" &&
+          createdReceipt.result["receiptNo"].asString() == "CRV-0001" &&
+          createdReceipt.result["receiptNumber"].asString() == "CRV-0001" &&
           createdReceipt.result["netAmount"] == "120.000000",
       "receipt saves authoritative positive gross and net");
+  check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-receipt-voucher-id'", {tenant})[0].value["last_no"].asInt() == 1,
+        "receipt creation advances last_no");
+  check(sql("SELECT (source_payload->>'receiptNo') AS r FROM gl_payment_vouchers WHERE id=$1",
+            {createdReceipt.result["id"].asString()})[0].value["r"].asString() == "CRV-0001",
+        "receipt payload stores receipt No");
+  Json::Value receiptSearch;
+  receiptSearch["search"] = "CRV-0001";
+  check(call("list", "", receiptSearch).result["total"].asInt() >= 1,
+        "receipt voucher is searchable by receipt No");
+  receiptSearch["search"] = "crv-0001";
+  check(call("list", "", receiptSearch).result["total"].asInt() >= 1,
+        "receipt voucher search by receipt No is case-insensitive");
   const auto rid = createdReceipt.result["id"].asString();
   auto rrow = sql("SELECT customer_id::text c,supplier_id::text "
                   "s,employee_id::text e,is_payment p,payment_date::text d "
@@ -715,8 +743,9 @@ int main() {
   crEdit["description"] = "Edited receipt";
   auto crUpdated = call("update", rid, crEdit);
   check(crUpdated.success && crUpdated.result["lines"].size() == 2 &&
-            crUpdated.result["description"] == "Edited receipt",
-        "receipt edit preserves both allocation snapshots");
+            crUpdated.result["description"] == "Edited receipt" &&
+            crUpdated.result["receiptNo"].asString() == "CRV-0001",
+        "receipt edit preserves both allocation snapshots and receipt No");
   check(!call("update", rid, crEdit).success, "stale receipt edit rejected");
   customerEdit["version"] = customerUpdated.result["version"];
   customerEdit["accountNumber"] = "FORBIDDEN-REMAP";

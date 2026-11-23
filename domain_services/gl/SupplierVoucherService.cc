@@ -99,7 +99,9 @@ void validate(Json::Value &b, bool create) {
            "taxType",
            "periodId",
            "version",
-           "requestId"});
+           "requestId",
+           "receiptNo",
+           "receiptNumber"});
   if (b["type"] != "supplier-payment" && b["type"] != "employee-payment" &&
       b["type"] != "customer-receipt")
     throw std::invalid_argument("Unsupported voucher type.");
@@ -117,6 +119,10 @@ void validate(Json::Value &b, bool create) {
   date(b[receipt ? "receiptDate" : "paymentDate"]);
   text(b["description"], 200, true);
   text(b["chequeNumber"], 40);
+  if (b.isMember("receiptNo"))
+    text(b["receiptNo"], 40);
+  if (b.isMember("receiptNumber"))
+    text(b["receiptNumber"], 40);
   if (b.isMember("taxType"))
     text(b["taxType"], 40);
   if (!b["multiCurrency"].isBool() || !b["currencyCode"].isString() ||
@@ -176,7 +182,12 @@ void validate(Json::Value &b, bool create) {
     identifier(b["taxes"][k]["accountId"], !b["taxes"][k]["enabled"].asBool());
 }
 std::string selection() {
-  return R"(SELECT (v.source_payload || jsonb_build_object('id',v.id,'version',v.version,'voucherNumber',v.batch_number,'batchNumber',v.batch_number,
+  return R"(SELECT (v.source_payload ||
+ CASE WHEN v.voucher_type='customer-receipt' THEN
+   jsonb_build_object('receiptNo',COALESCE(v.source_payload->>'receiptNo',v.source_payload->>'receiptNumber',v.batch_number),
+                      'receiptNumber',COALESCE(v.source_payload->>'receiptNumber',v.source_payload->>'receiptNo',v.batch_number))
+ ELSE '{}'::jsonb END ||
+ jsonb_build_object('id',v.id,'version',v.version,'voucherNumber',v.batch_number,'batchNumber',v.batch_number,
  'status',CASE v.status WHEN 'draft' THEN 'Draft' WHEN 'pending_approval' THEN 'Pending approval' WHEN 'approved' THEN 'Approved' WHEN 'posted' THEN 'Posted' ELSE v.status END,
  'createdAt',v.created_at,'updatedAt',COALESCE(v.last_modified_at,v.created_at),'preparer',COALESCE(u.first_name,'')||' '||COALESCE(u.last_name,''),
  'totalAmount',v.calculation->>'gross','netAmount',v.calculation->>'net','retentionsTotal',v.calculation->>'retained','taxSummary',v.calculation,
@@ -409,6 +420,8 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
     auto rows = co_await db->execSqlCoro(
         selection() +
             " AND ($2='' OR strpos(lower(v.batch_number||' "
+            "'||COALESCE(v.source_payload->>'receiptNo','')||' "
+            "'||COALESCE(v.source_payload->>'receiptNumber','')||' "
             "'||COALESCE(v.source_payload->>'payeeName','')||' "
             "'||COALESCE(v.source_payload->>'description','')),lower($2))>0) "
             "AND ($3='' OR v.status=$3) AND ($4='' OR v.voucher_type=$4) ORDER "
@@ -573,9 +586,7 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
       result.result["proposedJournal"] = prepared.proposal;
       co_return result;
     }
-    const std::string payload = json(prepared.source),
-                      calculation = json(prepared.calc),
-                      proposal = json(prepared.proposal);
+    std::string payload, calculation, proposal;
     if (op == "create") {
       std::string number;
       if (b["type"] == "supplier-payment") {
@@ -595,13 +606,35 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
         co_await db->execSqlCoro(
             "UPDATE core_system_numbers SET last_no=last_no+1,last_modified_at=now(),last_modified_by_user_id=$2 WHERE id=$1",
             settings[0]["id"].as<std::string>(), who.userId);
+      } else if (b["type"] == "customer-receipt") {
+        auto settings = co_await db->execSqlCoro(
+            "SELECT * FROM core_system_numbers WHERE tenant_id=$1 AND module_id=1 "
+            "AND lower(key)='gl-receipt-voucher-id' AND is_deleted=false FOR UPDATE", who.tenantId);
+        if (settings.size() != 1)
+          co_return fail("validation_error", "Configure the General Ledger system number gl-receipt-voucher-id before creating customer receipt vouchers.");
+        const auto last = settings[0]["last_no"].as<int>();
+        if (last >= 2147483647)
+          co_return fail("validation_error", "The gl-receipt-voucher-id sequence is exhausted.");
+        try {
+          number = batchFormat(settings[0], static_cast<int64_t>(last) + 1);
+        } catch (const std::invalid_argument &) {
+          co_return fail("validation_error", "Check gl-receipt-voucher-id numbering tokens, padding and maximum formatted length (40 bytes).");
+        }
+        co_await db->execSqlCoro(
+            "UPDATE core_system_numbers SET last_no=last_no+1,last_modified_at=now(),last_modified_by_user_id=$2 WHERE id=$1",
+            settings[0]["id"].as<std::string>(), who.userId);
+        prepared.source["receiptNo"] = number;
+        prepared.source["receiptNumber"] = number;
       } else {
         auto seq = co_await db->execSqlCoro(
             "INSERT INTO gl_supplier_voucher_sequences(tenant_id,accounting_unit_id,next_number,created_by_user_id) VALUES($1,$2,2,$3) ON "
             "CONFLICT(tenant_id,accounting_unit_id) DO UPDATE SET next_number=gl_supplier_voucher_sequences.next_number+1 RETURNING next_number-1 AS number",
             who.tenantId, unit, who.userId);
-        number = std::string(b["type"] == "customer-receipt" ? "CRV-" : "EPV-") + seq[0]["number"].as<std::string>();
+        number = std::string("EPV-") + seq[0]["number"].as<std::string>();
       }
+      payload = json(prepared.source);
+      calculation = json(prepared.calc);
+      proposal = json(prepared.proposal);
       auto saved = co_await db->execSqlCoro(
           R"(INSERT INTO gl_payment_vouchers(tenant_id,accounting_unit_id,batch_number,voucher_entry_date,payment_date,mode_of_payment,voucher_type,currency_id,buy_rate,supplier_id,supplier_name,bank_account_id,gross_amount,net_amount,total_withheld,total_vat_withheld,total_retained,base_amount,total_vat_amount,source_payload,calculation,proposed_journal,posting_period_id,idempotency_key,request_hash,created_by_user_id)
  VALUES($1,$2,$3,($4::jsonb->>'entryDate')::date,COALESCE($4::jsonb->>'receiptDate',$4::jsonb->>'paymentDate')::date,$4::jsonb->>'mode',$4::jsonb->>'type',(SELECT id FROM core_currencies WHERE code=$4::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),($4::jsonb->>'exchangeRate')::numeric,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN ($4::jsonb->>'payeeId')::uuid END,CASE WHEN $4::jsonb->>'type'='supplier-payment' THEN $4::jsonb->>'payeeName' END,($4::jsonb->>'bankAccountId')::uuid,($5::jsonb->>'gross')::numeric,($5::jsonb->>'net')::numeric,($5::jsonb->>'incomeWithholding')::numeric,($5::jsonb->>'vatWithholding')::numeric,($5::jsonb->>'retained')::numeric,($5::jsonb->>'base')::numeric,($5::jsonb->>'vat')::numeric,$4::jsonb,$5::jsonb,$6::jsonb,($4::jsonb->>'periodId')::uuid,$4::jsonb->>'requestId',md5($7::jsonb::text),$8) RETURNING id)",
@@ -609,6 +642,24 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
           who.userId);
       id = saved[0]["id"].as<std::string>();
     } else {
+      if (b["type"] == "customer-receipt") {
+        if (b.isMember("receiptNo") && b["receiptNo"].isString() && !b["receiptNo"].asString().empty()) {
+          prepared.source["receiptNo"] = b["receiptNo"];
+          prepared.source["receiptNumber"] = b["receiptNo"];
+        } else if (current.isMember("receiptNo") && current["receiptNo"].isString()) {
+          prepared.source["receiptNo"] = current["receiptNo"];
+          prepared.source["receiptNumber"] = current["receiptNo"];
+        } else if (current.isMember("receiptNumber") && current["receiptNumber"].isString()) {
+          prepared.source["receiptNo"] = current["receiptNumber"];
+          prepared.source["receiptNumber"] = current["receiptNumber"];
+        } else if (current.isMember("batchNumber") && current["batchNumber"].isString()) {
+          prepared.source["receiptNo"] = current["batchNumber"];
+          prepared.source["receiptNumber"] = current["batchNumber"];
+        }
+      }
+      payload = json(prepared.source);
+      calculation = json(prepared.calc);
+      proposal = json(prepared.proposal);
       co_await db->execSqlCoro(
           R"(UPDATE gl_payment_vouchers SET voucher_entry_date=($3::jsonb->>'entryDate')::date,payment_date=COALESCE($3::jsonb->>'receiptDate',$3::jsonb->>'paymentDate')::date,mode_of_payment=$3::jsonb->>'mode',currency_id=(SELECT id FROM core_currencies WHERE code=$3::jsonb->>'currencyCode' AND is_deleted=false AND is_active=true),buy_rate=($3::jsonb->>'exchangeRate')::numeric,supplier_id=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN ($3::jsonb->>'payeeId')::uuid END,supplier_name=CASE WHEN $3::jsonb->>'type'='supplier-payment' THEN $3::jsonb->>'payeeName' END,bank_account_id=($3::jsonb->>'bankAccountId')::uuid,gross_amount=($4::jsonb->>'gross')::numeric,net_amount=($4::jsonb->>'net')::numeric,total_withheld=($4::jsonb->>'incomeWithholding')::numeric,total_vat_withheld=($4::jsonb->>'vatWithholding')::numeric,total_retained=($4::jsonb->>'retained')::numeric,base_amount=($4::jsonb->>'base')::numeric,total_vat_amount=($4::jsonb->>'vat')::numeric,source_payload=$3::jsonb,calculation=$4::jsonb,proposed_journal=$5::jsonb,posting_period_id=($3::jsonb->>'periodId')::uuid,version=version+1,last_modified_at=now(),last_modified_by_user_id=$6 WHERE tenant_id=$1 AND id=$2 AND is_deleted=false)",
           who.tenantId, id, payload, calculation, proposal, who.userId);

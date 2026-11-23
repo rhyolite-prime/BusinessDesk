@@ -100,6 +100,7 @@ const ledgerGroups: NavigationGroup[] = [
         icon: 'banknotes',
         children: [
           { label: 'Petty Cash Transactions', to: '/ledger/petty-cash', icon: 'banknotes' },
+          { label: 'Petty Cash History', to: '/ledger/petty-cash/history', icon: 'clock' },
           { label: 'Petty Cash Recipients', to: '/ledger/petty-cash-recipients', icon: 'users' },
         ],
       },

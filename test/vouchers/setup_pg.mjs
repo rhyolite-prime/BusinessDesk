@@ -12,4 +12,5 @@ try {
   await db.query(readFileSync(new URL('../../database/migrations/021_customer_legacy_fields.sql', import.meta.url), 'utf8'))
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/022_customer_groups' + suffix, import.meta.url), 'utf8'))
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/023_drop_customer_supplier_rates' + suffix, import.meta.url), 'utf8'))
+  for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/043_customer_receipt_system_number' + suffix, import.meta.url), 'utf8'))
 } finally { await db.end() }

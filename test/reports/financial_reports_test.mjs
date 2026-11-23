@@ -130,3 +130,19 @@ const malformed={...withUnknown,accounts:withUnknown.accounts.map(a=>a.id==='unk
 assert.deepEqual(build('trial-balance',{},malformed).report.sections,build('trial-balance',{},withUnknown).report.sections)
 assert.equal(build('income-basic',{},withUnknown).report.sections.find(s=>s.title==='Summary').rows.at(-1)[1],'102.00')
 console.log('AccountType-only classification, removed variants and Unknown disclosure checks passed')
+
+const balanceSheet=build('balance-sheet').report
+assert.equal(balanceSheet.columns[0].title,'Classification / account')
+assert.equal(balanceSheet.columns[0].width,75)
+assert.equal(balanceSheet.columns[1].title,'Balance (base)')
+assert.equal(balanceSheet.columns[1].width,25)
+assert.equal(balanceSheet.columns[0].width+balanceSheet.columns[1].width,100)
+console.log('Balance sheet classification account column width checks passed')
+
+const incomeBasic=build('income-basic').report
+assert.equal(incomeBasic.columns[0].title,'Account')
+assert.equal(incomeBasic.columns[0].width,75)
+assert.equal(incomeBasic.columns[1].title,'Current')
+assert.equal(incomeBasic.columns[1].width,25)
+assert.equal(incomeBasic.columns[0].width+incomeBasic.columns[1].width,100)
+console.log('Basic income statement account column width checks passed')

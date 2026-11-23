@@ -175,6 +175,8 @@ export const demoVouchers: LedgerVoucher[] = [
     id: 'voucher-customer-posted-0038',
     voucherNumber: 'CRV-2026-0038',
     batchNumber: 'CRB-2026-0038',
+    receiptNo: 'CRV-2026-0038',
+    receiptNumber: 'CRV-2026-0038',
     type: 'customer-receipt',
     payeeId: 'customer-akua-consulting',
     payeeName: 'Akua Consulting Co.',
@@ -205,6 +207,8 @@ export const demoVouchers: LedgerVoucher[] = [
     id: 'voucher-customer-draft-0039',
     voucherNumber: 'CRV-2026-0039',
     batchNumber: 'CRB-2026-0039',
+    receiptNo: 'CRV-2026-0039',
+    receiptNumber: 'CRV-2026-0039',
     type: 'customer-receipt',
     payeeId: 'customer-northstar',
     payeeName: 'Northstar Services Ltd.',
@@ -255,6 +259,8 @@ export function filterDemoVouchers(query: Record<string, unknown>) {
     .filter((voucher) => !search || [
       voucher.voucherNumber,
       voucher.batchNumber,
+      voucher.receiptNo || '',
+      voucher.receiptNumber || '',
       voucher.payeeName,
       voucher.description,
       voucher.bankAccountName,
@@ -287,7 +293,13 @@ export function nextDemoVoucherNumbers(type: LedgerVoucherType, year: string) {
     .filter((voucher) => voucher.type === type && voucher.voucherNumber.startsWith(`${prefix}-${year}-`))
     .map((voucher) => Number(voucher.voucherNumber.split('-').at(-1)) || 0)) + 1
   const suffix = String(sequence).padStart(4, '0')
-  return { voucherNumber: `${prefix}-${year}-${suffix}`, batchNumber: `${batchPrefix}-${year}-${suffix}` }
+  const voucherNumber = `${prefix}-${year}-${suffix}`
+  const batchNumber = `${batchPrefix}-${year}-${suffix}`
+  return {
+    voucherNumber,
+    batchNumber,
+    ...(type === 'customer-receipt' ? { receiptNo: voucherNumber, receiptNumber: voucherNumber } : {}),
+  }
 }
 
 export function removeDemoVoucher(id: string): boolean {
@@ -310,6 +322,9 @@ export function transitionDemoVoucher(id: string, action: VoucherTransition, upd
   const transition = allowed[action]
   if (voucher.status !== transition.from) return undefined
   voucher.status = transition.to
+  if (action === 'post' && !voucher.journalId) {
+    voucher.journalId = `journal-batch-${voucher.id.replace('voucher-', '')}`
+  }
   voucher.updatedAt = updatedAt
   return cloneVoucher(voucher)
 }
