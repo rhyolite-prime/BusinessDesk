@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { Check, ChevronDown, Search } from '@lucide/vue'
 interface ControlOption { id: string; label: string; type: string; groupKey?: string; min?: number; max?: number }
-const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers'; portal?: boolean; showLabel?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
+const props = defineProps<{ modelValue: string; options: ControlOption[]; disabled?: boolean; kind?: 'controls' | 'heads' | 'parents' | 'cost-centers' | 'accounts' | 'suppliers' | 'employees' | 'customers'; portal?: boolean; showLabel?: boolean; label?: string; unavailableText?: string; emptyLabel?: string }>()
 const copy = computed(() => props.kind === 'suppliers' ? {
   label: 'Supplier / payee', plural: 'suppliers', search: 'Search suppliers',
   placeholder: 'Select a supplier', unavailable: 'Unavailable supplier (replace)',
   hint: 'Search supplier name or number…', empty: 'No matching suppliers.',
+} : props.kind === 'employees' ? {
+  label: 'Employee / payee', plural: 'employees', search: 'Search employees',
+  placeholder: 'Select an employee', unavailable: 'Unavailable employee (replace)',
+  hint: 'Search employee name or identifier…', empty: 'No matching employees.',
+} : props.kind === 'customers' ? {
+  label: 'Customer', plural: 'customers', search: 'Search customers',
+  placeholder: 'Select a customer', unavailable: 'Unavailable customer (replace)',
+  hint: 'Search customer name or number…', empty: 'No matching customers.',
 } : props.kind === 'accounts' ? {
   label: 'GL account', plural: 'accounts', search: 'Search GL accounts',
   placeholder: 'Select a GL account', unavailable: 'Unavailable account (replace)',
@@ -30,9 +38,11 @@ const copy = computed(() => props.kind === 'suppliers' ? {
 const optionLabel = (option: ControlOption) => option.min !== undefined && option.max !== undefined
   ? `${option.label} (${option.min}–${option.max})` : option.label
 const emit = defineEmits<{ 'update:modelValue': [value: string] }>()
-const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null)
-// Table-cell menus can escape overflow containers without participating in row layout.
-const floating = computed(() => !props.portal && ['cost-centers', 'accounts', 'suppliers'].includes(props.kind || ''))
+const id = useId(), root = ref<HTMLElement | null>(null), trigger = ref<HTMLButtonElement | null>(null), searchInput = ref<HTMLInputElement | null>(null), clearButton = ref<HTMLButtonElement | null>(null)
+// Voucher and account selectors float over the surrounding form. Table-cell
+// menus use a portal to escape overflow containers without changing row layout.
+const floatingKinds = ['cost-centers', 'accounts', 'suppliers', 'employees', 'customers']
+const floating = computed(() => !props.portal && floatingKinds.includes(props.kind || ''))
 const open = ref(false), query = ref(''), active = ref(-1)
 const panel = ref<HTMLElement | null>(null)
 const portalStyle = ref<Record<string, string>>({})
@@ -69,7 +79,7 @@ function reposition(event: Event) {
 const fieldLabel = computed(() => props.label || copy.value.label)
 const optionGroupKey = (option: ControlOption) => props.kind === 'cost-centers' ? option.groupKey || option.type : option.type
 const groupDefinitions = computed(() => {
-  if (!['cost-centers', 'accounts', 'suppliers'].includes(props.kind || '')) return ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => ({ key: type, type }))
+  if (!floatingKinds.includes(props.kind || '')) return ['Unknown', 'Asset', 'Liability', 'Equity', 'Revenue', 'Expense'].map(type => ({ key: type, type }))
   const definitions = new Map(props.options.map(option => [optionGroupKey(option), { key: optionGroupKey(option), type: option.type }]))
   return [...definitions.values()].sort((a, b) => a.key === 'root' ? b.key === 'root' ? 0 : -1 : b.key === 'root' ? 1 : a.type.localeCompare(b.type) || a.key.localeCompare(b.key))
 })
@@ -86,6 +96,9 @@ async function expand() {
   if (props.disabled) return
   open.value = true; query.value = ''
   active.value = Math.max(0, filtered.value.findIndex(option => option.id === props.modelValue))
+  // Set the portal position before it enters the DOM; a briefly static panel
+  // can shift the page and push its own trigger out of view on open.
+  positionPanel()
   await nextTick(); positionPanel(); await nextTick(); searchInput.value?.focus({ preventScroll: !!props.portal }); scrollActive()
 }
 function close() { open.value = false; trigger.value?.focus({ preventScroll: !!props.portal }) }
@@ -101,9 +114,21 @@ function scrollActive() {
   if (item.top < box.top + headingHeight) list.scrollTop += item.top - box.top - headingHeight
   else if (item.bottom > box.bottom) list.scrollTop += item.bottom - box.bottom
 }
+function clearKeydown(event: KeyboardEvent) {
+  if (event.key === 'Escape' || (event.key === 'Tab' && event.shiftKey)) {
+    event.preventDefault(); event.stopPropagation(); close()
+  }
+}
 function keydown(event: KeyboardEvent) {
   if (event.key === 'Escape') { event.preventDefault(); event.stopPropagation(); close() }
-  if (event.key === 'Tab') { if (props.portal) trigger.value?.focus({ preventScroll: true }); open.value = false }
+  if (event.key === 'Tab') {
+    // The optional empty choice precedes the search field, including in portals.
+    if (event.shiftKey && clearButton.value) {
+      event.preventDefault(); clearButton.value.focus({ preventScroll: !!props.portal }); return
+    }
+    if (props.portal) trigger.value?.focus({ preventScroll: true })
+    open.value = false
+  }
   if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
     event.preventDefault()
     active.value = Math.max(0, Math.min(filtered.value.length - 1, active.value + (event.key === 'ArrowDown' ? 1 : -1)))
@@ -141,14 +166,14 @@ onBeforeUnmount(() => {
     </button>
     <Teleport to="body" :disabled="!portal">
     <div v-if="open" ref="panel" :style="portal ? portalStyle : undefined" @focusout="focusout" :class="portal ? 'z-[100] flex flex-col' : floating ? 'absolute left-0 right-0 top-full z-50 mt-2' : 'mt-2'" class="overflow-hidden rounded-xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900">
-      <button v-if="emptyLabel || kind === 'parents' || kind === 'cost-centers'" type="button" class="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel">
+      <button v-if="emptyLabel || kind === 'parents' || kind === 'cost-centers'" ref="clearButton" type="button" class="flex w-full shrink-0 items-center gap-2 border-b border-slate-100 px-3 py-3 text-left text-sm font-medium hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-brand-500 dark:border-slate-800 dark:hover:bg-slate-800" @click="chooseTopLevel" @keydown="clearKeydown">
         <Check :size="15" class="shrink-0 text-brand-600" :class="modelValue ? 'invisible' : ''" /> {{ emptyLabel || (kind === 'cost-centers' ? 'Not configured' : 'Top level (no parent)') }}
       </button>
       <div class="relative shrink-0 border-b border-slate-100 p-2 dark:border-slate-800">
         <Search :size="15" class="pointer-events-none absolute left-5 top-5 text-slate-400" />
         <input ref="searchInput" v-model="query" type="search" role="combobox" :aria-label="copy.search" aria-autocomplete="list" :aria-expanded="open" :aria-controls="`${id}-list`" :aria-activedescendant="filtered[active] ? `${id}-option-${active}` : undefined" :placeholder="copy.hint" class="h-10 w-full rounded-lg bg-slate-50 pl-9 pr-3 text-sm outline-none focus:ring-2 focus:ring-brand-500 dark:bg-slate-800" @keydown="keydown" />
       </div>
-      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'suppliers' ? 'Suppliers' : kind === 'accounts' ? 'GL accounts' : kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="min-h-0 max-h-64 overflow-y-auto overscroll-contain">
+      <div :id="`${id}-list`" role="listbox" :aria-label="kind === 'suppliers' ? 'Suppliers' : kind === 'employees' ? 'Employees' : kind === 'customers' ? 'Customers' : kind === 'accounts' ? 'GL accounts' : kind === 'cost-centers' ? 'Cost centers' : kind === 'parents' ? 'Parent heads' : kind === 'heads' ? 'Chart heads' : 'Account controls'" class="min-h-0 max-h-64 overflow-y-auto overscroll-contain">
         <div v-for="group in groups" :key="group.key" role="group" :aria-label="group.type">
           <div class="sticky top-0 z-10 flex justify-between bg-slate-100 px-3 py-2 text-[11px] font-semibold uppercase tracking-wide text-slate-500 dark:bg-slate-800 dark:text-slate-300"><span>{{ group.type }}</span><span>{{ group.options.length }}</span></div>
           <div v-for="option in group.options" :id="`${id}-option-${filtered.indexOf(option)}`" :key="option.id" role="option" :aria-selected="modelValue === option.id" :data-index="filtered.indexOf(option)"
