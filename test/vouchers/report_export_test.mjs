@@ -56,7 +56,9 @@ assert.equal(receipt.title,'RECEIPT VOUCHER');assert.equal(receipt.voucherRows[1
 const receiptVoucher = {
   ...voucher,
   type: 'customer-receipt',
-  voucherNumber: 'TTU25538RCT',
+  voucherNumber: 'VOUCHER-1',
+  receiptNo: 'TTU25538RCT',
+  receiptNumber: 'TTU25538RCT',
   batchNumber: 'R28924V',
   receiptDate: '2026-07-09',
   payeeName: 'YEBOAH VICTORIA AFRIYIE',
@@ -70,7 +72,9 @@ const receiptVoucher = {
 // 1. Without logo (null/empty)
 const receiptWithoutLogo = voucherReport(receiptVoucher, { companyName: 'SISCO-DEMO-UNLICENSED', address: 'P.O. Box 256', phoneNo: '0312021227/8 Fax: 0312021227' })
 assert.equal(receiptWithoutLogo.landscape, false)
-assert.equal(receiptWithoutLogo.receiptData.receiptNo, 'TTU25538RCT')
+assert.equal(receiptWithoutLogo.receiptData.receiptNo, 'TTU25538RCT', 'The receipt number is distinct from the batch/voucher number')
+assert.equal(voucherReport({ ...receiptVoucher, receiptNo: undefined, receiptNumber: 'ALTERNATE-RECEIPT' }).receiptData.receiptNo, 'ALTERNATE-RECEIPT')
+assert.equal(voucherReport({ ...receiptVoucher, receiptNo: undefined, receiptNumber: undefined }).receiptData.receiptNo, 'VOUCHER-1', 'Older receipts fall back to the voucher number')
 assert.equal(receiptWithoutLogo.receiptData.date, '09-Jul-2026')
 assert.equal(receiptWithoutLogo.receiptData.batchNo, 'R28924V')
 assert.equal(receiptWithoutLogo.receiptData.rv, 'ASW342D')
@@ -86,38 +90,124 @@ const receiptPdfDef = voucherPdfDefinition(receiptWithoutLogo)
 assert.equal(receiptPdfDef.pageOrientation, 'portrait')
 assert.equal(receiptPdfDef.pageSize, 'A4')
 
+const occurrences = (text, value) => text.split(value).length - 1
+const compact = text => text.replace(/\s+/g, '')
+async function pdfPages(bytes) {
+  const pdfDoc = await pdfjs.getDocument({ data: bytes.slice(), disableWorker: true }).promise
+  const pages = []
+  for (let i = 1; i <= pdfDoc.numPages; i++) {
+    const page = await pdfDoc.getPage(i)
+    const items = (await page.getTextContent()).items.filter(item => typeof item.str === 'string')
+    const viewport = page.getViewport({ scale: 1 })
+    pages.push({ items, width: viewport.width, height: viewport.height, text: items.map(item => item.str).join(' '), compact: compact(items.map(item => item.str).join('')) })
+  }
+  await pdfDoc.destroy()
+  return pages
+}
+function assertTextInsidePaper(page, description) {
+  for (const item of page.items.filter(item => item.str.trim())) {
+    assert.ok(item.transform[4] >= 30 && item.transform[4] + item.width <= page.width - 30
+      && item.transform[5] >= 8 && item.transform[5] + item.height <= page.height - 8,
+      `${description}: text stays inside the printable page: ${item.str}`)
+  }
+}
+
 const receiptPdfBytes = await createVoucherPdf(receiptWithoutLogo)
 assert.equal(Buffer.from(receiptPdfBytes).subarray(0, 4).toString(), '%PDF')
-const receiptDoc = await pdfjs.getDocument({ data: receiptPdfBytes.slice(), disableWorker: true }).promise
-assert.equal(receiptDoc.numPages, 1, 'Two receipts fit on a single A4 portrait page')
-let receiptText = ''
-for (let i = 1; i <= receiptDoc.numPages; i++) {
-  receiptText += (await (await receiptDoc.getPage(i)).getTextContent()).items.map(x => x.str || '').join(' ')
+const receiptPages = await pdfPages(receiptPdfBytes)
+assert.equal(receiptPages.length, 1, 'Two receipts fit on a single A4 portrait page')
+const { text: receiptText, items: receiptItems } = receiptPages[0]
+for (const value of [
+  'OFFICIAL RECEIPT', 'RECEIPT NO.', 'RECEIPT DATE', 'BATCH NO.', 'R.V. / REFERENCE', 'REG. NO.',
+  'RECEIVED FROM', 'THE SUM OF', 'PAYMENT FOR', 'CHEQUE NO. / PAYMENT', 'AMOUNT PAID', 'PREPARED BY',
+  'SISCO-DEMO-UNLICENSED', 'P.O. Box 256', '0312021227/8 Fax: 0312021227',
+  'TTU25538RCT', '09-Jul-2026', 'R28924V', 'ASW342D', 'sdfsd', 'YEBOAH VICTORIA AFRIYIE',
+  'Five Thousand Two Hundred Fourteen Ghana Cedi and 32 Pesewas ONLY', 'Rental of Auditorium',
+  '342432', 'GHS 5,214.32', 'Report Printed On', 'BusinessDesk · G/L', 'Admin',
+]) assert.equal(occurrences(receiptText, value), 2, `${value} appears on both receipt copies`)
+assert.ok(receiptText.includes('COPY 01') && receiptText.includes('COPY 02'), 'Both receipt copies are identified')
+assert.ok(receiptText.includes('Page 1 of 1'), 'The PDF shows its actual page count')
+assertTextInsidePaper(receiptPages[0], 'ordinary receipt')
+// The title belongs to the company header rather than a separate boxed row.
+const companyPositions = receiptItems.filter(item => item.str === 'SISCO-DEMO-UNLICENSED')
+const titlePositions = receiptItems.filter(item => item.str === 'OFFICIAL RECEIPT')
+assert.equal(titlePositions.length, 2)
+for (let i = 0; i < 2; i++) {
+  assert.ok(titlePositions[i].transform[4] > companyPositions[i].transform[4], 'Title is to the right of the company header')
+  assert.ok(Math.abs(titlePositions[i].transform[5] - companyPositions[i].transform[5]) < 8, 'Title aligns with the company header')
 }
-assert.ok(receiptText.includes('OFFICIAL RECEIPT'), 'Receipt PDF contains OFFICIAL RECEIPT')
-assert.ok(receiptText.includes('Receipt From :'), 'Receipt PDF contains Receipt From :')
-assert.ok(receiptText.includes('The Sum of'), 'Receipt PDF contains The Sum of')
-assert.ok(receiptText.includes('being'), 'Receipt PDF contains being')
-assert.ok(receiptText.includes('Cheque No'), 'Receipt PDF contains Cheque No')
-assert.ok(receiptText.includes('Amount Paid'), 'Receipt PDF contains Amount Paid')
-assert.ok(receiptText.includes('YEBOAH VICTORIA AFRIYIE'), 'Receipt PDF contains customer name')
-assert.ok(receiptText.includes('Rental of Auditorium'), 'Receipt PDF contains purpose')
-assert.ok(receiptText.includes('342432'), 'Receipt PDF contains cheque number')
-assert.ok(receiptText.includes('GHS 5,214.32'), 'Receipt PDF contains amount paid')
-assert.ok(receiptText.includes('Report Printed On'), 'Receipt PDF contains Report Printed On')
-assert.ok(receiptText.includes('BusinessDesk · G/L'), 'Receipt PDF contains system title')
-assert.ok(receiptText.includes('Page 1 of 1'), 'Receipt PDF contains Page 1 of 1')
-assert.ok(receiptText.includes('Admin'), 'Receipt PDF contains Admin signature')
-await receiptDoc.destroy()
+assert.deepEqual(receiptPdfDef.content[1].canvas[0].dash, { length: 3, space: 4 }, 'The two copies retain a cutting line')
 
 // 2. With logo (base64 data URL)
 const sampleLogo = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII='
 const receiptWithLogo = voucherReport(receiptVoucher, { companyName: 'SISCO-DEMO-UNLICENSED', companyLogoUrl: sampleLogo, address: 'P.O. Box 256', phoneNo: '0312021227' })
 assert.equal(receiptWithLogo.companyLogoUrl, sampleLogo)
-const receiptWithLogoPdf = await createVoucherPdf(receiptWithLogo)
-const receiptWithLogoDoc = await pdfjs.getDocument({ data: receiptWithLogoPdf.slice(), disableWorker: true }).promise
-assert.equal(receiptWithLogoDoc.numPages, 1, 'Receipt with logo fits on 1 page')
-await receiptWithLogoDoc.destroy()
+const logoPdfDef = voucherPdfDefinition(receiptWithLogo)
+for (const block of [logoPdfDef.content[0], logoPdfDef.content[2]]) assert.equal(block.stack[0].columns[0].columns[0].image, sampleLogo, 'Both company headers contain the supplied logo')
+const logoPages = await pdfPages(await createVoucherPdf(receiptWithLogo))
+assert.equal(logoPages.length, 1, 'Receipt with logo fits on one page')
+assert.equal(occurrences(logoPages[0].text, 'OFFICIAL RECEIPT'), 2)
+assertTextInsidePaper(logoPages[0], 'receipt with logo')
+
+// Missing optional company contact and registration data are omitted, not made up.
+const noContact = voucherReport({ ...receiptVoucher, lines: [{ ...receiptVoucher.lines[0], invoiceNumber: '', referenceNumber: '' }] }, 'Example Company')
+const noContactPages = await pdfPages(await createVoucherPdf(noContact))
+assert.equal(noContactPages.length, 1)
+assert.ok(!noContactPages[0].text.includes('P.O. Box 256') && !noContactPages[0].text.includes('0312021227') && !noContactPages[0].text.includes('REG. NO.'))
+
+// Long identifiers and monetary values must wrap inside the paper, and the
+// second complete copy should start on a fresh page when it no longer fits.
+const longReceipt = {
+  ...receiptWithLogo,
+  companyName: `${'W'.repeat(40)} SERVICES`,
+  receiptData: {
+    ...receiptWithLogo.receiptData,
+    receiptNo: 'R'.repeat(40), batchNo: 'B'.repeat(40), rv: 'V'.repeat(40), regNo: 'Z'.repeat(80),
+    receivedFrom: `${'W'.repeat(40)} Customer`,
+    theSumOf: 'Nine Quadrillion Nine Hundred Ninety-Nine Trillion Nine Hundred Ninety-Nine Billion Nine Hundred Ninety-Nine Million Nine Hundred Ninety-Nine Thousand Nine Hundred Ninety-Nine Ghana Cedi and 99 Pesewas ONLY',
+    being: 'P'.repeat(200), chequeNo: 'C'.repeat(80), amountPaid: 'GHS 9,999,999,999,999,999.99', admin: 'A'.repeat(60),
+  },
+}
+const longPages = await pdfPages(await createVoucherPdf(longReceipt))
+assert.equal(longPages.length, 2, 'Long receipt copies paginate separately when they cannot both fit')
+for (let i = 0; i < longPages.length; i++) {
+  const page = longPages[i]
+  for (const value of [longReceipt.companyName, ...Object.values(longReceipt.receiptData)]) {
+    // Currency is part of the amount, but is not a separate printed field.
+    if (value !== longReceipt.receiptData.currency) assert.ok(page.compact.includes(compact(value)), `Page ${i + 1} retains ${value}`)
+  }
+  assert.ok(page.text.includes('OFFICIAL RECEIPT') && page.text.includes(`COPY 0${i + 1}`) && page.text.includes(`Page ${i + 1} of 2`), 'Each long copy stays together with accurate pagination')
+  assertTextInsidePaper(page, `long receipt page ${i + 1}`)
+}
+
+// Non-breaking spaces do not provide real wrap opportunities to pdfmake.
+const nonBreaking = `${'W'.repeat(11)}\u00a0`.repeat(10)
+const nonBreakingReceipt = { ...receiptWithLogo, receiptData: {
+  ...receiptWithLogo.receiptData,
+  receivedFrom: `${nonBreaking}ENDCUSTOMER`, being: `${nonBreaking}ENDPURPOSE`, chequeNo: `${nonBreaking}ENDCHEQUE`,
+} }
+const nonBreakingPages = await pdfPages(await createVoucherPdf(nonBreakingReceipt))
+const nonBreakingText = nonBreakingPages.map(page => page.compact).join('')
+for (const value of ['ENDCUSTOMER', 'ENDPURPOSE', 'ENDCHEQUE']) assert.equal(occurrences(nonBreakingText, value), 2, `${value} survives on both copies`)
+for (const page of nonBreakingPages) assertTextInsidePaper(page, 'non-breaking-space receipt')
+
+// Even content taller than a page must continue without clipping, lost copies,
+// inaccurate page numbers, or a blank page containing only the cutting line.
+const veryLongReceipt = { ...longReceipt, receiptData: {
+  ...longReceipt.receiptData,
+  receivedFrom: `${'Customer '.repeat(140)}ENDCUSTOMER`,
+  theSumOf: `${'Words '.repeat(250)}ENDWORDS`,
+  being: `${'P'.repeat(500)}ENDPURPOSE`,
+} }
+const veryLongPages = await pdfPages(await createVoucherPdf(veryLongReceipt))
+assert.ok(veryLongPages.length > 2, 'Oversized receipt content flows across pages')
+const allLongText = veryLongPages.map(page => page.text).join(' ')
+for (const value of ['OFFICIAL RECEIPT', 'ENDCUSTOMER', 'ENDWORDS', 'ENDPURPOSE', 'AMOUNT PAID']) assert.equal(occurrences(allLongText, value), 2, `${value} survives on both long copies`)
+for (let i = 0; i < veryLongPages.length; i++) {
+  assert.ok(veryLongPages[i].text.includes(`Page ${i + 1} of ${veryLongPages.length}`), 'Every page has its real page number')
+  assert.ok(veryLongPages[i].text.replace(/Page \d+ of \d+/, '').trim().length > 30, 'No blank separator-only page')
+  assertTextInsidePaper(veryLongPages[i], `oversized receipt page ${i + 1}`)
+}
 
 const receiptXlsx = await createVoucherExcel(receiptWithoutLogo)
 assert.ok(receiptXlsx.size > 0, 'Receipt Excel export succeeds')

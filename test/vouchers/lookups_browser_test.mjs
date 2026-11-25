@@ -4,7 +4,7 @@ import {spawn} from 'node:child_process'
 import {createRequire} from 'node:module'
 import {calculateVoucher} from '../../frontend/app/features/ledger/voucher-tax.ts'
 let checks=0,fail=false,failEmployees=false,failCustomers=false,failSave=false,failCompany=false,noBankLinks=false,multipleBankLinks=false
-let stored=null, savedInput=null, catalogMode=false, catalogRows=[]
+let stored=null, savedInput=null, catalogMode=false, catalogRows=[], receiptNoOverride=''
 const seen=[],check=(v,label)=>{assert.ok(v,label);checks++}
 const id=n=>`90000000-0000-4000-8000-${String(n).padStart(12,'0')}`
 const unit=id(1),bank=id(2),debit=id(3),supplier=id(4),center=id(5),usd=id(6),eur=id(7)
@@ -27,6 +27,7 @@ const upstream=http.createServer(async(req,res)=>{
   const enrichedLines=savedInput.lines.map((line,i)=>({...line,id:id(300+i),accountNumber:line.accountId===debit?'2100':'3099',accountName:line.accountId===debit?'API Payables':'Extra GL 99',organizationUnitName:line.organizationUnitId?'API Operations':''}))
   const enrichedRetentions=savedInput.retentions.map((r,i)=>({...r,id:id(400+i),accountNumber:'2100',accountName:'API Payables',amount:summary.retentions[i]}))
   stored={...savedInput,lines:enrichedLines,retentions:enrichedRetentions,id:id(21),voucherNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',batchNumber:savedInput.type==='customer-receipt'?'CRV-TEST':savedInput.type==='employee-payment'?'EPV-TEST':'SPV-TEST',payeeName:savedInput.type==='customer-receipt'?'Live Customer':savedInput.type==='employee-payment'?'Database Employee Two':'API Supplier',version:1,status:'Draft',baseCurrencyCode:'USD',taxSummary:summary,totalAmount:summary.gross,netAmount:summary.net,retentionsTotal:summary.retained,foreignTotal:'96.000000',preparer:'Admin',createdAt:new Date().toISOString(),updatedAt:new Date().toISOString()}
+  if(savedInput.type==='customer-receipt'&&receiptNoOverride)Object.assign(stored,{receiptNo:receiptNoOverride,receiptNumber:receiptNoOverride})
   return send(201,stored)
  }
  if(p===`/api/v1/ledger/vouchers/${id(21)}`&&req.method==='GET')return send(200,stored)
@@ -696,11 +697,36 @@ try{
   await customerPicker.filter({hasText:'Live Customer · DB-CUS-001'}).waitFor()
   await picker('Bank / cash G/L').filter({hasText:'1010 — API Operating Bank'}).waitFor()
   check((await picker('Bank / cash G/L').innerText()).includes('1010 — API Operating Bank')&&(await picker('Credit GL line 1').innerText()).includes('2100 — API Payables')&&(await picker('Credit GL line 2').innerText()).includes('2100 — API Payables')&&(await picker('Organizational unit line 1').innerText()).includes('Head office / API Operations')&&(await picker('Organizational unit line 2').innerText()).includes('Head office / API Operations'),'receipt draft restores all searchable labels for editing')
+  receiptNoOverride='RCT-SAVED-42' // A saved receipt number may differ from its voucher/batch number.
   await saveVoucher(true,true)
   const receiptDialog=page.getByRole('dialog',{name:'Voucher preview'});await receiptDialog.waitFor()
   await page.waitForFunction(()=>document.querySelector('[role="dialog"] [role="document"]')?.textContent?.includes('OFFICIAL RECEIPT'),null,{timeout:30000})
-  check((await receiptDialog.getByRole('document',{name:/Report page/}).innerText()).includes('Live Customer'),'receipt preview labels the saved receipt correctly')
+  const receiptPreviewText=await receiptDialog.getByRole('document',{name:/Report page/}).innerText()
+  check(await receiptDialog.locator('canvas').isVisible(),'receipt preview renders the PDF page to canvas')
+  for(const value of ['OFFICIAL RECEIPT','RCT-SAVED-42','RECEIVED FROM','Live Customer','THE SUM OF','PAYMENT FOR','AMOUNT PAID','USD 120.00'])
+    check(receiptPreviewText.split(value).length-1>=2,`receipt preview shows ${value} on both copies`)
+  check(receiptPreviewText.includes('COPY 01')&&receiptPreviewText.includes('COPY 02'),'receipt preview identifies both copies')
+  await page.setViewportSize({width:390,height:844})
+  await page.waitForFunction(()=>{const canvas=document.querySelector('[role="dialog"] canvas'),box=canvas?.getBoundingClientRect();return box&&box.width>0&&box.left>=0&&box.right<=innerWidth},null,{timeout:10000})
+  check(await receiptDialog.locator('canvas').evaluate(el=>{const box=el.getBoundingClientRect();return box.left>=0&&box.right<=innerWidth}),'receipt preview fits a narrow screen')
+  await page.setViewportSize({width:1280,height:900})
+  for(const name of ['Export Excel','Export Word'])check(await receiptDialog.getByRole('button',{name,exact:true}).isEnabled(),`${name} remains available for receipts`)
+  const receiptDownload=page.waitForEvent('download');await receiptDialog.getByRole('button',{name:'Export PDF',exact:true}).click()
+  const downloadedReceipt=await receiptDownload,receiptBytes=await (await import('node:fs/promises')).readFile(await downloadedReceipt.path())
+  check(downloadedReceipt.suggestedFilename().endsWith('.pdf')&&receiptBytes.subarray(0,4).toString()==='%PDF','receipt PDF can be downloaded')
+  const requireApp=createRequire(new URL('../../frontend/package.json',import.meta.url)),pdfjs=await import(requireApp.resolve('pdfjs-dist/legacy/build/pdf.mjs'))
+  const exportedReceipt=await pdfjs.getDocument({data:new Uint8Array(receiptBytes),disableWorker:true}).promise
+  check(exportedReceipt.numPages===1,'downloaded receipt keeps two copies on one A4 page')
+  const exportedReceiptText=(await (await exportedReceipt.getPage(1)).getTextContent()).items.map(item=>item.str||'').join(' ')
+  for(const value of ['OFFICIAL RECEIPT','RCT-SAVED-42','Live Customer','USD 120.00','COPY 01','COPY 02'])check(exportedReceiptText.includes(value),`downloaded receipt matches preview: ${value}`)
+  await exportedReceipt.destroy()
+  await receiptDialog.getByRole('button',{name:'Print report',exact:true}).click()
+  const printFrame=page.locator('iframe[title="Report print document"]')
+  check(await printFrame.count()===1,'receipt printing uses the generated PDF')
+  const printedBytes=await printFrame.evaluate(async frame=>Array.from(new Uint8Array(await (await fetch(frame.src)).arrayBuffer())))
+  check(Buffer.from(printedBytes).equals(receiptBytes),'receipt print and PDF download use the same generated bytes')
   await receiptDialog.getByRole('button',{name:'Back to vouchers',exact:true}).click();await page.waitForURL('**/ledger/vouchers?type=customer-receipt')
+  receiptNoOverride=''
 
   stored.payeeId=id(9980);stored.bankGlAccountId=id(43);stored.lines[0].accountId=id(43);stored.lines[0].organizationUnitId=id(9981)
   await page.goto(base+`/ledger/vouchers/new/customer-receipt?id=${id(21)}`)
