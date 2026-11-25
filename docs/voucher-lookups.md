@@ -18,8 +18,9 @@ payee migrations as described in [Voucher posting](supplier-voucher-posting.md).
   are intersected by their real `accountId`, not account names or directory IDs;
   duplicate bank links do not duplicate a GL choice. Inactive, unlinked and
   out-of-unit links are excluded. A sole matching bank record is selected
-  automatically; multiple linked records retain the bank-account selector. An
-  empty intersection displays a Bank Accounts configuration prompt and blocks
+  automatically; multiple linked records retain the bank-account selector and
+  a draft's selected link survives catalog reloads. An empty intersection displays
+  a Bank Accounts configuration prompt and blocks
   saving—never falls back to the full chart. Drafts with unavailable bank GLs
   must be corrected before saving. Server-side linked-bank validation remains
   authoritative for preview/save/post.
@@ -31,13 +32,16 @@ payee migrations as described in [Voucher posting](supplier-voucher-posting.md).
 - Organizational unit: tenant cost centers from `/api/shared/cost-centers`, with
   hierarchy paths and no default demo organization. Empty selection is allowed.
 
-### Searchable supplier-payment fields
+### Searchable voucher fields
 
-The supplier payment form reuses Journal Entry's `AccountControlPicker` for
-**Supplier / payee**, **Bank / cash G/L**, each **Debit G/L** allocation, each
-**Organizational unit**, **Income withholding credit account** and **VAT
-withholding credit account**. Search matches supplier name/number, GL
-number/name or organization hierarchy. Keyboard navigation, Enter selection,
+All three voucher forms reuse Journal Entry's `AccountControlPicker` for their
+payee (**Supplier / payee**, **Employee / payee** or **Customer**), **Bank / cash
+G/L**, each allocation G/L and each **Organizational unit**. The allocation is
+called **Debit G/L** on payments and **Credit G/L** on customer receipts. The
+supplier form also uses it for **Income withholding credit account** and **VAT
+withholding credit account**; other tax and retention controls are unchanged.
+Search matches payee names and supplier/customer numbers or employee identifiers,
+GL number/name, and organization hierarchy. Keyboard navigation, Enter selection,
 Escape dismissal, selected labels and empty-result messages use the shared
 picker behavior.
 
@@ -48,16 +52,20 @@ cards rely on their column or card headings instead of repeating labels.
 
 Existing authenticated, fully paginated catalogs and accounting-unit scope are
 unchanged. Supplier selection still defaults an empty allocation and currency;
-bank selection still resolves the linked bank record; the debit list excludes
-the selected bank GL. Organizational unit remains optional with **No unit** to
-clear. Changing accounting unit clears dependent selections. Pickers are disabled
-while loading/saving, on lookup failure, and for non-draft vouchers; the two
-withholding credit account pickers also remain disabled until their respective
-withholding tax is enabled. Saved drafts restore their selections. Table-cell menus float in a viewport-positioned overlay outside the table,
-so opening them does not stretch rows or get clipped by the horizontal scroll
+customer selection still sets the mapped receivable and currency across all
+receipt rows. Bank selection still resolves the linked bank record, and allocation
+choices exclude the selected bank GL. Receipt rows must still use the customer's
+receivable and share one organization; new rows inherit those values.
+Organizational unit remains optional with **No unit** to clear; from the search
+field, Shift+Tab reaches that choice and Enter selects it. Changing accounting
+unit clears dependent selections. Pickers are disabled while loading/saving, on
+lookup failure, and for non-draft vouchers; the supplier withholding credit
+account pickers also remain disabled until their respective tax is enabled. Saved
+drafts restore their selections and unavailable saved values require replacement.
+Table-cell menus float in a viewport-positioned overlay outside the table, so
+opening them does not stretch rows or get clipped by the horizontal scroll
 container. Menus fit the viewport, open above when needed, and track scrolling
-and resizing. Other voucher workflows and remaining tax/retention fields retain
-their existing controls and behavior.
+and resizing.
 
 Every existing proxy verifies the session and forwards its bearer token. Lookup
 failures are displayed with Retry, selections remain empty and saving is blocked;
@@ -107,10 +115,11 @@ VOUCHER_BROWSER_DEPS=/path/to/playwright-core-and-@sparticuz/chromium \
 
 Browser tests use built Nuxt, real Chromium and controlled upstream fixtures;
 foreign quote responses are intercepted to avoid live-provider/network dependency.
-They verify authenticated base-rate routing, bearer forwarding, paged suppliers,
-unit/currency scope, chart details, defaults, descriptions, manual overrides,
-quote failure and no fabricated fallback. They do not claim a live C++ voucher
-posting integration.
+They verify searchable supplier, employee and customer pickers, keyboard clearing,
+mobile table overlays, paginated and scoped choices, bank and receivable defaults,
+draft restoration, disabled/error states and saved IDs. They also cover base-rate
+routing, bearer forwarding, descriptions, manual overrides, quote failure and no
+fabricated fallback. They do not claim a live C++ voucher posting integration.
 
 ## Employee payment form
 
