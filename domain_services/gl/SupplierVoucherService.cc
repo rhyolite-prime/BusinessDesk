@@ -198,6 +198,37 @@ std::string selection() {
 struct Prepared {
   Json::Value source, calc, proposal;
 };
+// Verify the actual journal returned by the posting engine before committing
+// the enclosing voucher transaction. Its projection contains additional
+// database-owned labels and IDs; compare the financial and reference fields of
+// the saved proposal, including base amounts, in their original order.
+bool matchesPostedProposal(const Json::Value &journal, const Json::Value &proposal) {
+  if (!journal.isObject() || !proposal.isObject() ||
+      !journal["lines"].isArray() || !proposal["lines"].isArray() ||
+      journal["lines"].size() != proposal["lines"].size())
+    return false;
+  for (const auto *key : {"accountingUnitId", "batchDate", "description",
+                          "periodId", "isMultiCurrency"})
+    if (journal[key] != proposal[key])
+      return false;
+  math::I debit = 0, credit = 0;
+  for (Json::ArrayIndex i = 0; i < proposal["lines"].size(); ++i) {
+    const auto &expected = proposal["lines"][i];
+    const auto &actual = journal["lines"][i];
+    for (const auto *key : {"accountId", "currencyId", "organizationUnitId",
+                            "exchangeRate", "debit", "credit", "description",
+                            "referenceNumber", "chequeNumber", "transactionDate"})
+      if (actual[key] != expected[key])
+        return false;
+    if (actual["baseDebit"] != expected["debit"] ||
+        actual["baseCredit"] != expected["credit"])
+      return false;
+    debit += math::parse(expected["debit"]);
+    credit += math::parse(expected["credit"]);
+  }
+  return debit > 0 && debit == credit && journal["totalDebit"] == math::text(debit) &&
+         journal["totalCredit"] == math::text(credit);
+}
 drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
                                const std::string &base,
                                const utils::AuditIdentity &who) {
@@ -333,9 +364,10 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
       "tenant_id=$1 AND accounting_unit_id=$2 AND is_deleted=false AND "
       "status='active' AND allow_manual_posting=true AND "
       "is_control_account=false AND COALESCE(currency_id,$3::uuid)=$3::uuid "
-      "AND id IN(SELECT (x->>'accountId')::uuid FROM "
-      "jsonb_array_elements($4::jsonb) x) ORDER BY id FOR UPDATE",
-      who.tenantId, unit, base, json(journal["lines"]));
+      "AND (id=$5::uuid OR id IN(SELECT (x->>'accountId')::uuid FROM "
+      "jsonb_array_elements($4::jsonb) x)) ORDER BY id FOR UPDATE",
+      who.tenantId, unit, base, json(journal["lines"]),
+      b["bankGlAccountId"].asString());
   std::map<std::string, Json::Value> names;
   for (auto &r : a) {
     Json::Value n;
@@ -343,12 +375,18 @@ drogon::Task<Prepared> prepare(DbClientPtr db, Json::Value b,
     n["number"] = r["account_number"].as<std::string>();
     names[r["id"].as<std::string>()] = n;
   }
-  for (auto &l : journal["lines"])
-    if (!names.count(l["accountId"].asString()))
+  // The bank line is omitted for a fully retained, zero-net payment, but the
+  // selected bank GL must still be valid and its label must still be saved.
+  auto requirePostingAccount = [&](const std::string &id) {
+    if (!names.count(id))
       throw std::invalid_argument(
           "Posting accounts must be live, manual-postable, non-control and "
           "denominated in the unit base currency. Foreign voucher amounts are "
           "converted once before posting.");
+  };
+  requirePostingAccount(b["bankGlAccountId"].asString());
+  for (auto &l : journal["lines"])
+    requirePostingAccount(l["accountId"].asString());
   auto centers = co_await db->execSqlCoro(
       "SELECT id,name FROM core_cost_centers WHERE tenant_id=$1 AND "
       "is_deleted=false AND id IN(SELECT (x->>'organizationUnitId')::uuid FROM "
@@ -470,6 +508,18 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
       co_return result;
     }
     if (op == "post" && current["status"] == "Posted") {
+      // An idempotent retry must not silently report success for a broken
+      // historical link, and must never manufacture a second journal for it.
+      auto linked = co_await db->execSqlCoro(
+          "SELECT b.id FROM gl_payment_vouchers v JOIN gl_journal_batches b "
+          "ON b.id=v.journal_batch_id AND b.tenant_id=v.tenant_id AND "
+          "b.accounting_unit_id=v.accounting_unit_id WHERE v.tenant_id=$1 "
+          "AND v.accounting_unit_id=$2 AND v.id=$3 AND v.is_deleted=false "
+          "AND v.status='posted' AND v.is_posted=true AND b.is_deleted=false "
+          "AND b.status='posted' FOR SHARE OF b",
+          who.tenantId, unit, id);
+      if (linked.size() != 1)
+        co_return fail("conflict", "This posted voucher has no matching posted journal. Reconcile it before retrying.");
       result.success = true;
       result.result = current;
       co_return result;
@@ -539,19 +589,31 @@ drogon::Task<dto::BaseApiResponse> run(DbClientPtr db, std::string op,
     fresh["version"] = current["version"];
     validate(fresh, false);
     auto prepared = co_await prepare(db, fresh, base, who);
-    // Posting must not silently diverge from the reviewed calculation snapshot.
+    // Approval covers the saved journal as well as the calculated amounts.
+    // Account, organization, date or reference changes can leave the tax
+    // calculation unchanged, so compare the complete proposal before using it.
     if (prepared.calc != current["taxSummary"])
       co_return fail("conflict", "Voucher calculation has changed since approval. Recreate the voucher and obtain approval before posting.");
+    if (prepared.proposal != current["proposedJournal"])
+      co_return fail("conflict", "The saved proposed journal no longer matches this voucher. Recreate the voucher and obtain approval before posting.");
     auto posted =
-        co_await JournalService::createAndPost(db, prepared.proposal, who);
+        co_await JournalService::createAndPost(db, current["proposedJournal"], who);
     if (!posted.success)
       co_return posted;
-    co_await db->execSqlCoro(
+    if (!posted.result["id"].isString() ||
+        !uuid(posted.result["id"].asString()) ||
+        posted.result["status"] != "posted" ||
+        !matchesPostedProposal(posted.result, current["proposedJournal"]))
+      co_return fail("database_error", "The proposed voucher journal could not be posted exactly.");
+    auto linked = co_await db->execSqlCoro(
         "UPDATE gl_payment_vouchers SET "
         "status='posted',is_posted=true,journal_batch_id=$3,version=version+1,"
         "last_modified_at=now(),last_modified_by_user_id=$4 WHERE tenant_id=$1 "
-        "AND id=$2 AND is_deleted=false AND status='approved'",
+        "AND id=$2 AND is_deleted=false AND status='approved' RETURNING "
+        "COALESCE(status='posted' AND is_posted=true AND journal_batch_id=$3::uuid,false) AS linked",
         who.tenantId, id, posted.result["id"].asString(), who.userId);
+    if (linked.size() != 1 || !linked[0]["linked"].as<bool>())
+      co_return fail("conflict", "The voucher could not be linked to its posted journal. Refresh and retry.");
   } else {
     if (op == "update" &&
         (current["status"] != "Draft" ||

@@ -6,6 +6,9 @@ const { Client } = require('pg'), db = new Client({ connectionString: process.en
 await db.connect()
 try {
   await db.query('SET search_path TO suppliers_test')
+  // The shared supplier fixture uses a minimal users table. Migration 043
+  // orders administrators by this production column when seeding numbers.
+  await db.query('ALTER TABLE users ADD COLUMN created_at timestamptz NOT NULL DEFAULT now()')
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/017_supplier_voucher_posting' + suffix, import.meta.url), 'utf8'))
   await db.query(readFileSync(new URL('../../database/migrations/019_employee_biodata.sql', import.meta.url), 'utf8'))
   for (const suffix of ['.sql', '.down.sql', '.sql']) await db.query(readFileSync(new URL('../../database/migrations/020_customer_receipts' + suffix, import.meta.url), 'utf8'))

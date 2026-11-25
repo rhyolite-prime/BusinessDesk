@@ -9,10 +9,17 @@
 #include <drogon/orm/CoroMapper.h>
 
 #include <algorithm>
+#include <array>
 #include <cctype>
+#include <chrono>
 #include <fstream>
 #include <iostream>
+#include <map>
 #include <sstream>
+#include <thread>
+#include <tuple>
+#include <sys/wait.h>
+#include <unistd.h>
 // Stable libpq C ABI subset: avoids requiring distro libpq development headers.
 extern "C" {
 struct pg_conn;
@@ -50,6 +57,9 @@ int main() {
   auto *db = PQconnectdb(std::getenv("JOURNAL_TEST_DATABASE_URL"));
   assert(PQstatus(db) == 0);
   bool failAfterJournal = false;
+  // Simulate an unexpected database/service mutation after journal posting but
+  // before the result is returned to the voucher service.
+  int corruptAfterJournal = 0; // 1 = batch status, 2 = posted line
   auto sql = [&](const std::string &query,
                  const std::vector<Json::Value> &params =
                      std::vector<Json::Value>{}) {
@@ -109,6 +119,22 @@ int main() {
       rows.push_back({value});
     }
     PQclear(result);
+    if (corruptAfterJournal && query.find("INSERT INTO gl_journal_history(") != std::string::npos) {
+      const std::string mutation = corruptAfterJournal == 1
+          ? "UPDATE gl_journal_batches SET status='draft' WHERE id=$1"
+          : "UPDATE gl_journal_lines SET description='changed after posting' "
+            "WHERE journal_batch_id=$1 AND line_number=1";
+      corruptAfterJournal = 0;
+      const char *faultParams[] = {strings[2].c_str()};
+      auto *fault = PQexecParams(db, mutation.c_str(), 1, nullptr, faultParams,
+                                 nullptr, nullptr, 0);
+      if (PQresultStatus(fault) != 1) {
+        const std::string error = PQresultErrorMessage(fault);
+        PQclear(fault);
+        throw std::runtime_error(error);
+      }
+      PQclear(fault);
+    }
     return rows;
   };
   sql("SET search_path TO suppliers_test");
@@ -201,6 +227,132 @@ int main() {
                {tenant})[0]
         .value["n"]
         .asInt();
+  };
+  // Capture every balance dimension, not just a total on one account. Voucher
+  // journal amounts are in base currency at rate one, so both base and source
+  // balance columns must increase by the corresponding proposed line amount.
+  using BalanceKey = std::tuple<std::string, std::string, std::string, std::string>;
+  using Amounts = std::array<business_desk::voucher_math::I, 4>;
+  using Balances = std::map<BalanceKey, Amounts>;
+  auto balances = [&]() {
+    Balances snapshot;
+    for (const auto &row : sql(
+             "SELECT account_id::text a,COALESCE(organization_unit_id::text,'') o,"
+             "COALESCE(cost_center_id::text,'') c,currency_id::text currency,"
+             "debit_balance::text d,credit_balance::text cr,"
+             "foreign_debit_balance::text fd,foreign_credit_balance::text fc "
+             "FROM gl_account_balances WHERE tenant_id=$1 AND accounting_unit_id=$2",
+             {tenant, unit})) {
+      const auto &r = row.value;
+      snapshot[{r["a"].asString(), r["o"].asString(), r["c"].asString(),
+                r["currency"].asString()}] = {
+          business_desk::voucher_math::parse(r["d"]),
+          business_desk::voucher_math::parse(r["cr"]),
+          business_desk::voucher_math::parse(r["fd"]),
+          business_desk::voucher_math::parse(r["fc"])};
+    }
+    return snapshot;
+  };
+  auto verifyPosted = [&](const Json::Value &voucher, const Json::Value &proposal,
+                          const Json::Value &journal, const Balances &before,
+                          const std::string &kind) {
+    auto verify = [&](bool ok, const std::string &what) {
+      check(ok, (kind + ": " + what).c_str());
+    };
+    verify(voucher["status"] == "Posted" && voucher["journalId"] == journal["id"] &&
+               voucher["proposedJournal"] == proposal && journal["status"] == "posted",
+           "voucher links its posted journal without changing the reviewed proposal");
+    auto link = sql(
+        "SELECT v.status voucher_status,v.is_posted,v.journal_batch_id::text journal_id,"
+        "b.status journal_status,b.posted_by_user_id::text posted_by,"
+        "b.posted_at IS NOT NULL AS has_posted_at "
+        "FROM gl_payment_vouchers v JOIN gl_journal_batches b ON "
+        "b.id=v.journal_batch_id AND b.tenant_id=v.tenant_id "
+        "AND b.accounting_unit_id=v.accounting_unit_id "
+        "WHERE v.tenant_id=$1 AND v.id=$2 AND b.is_deleted=false",
+        {tenant, voucher["id"].asString()});
+    verify(link.size() == 1 && link[0].value["voucher_status"] == "posted" &&
+               link[0].value["is_posted"].asBool() &&
+               link[0].value["journal_id"] == journal["id"] &&
+               link[0].value["journal_status"] == "posted" &&
+               link[0].value["posted_by"] == actor &&
+               link[0].value["has_posted_at"].asBool(),
+           "persisted voucher link and journal posting audit");
+    for (const auto *key : {"accountingUnitId", "batchDate", "description",
+                            "periodId", "isMultiCurrency"})
+      verify(journal[key] == proposal[key], std::string("batch field ") + key);
+    verify(journal["lines"].size() == proposal["lines"].size(),
+           "all and only the proposed lines are posted");
+    auto expected = before;
+    business_desk::voucher_math::I debit = 0, credit = 0;
+    for (Json::ArrayIndex i = 0; i < proposal["lines"].size(); ++i) {
+      const auto &p = proposal["lines"][i];
+      const auto &j = journal["lines"][i];
+      for (const auto *key : {"accountId", "currencyId", "organizationUnitId",
+                              "exchangeRate", "debit", "credit", "description",
+                              "referenceNumber", "chequeNumber", "transactionDate"})
+        verify(j[key] == p[key], "line " + std::to_string(i) + " field " + key);
+      verify(j["baseDebit"] == p["debit"] && j["baseCredit"] == p["credit"],
+             "journal does not convert the proposed base amounts again");
+      const auto d = business_desk::voucher_math::parse(p["debit"]);
+      const auto c = business_desk::voucher_math::parse(p["credit"]);
+      debit += d;
+      credit += c;
+      auto &amounts = expected[{p["accountId"].asString(), "",
+                                p["organizationUnitId"].isNull()
+                                    ? "" : p["organizationUnitId"].asString(),
+                                p["currencyId"].asString()}];
+      amounts[0] += d;
+      amounts[1] += c;
+      amounts[2] += d;
+      amounts[3] += c;
+    }
+    verify(debit > 0 && debit == credit &&
+               journal["totalDebit"] == business_desk::voucher_math::text(debit) &&
+               journal["totalCredit"] == business_desk::voucher_math::text(credit),
+           "posted batch totals equal the proposed entries");
+    verify(balances() == expected, "exact balance changes for every account and organization");
+    auto history = sql("SELECT count(*)::int n FROM gl_journal_history WHERE "
+                       "tenant_id=$1 AND accounting_unit_id=$2 AND journal_batch_id=$3",
+                       {tenant, unit, journal["id"].asString()});
+    verify(history[0].value["n"].asInt() == 1, "one journal history record");
+    Json::Value filter;
+    filter["search"] = journal["batchNumber"];
+    auto listed = JournalService::execute("list", "", unit, filter, {tenant, actor}).get();
+    bool found = false;
+    for (const auto &row : listed.result["items"])
+      found = found || (row["id"] == journal["id"] && row["status"] == "posted");
+    verify(listed.success && found, "posted batch is visible in the journal register");
+  };
+  // A calculation can stay identical even when an account, date, or a saved
+  // proposal changes. Such an approved voucher must not create any journal.
+  auto rejectChangedProposal = [&](const std::string &id, const std::string &kind,
+                                   const std::string &column, const std::string &replacement,
+                                   const std::string &path = "{lines,0,accountId}") {
+    const auto current = call("get", id).result;
+    const auto original = sql("SELECT " + column + "::text value FROM gl_payment_vouchers WHERE id=$1", {id})[0].value["value"];
+    const auto oldBalances = balances();
+    const auto oldBatches = count("gl_journal_batches");
+    const auto oldLines = count("gl_journal_lines");
+    const auto oldHistory = count("gl_journal_history");
+    const auto oldNumber = sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"];
+    if (replacement.empty())
+      sql("UPDATE gl_payment_vouchers SET " + column + "=NULL WHERE id=$1", {id});
+    else
+      sql("UPDATE gl_payment_vouchers SET " + column + "=jsonb_set(" + column + ",$3::text[],to_jsonb($2::text)) WHERE id=$1", {id, replacement, path});
+    Json::Value cmd;
+    cmd["version"] = current["version"];
+    auto rejected = call("post", id, cmd);
+    check(!rejected.success && rejected.error["code"] == "conflict",
+          (kind + ": changed or missing proposal must not post").c_str());
+    auto after = call("get", id).result;
+    check(after["status"] == "Approved" && after["journalId"].isNull() &&
+              count("gl_journal_batches") == oldBatches &&
+              count("gl_journal_lines") == oldLines &&
+              count("gl_journal_history") == oldHistory && balances() == oldBalances &&
+              sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"] == oldNumber,
+          (kind + ": rejected posting leaves voucher, journal, number and balances unchanged").c_str());
+    sql("UPDATE gl_payment_vouchers SET " + column + "=$2::jsonb WHERE id=$1", {id, original});
   };
   Json::Value input;
   input["accountingUnitId"] = unit;
@@ -358,6 +510,9 @@ int main() {
   check(!call("post", id, command()).success && count("gl_journal_batches") == 0,
         "stale approved calculation cannot post different amounts");
   sql("UPDATE gl_payment_vouchers SET calculation=jsonb_set(calculation, '{retained}', '\"10.800000\"'::jsonb) WHERE id=$1", {id});
+  rejectChangedProposal(id, "supplier saved proposal", "proposed_journal", tax);
+  rejectChangedProposal(id, "supplier source account", "source_payload", tax);
+  rejectChangedProposal(id, "supplier missing proposal", "proposed_journal", "");
   sql("UPDATE gl_accounts SET status='inactive' WHERE id=$1", {tax});
   check(!call("post", id, command()).success &&
             count("gl_journal_batches") == 0,
@@ -405,6 +560,50 @@ int main() {
   drogon::TestTransaction::failCommit = false;
   check(count("gl_journal_batches") == 0 && count("gl_account_balances") == 0,
         "commit failure leaves no balances");
+  for (int fault : {1, 2}) {
+    const auto beforeNumber = sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"];
+    corruptAfterJournal = fault;
+    auto rejected = call("post", id, command());
+    check(!rejected.success && rejected.error["code"] == "database_error" &&
+              count("gl_journal_batches") == 0 && count("gl_journal_lines") == 0 &&
+              count("gl_journal_history") == 0 && count("gl_account_balances") == 0 &&
+              call("get", id).result["status"] == "Approved" &&
+              sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"] == beforeNumber,
+          fault == 1 ? "non-posted journal result rolls back everything"
+                     : "journal result that differs from the proposal rolls back everything");
+  }
+  sql("CREATE FUNCTION skip_posted_voucher_link() RETURNS trigger LANGUAGE plpgsql "
+      "AS $$ BEGIN RETURN NULL; END $$");
+  sql("CREATE TRIGGER skip_posted_voucher_link BEFORE UPDATE ON gl_payment_vouchers "
+      "FOR EACH ROW WHEN (OLD.status='approved' AND NEW.status='posted') "
+      "EXECUTE FUNCTION skip_posted_voucher_link()");
+  const auto beforeLinkNumber = sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"];
+  auto linkFailure = call("post", id, command());
+  check(!linkFailure.success && count("gl_journal_batches") == 0 &&
+            count("gl_journal_lines") == 0 && count("gl_journal_history") == 0 &&
+            count("gl_account_balances") == 0 &&
+            call("get", id).result["status"] == "Approved" &&
+            sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"] == beforeLinkNumber,
+        "a voucher link update affecting no rows rolls back the journal and balances");
+  sql("DROP TRIGGER skip_posted_voucher_link ON gl_payment_vouchers");
+  sql("DROP FUNCTION skip_posted_voucher_link()");
+  sql("CREATE FUNCTION alter_posted_voucher_link() RETURNS trigger LANGUAGE plpgsql "
+      "AS $$ BEGIN NEW.status='approved'; NEW.is_posted=false; "
+      "NEW.journal_batch_id=NULL; RETURN NEW; END $$");
+  sql("CREATE TRIGGER alter_posted_voucher_link BEFORE UPDATE ON gl_payment_vouchers "
+      "FOR EACH ROW WHEN (OLD.status='approved' AND NEW.status='posted') "
+      "EXECUTE FUNCTION alter_posted_voucher_link()");
+  linkFailure = call("post", id, command());
+  check(!linkFailure.success && count("gl_journal_batches") == 0 &&
+            count("gl_journal_lines") == 0 && count("gl_journal_history") == 0 &&
+            count("gl_account_balances") == 0 &&
+            call("get", id).result["status"] == "Approved" &&
+            sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='journal-batch-id'", {tenant})[0].value["last_no"] == beforeLinkNumber,
+        "an altered voucher link rolls back the journal and balances");
+  sql("DROP TRIGGER alter_posted_voucher_link ON gl_payment_vouchers");
+  sql("DROP FUNCTION alter_posted_voucher_link()");
+  const auto supplierProposal = v["proposedJournal"];
+  const auto beforeSupplierBalances = balances();
   auto posted = call("post", id, command());
   if (!posted.success)
     std::cerr << posted.toJson() << std::endl;
@@ -420,6 +619,8 @@ int main() {
             journal.result["totalDebit"] == "120.000000" &&
             journal.result["totalCredit"] == "120.000000",
         "posted balanced journal through normal service");
+  verifyPosted(v, supplierProposal, journal.result, beforeSupplierBalances,
+               "supplier payment");
   check(count("gl_journal_history") == 1 && count("gl_account_balances") == 3,
         "journal history and account balances updated");
   check(sql("SELECT debit_balance::text d,credit_balance::text c FROM "
@@ -432,10 +633,26 @@ int main() {
             {tax})[0]
                 .value["c"] == "22.800000",
         "all deductions credited to ledger");
-  check(call("post", id, stale).success && count("gl_journal_batches") == 1 &&
-            count("gl_journal_history") == 1,
-        "retry with pre-post version returns posted voucher without "
-        "duplicating balances");
+  const auto afterSupplierBalances = balances();
+  auto supplierRetry = call("post", id, stale);
+  check(supplierRetry.success && supplierRetry.result["journalId"] == v["journalId"] &&
+            count("gl_journal_batches") == 1 && count("gl_journal_history") == 1 &&
+            balances() == afterSupplierBalances,
+        "retry with pre-post version returns the same journal without "
+        "duplicating any balances");
+  const auto supplierJournalId = v["journalId"].asString();
+  sql("UPDATE gl_journal_batches SET status='draft' WHERE id=$1", {supplierJournalId});
+  auto invalidRetry = call("post", id, stale);
+  check(!invalidRetry.success && invalidRetry.error["code"] == "conflict" &&
+            count("gl_journal_batches") == 1 && balances() == afterSupplierBalances,
+        "retry refuses a voucher whose linked journal is not posted");
+  sql("UPDATE gl_journal_batches SET status='posted' WHERE id=$1", {supplierJournalId});
+  sql("UPDATE gl_payment_vouchers SET journal_batch_id=NULL WHERE id=$1", {id});
+  invalidRetry = call("post", id, stale);
+  check(!invalidRetry.success && invalidRetry.error["code"] == "conflict" &&
+            count("gl_journal_batches") == 1 && balances() == afterSupplierBalances,
+        "retry refuses a posted voucher with no linked journal rather than reposting it");
+  sql("UPDATE gl_payment_vouchers SET journal_batch_id=$2 WHERE id=$1", {id, supplierJournalId});
   check(!call("delete", id, command()).success &&
             !call("update", id, update).success,
         "posted immutable");
@@ -502,8 +719,9 @@ int main() {
   check(ec.success && ec.result["batchNumber"].asString() == "EPV-" + std::to_string(beforeEmployee) &&
             ec.result["payeeName"] == "Ama Mensah",
         "create employee voucher with server-derived payee");
-  check(ec.result["taxType"] == "Professional services",
-        "employee tax classification round trips");
+  check(ec.result["taxType"] == "Professional services" &&
+            ec.result["proposedJournal"] == ep.result["proposedJournal"],
+        "employee tax classification round trips and saved proposal matches preview");
   Json::Value employeeFilter;
   employeeFilter["type"] = "employee-payment";
   check(call("list", "", employeeFilter).result["items"].size() == 1,
@@ -544,6 +762,10 @@ int main() {
   check(!call("approve", eid, cmd(), {tenant, actor2}).success,
         "employee approval requires tenant administrator");
   check(call("approve", eid, cmd()).success, "approve employee voucher");
+  rejectChangedProposal(eid, "employee saved proposal", "proposed_journal", tax);
+  rejectChangedProposal(eid, "employee source account", "source_payload", tax);
+  const auto employeeProposal = call("get", eid).result["proposedJournal"];
+  const auto beforeEmployeeBalances = balances();
   const auto batchesBefore = count("gl_journal_batches");
   auto bankCredit = [&] {
     return sql("SELECT credit_balance::text c FROM gl_account_balances WHERE "
@@ -554,8 +776,9 @@ int main() {
   const auto bankBefore = bankCredit();
   failAfterJournal = true;
   check(!call("post", eid, cmd()).success &&
-            count("gl_journal_batches") == batchesBefore,
-        "employee journal and balances roll back together");
+            count("gl_journal_batches") == batchesBefore &&
+            balances() == beforeEmployeeBalances,
+        "employee journal and every balance dimension roll back together");
   check(bankCredit() == bankBefore,
         "employee failed posting does not alter existing bank balance");
   auto eposted = call("post", eid, cmd());
@@ -569,11 +792,15 @@ int main() {
             ej.result["totalDebit"] == "120.000000" &&
             ej.result["totalCredit"] == "120.000000",
         "employee posted journal is balanced");
+  verifyPosted(eposted.result, employeeProposal, ej.result, beforeEmployeeBalances,
+               "employee payment");
   check(bankCredit() == "205.200000",
         "employee net credit adds 108 to the supplier's 97.2 bank credit exactly once");
-  check(call("post", eid, cmd()).success &&
-            count("gl_journal_batches") == batchesBefore + 1,
-        "employee posting retry never duplicates journal");
+  const auto afterEmployeeBalances = balances();
+  auto employeeRetry = call("post", eid, cmd());
+  check(employeeRetry.success && employeeRetry.result["journalId"] == eposted.result["journalId"] &&
+            count("gl_journal_batches") == batchesBefore + 1 && balances() == afterEmployeeBalances,
+        "employee posting retry never duplicates journal or balances");
   check(!call("delete", eid, cmd()).success,
         "posted employee voucher immutable");
   emp["requestId"] = "a0000000-0000-4000-8000-000000000012";
@@ -712,8 +939,9 @@ int main() {
           createdReceipt.result["batchNumber"].asString() == "CRV-0001" &&
           createdReceipt.result["receiptNo"].asString() == "CRV-0001" &&
           createdReceipt.result["receiptNumber"].asString() == "CRV-0001" &&
-          createdReceipt.result["netAmount"] == "120.000000",
-      "receipt saves authoritative positive gross and net");
+          createdReceipt.result["netAmount"] == "120.000000" &&
+          createdReceipt.result["proposedJournal"] == cp.result["proposedJournal"],
+      "receipt saves positive totals and the authoritative previewed proposal");
   check(sql("SELECT last_no FROM core_system_numbers WHERE tenant_id=$1 AND key='gl-receipt-voucher-id'", {tenant})[0].value["last_no"].asInt() == 1,
         "receipt creation advances last_no");
   check(sql("SELECT (source_payload->>'receiptNo') AS r FROM gl_payment_vouchers WHERE id=$1",
@@ -766,6 +994,11 @@ int main() {
   check(!call("approve", rid, rcmd(), {tenant, actor2}).success,
         "receipt approval requires administrator");
   check(call("approve", rid, rcmd()).success, "approve receipt");
+  rejectChangedProposal(rid, "receipt saved proposal", "proposed_journal", tax);
+  rejectChangedProposal(rid, "receipt source reference", "source_payload", "CHANGED-REF",
+                        "{lines,0,referenceNumber}");
+  const auto receiptProposal = call("get", rid).result["proposedJournal"];
+  const auto beforeReceiptBalances = balances();
   const auto beforeReceipt = count("gl_journal_batches");
   auto bankDebit = [&] {
     return sql("SELECT debit_balance::text d FROM gl_account_balances WHERE "
@@ -777,8 +1010,8 @@ int main() {
   failAfterJournal = true;
   check(!call("post", rid, rcmd()).success &&
             count("gl_journal_batches") == beforeReceipt &&
-            bankDebit() == debitBefore,
-        "receipt journal and balance mutation roll back atomically");
+            bankDebit() == debitBefore && balances() == beforeReceiptBalances,
+        "receipt journal and every balance dimension roll back atomically");
   auto receiptPosted = call("post", rid, rcmd());
   check(receiptPosted.success && receiptPosted.result["status"] == "Posted",
         "receipt posts through normal journal ceremony");
@@ -790,15 +1023,19 @@ int main() {
             rjournal.result["totalDebit"] == "120.000000" &&
             rjournal.result["totalCredit"] == "120.000000",
         "receipt links a balanced posted journal");
+  verifyPosted(receiptPosted.result, receiptProposal, rjournal.result, beforeReceiptBalances,
+               "customer receipt");
   check(bankDebit() == "120.000000" &&
             sql("SELECT credit_balance::text c FROM gl_account_balances WHERE "
                 "account_id=$1",
                 {account})[0]
                     .value["c"] == "120.000000",
         "receipt bank debit and AR credit update existing balances");
-  check(call("post", rid, rcmd()).success &&
-            count("gl_journal_batches") == beforeReceipt + 1,
-        "receipt posting retry does not duplicate balances");
+  const auto afterReceiptBalances = balances();
+  auto receiptRetry = call("post", rid, rcmd());
+  check(receiptRetry.success && receiptRetry.result["journalId"] == receiptPosted.result["journalId"] &&
+            count("gl_journal_batches") == beforeReceipt + 1 && balances() == afterReceiptBalances,
+        "receipt posting retry does not duplicate journal or balances");
   check(!call("delete", rid, rcmd()).success &&
             !call("update", rid, crEdit).success,
         "posted receipts immutable");
@@ -1025,6 +1262,229 @@ int main() {
   check(call("create", "", noGlVoucher).success,
         "database voucher trigger accepts an unconfigured live supplier with "
         "explicit voucher accounts");
+
+  // Exercise actual FX posting (not just preview), multiple organizations,
+  // grouped credits, and a zero-net voucher through the same ceremony.
+  sql("UPDATE hr_employee_biodata SET is_deleted=false WHERE id=$1", {employee});
+  sql("UPDATE core_customers SET is_deleted=false,is_active=true WHERE id=$1", {customerId});
+  const std::string account2 = "50000000-0000-4000-8000-000000000004",
+                    center2 = "90000000-0000-4000-8000-000000000002";
+  sql("INSERT INTO gl_accounts(id,tenant_id,accounting_unit_id,account_group_id,"
+      "account_number,account_name,currency_id,standard_account_type) "
+      "VALUES($1,$2,$3,$4,'SECOND','Second GL',$5,0)",
+      {account2, tenant, unit, group, currency});
+  sql("INSERT INTO core_cost_centers(id,tenant_id,name,created_by_user_id) "
+      "VALUES($1,$2,'Field office',$3)", {center2, tenant, actor});
+  auto postWithProof = [&](Json::Value voucherInput, const std::string &kind) {
+    auto created = call("create", "", voucherInput);
+    if (!created.success) std::cerr << created.toJson() << std::endl;
+    check(created.success, (kind + ": create").c_str());
+    const auto voucherId = created.result["id"].asString();
+    auto versioned = [&](const Json::Value &v) {
+      Json::Value command;
+      command["version"] = v["version"];
+      return command;
+    };
+    auto submitted = call("submit", voucherId, versioned(created.result));
+    check(submitted.success, (kind + ": submit").c_str());
+    auto approved = call("approve", voucherId, versioned(submitted.result));
+    check(approved.success, (kind + ": approve").c_str());
+    const auto before = balances();
+    const auto batches = count("gl_journal_batches");
+    const auto history = count("gl_journal_history");
+    const auto postCommand = versioned(approved.result);
+    auto result = call("post", voucherId, postCommand);
+    if (!result.success) std::cerr << result.toJson() << std::endl;
+    check(result.success, (kind + ": post").c_str());
+    auto journal = JournalService::execute("get", result.result["journalId"].asString(),
+                                           unit, {}, {tenant, actor}).get();
+    check(journal.success, (kind + ": fetch linked journal").c_str());
+    verifyPosted(result.result, approved.result["proposedJournal"], journal.result,
+                 before, kind);
+    const auto after = balances();
+    auto retry = call("post", voucherId, postCommand);
+    check(retry.success && retry.result["journalId"] == result.result["journalId"] &&
+              count("gl_journal_batches") == batches + 1 &&
+              count("gl_journal_history") == history + 1 && balances() == after,
+          (kind + ": retry does not create another batch or affect balances twice").c_str());
+    return result.result;
+  };
+  auto supplierFx = input;
+  supplierFx["requestId"] = "a0000000-0000-4000-8000-000000000101";
+  supplierFx["currencyCode"] = "USD";
+  supplierFx["multiCurrency"] = true;
+  supplierFx["exchangeRate"] = "12.3456789012";
+  supplierFx["description"] = "Foreign supplier payment";
+  supplierFx["mode"] = "Cheque";
+  supplierFx["chequeNumber"] = "FX-CHEQUE";
+  supplierFx["lines"][0]["foreignAmount"] = "10.125000";
+  supplierFx["lines"][0]["referenceNumber"] = "FX-1";
+  auto fxLine = supplierFx["lines"][0];
+  fxLine["accountId"] = account2;
+  fxLine["organizationUnitId"] = center2;
+  fxLine["foreignAmount"] = "3.333333";
+  fxLine["isWithhold"] = false;
+  fxLine["description"] = "Second allocation";
+  fxLine["referenceNumber"] = "FX-2";
+  supplierFx["lines"].append(fxLine);
+  auto fixedRetention = retention;
+  fixedRetention["accountId"] = account2;
+  fixedRetention["description"] = "Fixed retention";
+  fixedRetention["isPercentage"] = false;
+  fixedRetention["value"] = "7.50";
+  supplierFx["retentions"].append(fixedRetention);
+  auto fxSupplierPosted = postWithProof(supplierFx, "FX supplier payment");
+  check(fxSupplierPosted["totalAmount"] == "166.150000" &&
+            fxSupplierPosted["netAmount"] == "130.780000" &&
+            fxSupplierPosted["proposedJournal"]["lines"].size() == 7 &&
+            fxSupplierPosted["proposedJournal"]["lines"][0]["debit"] == "125.000000" &&
+            fxSupplierPosted["proposedJournal"]["lines"][1]["debit"] == "41.150000" &&
+            fxSupplierPosted["proposedJournal"]["lines"][1]["organizationUnitId"] == center2 &&
+            fxSupplierPosted["proposedJournal"]["lines"][2]["organizationUnitId"] == center,
+        "FX supplier uses cent-rounded allocations, deductions and correct organizations");
+  auto employeeFx = supplierFx;
+  employeeFx["type"] = "employee-payment";
+  employeeFx["payeeId"] = employee;
+  employeeFx["requestId"] = "a0000000-0000-4000-8000-000000000102";
+  employeeFx["description"] = "Foreign employee payment";
+  employeeFx["retentions"] = Json::arrayValue;
+  employeeFx["lines"][0]["isImprest"] = true;
+  employeeFx["lines"][1]["isImprest"] = false;
+  postWithProof(employeeFx, "FX employee payment");
+  auto customerFx = cr;
+  customerFx["payeeId"] = customerId;
+  customerFx["requestId"] = "a0000000-0000-4000-8000-000000000103";
+  customerFx["description"] = "Foreign customer receipt";
+  customerFx["mode"] = "Cheque";
+  customerFx["chequeNumber"] = "RCPT-CHEQUE";
+  customerFx["exchangeRate"] = "12.3456789012";
+  customerFx["lines"][0]["foreignAmount"] = "4.123456";
+  customerFx["lines"][1]["foreignAmount"] = "2.345678";
+  auto fxReceiptPosted = postWithProof(customerFx, "FX customer receipt");
+  check(fxReceiptPosted["totalAmount"] == "79.870000" &&
+            fxReceiptPosted["proposedJournal"]["lines"].size() == 2 &&
+            fxReceiptPosted["proposedJournal"]["lines"][0]["debit"] == "79.870000" &&
+            fxReceiptPosted["proposedJournal"]["lines"][1]["credit"] == "79.870000",
+        "FX receipt aggregates cent-rounded allocations into the proposed two-line journal");
+
+  auto zeroNet = input;
+  zeroNet["requestId"] = "a0000000-0000-4000-8000-000000000104";
+  zeroNet["description"] = "Fully retained payment";
+  zeroNet["taxes"] = business_desk::voucher_math::defaults();
+  zeroNet["lines"][0]["isWithhold"] = false;
+  zeroNet["retentions"][0]["value"] = "100";
+  sql("UPDATE gl_accounts SET status='inactive' WHERE id=$1", {bank});
+  check(!call("preview", "", zeroNet).success,
+        "zero-net voucher still requires an active linked bank GL");
+  sql("UPDATE gl_accounts SET status='active' WHERE id=$1", {bank});
+  auto fullyRetained = postWithProof(zeroNet, "zero-net supplier payment");
+  check(fullyRetained["netAmount"] == "0.000000" &&
+            fullyRetained["proposedJournal"]["lines"].size() == 2 &&
+            fullyRetained["bankGlAccountName"].asString().find("Test GL") != std::string::npos,
+        "fully retained voucher posts the debit and retention credit without a zero bank line");
+
+  // Two independent connections post the same approved voucher while both
+  // are blocked on the real accounting-unit lock. They must return one journal
+  // and apply the proposed balances exactly once.
+  auto concurrent = input;
+  concurrent["requestId"] = "a0000000-0000-4000-8000-000000000105";
+  concurrent["description"] = "Concurrent posting";
+  concurrent["taxes"] = business_desk::voucher_math::defaults();
+  concurrent["retentions"] = Json::arrayValue;
+  concurrent["lines"][0]["isWithhold"] = false;
+  concurrent["lines"][0]["localAmount"] = "30";
+  auto raceDraft = call("create", "", concurrent);
+  check(raceDraft.success, "create concurrent posting voucher");
+  const auto raceId = raceDraft.result["id"].asString();
+  Json::Value raceCommand;
+  raceCommand["version"] = raceDraft.result["version"];
+  auto raceSubmitted = call("submit", raceId, raceCommand);
+  check(raceSubmitted.success, "submit concurrent posting voucher");
+  raceCommand["version"] = raceSubmitted.result["version"];
+  auto raceApproved = call("approve", raceId, raceCommand);
+  check(raceApproved.success, "approve concurrent posting voucher");
+  raceCommand["version"] = raceApproved.result["version"];
+  const auto raceBalances = balances();
+  const auto raceBatchCount = count("gl_journal_batches");
+  const auto raceHistoryCount = count("gl_journal_history");
+  int readyPipe[2], replies[2][2];
+  check(pipe(readyPipe) == 0 && pipe(replies[0]) == 0 && pipe(replies[1]) == 0,
+        "create concurrent test pipes");
+  sql("SET stats_fetch_consistency='none'");
+  sql("BEGIN");
+  sql("SELECT id FROM core_accounting_units WHERE tenant_id=$1 AND id=$2 FOR UPDATE",
+      {tenant, unit});
+  pid_t children[2];
+  for (int i = 0; i < 2; ++i) {
+    children[i] = fork();
+    if (children[i] == 0) {
+      close(readyPipe[0]);
+      for (int j = 0; j < 2; ++j) {
+        close(replies[j][0]);
+        if (i != j) close(replies[j][1]);
+      }
+      // Do not PQfinish the inherited parent connection: it owns the lock.
+      db = PQconnectdb(std::getenv("JOURNAL_TEST_DATABASE_URL"));
+      if (PQstatus(db) != 0) _exit(2);
+      try {
+        sql("SET search_path TO suppliers_test");
+        sql("SET application_name='voucher_post_race'");
+        if (write(readyPipe[1], "r", 1) != 1) _exit(3);
+        close(readyPipe[1]);
+        auto result = call("post", raceId, raceCommand);
+        const auto reply = result.success ? result.result["journalId"].asString()
+                                          : result.toJson().toStyledString();
+        if (write(replies[i][1], reply.data(), reply.size()) !=
+            static_cast<ssize_t>(reply.size())) _exit(4);
+        close(replies[i][1]);
+        PQfinish(db);
+        _exit(result.success ? 0 : 5);
+      } catch (...) {
+        _exit(6);
+      }
+    }
+    check(children[i] > 0, "fork concurrent posting client");
+  }
+  close(readyPipe[1]);
+  close(replies[0][1]);
+  close(replies[1][1]);
+  bool clientsReady = true;
+  for (int i = 0; i < 2; ++i) {
+    char signal;
+    if (read(readyPipe[0], &signal, 1) != 1 || signal != 'r') clientsReady = false;
+  }
+  close(readyPipe[0]);
+  bool bothWaiting = false;
+  for (int attempt = 0; clientsReady && attempt < 200; ++attempt) {
+    auto waiting = sql("SELECT count(*)::int n FROM pg_stat_activity WHERE "
+                       "application_name='voucher_post_race' AND wait_event_type='Lock'");
+    if (waiting[0].value["n"].asInt() == 2) { bothWaiting = true; break; }
+    std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  }
+  sql("COMMIT"); // release the barrier even if readiness checking failed
+  std::array<std::string, 2> journalIds;
+  bool childrenSucceeded = true;
+  for (int i = 0; i < 2; ++i) {
+    int status;
+    if (waitpid(children[i], &status, 0) != children[i] ||
+        !WIFEXITED(status) || WEXITSTATUS(status) != 0)
+      childrenSucceeded = false;
+    char response[4096];
+    auto length = read(replies[i][0], response, sizeof(response));
+    if (length > 0) journalIds[i].assign(response, length);
+    close(replies[i][0]);
+  }
+  check(clientsReady && bothWaiting, "both concurrent posts waited on the same unit lock");
+  auto racePosted = call("get", raceId);
+  check(childrenSucceeded && racePosted.success && journalIds[0] == journalIds[1] &&
+            journalIds[0] == racePosted.result["journalId"].asString() &&
+            count("gl_journal_batches") == raceBatchCount + 1 &&
+            count("gl_journal_history") == raceHistoryCount + 1,
+        "concurrent posts return the same journal and create it exactly once");
+  auto raceJournal = JournalService::execute("get", journalIds[0], unit, {}, {tenant, actor}).get();
+  check(raceJournal.success, "fetch concurrently posted journal");
+  verifyPosted(racePosted.result, raceApproved.result["proposedJournal"], raceJournal.result,
+               raceBalances, "concurrent supplier payment");
   std::cout << checks
             << " payment and receipt voucher PostgreSQL checks passed\n";
 
