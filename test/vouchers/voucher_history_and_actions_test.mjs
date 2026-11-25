@@ -50,7 +50,8 @@ assert.ok(editSrc.includes('/ledger/vouchers/new/${voucher.type}?id='), '[id]/ed
 
 // Test 10: Verify backend posting creates journal entry in posted state and updates balances
 const serviceSrc = await readFile('domain_services/gl/SupplierVoucherService.cc', 'utf8')
-assert.ok(serviceSrc.includes('JournalService::createAndPost(db, prepared.proposal, who)'), 'SupplierVoucherService calls JournalService::createAndPost')
+assert.ok(serviceSrc.includes('prepared.proposal != current["proposedJournal"]'), 'SupplierVoucherService rejects a changed proposed journal')
+assert.ok(serviceSrc.includes('JournalService::createAndPost(db, current["proposedJournal"], who)'), 'SupplierVoucherService posts the saved proposed journal')
 assert.ok(serviceSrc.includes("journal_batch_id=$3") && serviceSrc.includes("status='posted'"), 'Voucher links journal_batch_id and sets status=posted')
 
 const journalServiceSrc = await readFile('domain_services/gl/JournalService.cc', 'utf8')

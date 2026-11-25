@@ -15,7 +15,11 @@ const upstream=http.createServer(async(req,res)=>{
  if(p==='/api/v1/auth/me')return send(200,{userId:id(99),username:'admin',accountId:'acme'})
  if(req.headers.authorization!=='Bearer tenant-token')return send(401,null)
  if(p==='/api/v1/shared/company-profile')return failCompany?send(503,null):send(200,{companyName:'Example Company'})
- if(p==='/api/v1/ledger/journals/options')return send(200,{periods:[{id:id(20),period:202610,beginDate:'2026-10-01',endDate:'2026-10-31'}]})
+ if(p==='/api/v1/ledger/journals/options')return send(200,{baseCurrencyId:usd,accounts:[{id:debit,accountNumber:'2100',name:'API Payables',currencyId:usd},{id:bank,accountNumber:'1010',name:'API Operating Bank',currencyId:usd}],costCenters:[{id:center,name:'API Operations',parentId:null}],periods:[{id:id(20),period:202610,beginDate:'2026-10-01',endDate:'2026-10-31'}]})
+ if(p===`/api/v1/ledger/journals/${id(22)}`&&req.method==='GET')return send(200,{
+  id:id(22),accountingUnitId:unit,batchNumber:'JV-TEST',batchDate:'2026-10-22',description:'Linked voucher journal',status:'posted',version:2,periodId:id(20),isMultiCurrency:false,totalDebit:'120.000000',totalCredit:'120.000000',
+  lines:[{id:id(23),accountId:debit,currencyId:usd,costCenterId:center,exchangeRate:'1.0000000000',debit:'120.000000',credit:'0.000000',baseDebit:'120.000000',baseCredit:'0.000000',description:'Expense',referenceNumber:'REF',chequeNumber:'',transactionDate:'2026-10-22'},{id:id(24),accountId:bank,currencyId:usd,costCenterId:center,exchangeRate:'1.0000000000',debit:'0.000000',credit:'120.000000',baseDebit:'0.000000',baseCredit:'120.000000',description:'Bank',referenceNumber:'REF',chequeNumber:'',transactionDate:'2026-10-22'}],
+ })
  if((p==='/api/v1/ledger/vouchers'&&req.method==='POST')||(p===`/api/v1/ledger/vouchers/${id(21)}`&&req.method==='PUT')){
   if(failSave)return send(503,null)
   let raw='';for await(const chunk of req)raw+=chunk;savedInput=JSON.parse(raw)
@@ -113,6 +117,14 @@ try{
   async function saveVoucher(edit=false,preview=false){
     await page.getByRole('button',{name:edit?'Update':'Save',exact:true}).click()
     await page.getByRole('menuitem',{name:preview?'Save and Preview':'Save',exact:true}).click()
+  }
+  async function postedJournalLink(voucherNumber){
+    await page.goto(base+'/ledger/vouchers')
+    await page.getByRole('button',{name:`View ${voucherNumber}`,exact:true}).click()
+    const link=page.getByRole('link',{name:'View posted journal'})
+    const url=new URL(await link.getAttribute('href'),base)
+    check(url.pathname==='/ledger/journals/new'&&url.searchParams.get('id')===id(22)&&url.searchParams.get('accountingUnitId')===unit,`${voucherNumber}: links directly to its journal in the correct unit`)
+    return link
   }
   async function saveWhileCheckingPickers(names){
     let release
@@ -447,6 +459,12 @@ try{
   check(result.response.status===403,'voucher mutations reject a cross-origin request')
   result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
   check(result.response.status===200&&result.body.status==='Posted'&&result.body.journalId===id(22),'posting BFF unwraps live server response')
+  const linkedJournal=await postedJournalLink('SPV-TEST')
+  await linkedJournal.click()
+  await page.getByRole('heading',{name:'View journal',exact:true}).waitFor()
+  check(await page.getByLabel('Batch number',{exact:true}).inputValue()==='JV-TEST'&&(await page.locator('header').filter({has:page.getByRole('heading',{name:'View journal',exact:true})}).innerText()).includes('posted'),'linked journal opens the posted batch')
+  check(await page.getByLabel('Batch number',{exact:true}).isDisabled()&&await page.getByRole('button',{name:/^GL account/}).first().isDisabled(),'posted journal is read-only')
+  check(seen.some(x=>x.p===`/api/v1/ledger/journals/${id(22)}`&&new URLSearchParams(x.query).get('accountingUnitId')===unit),'journal detail request uses the linked batch and unit')
   await page.goto(base+`/ledger/vouchers/new/supplier-payment?id=${id(21)}`)
   await page.getByText('Only draft vouchers can be edited.',{exact:false}).waitFor()
   check(await picker('Supplier / payee').isDisabled()&&await picker('Bank / cash G/L').isDisabled()&&await picker('Debit GL line 1').isDisabled()&&await picker('Organizational unit line 1').isDisabled()&&await picker('Income withholding credit account').isDisabled()&&await picker('VAT withholding credit account').isDisabled(),'posted voucher pickers are read-only')
@@ -589,11 +607,13 @@ try{
   await page.getByRole('listbox').getByRole('option',{name:'API Operations Head office',exact:true}).click()
   await saveVoucher(true);await page.waitForURL('**/ledger/vouchers?type=employee-payment')
   check(savedInput.payeeId===id(62)&&savedInput.bankGlAccountId===bank&&savedInput.bankAccountId===id(85)&&savedInput.lines[0].accountId===debit&&savedInput.lines[0].organizationUnitId===center,'employee draft can replace unavailable selections and save real IDs')
-  stored.status='Posted'
+  result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
+  check(result.response.status===200&&result.body.status==='Posted'&&result.body.journalId===id(22),'employee posting BFF returns the linked journal')
+  await postedJournalLink('EPV-TEST')
   await page.goto(base+`/ledger/vouchers/new/employee-payment?id=${id(21)}`)
   await page.getByText('Only draft vouchers can be edited.',{exact:false}).waitFor()
   check(await employeePicker.isDisabled()&&await picker('Bank / cash G/L').isDisabled()&&await picker('Debit GL line 1').isDisabled()&&await picker('Organizational unit line 1').isDisabled(),'posted employee voucher pickers are read-only')
-  stored.status='Draft'
+  stored.status='Draft';delete stored.journalId
 
   await page.goto(base+`/ledger/vouchers/new/employee-payment?id=${id(63)}`)
   await page.getByLabel('Imprest applies to line 1',{exact:true}).waitFor()
@@ -692,7 +712,8 @@ try{
   await saveVoucher(true);await page.waitForURL('**/ledger/vouchers?type=customer-receipt')
   check(savedInput.payeeId===id(71)&&savedInput.bankGlAccountId===bank&&savedInput.lines.every(l=>l.accountId===debit&&l.organizationUnitId===center),'receipt draft can replace unavailable selections and save the correct IDs')
   result=await call(`/api/ledger/vouchers/${id(21)}/post`,'POST',{version:1},cookie)
-  check(result.response.status===200&&result.body.status==='Posted','receipt posting BFF forwards live server response')
+  check(result.response.status===200&&result.body.status==='Posted'&&result.body.journalId===id(22),'receipt posting BFF returns the linked journal')
+  await postedJournalLink('CRV-TEST')
   await page.goto(base+`/ledger/vouchers/new/customer-receipt?id=${id(21)}`)
   await page.getByText('Only draft vouchers can be edited.',{exact:false}).waitFor()
   check(await customerPicker.isDisabled()&&await picker('Bank / cash G/L').isDisabled()&&await picker('Credit GL line 1').isDisabled()&&await picker('Organizational unit line 1').isDisabled(),'posted receipt voucher pickers are read-only')
