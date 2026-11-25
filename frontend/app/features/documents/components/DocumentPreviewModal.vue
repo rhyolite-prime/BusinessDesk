@@ -247,11 +247,6 @@ async function handleRunRag() {
     ragLoading.value = false
   }
 }
-    auditLogs.value = aList
-  } catch (e) {
-    // Ignore error
-  }
-}
 
 watch(
   () => props.document,
