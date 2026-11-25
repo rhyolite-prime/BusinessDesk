@@ -11,6 +11,20 @@ import type {
   DmAuditEvent,
   DmSummary,
   DmTrashItem,
+  DmCollection,
+  DmTag,
+  DmCustomAttribute,
+  DmCustomIdentifier,
+  DmAclEntry,
+  DmShare,
+  DmLegalHold,
+  DmSignature,
+  DmEntityLink,
+  DmQuota,
+  DmSettings,
+  DmWorkflowTemplate,
+  DmWorkflowTask,
+  DmAnnotation,
 } from './document-types'
 
 export function useDocumentsUnitId() {
@@ -285,6 +299,240 @@ export function useDocuments() {
     async audit(query: Record<string, any> = {}): Promise<{ data: DmAuditEvent[]; totalCount: number }> {
       return await $fetch<{ data: DmAuditEvent[]; totalCount: number }>('/api/documents/audit', {
         query,
+      })
+    },
+
+    async verifyAudit(documentId?: string): Promise<{ verified: boolean; checkedCount: number; status: string }> {
+      return await $fetch<{ verified: boolean; checkedCount: number; status: string }>('/api/documents/audit/verify', {
+        method: 'POST',
+        body: { documentId },
+      })
+    },
+
+    // Collections
+    async collections(): Promise<DmCollection[]> {
+      const res = await $fetch<{ data: DmCollection[]; totalCount: number }>('/api/documents/collections', {
+        query: withUnit(),
+      })
+      return res.data
+    },
+
+    async createCollection(body: Partial<DmCollection>): Promise<DmCollection> {
+      return await $fetch<DmCollection>('/api/documents/collections', {
+        method: 'POST',
+        body: withUnit(body),
+      })
+    },
+
+    async deleteCollection(id: string): Promise<void> {
+      await $fetch(`/api/documents/collections/${id}`, { method: 'DELETE' })
+    },
+
+    // Tags
+    async tags(): Promise<DmTag[]> {
+      const res = await $fetch<{ data: DmTag[]; totalCount: number }>('/api/documents/tags')
+      return res.data
+    },
+
+    async createTag(body: { name: string; color?: string; category?: string }): Promise<DmTag> {
+      return await $fetch<DmTag>('/api/documents/tags', {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async deleteTag(id: string): Promise<void> {
+      await $fetch(`/api/documents/tags/${id}`, { method: 'DELETE' })
+    },
+
+    // Custom Attributes & Identifiers
+    async customAttributes(): Promise<DmCustomAttribute[]> {
+      const res = await $fetch<{ data: DmCustomAttribute[]; totalCount: number }>('/api/documents/custom-attributes')
+      return res.data
+    },
+
+    async customIdentifiers(): Promise<DmCustomIdentifier[]> {
+      const res = await $fetch<{ data: DmCustomIdentifier[]; totalCount: number }>('/api/documents/custom-identifiers')
+      return res.data
+    },
+
+    async generateIdentifier(id: string): Promise<{ identifier: string; sequence: number }> {
+      return await $fetch<{ identifier: string; sequence: number }>(`/api/documents/custom-identifiers/${id}/generate`, {
+        method: 'POST',
+      })
+    },
+
+    // ACL & Shares
+    async aclEntries(entityType: string, entityId: string): Promise<DmAclEntry[]> {
+      const res = await $fetch<{ data: DmAclEntry[]; totalCount: number }>('/api/documents/acl', {
+        query: { entityType, entityId },
+      })
+      return res.data
+    },
+
+    async createAclEntry(body: { entityType: string; entityId: string; principalType: string; principalId: string; permission: string; accessType: string }): Promise<DmAclEntry> {
+      return await $fetch<DmAclEntry>('/api/documents/acl', {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async deleteAclEntry(id: string): Promise<void> {
+      await $fetch(`/api/documents/acl/${id}`, { method: 'DELETE' })
+    },
+
+    async shares(documentId: string): Promise<DmShare[]> {
+      const res = await $fetch<{ data: DmShare[]; totalCount: number }>(`/api/documents/shares/${documentId}`)
+      return res.data
+    },
+
+    async createShare(documentId: string, body: { recipientEmail?: string; canDownload?: boolean; canComment?: boolean; maxAccessCount?: number }): Promise<DmShare> {
+      return await $fetch<DmShare>(`/api/documents/shares/${documentId}`, {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async revokeShare(shareId: string): Promise<void> {
+      await $fetch(`/api/documents/shares/${shareId}`, { method: 'DELETE' })
+    },
+
+    // Legal Holds
+    async legalHolds(): Promise<DmLegalHold[]> {
+      const res = await $fetch<{ data: DmLegalHold[]; totalCount: number }>('/api/documents/legal-holds')
+      return res.data
+    },
+
+    async createLegalHold(body: { matterNumber: string; title: string; description?: string; custodianName?: string }): Promise<DmLegalHold> {
+      return await $fetch<DmLegalHold>('/api/documents/legal-holds', {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async releaseLegalHold(id: string): Promise<void> {
+      await $fetch(`/api/documents/legal-holds/${id}`, { method: 'DELETE' })
+    },
+
+    async applyLegalHold(holdId: string, documentId: string): Promise<void> {
+      await $fetch(`/api/documents/legal-holds/${holdId}/apply`, {
+        method: 'POST',
+        body: { documentId },
+      })
+    },
+
+    // Signatures
+    async signatures(documentId: string): Promise<DmSignature[]> {
+      const res = await $fetch<{ data: DmSignature[]; totalCount: number }>(`/api/documents/signatures/${documentId}`)
+      return res.data
+    },
+
+    async requestSignature(documentId: string, body: { signerName: string; signerEmail: string; signatureType?: string }): Promise<DmSignature> {
+      return await $fetch<DmSignature>(`/api/documents/signatures/${documentId}`, {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async signDocument(signatureId: string, notes?: string): Promise<void> {
+      await $fetch(`/api/documents/signatures/${signatureId}/sign`, {
+        method: 'POST',
+        body: { notes: notes || '' },
+      })
+    },
+
+    async verifySignature(signatureId: string): Promise<{ verified: boolean; signerName: string; signatureHash: string }> {
+      return await $fetch(`/api/documents/signatures/${signatureId}/verify`, { method: 'POST' })
+    },
+
+    // ERP Entity Links
+    async entityLinks(documentId: string): Promise<DmEntityLink[]> {
+      const res = await $fetch<{ data: DmEntityLink[]; totalCount: number }>(`/api/documents/entity-links/${documentId}`)
+      return res.data
+    },
+
+    async createEntityLink(documentId: string, body: { entityType: string; entityId: string; referenceNumber?: string; linkCategory?: string; notes?: string }): Promise<DmEntityLink> {
+      return await $fetch<DmEntityLink>(`/api/documents/entity-links/${documentId}`, {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async deleteEntityLink(linkId: string): Promise<void> {
+      await $fetch(`/api/documents/entity-links/${linkId}`, { method: 'DELETE' })
+    },
+
+    // Quotas & Settings
+    async quotas(): Promise<DmQuota> {
+      return await $fetch<DmQuota>('/api/documents/quotas')
+    },
+
+    async settings(): Promise<DmSettings> {
+      return await $fetch<DmSettings>('/api/documents/settings')
+    },
+
+    async updateSettings(body: Partial<DmSettings>): Promise<void> {
+      await $fetch('/api/documents/settings', {
+        method: 'PUT',
+        body,
+      })
+    },
+
+    // Workflow Templates & Tasks
+    async workflowTemplates(): Promise<DmWorkflowTemplate[]> {
+      const res = await $fetch<{ data: DmWorkflowTemplate[]; totalCount: number }>('/api/documents/workflow-templates')
+      return res.data
+    },
+
+    async createWorkflowTemplate(body: Partial<DmWorkflowTemplate>): Promise<DmWorkflowTemplate> {
+      return await $fetch<DmWorkflowTemplate>('/api/documents/workflow-templates', {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async deleteWorkflowTemplate(id: string): Promise<void> {
+      await $fetch(`/api/documents/workflow-templates/${id}`, { method: 'DELETE' })
+    },
+
+    async workflowTasks(): Promise<DmWorkflowTask[]> {
+      const res = await $fetch<{ data: DmWorkflowTask[]; totalCount: number }>('/api/documents/workflow-tasks')
+      return res.data
+    },
+
+    async completeWorkflowTask(taskId: string, decision: 'approved' | 'rejected', comment?: string): Promise<void> {
+      await $fetch(`/api/documents/workflow-tasks/${taskId}/complete`, {
+        method: 'POST',
+        body: { decision, comment: comment || '' },
+      })
+    },
+
+    // Annotations
+    async annotations(documentId: string): Promise<DmAnnotation[]> {
+      const res = await $fetch<{ data: DmAnnotation[]; totalCount: number }>(`/api/documents/documents/${documentId}/annotations`)
+      return res.data
+    },
+
+    async createAnnotation(documentId: string, body: Partial<DmAnnotation>): Promise<DmAnnotation> {
+      return await $fetch<DmAnnotation>(`/api/documents/documents/${documentId}/annotations`, {
+        method: 'POST',
+        body,
+      })
+    },
+
+    async deleteAnnotation(documentId: string, annotationId: string): Promise<void> {
+      await $fetch(`/api/documents/documents/${documentId}/annotations/${annotationId}`, { method: 'DELETE' })
+    },
+
+    // AI Operations
+    async classify(documentId: string): Promise<{ category: string; confidence: number; signals: string[]; suggestedTags: string[] }> {
+      return await $fetch(`/api/documents/ai/${documentId}/classify`, { method: 'POST' })
+    },
+
+    async ragQuery(query: string): Promise<{ query: string; answer: string; topConfidence: number; citations: any[] }> {
+      return await $fetch('/api/documents/ai/rag', {
+        method: 'POST',
+        body: { q: query },
       })
     },
   }

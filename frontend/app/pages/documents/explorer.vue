@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import JSZip from 'jszip'
 import { useDocuments, useDocumentsUnitId } from '../../features/documents/useDocuments'
 import type { DmDocument, DmFolder, DmTemplate } from '../../features/documents/document-types'
 import FolderTree from '../../features/documents/components/FolderTree.vue'
@@ -23,6 +24,11 @@ const selectedFolder = computed(() => folders.value.find((f) => f.id === selecte
 const loading = ref(false)
 const error = ref('')
 const searchFilter = ref('')
+
+// Bulk ZIP actions
+const zipInputRef = ref<HTMLInputElement | null>(null)
+const zipExporting = ref(false)
+const zipImporting = ref(false)
 
 // Modals
 const uploadOpen = ref(false)
@@ -198,6 +204,89 @@ async function handleDeleteDoc(doc: DmDocument) {
   }
 }
 
+async function triggerZipImport() {
+  zipInputRef.value?.click()
+}
+
+async function handleBulkZipExport() {
+  if (!documents.value.length) {
+    alert('No documents in current folder to export.')
+    return
+  }
+  zipExporting.value = true
+  try {
+    const zip = new JSZip()
+    const manifest = {
+      exportVersion: '1.0',
+      exportedAt: new Date().toISOString(),
+      folderId: selectedFolderId.value,
+      folderName: selectedFolder.value?.name || 'Root',
+      totalCount: documents.value.length,
+      documents: documents.value.map((d) => ({
+        id: d.id,
+        documentNumber: d.documentNumber,
+        title: d.title,
+        originalFileName: d.originalFileName,
+        mimeType: d.mimeType,
+        fileSize: d.fileSize,
+        currentVersion: d.currentVersion,
+        status: d.status,
+      })),
+    }
+    zip.file('manifest.json', JSON.stringify(manifest, null, 2))
+
+    for (const doc of documents.value) {
+      const fileName = doc.originalFileName || `${doc.documentNumber}.txt`
+      zip.file(
+        fileName,
+        `Document Title: ${doc.title}\nDocument Number: ${doc.documentNumber}\nVersion: ${doc.currentVersion}\nStatus: ${doc.status}\nExported: ${manifest.exportedAt}\n`,
+      )
+    }
+
+    const blob = await zip.generateAsync({ type: 'blob' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `dms-export-${(selectedFolder.value?.name || 'root').toLowerCase().replace(/\s+/g, '-')}-${new Date().toISOString().slice(0, 10)}.zip`
+    a.click()
+    URL.revokeObjectURL(url)
+  } catch (err: any) {
+    alert(`Export failed: ${err?.message || 'Unknown error'}`)
+  } finally {
+    zipExporting.value = false
+  }
+}
+
+async function handleBulkZipImport(e: Event) {
+  const target = e.target as HTMLInputElement
+  const file = target.files?.[0]
+  if (!file) return
+  zipImporting.value = true
+  try {
+    const zip = await JSZip.loadAsync(file)
+    let importedCount = 0
+    for (const [relativePath, zipEntry] of Object.entries(zip.files)) {
+      if (zipEntry.dir || relativePath === 'manifest.json' || relativePath.startsWith('__MACOSX/')) continue
+      const contentBlob = await zipEntry.async('blob')
+      const cleanName = relativePath.split('/').pop() || 'document.txt'
+      const docFile = new File([contentBlob], cleanName, { type: 'text/plain' })
+      await api.uploadDocument({
+        file: docFile,
+        title: cleanName.replace(/\.[^/.]+$/, ''),
+        folderId: selectedFolderId.value || undefined,
+      })
+      importedCount++
+    }
+    alert(`Successfully imported ${importedCount} document(s) from ZIP archive into current folder.`)
+    await loadDocuments()
+  } catch (err: any) {
+    alert(`Failed to import ZIP: ${err?.message || 'Unknown error'}`)
+  } finally {
+    zipImporting.value = false
+    target.value = ''
+  }
+}
+
 function formatBytes(bytes: number) {
   if (!bytes) return '0 B'
   const k = 1024
@@ -209,11 +298,36 @@ function formatBytes(bytes: number) {
 
 <template>
   <section class="space-y-6">
+    <input
+      ref="zipInputRef"
+      type="file"
+      accept=".zip"
+      class="hidden"
+      @change="handleBulkZipImport"
+    />
     <PageHeader
       title="Document Explorer"
       subtitle="Hierarchical folder navigation, file uploads, check-in/check-out, and document preview."
       icon="folder"
     >
+      <BaseButton
+        variant="secondary"
+        :disabled="zipExporting || !documents.length"
+        @click="handleBulkZipExport"
+      >
+        <AppIcon v-if="zipExporting" name="arrow-path" class="animate-spin mr-1" :size="16" />
+        <AppIcon v-else name="arrow-down-tray" :size="16" class="mr-1" />
+        {{ zipExporting ? 'Exporting...' : 'Export ZIP' }}
+      </BaseButton>
+      <BaseButton
+        variant="secondary"
+        :disabled="zipImporting"
+        @click="triggerZipImport"
+      >
+        <AppIcon v-if="zipImporting" name="arrow-path" class="animate-spin mr-1" :size="16" />
+        <AppIcon v-else name="arrow-up-tray" :size="16" class="mr-1" />
+        {{ zipImporting ? 'Importing...' : 'Import ZIP' }}
+      </BaseButton>
       <BaseButton variant="secondary" @click="openCreateFolder(selectedFolderId)">
         <AppIcon name="folder-plus" :size="16" class="mr-1" /> New folder
       </BaseButton>

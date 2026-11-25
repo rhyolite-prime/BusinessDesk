@@ -10,7 +10,10 @@ const unitId = useDocumentsUnitId()
 
 const events = ref<DmAuditEvent[]>([])
 const loading = ref(false)
+const verifying = ref(false)
 const error = ref('')
+const verifyResult = ref<{ verified: boolean; checkedCount: number; status: string } | null>(null)
+const verifyModalOpen = ref(false)
 
 const eventTypeFilter = ref('')
 
@@ -30,6 +33,18 @@ async function load() {
   }
 }
 
+async function handleVerifyChain() {
+  verifying.value = true
+  try {
+    verifyResult.value = await api.verifyAudit()
+    verifyModalOpen.value = true
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Audit verification failed.')
+  } finally {
+    verifying.value = false
+  }
+}
+
 watch(unitId, load)
 watch(eventTypeFilter, load)
 onMounted(load)
@@ -37,11 +52,67 @@ onMounted(load)
 
 <template>
   <section class="space-y-6">
-    <PageHeader
-      title="Audit Trail Log"
-      subtitle="Complete, tamper-evident record of all document actions, edits, approvals, and access."
-      icon="clipboard-document-list"
-    />
+    <div class="flex flex-wrap items-center justify-between gap-4">
+      <PageHeader
+        title="Audit Trail Log"
+        subtitle="Complete, tamper-evident record of all document actions, edits, approvals, and access."
+        icon="clipboard-document-list"
+      />
+      <button
+        type="button"
+        :disabled="verifying"
+        class="inline-flex items-center gap-2 rounded-xl border border-line bg-surface px-4 py-2.5 text-xs font-semibold text-ink shadow-sm hover:border-primary/50 hover:text-primary disabled:opacity-50"
+        @click="handleVerifyChain"
+      >
+        <svg class="h-4 w-4 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+        {{ verifying ? 'Verifying...' : 'Verify SHA-256 Hash Chain' }}
+      </button>
+    </div>
+
+    <!-- Verification Modal -->
+    <div v-if="verifyModalOpen" class="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div class="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-xl">
+        <div class="flex items-center gap-3">
+          <div
+            :class="[
+              'flex h-10 w-10 items-center justify-center rounded-xl',
+              verifyResult?.verified
+                ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-950/60 dark:text-emerald-400'
+                : 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400',
+            ]"
+          >
+            <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+          </div>
+          <div>
+            <h3 class="text-base font-bold text-ink">Audit Integrity Status</h3>
+            <p
+              :class="[
+                'text-xs font-semibold',
+                verifyResult?.verified ? 'text-emerald-600 dark:text-emerald-400' : 'text-red-600 dark:text-red-400',
+              ]"
+            >
+              {{ verifyResult?.verified ? 'Cryptographic Chain Valid' : 'Integrity Mismatch Detected' }}
+            </p>
+          </div>
+        </div>
+
+        <div class="mt-4 space-y-2 rounded-xl bg-canvas p-3 text-xs">
+          <div><span class="font-semibold text-ink">Report:</span> {{ verifyResult?.status }}</div>
+          <div><span class="font-semibold text-ink">Events Checked:</span> {{ verifyResult?.checkedCount }} records</div>
+          <div><span class="font-semibold text-ink">Chaining:</span> SHA-256 (prev_hash + event + payload)</div>
+        </div>
+
+        <div class="mt-6 flex justify-end">
+          <button
+            type="button"
+            class="rounded-xl bg-primary px-4 py-2 text-xs font-semibold text-white hover:bg-primary/90"
+            @click="verifyModalOpen = false"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
 
     <p v-if="error" role="alert" class="text-sm text-red-600">{{ error }}</p>
 

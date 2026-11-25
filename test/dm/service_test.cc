@@ -172,6 +172,12 @@ int main() {
     if (sql.find("SELECT id FROM dm_document_relations WHERE tenant_id=$1 AND source_document_id=$2") != std::string::npos) {
       return drogon::TestResult{};
     }
+    if (sql.find("SELECT id FROM dm_collections WHERE tenant_id=$1 AND lower(name)=lower(") != std::string::npos) {
+      return drogon::TestResult{};
+    }
+    if (sql.find("SELECT id FROM dm_tags WHERE tenant_id=$1 AND lower(name)=lower(") != std::string::npos) {
+      return drogon::TestResult{};
+    }
 
     // Templates
     if (sql.find("INSERT INTO dm_templates") != std::string::npos) {
@@ -343,8 +349,91 @@ int main() {
           {"id", "audit-1"}, {"document_id", docId}, {"folder_id", Json::Value(Json::nullValue)},
           {"event_type", "document.created"}, {"user_id", actor}, {"user_name", "admin"},
           {"details", "{\"title\":\"Service Agreement 2026\"}"}, {"created_at", "2026-11-18 10:00:00"},
-          {"document_number", "DOC-0042"}, {"document_title", "Service Agreement 2026"}
+          {"document_number", "DOC-0042"}, {"document_title", "Service Agreement 2026"},
+          {"prev_hash", "0000000000000000000000000000000000000000000000000000000000000000"},
+          {"curr_hash", "a1b2c3d4e5f60000000000000000000000000000000000000000000000000000"}
       })}};
+    }
+
+    // Enterprise Mocks
+    if (sql.find("FROM dm_collections") != std::string::npos) {
+      return {{rowObj({
+          {"id", "col-1"}, {"name", "Executive Briefs"}, {"description", "Board docs"},
+          {"color", "gold"}, {"icon", "collection"}, {"is_public", true}, {"version", 1},
+          {"created_at", "2026-11-18 10:00:00"}, {"document_count", 3}
+      })}};
+    }
+    if (sql.find("INSERT INTO dm_collections") != std::string::npos) {
+      return {{rowObj({{"id", "col-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_tags") != std::string::npos) {
+      return {{rowObj({{"id", "tag-1"}, {"name", "finance"}, {"color", "#6366f1"}, {"category", "department"}, {"usage_count", 5}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_tags") != std::string::npos) {
+      return {{rowObj({{"id", "tag-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_custom_attributes") != std::string::npos) {
+      return {{rowObj({{"id", "attr-1"}, {"template_id", templateId}, {"attribute_key", "costCenter"}, {"label", "Cost Center"}, {"data_type", "string"}, {"is_required", false}, {"default_value", "HQ"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_custom_attributes") != std::string::npos) {
+      return {{rowObj({{"id", "attr-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_custom_identifiers") != std::string::npos) {
+      return {{rowObj({{"id", "cid-1"}, {"name", "Finance Doc"}, {"pattern", "FIN-{YEAR}-{SEQ}"}, {"prefix", "FIN"}, {"suffix", ""}, {"next_seq", 10}, {"padding", 4}, {"reset_cycle", "yearly"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_custom_identifiers") != std::string::npos) {
+      return {{rowObj({{"id", "cid-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_acl_entries") != std::string::npos) {
+      return {{rowObj({{"id", "acl-1"}, {"entity_type", "document"}, {"entity_id", docId}, {"principal_type", "user"}, {"principal_id", actor}, {"permission", "read"}, {"access_type", "allow"}, {"is_inherited", false}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_acl_entries") != std::string::npos) {
+      return {{rowObj({{"id", "acl-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_shares") != std::string::npos) {
+      return {{rowObj({{"id", "sh-1"}, {"share_token", "sh_token_123"}, {"recipient_email", "partner@example.com"}, {"can_download", true}, {"can_comment", false}, {"expires_at", Json::Value(Json::nullValue)}, {"max_access_count", 10}, {"access_count", 1}, {"is_revoked", false}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_shares") != std::string::npos) {
+      return {{rowObj({{"id", "sh-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_legal_holds") != std::string::npos) {
+      return {{rowObj({{"id", "lh-1"}, {"matter_number", "CASE-2026-001"}, {"title", "Audit 2026"}, {"description", "Litigation freeze"}, {"custodian_name", "Legal Dept"}, {"status", "active"}, {"applied_at", "2026-11-18 10:00:00"}, {"attached_document_count", 2}})}};
+    }
+    if (sql.find("INSERT INTO dm_legal_holds") != std::string::npos) {
+      return {{rowObj({{"id", "lh-1"}, {"version", 1}, {"applied_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_signatures") != std::string::npos) {
+      return {{rowObj({{"id", "sig-1"}, {"signer_name", "John Doe"}, {"signer_email", "john@example.com"}, {"signature_type", "electronic"}, {"status", "signed"}, {"signature_hash", "sig_hash_abc"}, {"signed_at", "2026-11-18 10:00:00"}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_signatures") != std::string::npos) {
+      return {{rowObj({{"id", "sig-1"}, {"status", "pending"}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_entity_links") != std::string::npos) {
+      return {{rowObj({{"id", "el-1"}, {"entity_type", "gl_journal"}, {"entity_id", "00000000-0000-0000-0000-000000000001"}, {"reference_number", "JRN-001"}, {"link_category", "attachment"}, {"notes", "Backup voucher"}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_entity_links") != std::string::npos) {
+      return {{rowObj({{"id", "el-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_quotas") != std::string::npos) {
+      return {{rowObj({{"id", "q-1"}, {"max_storage_bytes", Json::Int64(5368709120LL)}, {"used_storage_bytes", Json::Int64(104857600LL)}, {"max_documents", 50000}, {"document_count", 120}, {"max_file_size_bytes", Json::Int64(104857600LL)}})}};
+    }
+    if (sql.find("FROM dm_settings") != std::string::npos) {
+      return {{rowObj({{"id", "s-1"}, {"storage_provider", "local"}, {"clamav_enabled", false}, {"clamav_host", "127.0.0.1"}, {"clamav_port", 3310}, {"pii_detection_enabled", true}, {"ocr_enabled", false}, {"ocr_language", "eng"}, {"ai_classification_enabled", true}, {"ai_rag_enabled", true}, {"default_retention_days", 365}})}};
+    }
+    if (sql.find("FROM dm_workflow_templates") != std::string::npos) {
+      return {{rowObj({{"id", "wt-1"}, {"name", "Standard Approval"}, {"description", "Two step approval"}, {"trigger_type", "manual"}, {"steps", "[{\"name\":\"Review\",\"taskType\":\"approval\",\"executionMode\":\"sequential\"}]"}, {"is_active", true}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_workflow_templates") != std::string::npos) {
+      return {{rowObj({{"id", "wt-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("FROM dm_workflow_tasks") != std::string::npos) {
+      return {{rowObj({{"id", "task-1"}, {"instance_id", "wi-1"}, {"step_name", "Review"}, {"task_type", "approval"}, {"execution_mode", "sequential"}, {"status", "pending"}, {"due_date", "2026-12-01"}, {"created_at", "2026-11-18 10:00:00"}, {"document_id", docId}, {"document_title", "Agreement"}, {"document_number", "DOC-001"}})}};
+    }
+    if (sql.find("FROM dm_annotations") != std::string::npos) {
+      return {{rowObj({{"id", "an-1"}, {"page_number", 1}, {"annotation_type", "highlight"}, {"rect_x", 10.0}, {"rect_y", 20.0}, {"rect_w", 100.0}, {"rect_h", 20.0}, {"color", "#ffeb3b"}, {"content", "Review clause"}, {"is_resolved", false}, {"created_at", "2026-11-18 10:00:00"}})}};
+    }
+    if (sql.find("INSERT INTO dm_annotations") != std::string::npos) {
+      return {{rowObj({{"id", "an-1"}, {"version", 1}, {"created_at", "2026-11-18 10:00:00"}})}};
     }
 
     // Generic fallback for updates/deletes/inserts
@@ -608,6 +697,75 @@ int main() {
 
   auto numNoUnit = DmService::execute("next-number", "", "", Json::Value(Json::objectValue), 1, 20, "", "", who).get();
   assert(numNoUnit.success);
+
+  // 15. Collections CRUD
+  std::cerr << "[TEST] 15. Collections CRUD\n" << std::flush;
+  auto colList = call("collections.list");
+  assert(colList.success);
+  Json::Value colBody(Json::objectValue);
+  colBody["name"] = "Board Materials";
+  colBody["description"] = "Board meetings and minutes";
+  auto colCreate = call("collections.create", "", colBody);
+  assert(colCreate.success);
+
+  // 16. Tags CRUD
+  std::cerr << "[TEST] 16. Tags CRUD\n" << std::flush;
+  auto tagList = call("tags.list");
+  assert(tagList.success);
+  Json::Value tagBody(Json::objectValue);
+  tagBody["name"] = "audit-2026";
+  auto tagCreate = call("tags.create", "", tagBody);
+  assert(tagCreate.success);
+
+  // 17. Custom Attributes & Identifiers
+  std::cerr << "[TEST] 17. Custom Attributes & Identifiers\n" << std::flush;
+  auto attrList = call("custom-attributes.list");
+  assert(attrList.success);
+  auto idList = call("custom-identifiers.list");
+  assert(idList.success);
+
+  // 18. ACL & Shares
+  std::cerr << "[TEST] 18. ACL & Shares\n" << std::flush;
+  auto aclList = call("acl.list", "", rowObj({{"entityType", "document"}, {"entityId", docId}}));
+  assert(aclList.success);
+  auto shareList = call("shares.list", docId);
+  assert(shareList.success);
+
+  // 19. Legal Holds & E-Signatures
+  std::cerr << "[TEST] 19. Legal Holds & E-Signatures\n" << std::flush;
+  auto lhList = call("legal-holds.list");
+  assert(lhList.success);
+  auto sigList = call("signatures.list", docId);
+  assert(sigList.success);
+
+  // 20. ERP Entity Links
+  std::cerr << "[TEST] 20. ERP Entity Links\n" << std::flush;
+  auto elList = call("entity-links.list", docId);
+  assert(elList.success);
+
+  // 21. Quotas & Settings
+  std::cerr << "[TEST] 21. Quotas & Settings\n" << std::flush;
+  auto qGet = call("quotas.get");
+  assert(qGet.success);
+  auto sGet = call("settings.get");
+  assert(sGet.success);
+
+  // 22. Workflow Templates & Tasks
+  std::cerr << "[TEST] 22. Advanced Workflows\n" << std::flush;
+  auto wtList = call("workflow-templates.list");
+  assert(wtList.success);
+  auto taskList = call("workflow-tasks.list");
+  assert(taskList.success);
+
+  // 23. Annotations, Tamper-evident Audit & Deterministic AI
+  std::cerr << "[TEST] 23. Annotations, Audit Verification & AI\n" << std::flush;
+  auto anList = call("documents.annotations.list", docId);
+  assert(anList.success);
+  auto auditVer = call("audit.verify", docId);
+  assert(auditVer.success);
+  assert(auditVer.result["verified"].asBool() == true);
+  auto ragRes = call("ai.rag", "", rowObj({{"q", "agreement invoice"}}));
+  assert(ragRes.success);
 
   std::cout << "All Document Management service, repository & controller seam tests passed ("
             << sqlLog.size() << " SQL statements exercised)\n";

@@ -60,6 +60,7 @@ g++ -std=c++20 -O0 -Wall -Wextra -Wpedantic -Werror=return-type \
   domain_services/dm/DmFolders.cc \
   domain_services/dm/DmDocuments.cc \
   domain_services/dm/DmWorkflows.cc \
+  domain_services/dm/DmEnterprise.cc \
   domain_services/dm/DmService.cc \
   "$JSONCPP_SOURCE_DIR/dist/jsoncpp.cpp" \
   -o "$work/dm_test"

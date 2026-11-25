@@ -16,6 +16,16 @@ for (const tbl of createdTables) {
   assert.ok(downSql.includes(`DROP TABLE IF EXISTS ${tbl}`), `Missing DROP TABLE for ${tbl}`)
 }
 
+// 1 Enterprise. All 22 enterprise dm_* tables exist, register in reset registry, and reverse in .down.sql.
+const entUpSql = fs.readFileSync('database/migrations/043_document_management_enterprise.sql', 'utf8')
+const entDownSql = fs.readFileSync('database/migrations/043_document_management_enterprise.down.sql', 'utf8')
+const entCreatedTables = [...entUpSql.matchAll(/CREATE TABLE (dm_[a-z0-9_]+)/g)].map((m) => m[1])
+assert.equal(entCreatedTables.length, 22, `Expected 22 enterprise dm_* tables, got ${entCreatedTables.length}`)
+for (const tbl of entCreatedTables) {
+  assert.ok(entUpSql.includes(`('${tbl}', 'Document Management'`), `Missing reset registry entry for ${tbl}`)
+  assert.ok(entDownSql.includes(`DROP TABLE IF EXISTS ${tbl}`), `Missing DROP TABLE for ${tbl}`)
+}
+
 // 1b. No composite keys (no composite PK, UNIQUE table constraint, or composite FK) for Drogon C++ compatibility.
 assert.equal([...upSql.matchAll(/\bPRIMARY KEY\s*\(/gi)].length, 0, 'Unexpected composite PRIMARY KEY')
 assert.equal([...upSql.matchAll(/\bUNIQUE\s*\(/gi)].length, 0, 'Unexpected composite UNIQUE table constraint')
@@ -100,6 +110,11 @@ for (const page of [
   'retention.vue',
   'trash.vue',
   'audit.vue',
+  'collections.vue',
+  'signatures.vue',
+  'legal-holds.vue',
+  'workflow-templates.vue',
+  'settings.vue',
 ]) {
   assert.ok(fs.existsSync(`frontend/app/pages/documents/${page}`), `Missing Document Management page ${page}`)
 }
@@ -112,6 +127,7 @@ const dmCppFiles = [
   'domain_services/dm/DmFolders.cc',
   'domain_services/dm/DmDocuments.cc',
   'domain_services/dm/DmWorkflows.cc',
+  'domain_services/dm/DmEnterprise.cc',
   'domain_services/dm/DmService.cc',
   'controllers/DmController.cc',
 ]
