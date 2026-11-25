@@ -153,7 +153,8 @@ export function voucherReport(voucher: LedgerVoucher, companyInfo: string | Vouc
     const printedOn = `${String(d.getUTCDate()).padStart(2, '0')}-${months[d.getUTCMonth()]}-${d.getUTCFullYear()}`
     const sumWords = voucherAmountInWords(summary.net, currency).replace(/ Only$/i, ' ONLY')
     receiptData = {
-      receiptNo: voucher.voucherNumber || '—',
+      // The saved receipt number can differ from the voucher/batch number.
+      receiptNo: voucher.receiptNo || voucher.receiptNumber || voucher.voucherNumber || '—',
       date: formatReceiptDate(voucher.receiptDate || voucher.entryDate),
       batchNo: voucher.batchNumber || '—',
       rv: voucher.lines[0]?.referenceNumber || voucher.voucherNumber || '—',

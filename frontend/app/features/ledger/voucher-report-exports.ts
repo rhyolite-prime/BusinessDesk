@@ -6,233 +6,157 @@ const widths = [12, 6, 12, 22, 16, 16, 16]
 function customerReceiptPdfDefinition(report: VoucherReport): TDocumentDefinitions {
   const data = report.receiptData!
   const hasLogo = Boolean(report.companyLogoUrl && /^data:image\/(png|jpeg|jpg);base64,/i.test(report.companyLogoUrl))
+  // A4 width less the left and right page margins, in points.
+  const contentWidth = 523
+  const ink = '#19343a', muted = '#5d7377', accent = '#226b65', rule = '#d6e2e0'
+  const secondCopyMarker = 2, copyEndMarker = 3
+  // Keep common amounts prominent, while leaving long currency values legible
+  // within the fixed-width summary area.
+  const amountFontSize = Math.max(9, Math.min(15, 255 / Math.max(1, data.amountPaid.length)))
+  const label = (text: string) => ({ text, fontSize: 7, bold: true, color: muted, characterSpacing: 0.45 })
+  // pdfmake otherwise expands columns to fit an unbroken reference/identifier,
+  // which can push the amount and other receipt fields beyond the paper edge.
+  // Non-breaking spaces are intentionally not treated as word boundaries.
+  const wrapLongWords = (text: string, limit = 18) => text.split(/[ \t\r\n\-/]+/u).some(word => word.length >= limit) ? 'break-all' as const : 'normal' as const
+  const line = (color: string, width = 0.6): Content => ({
+    canvas: [{ type: 'line', x1: 0, y1: 0, x2: contentWidth, y2: 0, lineWidth: width, lineColor: color }],
+  })
 
-  function makeReceiptBlock(copyIndex: number): Content[] {
-    const logoCol: Column = hasLogo
-      ? { image: report.companyLogoUrl!, fit: [65, 65], width: 75 }
-      : { text: '', width: 75 }
-
-    const headerCols: Column[] = [
-      logoCol,
-      {
-        width: '*',
-        stack: [
-          { text: (report.companyName || 'BusinessDesk').toUpperCase(), bold: true, fontSize: 13, alignment: 'center' },
-          { text: report.companyAddress || 'P.O. Box 256', fontSize: 9, alignment: 'center', margin: [0, 3, 0, 0] },
-          { text: report.companyPhone ? `Tel: ${report.companyPhone}` : 'Tel: 0312021227/8 Fax: 0312021227', fontSize: 9, alignment: 'center', margin: [0, 2, 0, 0] },
-        ],
-      },
-      { text: '', width: 75 },
+  function makeReceiptBlock(copyIndex: number): Content {
+    const company: Content[] = [
+      { text: report.companyName || 'BusinessDesk', bold: true, fontSize: 12, color: ink, wordBreak: wrapLongWords(report.companyName || 'BusinessDesk', hasLogo ? 22 : 27) },
     ]
+    // An absent company profile must not turn into fabricated contact details.
+    if (report.companyAddress) company.push({ text: report.companyAddress, fontSize: 8.5, color: muted, wordBreak: wrapLongWords(report.companyAddress, 24), margin: [0, 4, 0, 0] })
+    if (report.companyPhone) company.push({ text: `Tel: ${report.companyPhone}`, fontSize: 8.5, color: muted, wordBreak: wrapLongWords(report.companyPhone, 24), margin: [0, 2, 0, 0] })
+
+    const companyColumns: Column[] = []
+    if (hasLogo) companyColumns.push({ image: report.companyLogoUrl!, fit: [48, 48], width: 48 })
+    companyColumns.push({ width: '*', stack: company })
 
     const header: Content = {
-      columns: headerCols,
-      margin: [0, 0, 0, 8],
-    }
-
-    const metaStack: Content[] = [
-      {
-        columns: [
-          { text: 'Receipt No:', width: 62, bold: true },
-          { text: data.receiptNo, width: '*' },
-        ],
-      },
-      {
-        columns: [
-          { text: 'Date      :', width: 62, bold: true },
-          { text: data.date, width: '*' },
-        ],
-        margin: [0, 2, 0, 0],
-      },
-      {
-        columns: [
-          { text: 'Batch No  :', width: 62, bold: true },
-          { text: data.batchNo, width: '*' },
-        ],
-        margin: [0, 2, 0, 0],
-      },
-      {
-        columns: [
-          { text: 'RV.       :', width: 62, bold: true },
-          { text: data.rv, width: '*' },
-        ],
-        margin: [0, 2, 0, 0],
-      },
-    ]
-
-    if (data.regNo) {
-      metaStack.push({
-        columns: [
-          { text: 'Reg. No.  :', width: 62, bold: true },
-          { text: data.regNo, width: '*' },
-        ],
-        margin: [0, 2, 0, 0],
-      })
-    }
-
-    const titleAndMetaCols: Column[] = [
-      {
-        width: 310,
-        margin: [0, 2, 0, 0],
-        table: {
-          widths: ['*'],
-          body: [
-            [
-              {
-                text: 'OFFICIAL RECEIPT',
-                bold: true,
-                fontSize: 13,
-                alignment: 'center',
-                margin: [0, 4, 0, 4],
-              },
-            ],
-          ],
-        },
-        layout: {
-          hLineWidth: () => 1,
-          vLineWidth: () => 1,
-          hLineColor: () => '#111111',
-          vLineColor: () => '#111111',
-        },
-      },
-      {
-        width: 200,
-        margin: [12, 0, 0, 0],
-        fontSize: 8.5,
-        stack: metaStack,
-      },
-    ]
-
-    const titleAndMeta: Content = {
-      columns: titleAndMetaCols,
-      margin: [0, 0, 0, 8],
-    }
-
-    const bodyFields: Content = {
-      fontSize: 9,
-      stack: [
+      columns: [
+        { width: '*', columns: companyColumns, columnGap: 12 },
         {
-          columns: [
-            { text: 'Receipt From :', width: 85, bold: true },
-            { text: data.receivedFrom, width: '*', bold: true },
+          width: 180,
+          alignment: 'right',
+          stack: [
+            { text: 'OFFICIAL RECEIPT', fontSize: 15.5, bold: true, color: ink },
+            { text: 'RECEIPT NO.', fontSize: 7, bold: true, color: muted, characterSpacing: 0.45, margin: [0, 8, 0, 2] },
+            { text: data.receiptNo, fontSize: 10, bold: true, color: accent, wordBreak: wrapLongWords(data.receiptNo) },
           ],
-          margin: [0, 2, 0, 2],
-        },
-        {
-          columns: [
-            { text: 'The Sum of   :', width: 85, bold: true },
-            { text: data.theSumOf, width: '*' },
-          ],
-          margin: [0, 2, 0, 2],
-        },
-        {
-          columns: [
-            { text: 'being        :', width: 85, bold: true },
-            { text: data.being, width: '*' },
-          ],
-          margin: [0, 2, 0, 6],
-        },
-        {
-          columns: [
-            { text: 'Cheque No    :', width: 85, bold: true },
-            { text: data.chequeNo, width: '*' },
-          ],
-          margin: [0, 3, 0, 2],
-        },
-        {
-          columns: [
-            { text: 'Amount Paid  :', width: 85, bold: true },
-            { text: data.amountPaid, width: '*', bold: true, fontSize: 10 },
-          ],
-          margin: [0, 2, 0, 4],
         },
       ],
-      margin: [0, 0, 0, 6],
+      columnGap: 16,
+      margin: [0, 0, 0, 13],
     }
 
-    const sigCols: Column[] = [
-      { text: '', width: '*' },
-      {
-        width: 170,
-        stack: [
-          {
-            canvas: [
-              {
-                type: 'line',
-                x1: 0,
-                y1: 0,
-                x2: 170,
-                y2: 0,
-                lineWidth: 0.8,
-                lineColor: '#222222',
-              },
-            ],
-          },
-          { text: data.admin || 'Admin', alignment: 'center', fontSize: 9, margin: [0, 3, 0, 0] },
-        ],
-      },
+    const metadata = [
+      { label: 'RECEIPT DATE', value: data.date },
+      { label: 'BATCH NO.', value: data.batchNo },
+      { label: 'R.V. / REFERENCE', value: data.rv },
+      ...(data.regNo ? [{ label: 'REG. NO.', value: data.regNo }] : []),
     ]
+    const metaColumns: Column[] = metadata.map(item => ({
+      width: '*',
+      stack: [label(item.label), { text: item.value, fontSize: 9, color: ink, wordBreak: wrapLongWords(item.value, metadata.length === 4 ? 13 : 18), margin: [0, 4, 0, 0] }],
+    }))
+    const meta: Content = { columns: metaColumns, columnGap: 12, margin: [0, 13, 0, 13] }
+
+    const field = (name: string, value: string, prominent = false): Content => ({
+      stack: [
+        label(name),
+        { text: value, fontSize: prominent ? 12 : 9.5, bold: prominent, color: ink, wordBreak: wrapLongWords(value, prominent ? 25 : 35), lineHeight: 1.15, margin: [0, 4, 0, 0] },
+      ],
+      margin: [0, 0, 0, 13],
+    })
+    const details: Content = {
+      columns: [
+        {
+          width: '*',
+          stack: [
+            field('RECEIVED FROM', data.receivedFrom, true),
+            field('THE SUM OF', data.theSumOf),
+            field('PAYMENT FOR', data.being),
+          ],
+        },
+        {
+          width: 170,
+          table: {
+            widths: ['*'],
+            body: [[{
+              fillColor: '#edf5f3',
+              stack: [
+                label('AMOUNT PAID'),
+                { text: data.amountPaid, fontSize: amountFontSize, bold: true, color: accent, wordBreak: wrapLongWords(data.amountPaid, 14), margin: [0, 5, 0, 0] },
+                { ...label('CHEQUE NO. / PAYMENT'), margin: [0, 18, 0, 0] },
+                { text: data.chequeNo, fontSize: 9.5, color: ink, wordBreak: wrapLongWords(data.chequeNo, 15), margin: [0, 4, 0, 0] },
+              ],
+            }]],
+          },
+          layout: {
+            hLineWidth: () => 0, vLineWidth: () => 0,
+            paddingLeft: () => 13, paddingRight: () => 13,
+            paddingTop: () => 12, paddingBottom: () => 13,
+          },
+        },
+      ],
+      columnGap: 22,
+      margin: [0, 16, 0, 0],
+    }
 
     const signature: Content = {
-      columns: sigCols,
-      margin: [0, 4, 0, 8],
-    }
-
-    const footerLine: Content = {
-      canvas: [
+      columns: [
+        { width: '*', text: '' },
         {
-          type: 'line',
-          x1: 0,
-          y1: 0,
-          x2: 523,
-          y2: 0,
-          lineWidth: 0.6,
-          lineColor: '#555555',
+          width: 150,
+          stack: [
+            { canvas: [{ type: 'line', x1: 0, y1: 0, x2: 150, y2: 0, lineWidth: 0.6, lineColor: '#9aaead' }] },
+            { text: data.admin || 'Admin', alignment: 'center', fontSize: 9, color: ink, wordBreak: wrapLongWords(data.admin || 'Admin', 16), margin: [0, 5, 0, 0] },
+            { text: 'PREPARED BY', alignment: 'center', fontSize: 6.5, bold: true, color: muted, characterSpacing: 0.4, margin: [0, 3, 0, 0] },
+          ],
         },
       ],
+      margin: [0, 35, 0, 17],
+    }
+    const copyFooter: Content = {
+      columns: [
+        { width: '*', text: `Report Printed On ${data.printedOn}` },
+        { width: 'auto', text: 'BusinessDesk · G/L', alignment: 'center' },
+        { width: 85, text: `COPY ${String(copyIndex).padStart(2, '0')}`, alignment: 'right', headlineLevel: copyEndMarker },
+      ],
+      fontSize: 7.5,
+      color: muted,
+      margin: [0, 6, 0, 0],
     }
 
-    const footerCols: Column[] = [
-      { text: `Report Printed On ${data.printedOn}`, width: 200, fontSize: 8, color: '#333333' },
-      { text: 'BusinessDesk · G/L', width: '*', alignment: 'center', fontSize: 8, color: '#333333' },
-      { text: 'Page 1 of 1', width: 120, alignment: 'right', fontSize: 8, color: '#333333' },
-    ]
-
-    const footerText: Content = {
-      columns: footerCols,
-      margin: [0, 3, 0, 0],
+    return {
+      // A normal receipt copy should stay together when the second one does not
+      // fit in the remaining space. Very long content may still flow naturally.
+      headlineLevel: copyIndex === 2 ? secondCopyMarker : undefined,
+      stack: [header, line(accent, 1.2), meta, line(rule), details, signature, line(rule), copyFooter],
     }
-
-    return [header, titleAndMeta, bodyFields, signature, footerLine, footerText]
   }
 
   const cutLine: Content = {
-    margin: [0, 10, 0, 10],
-    canvas: [
-      {
-        type: 'line',
-        x1: 0,
-        y1: 0,
-        x2: 523,
-        y2: 0,
-        lineWidth: 1,
-        dash: { length: 3, space: 3 },
-        lineColor: '#888888',
-      },
-    ],
+    margin: [0, 22, 0, 22],
+    canvas: [{ type: 'line', x1: 0, y1: 0, x2: contentWidth, y2: 0, lineWidth: 0.6, dash: { length: 3, space: 4 }, lineColor: '#a8bab8' }],
   }
 
   return {
     info: { title: 'OFFICIAL RECEIPT', author: report.companyName, creator: 'BusinessDesk' },
     pageSize: 'A4',
     pageOrientation: 'portrait',
-    pageMargins: [36, 22, 36, 22],
-    defaultStyle: { font: 'Roboto', fontSize: 8.5, color: '#171717' },
-    content: [
-      ...makeReceiptBlock(1),
-      cutLine,
-      ...makeReceiptBlock(2),
-    ],
+    pageMargins: [36, 26, 36, 30],
+    defaultStyle: { font: 'Roboto', fontSize: 9, color: ink },
+    footer: (page, pages) => ({ text: `Page ${page} of ${pages}`, alignment: 'right', margin: [36, 7, 36, 0], fontSize: 7, color: muted }),
+    // If the first copy ends on this page but the second one would be split,
+    // start the latter on a fresh page. Avoid a blank page when a separator
+    // has already flowed to a new sheet and oversized content must continue.
+    pageBreakBefore: (node, following, _nextPage, previous) => node.headlineLevel === secondCopyMarker
+      && previous.some(item => item.headlineLevel === copyEndMarker)
+      && !following.some(item => item.headlineLevel === copyEndMarker),
+    content: [makeReceiptBlock(1), cutLine, makeReceiptBlock(2)],
   }
 }
 
