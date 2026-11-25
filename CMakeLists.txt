@@ -83,9 +83,14 @@ add_executable(${PROJECT_NAME} main.${DEFAULT_SOURCE_EXTENSION}
         domain_services/fleet_workshop/FleetWorkshopJobs.cc
         domain_services/dm/DmService.h
         domain_services/dm/DmInternal.h
+        domain_services/dm/DmStorage.h
+        domain_services/dm/DmAi.h
+        domain_services/dm/DmWorkflowEngine.h
+        domain_services/dm/DmEnterprise.h
         domain_services/dm/DmFolders.cc
         domain_services/dm/DmDocuments.cc
         domain_services/dm/DmWorkflows.cc
+        domain_services/dm/DmEnterprise.cc
         domain_services/dm/DmService.cc
 )
 

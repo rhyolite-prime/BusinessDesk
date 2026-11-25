@@ -32,6 +32,12 @@ export const documentPages: ModulePageDefinition[] = [
     icon: 'folder',
   },
   {
+    path: '/documents/collections',
+    title: 'Document collections',
+    description: 'Virtual cross-unit document collections for projects, executive briefs, and departments.',
+    icon: 'rectangle-stack',
+  },
+  {
     path: '/documents/search',
     title: 'Advanced & parametric search',
     description: 'Fast full-text retrieval, parametric filters, tag searches, and saved query management.',
@@ -42,6 +48,18 @@ export const documentPages: ModulePageDefinition[] = [
     title: 'Review & approval workflows',
     description: 'Workflow task queue for document reviews, approvals, rejections, and decision audits.',
     icon: 'document-check',
+  },
+  {
+    path: '/documents/workflow-templates',
+    title: 'Workflow engine & templates',
+    description: 'Multi-step workflow builder with sequential and parallel tasks, triggers, and condition rules.',
+    icon: 'arrows-pointing-in',
+  },
+  {
+    path: '/documents/signatures',
+    title: 'Electronic signatures',
+    description: 'Digital signature requests, document signing, and SHA-256 cryptographic verification.',
+    icon: 'pencil-square',
   },
   {
     path: '/documents/templates',
@@ -56,6 +74,12 @@ export const documentPages: ModulePageDefinition[] = [
     icon: 'shield-check',
   },
   {
+    path: '/documents/legal-holds',
+    title: 'Litigation legal holds',
+    description: 'Litigation and compliance freeze holds protecting sensitive documents from disposal or purging.',
+    icon: 'lock-closed',
+  },
+  {
     path: '/documents/trash',
     title: 'Recycle bin',
     description: 'Soft-deleted records with one-click restore and administrative permanent purging.',
@@ -64,8 +88,14 @@ export const documentPages: ModulePageDefinition[] = [
   {
     path: '/documents/audit',
     title: 'Audit trail log',
-    description: 'Immutable timeline of every document access, edit, status transition, and administrative action.',
+    description: 'Tamper-evident SHA-256 hash-chain audit log with cryptographic integrity verification.',
     icon: 'clipboard-document-list',
+  },
+  {
+    path: '/documents/settings',
+    title: 'Settings & Quotas',
+    description: 'Tenant storage quotas, ClamAV malware scanning, OCR extraction, and AI feature configuration.',
+    icon: 'cog-6-tooth',
   },
 ]
 
@@ -75,6 +105,7 @@ export const documentNavigationGroups: ModuleNavGroup[] = [
     icon: 'folder',
     links: [
       { label: 'Explorer', to: '/documents/explorer', icon: 'folder' },
+      { label: 'Collections', to: '/documents/collections', icon: 'rectangle-stack' },
       { label: 'Search', to: '/documents/search', icon: 'magnifying-glass' },
     ],
   },
@@ -83,6 +114,17 @@ export const documentNavigationGroups: ModuleNavGroup[] = [
     icon: 'document-check',
     links: [
       { label: 'Approvals queue', to: '/documents/approvals', icon: 'document-check' },
+      { label: 'Workflow templates', to: '/documents/workflow-templates', icon: 'arrows-pointing-in' },
+      { label: 'E-Signatures', to: '/documents/signatures', icon: 'pencil-square' },
+    ],
+  },
+  {
+    title: 'Governance',
+    icon: 'shield-check',
+    links: [
+      { label: 'Legal holds', to: '/documents/legal-holds', icon: 'lock-closed' },
+      { label: 'Recycle bin', to: '/documents/trash', icon: 'trash' },
+      { label: 'Audit trail', to: '/documents/audit', icon: 'clipboard-document-list' },
     ],
   },
   {
@@ -91,14 +133,7 @@ export const documentNavigationGroups: ModuleNavGroup[] = [
     links: [
       { label: 'Metadata templates', to: '/documents/templates', icon: 'rectangle-stack' },
       { label: 'Retention policies', to: '/documents/retention', icon: 'shield-check' },
-    ],
-  },
-  {
-    title: 'Governance',
-    icon: 'shield-check',
-    links: [
-      { label: 'Recycle bin', to: '/documents/trash', icon: 'trash' },
-      { label: 'Audit trail', to: '/documents/audit', icon: 'clipboard-document-list' },
+      { label: 'Settings & Quotas', to: '/documents/settings', icon: 'cog-6-tooth' },
     ],
   },
   {

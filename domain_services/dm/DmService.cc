@@ -1,5 +1,6 @@
 #include "domain_services/dm/DmService.h"
 #include "domain_services/dm/DmInternal.h"
+#include "domain_services/dm/DmEnterprise.h"
 #include "utils/TransactionUtil.h"
 
 namespace business_desk::domain_services {
@@ -79,7 +80,9 @@ DmService::execute(std::string op, std::string id, std::string subId, Json::Valu
                        op.ends_with(".unlock") || op.ends_with(".bookmark") || op.ends_with(".revert") ||
                        op.ends_with(".submit") || op.ends_with(".approve") || op.ends_with(".reject") ||
                        op.ends_with(".cancel") || op.ends_with(".add") || op.ends_with(".remove") ||
-                       op.ends_with(".restore") || op.ends_with(".purge");
+                       op.ends_with(".restore") || op.ends_with(".purge") || op.ends_with(".sign") ||
+                       op.ends_with(".complete") || op.ends_with(".sweep") || op.ends_with(".generate") ||
+                       op.ends_with(".apply");
 
   bool canWrite = false;
   auto authz = co_await inventory_internal::authorize(db, who, isWrite, "dm", canWrite);
@@ -129,6 +132,48 @@ DmService::execute(std::string op, std::string id, std::string subId, Json::Valu
         co_return co_await dm_workflows::listTrash(db, tenantId, unitId);
       if (op == "audit.list")
         co_return co_await dm_workflows::listAudit(db, tenantId, body, page, size);
+
+      // Enterprise DMS Reads
+      if (op == "collections.list")
+        co_return co_await dm_enterprise::listCollections(db, tenantId, unitId);
+      if (op == "collections.get")
+        co_return co_await dm_enterprise::getCollection(db, tenantId, id);
+      if (op == "tags.list")
+        co_return co_await dm_enterprise::listTags(db, tenantId);
+      if (op == "custom-attributes.list")
+        co_return co_await dm_enterprise::listCustomAttributes(db, tenantId);
+      if (op == "custom-identifiers.list")
+        co_return co_await dm_enterprise::listCustomIdentifiers(db, tenantId);
+      if (op == "acl.list")
+        co_return co_await dm_enterprise::listAclEntries(db, tenantId, body["entityType"].asString(), body["entityId"].asString());
+      if (op == "shares.list")
+        co_return co_await dm_enterprise::listShares(db, tenantId, id);
+      if (op == "legal-holds.list")
+        co_return co_await dm_enterprise::listLegalHolds(db, tenantId);
+      if (op == "signatures.list")
+        co_return co_await dm_enterprise::listSignatures(db, tenantId, id);
+      if (op == "signatures.verify")
+        co_return co_await dm_enterprise::verifySignature(db, tenantId, id);
+      if (op == "entity-links.list")
+        co_return co_await dm_enterprise::listEntityLinks(db, tenantId, id);
+      if (op == "quotas.get")
+        co_return co_await dm_enterprise::getQuotas(db, tenantId);
+      if (op == "settings.get")
+        co_return co_await dm_enterprise::getSettings(db, tenantId);
+      if (op == "workflow-templates.list")
+        co_return co_await dm_enterprise::listWorkflowTemplates(db, tenantId);
+      if (op == "workflow-instances.list")
+        co_return co_await dm_enterprise::listWorkflowInstances(db, tenantId, id);
+      if (op == "workflow-tasks.list")
+        co_return co_await dm_enterprise::listWorkflowTasks(db, tenantId, who);
+      if (op == "documents.annotations.list")
+        co_return co_await dm_enterprise::listAnnotations(db, tenantId, id);
+      if (op == "audit.verify")
+        co_return co_await dm_enterprise::verifyAuditChain(db, tenantId, id);
+      if (op == "ai.classify")
+        co_return co_await dm_enterprise::classifyDocument(db, tenantId, id);
+      if (op == "ai.rag")
+        co_return co_await dm_enterprise::ragSearch(db, tenantId, body["q"].asString());
 
       co_return fail("not_found", "Unknown Document Management read operation: " + op);
     } catch (const std::exception &e) {
@@ -198,6 +243,66 @@ DmService::execute(std::string op, std::string id, std::string subId, Json::Valu
       r = co_await dm_workflows::restoreTrash(tx, tenantId, id, body["type"].asString(), who);
     else if (op == "trash.purge")
       r = co_await dm_workflows::purgeTrash(tx, tenantId, id, who);
+
+    // Enterprise DMS Writes
+    else if (op == "collections.create")
+      r = co_await dm_enterprise::createCollection(tx, tenantId, unitId, body, who);
+    else if (op == "collections.update")
+      r = co_await dm_enterprise::updateCollection(tx, tenantId, id, body, who);
+    else if (op == "collections.delete")
+      r = co_await dm_enterprise::deleteCollection(tx, tenantId, id, who);
+    else if (op == "tags.create")
+      r = co_await dm_enterprise::createTag(tx, tenantId, body, who);
+    else if (op == "tags.delete")
+      r = co_await dm_enterprise::deleteTag(tx, tenantId, id, who);
+    else if (op == "custom-attributes.create")
+      r = co_await dm_enterprise::createCustomAttribute(tx, tenantId, body, who);
+    else if (op == "custom-attributes.delete")
+      r = co_await dm_enterprise::deleteCustomAttribute(tx, tenantId, id, who);
+    else if (op == "custom-identifiers.create")
+      r = co_await dm_enterprise::createCustomIdentifier(tx, tenantId, unitId, body, who);
+    else if (op == "custom-identifiers.generate")
+      r = co_await dm_enterprise::generateIdentifier(tx, tenantId, id);
+    else if (op == "acl.create")
+      r = co_await dm_enterprise::createAclEntry(tx, tenantId, body, who);
+    else if (op == "acl.delete")
+      r = co_await dm_enterprise::deleteAclEntry(tx, tenantId, id, who);
+    else if (op == "shares.create")
+      r = co_await dm_enterprise::createShare(tx, tenantId, id, body, who);
+    else if (op == "shares.delete")
+      r = co_await dm_enterprise::revokeShare(tx, tenantId, id, who);
+    else if (op == "legal-holds.create")
+      r = co_await dm_enterprise::createLegalHold(tx, tenantId, body, who);
+    else if (op == "legal-holds.delete")
+      r = co_await dm_enterprise::releaseLegalHold(tx, tenantId, id, who);
+    else if (op == "legal-holds.apply")
+      r = co_await dm_enterprise::applyLegalHold(tx, tenantId, id, subId, who);
+    else if (op == "signatures.create")
+      r = co_await dm_enterprise::requestSignature(tx, tenantId, id, body, who);
+    else if (op == "signatures.sign")
+      r = co_await dm_enterprise::signDocument(tx, tenantId, id, body, who);
+    else if (op == "entity-links.create")
+      r = co_await dm_enterprise::createEntityLink(tx, tenantId, id, body, who);
+    else if (op == "entity-links.delete")
+      r = co_await dm_enterprise::deleteEntityLink(tx, tenantId, id, who);
+    else if (op == "quotas.update")
+      r = co_await dm_enterprise::updateQuotas(tx, tenantId, body, who);
+    else if (op == "settings.update")
+      r = co_await dm_enterprise::updateSettings(tx, tenantId, body, who);
+    else if (op == "workflow-templates.create")
+      r = co_await dm_enterprise::createWorkflowTemplate(tx, tenantId, body, who);
+    else if (op == "workflow-templates.delete")
+      r = co_await dm_enterprise::deleteWorkflowTemplate(tx, tenantId, id, who);
+    else if (op == "workflow-instances.create")
+      r = co_await dm_enterprise::startWorkflowInstance(tx, tenantId, id, body["templateId"].asString(), who);
+    else if (op == "workflow-tasks.complete")
+      r = co_await dm_enterprise::completeWorkflowTask(tx, tenantId, id, body, who);
+    else if (op == "workflow-tasks.sweep")
+      r = co_await dm_enterprise::sweepWorkflowTasks(tx, tenantId, who);
+    else if (op == "documents.annotations.add")
+      r = co_await dm_enterprise::createAnnotation(tx, tenantId, id, body, who);
+    else if (op == "documents.annotations.remove")
+      r = co_await dm_enterprise::deleteAnnotation(tx, tenantId, subId, who);
     else
       r = fail("not_found", "Unknown Document Management write operation: " + op);
 

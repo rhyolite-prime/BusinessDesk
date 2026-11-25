@@ -1,5 +1,16 @@
 <script setup lang="ts">
-import type { DmDocument, DmVersion, DmWorkflow, DmNote, DmRelation, DmAuditEvent } from '../document-types'
+import type {
+  DmDocument,
+  DmVersion,
+  DmWorkflow,
+  DmNote,
+  DmRelation,
+  DmAuditEvent,
+  DmAnnotation,
+  DmAclEntry,
+  DmShare,
+  DmEntityLink,
+} from '../document-types'
 import { useDocuments } from '../useDocuments'
 
 const props = defineProps<{
@@ -16,13 +27,17 @@ const emit = defineEmits<{
 }>()
 
 const api = useDocuments()
-const activeTab = ref<'preview' | 'properties' | 'versions' | 'workflow' | 'notes' | 'relations' | 'audit'>('preview')
+const activeTab = ref<'preview' | 'properties' | 'versions' | 'workflow' | 'notes' | 'relations' | 'annotations' | 'acl' | 'shares' | 'entityLinks' | 'ai' | 'audit'>('preview')
 
 const versions = ref<DmVersion[]>([])
 const workflows = ref<DmWorkflow[]>([])
 const notes = ref<DmNote[]>([])
 const relations = ref<DmRelation[]>([])
 const auditLogs = ref<DmAuditEvent[]>([])
+const annotations = ref<DmAnnotation[]>([])
+const aclEntries = ref<DmAclEntry[]>([])
+const shares = ref<DmShare[]>([])
+const entityLinks = ref<DmEntityLink[]>([])
 
 const newNote = ref('')
 const noteLoading = ref(false)
@@ -33,21 +48,205 @@ const relationLoading = ref(false)
 
 const allDocs = ref<Array<{ id: string; title: string; documentNumber: string }>>([])
 
+// Annotation form
+const newAnnotPage = ref(1)
+const newAnnotType = ref<'highlight' | 'note' | 'rect'>('highlight')
+const newAnnotColor = ref('#ffeb3b')
+const newAnnotContent = ref('')
+
+// ACL form
+const newAclPrincType = ref('user')
+const newAclPrincId = ref('')
+const newAclPerm = ref<'read' | 'write' | 'delete' | 'share' | 'sign' | 'admin'>('read')
+const newAclAccess = ref<'allow' | 'deny'>('allow')
+
+// Share form
+const newShareEmail = ref('')
+const newShareCanDl = ref(true)
+const newShareCanCom = ref(false)
+const newShareMaxCount = ref(0)
+const createdShareToken = ref('')
+
+// Entity Link form
+const newEntType = ref('gl_journal')
+const newEntId = ref('')
+const newEntRef = ref('')
+const newEntCat = ref('attachment')
+
+// AI state
+const aiCategory = ref('')
+const aiConfidence = ref(0)
+const aiSignals = ref<string[]>([])
+const aiClassifying = ref(false)
+const ragQueryText = ref('')
+const ragAnswer = ref('')
+const ragCitations = ref<any[]>([])
+const ragLoading = ref(false)
+
 async function loadDetails() {
   if (!props.document) return
   try {
     const docId = props.document.id
-    const [vList, wList, nList, rList, aList] = await Promise.all([
+    const [vList, wList, nList, rList, aList, annotList, aclList, shList, elList] = await Promise.all([
       api.versions(docId).catch(() => []),
       api.workflows({ documentId: docId }).then((r) => r.data).catch(() => []),
       api.notes(docId).catch(() => []),
       api.relations(docId).catch(() => []),
       api.audit({ documentId: docId }).then((r) => r.data).catch(() => []),
+      api.annotations(docId).catch(() => []),
+      api.aclEntries('document', docId).catch(() => []),
+      api.shares(docId).catch(() => []),
+      api.entityLinks(docId).catch(() => []),
     ])
     versions.value = vList
     workflows.value = wList
     notes.value = nList
     relations.value = rList
+    auditLogs.value = aList
+    annotations.value = annotList
+    aclEntries.value = aclList
+    shares.value = shList
+    entityLinks.value = elList
+  } catch (e) {
+    // Ignore error
+  }
+}
+
+async function handleAddAnnotation() {
+  if (!props.document || !newAnnotContent.value.trim()) return
+  try {
+    await api.createAnnotation(props.document.id, {
+      pageNumber: newAnnotPage.value,
+      annotationType: newAnnotType.value,
+      color: newAnnotColor.value,
+      content: newAnnotContent.value.trim(),
+    })
+    newAnnotContent.value = ''
+    annotations.value = await api.annotations(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not add annotation.')
+  }
+}
+
+async function handleDeleteAnnotation(id: string) {
+  if (!props.document) return
+  try {
+    await api.deleteAnnotation(props.document.id, id)
+    annotations.value = await api.annotations(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not delete annotation.')
+  }
+}
+
+async function handleAddAcl() {
+  if (!props.document || !newAclPrincId.value.trim()) return
+  try {
+    await api.createAclEntry({
+      entityType: 'document',
+      entityId: props.document.id,
+      principalType: newAclPrincType.value,
+      principalId: newAclPrincId.value.trim(),
+      permission: newAclPerm.value,
+      accessType: newAclAccess.value,
+    })
+    newAclPrincId.value = ''
+    aclEntries.value = await api.aclEntries('document', props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not add ACL rule.')
+  }
+}
+
+async function handleDeleteAcl(id: string) {
+  if (!props.document) return
+  try {
+    await api.deleteAclEntry(id)
+    aclEntries.value = await api.aclEntries('document', props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not remove ACL rule.')
+  }
+}
+
+async function handleCreateShare() {
+  if (!props.document) return
+  try {
+    const sh = await api.createShare(props.document.id, {
+      recipientEmail: newShareEmail.value.trim() || undefined,
+      canDownload: newShareCanDl.value,
+      canComment: newShareCanCom.value,
+      maxAccessCount: newShareMaxCount.value || undefined,
+    })
+    createdShareToken.value = sh.shareToken
+    shares.value = await api.shares(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not generate share link.')
+  }
+}
+
+async function handleRevokeShare(id: string) {
+  if (!props.document) return
+  try {
+    await api.revokeShare(id)
+    shares.value = await api.shares(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not revoke share.')
+  }
+}
+
+async function handleAddEntityLink() {
+  if (!props.document || !newEntId.value.trim()) return
+  try {
+    await api.createEntityLink(props.document.id, {
+      entityType: newEntType.value,
+      entityId: newEntId.value.trim(),
+      referenceNumber: newEntRef.value.trim(),
+      linkCategory: newEntCat.value,
+    })
+    newEntId.value = ''
+    newEntRef.value = ''
+    entityLinks.value = await api.entityLinks(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not link ERP entity.')
+  }
+}
+
+async function handleRemoveEntityLink(id: string) {
+  if (!props.document) return
+  try {
+    await api.deleteEntityLink(id)
+    entityLinks.value = await api.entityLinks(props.document.id)
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Could not unlink ERP entity.')
+  }
+}
+
+async function handleRunClassify() {
+  if (!props.document) return
+  aiClassifying.value = true
+  try {
+    const res = await api.classify(props.document.id)
+    aiCategory.value = res.category
+    aiConfidence.value = res.confidence
+    aiSignals.value = res.signals
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'Classification failed.')
+  } finally {
+    aiClassifying.value = false
+  }
+}
+
+async function handleRunRag() {
+  if (!ragQueryText.value.trim()) return
+  ragLoading.value = true
+  try {
+    const res = await api.ragQuery(ragQueryText.value.trim())
+    ragAnswer.value = res.answer
+    ragCitations.value = res.citations
+  } catch (e: any) {
+    alert(e?.data?.statusMessage || 'RAG search failed.')
+  } finally {
+    ragLoading.value = false
+  }
+}
     auditLogs.value = aList
   } catch (e) {
     // Ignore error
@@ -232,6 +431,46 @@ function formatBytes(bytes: number) {
           @click="activeTab = 'relations'"
         >
           Relations ({{ relations.length }})
+        </button>
+        <button
+          type="button"
+          class="border-b-2 px-3 py-2 transition"
+          :class="activeTab === 'annotations' ? 'border-primary text-primary font-bold' : 'border-transparent hover:text-ink'"
+          @click="activeTab = 'annotations'"
+        >
+          Annotations ({{ annotations.length }})
+        </button>
+        <button
+          type="button"
+          class="border-b-2 px-3 py-2 transition"
+          :class="activeTab === 'acl' ? 'border-primary text-primary font-bold' : 'border-transparent hover:text-ink'"
+          @click="activeTab = 'acl'"
+        >
+          ACL ({{ aclEntries.length }})
+        </button>
+        <button
+          type="button"
+          class="border-b-2 px-3 py-2 transition"
+          :class="activeTab === 'shares' ? 'border-primary text-primary font-bold' : 'border-transparent hover:text-ink'"
+          @click="activeTab = 'shares'"
+        >
+          Shares ({{ shares.length }})
+        </button>
+        <button
+          type="button"
+          class="border-b-2 px-3 py-2 transition"
+          :class="activeTab === 'entityLinks' ? 'border-primary text-primary font-bold' : 'border-transparent hover:text-ink'"
+          @click="activeTab = 'entityLinks'"
+        >
+          ERP Links ({{ entityLinks.length }})
+        </button>
+        <button
+          type="button"
+          class="border-b-2 px-3 py-2 transition"
+          :class="activeTab === 'ai' ? 'border-primary text-primary font-bold' : 'border-transparent hover:text-ink'"
+          @click="activeTab = 'ai'"
+        >
+          AI Assistant
         </button>
         <button
           type="button"
@@ -465,6 +704,448 @@ function formatBytes(bytes: number) {
         </div>
         <div v-else class="py-6 text-center text-xs text-ink-faint">
           No audit entries recorded.
+        </div>
+      </div>
+
+      <!-- Tab 8: Annotations -->
+      <div v-if="activeTab === 'annotations'" class="space-y-3">
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <h4 class="text-xs font-semibold text-ink">Add Page Annotation</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Page</label>
+              <input
+                v-model.number="newAnnotPage"
+                type="number"
+                min="1"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Type</label>
+              <select
+                v-model="newAnnotType"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                <option value="highlight">Highlight</option>
+                <option value="note">Sticky Note</option>
+                <option value="rect">Rectangle</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Color</label>
+              <div class="mt-1 flex items-center gap-1.5">
+                <input
+                  v-model="newAnnotColor"
+                  type="color"
+                  class="h-7 w-8 cursor-pointer rounded border border-line bg-transparent p-0"
+                />
+                <span class="text-[10px] font-mono text-ink-faint">{{ newAnnotColor }}</span>
+              </div>
+            </div>
+            <div class="sm:col-span-4">
+              <label class="text-[10px] font-medium text-ink-faint">Annotation Content / Comment</label>
+              <div class="mt-1 flex gap-2">
+                <input
+                  v-model="newAnnotContent"
+                  type="text"
+                  placeholder="Enter annotation content or comment..."
+                  class="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+                />
+                <BaseButton size="sm" variant="primary" @click="handleAddAnnotation">
+                  Add
+                </BaseButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="annotations.length" class="space-y-1.5 max-h-56 overflow-y-auto">
+          <div
+            v-for="a in annotations"
+            :key="a.id"
+            class="flex items-center justify-between rounded-lg border border-line bg-surface p-2 text-xs"
+          >
+            <div class="flex items-center gap-2">
+              <span class="inline-block h-3 w-3 rounded-full border border-black/10" :style="{ backgroundColor: a.color || '#ffeb3b' }" />
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-medium text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                P.{{ a.pageNumber }}
+              </span>
+              <span class="rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                {{ a.annotationType }}
+              </span>
+              <span class="text-ink font-medium">{{ a.content || '(visual marker)' }}</span>
+            </div>
+            <button
+              type="button"
+              class="text-ink-faint hover:text-red-600"
+              title="Delete annotation"
+              @click="handleDeleteAnnotation(a.id)"
+            >
+              <AppIcon name="trash" :size="14" />
+            </button>
+          </div>
+        </div>
+        <div v-else class="py-6 text-center text-xs text-ink-faint">
+          No annotations placed on this document yet.
+        </div>
+      </div>
+
+      <!-- Tab 9: ACL & Permissions -->
+      <div v-if="activeTab === 'acl'" class="space-y-3">
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <h4 class="text-xs font-semibold text-ink">Grant Permission / Rule</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Principal Type</label>
+              <select
+                v-model="newAclPrincType"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                <option value="user">User</option>
+                <option value="role">Role</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Principal ID / Name</label>
+              <input
+                v-model="newAclPrincId"
+                type="text"
+                placeholder="e.g. auditor or user UUID"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Permission</label>
+              <select
+                v-model="newAclPerm"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                <option value="read">Read</option>
+                <option value="write">Write</option>
+                <option value="delete">Delete</option>
+                <option value="share">Share</option>
+                <option value="sign">Sign</option>
+                <option value="admin">Admin</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Access</label>
+              <div class="mt-1 flex gap-2">
+                <select
+                  v-model="newAclAccess"
+                  class="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+                >
+                  <option value="allow">Allow</option>
+                  <option value="deny">Deny</option>
+                </select>
+                <BaseButton size="sm" variant="primary" @click="handleAddAcl">
+                  Grant
+                </BaseButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="aclEntries.length" class="space-y-1.5 max-h-56 overflow-y-auto">
+          <div
+            v-for="entry in aclEntries"
+            :key="entry.id"
+            class="flex items-center justify-between rounded-lg border border-line bg-surface p-2 text-xs"
+          >
+            <div class="flex items-center gap-2">
+              <span
+                class="rounded px-1.5 py-0.5 text-[10px] font-bold uppercase"
+                :class="entry.accessType === 'allow' ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300' : 'bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-300'"
+              >
+                {{ entry.accessType }}
+              </span>
+              <span class="rounded bg-slate-100 px-1.5 py-0.5 text-[10px] font-mono text-slate-700 dark:bg-slate-800 dark:text-slate-300">
+                {{ entry.principalType }}: {{ entry.principalId }}
+              </span>
+              <span class="font-medium text-ink capitalize">{{ entry.permission }}</span>
+            </div>
+            <button
+              type="button"
+              class="text-ink-faint hover:text-red-600"
+              title="Delete rule"
+              @click="handleDeleteAcl(entry.id)"
+            >
+              <AppIcon name="trash" :size="14" />
+            </button>
+          </div>
+        </div>
+        <div v-else class="py-6 text-center text-xs text-ink-faint">
+          Inheriting permissions from folder &amp; collection hierarchy.
+        </div>
+      </div>
+
+      <!-- Tab 10: Secure Shares -->
+      <div v-if="activeTab === 'shares'" class="space-y-3">
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <h4 class="text-xs font-semibold text-ink">Generate Time-Bounded Secure Share Link</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Recipient Email (Optional)</label>
+              <input
+                v-model="newShareEmail"
+                type="email"
+                placeholder="external.partner@example.com"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Access Limit (0 for unlimited)</label>
+              <input
+                v-model.number="newShareMaxCount"
+                type="number"
+                min="0"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div class="flex items-end gap-3 pb-1">
+              <label class="flex items-center gap-1.5 text-xs text-ink">
+                <input v-model="newShareCanDl" type="checkbox" class="rounded border-line" />
+                Allow Download
+              </label>
+              <label class="flex items-center gap-1.5 text-xs text-ink">
+                <input v-model="newShareCanCom" type="checkbox" class="rounded border-line" />
+                Allow Comment
+              </label>
+            </div>
+          </div>
+          <div class="flex justify-end pt-1">
+            <BaseButton size="sm" variant="primary" @click="handleCreateShare">
+              Generate Share Token
+            </BaseButton>
+          </div>
+
+          <div v-if="createdShareToken" class="mt-2 rounded border border-emerald-300 bg-emerald-50 p-2 text-xs text-emerald-800 dark:border-emerald-900/50 dark:bg-emerald-950/40 dark:text-emerald-300">
+            <div class="font-bold">Share Token Generated:</div>
+            <div class="mt-1 select-all font-mono text-[11px] break-all bg-surface p-1 rounded border border-emerald-200 dark:border-emerald-800">
+              {{ createdShareToken }}
+            </div>
+          </div>
+        </div>
+
+        <div v-if="shares.length" class="space-y-1.5 max-h-56 overflow-y-auto">
+          <div
+            v-for="s in shares"
+            :key="s.id"
+            class="flex items-center justify-between rounded-lg border border-line bg-surface p-2 text-xs"
+          >
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-[11px] font-bold text-ink">{{ s.shareToken.substring(0, 12) }}...</span>
+                <span
+                  class="rounded px-1.5 py-0.5 text-[10px] font-medium"
+                  :class="s.isRevoked ? 'bg-red-50 text-red-700' : 'bg-emerald-50 text-emerald-700'"
+                >
+                  {{ s.isRevoked ? 'Revoked' : 'Active' }}
+                </span>
+                <span v-if="s.recipientEmail" class="text-ink-soft">{{ s.recipientEmail }}</span>
+              </div>
+              <div class="mt-0.5 text-[10px] text-ink-faint">
+                Access: {{ s.accessCount }} / {{ s.maxAccessCount ? s.maxAccessCount : 'unlimited' }}
+                {{ s.canDownload ? '· Can download' : '' }}
+                {{ s.canComment ? '· Can comment' : '' }}
+              </div>
+            </div>
+            <button
+              v-if="!s.isRevoked"
+              type="button"
+              class="text-xs text-red-600 hover:underline"
+              @click="handleRevokeShare(s.id)"
+            >
+              Revoke
+            </button>
+          </div>
+        </div>
+        <div v-else class="py-6 text-center text-xs text-ink-faint">
+          No external shares generated yet.
+        </div>
+      </div>
+
+      <!-- Tab 11: ERP Entity Links -->
+      <div v-if="activeTab === 'entityLinks'" class="space-y-3">
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <h4 class="text-xs font-semibold text-ink">Link Document to ERP Transaction or Master Record</h4>
+          <div class="grid grid-cols-1 sm:grid-cols-4 gap-2">
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">ERP Entity Type</label>
+              <select
+                v-model="newEntType"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              >
+                <option value="gl_journal">GL Journal Entry</option>
+                <option value="supplier_voucher">Supplier Voucher / AP</option>
+                <option value="customer_invoice">Customer Invoice / AR</option>
+                <option value="procurement_order">Purchase Order (PO)</option>
+                <option value="fleet_vehicle">Fleet Vehicle Record</option>
+                <option value="employee">Employee HR File</option>
+                <option value="fixed_asset">Fixed Asset</option>
+              </select>
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Entity UUID</label>
+              <input
+                v-model="newEntId"
+                type="text"
+                placeholder="UUID of ERP record"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Reference Number</label>
+              <input
+                v-model="newEntRef"
+                type="text"
+                placeholder="e.g. PO-2026-0042"
+                class="mt-1 w-full rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              />
+            </div>
+            <div>
+              <label class="text-[10px] font-medium text-ink-faint">Category</label>
+              <div class="mt-1 flex gap-2">
+                <select
+                  v-model="newEntCat"
+                  class="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+                >
+                  <option value="attachment">Attachment</option>
+                  <option value="invoice">Invoice</option>
+                  <option value="receipt">Receipt</option>
+                  <option value="contract">Contract</option>
+                  <option value="compliance">Compliance</option>
+                </select>
+                <BaseButton size="sm" variant="primary" @click="handleAddEntityLink">
+                  Link
+                </BaseButton>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div v-if="entityLinks.length" class="space-y-1.5 max-h-56 overflow-y-auto">
+          <div
+            v-for="link in entityLinks"
+            :key="link.id"
+            class="flex items-center justify-between rounded-lg border border-line bg-surface p-2 text-xs"
+          >
+            <div>
+              <div class="flex items-center gap-2">
+                <span class="rounded bg-primary-soft px-1.5 py-0.5 text-[10px] font-bold uppercase text-primary">
+                  {{ link.entityType.replace('_', ' ') }}
+                </span>
+                <span class="font-bold text-ink">{{ link.referenceNumber || link.entityId }}</span>
+                <span class="text-[10px] text-ink-faint capitalize">({{ link.linkCategory }})</span>
+              </div>
+              <div class="mt-0.5 text-[10px] text-ink-faint font-mono">
+                Entity ID: {{ link.entityId }}
+              </div>
+            </div>
+            <button
+              type="button"
+              class="text-ink-faint hover:text-red-600"
+              title="Unlink record"
+              @click="handleRemoveEntityLink(link.id)"
+            >
+              <AppIcon name="trash" :size="14" />
+            </button>
+          </div>
+        </div>
+        <div v-else class="py-6 text-center text-xs text-ink-faint">
+          No ERP business entities linked to this document.
+        </div>
+      </div>
+
+      <!-- Tab 12: Deterministic AI Assistant -->
+      <div v-if="activeTab === 'ai'" class="space-y-4">
+        <!-- Classification Section -->
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <div class="flex items-center justify-between">
+            <div>
+              <h4 class="text-xs font-semibold text-ink">Heuristic Document Classification</h4>
+              <p class="text-[11px] text-ink-faint">Analyzes document title, metadata, and extracted text to classify type.</p>
+            </div>
+            <BaseButton
+              size="sm"
+              variant="secondary"
+              :disabled="aiClassifying"
+              @click="handleRunClassify"
+            >
+              <AppIcon v-if="aiClassifying" name="arrow-path" class="animate-spin mr-1" :size="14" />
+              {{ aiClassifying ? 'Analyzing...' : 'Classify Type' }}
+            </BaseButton>
+          </div>
+
+          <div v-if="aiCategory" class="mt-2 rounded-lg border border-line bg-surface p-2.5 text-xs space-y-1.5">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="font-semibold text-ink">Detected Category:</span>
+                <span class="rounded bg-primary-soft px-2 py-0.5 font-bold uppercase text-primary text-[11px]">
+                  {{ aiCategory }}
+                </span>
+              </div>
+              <span class="text-[10px] text-ink-faint">
+                Confidence: <strong class="text-ink">{{ Math.round(aiConfidence * 100) }}%</strong>
+              </span>
+            </div>
+            <div v-if="aiSignals.length" class="text-[10px] text-ink-soft">
+              <span class="font-semibold">Matched Signals: </span>
+              <span class="font-mono">{{ aiSignals.join(', ') }}</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Extractive RAG Section -->
+        <div class="rounded-lg border border-line bg-canvas/30 p-3 space-y-2">
+          <h4 class="text-xs font-semibold text-ink">Deterministic Extractive RAG</h4>
+          <p class="text-[11px] text-ink-faint">
+            Searches vector embeddings generated with 256-dim FNV-1a hashing and retrieves exact citation passages.
+          </p>
+
+          <div class="flex gap-2">
+            <input
+              v-model="ragQueryText"
+              type="text"
+              placeholder="Ask a question (e.g. 'What is the payment due date and contract terms?')..."
+              class="flex-1 rounded border border-line bg-surface px-2 py-1 text-xs text-ink"
+              @keydown.enter.prevent="handleRunRag"
+            />
+            <BaseButton
+              size="sm"
+              variant="primary"
+              :disabled="ragLoading || !ragQueryText.trim()"
+              @click="handleRunRag"
+            >
+              <AppIcon v-if="ragLoading" name="arrow-path" class="animate-spin mr-1" :size="14" />
+              {{ ragLoading ? 'Searching...' : 'Ask RAG' }}
+            </BaseButton>
+          </div>
+
+          <div v-if="ragAnswer" class="mt-2 rounded-lg border border-line bg-surface p-3 text-xs space-y-2">
+            <div>
+              <span class="font-bold text-ink">Synthesized Extracted Answer:</span>
+              <p class="mt-1 leading-relaxed text-ink-soft">{{ ragAnswer }}</p>
+            </div>
+
+            <div v-if="ragCitations.length" class="border-t border-line pt-2">
+              <span class="text-[10px] font-bold uppercase text-ink-faint">Citations &amp; Grounding Passages:</span>
+              <div class="mt-1 space-y-1">
+                <div
+                  v-for="(cit, idx) in ragCitations"
+                  :key="idx"
+                  class="rounded bg-canvas/60 p-2 text-[11px] border border-line/60"
+                >
+                  <div class="flex items-center justify-between text-ink font-semibold">
+                    <span>Source Document: {{ cit.documentTitle || cit.documentId }}</span>
+                    <span v-if="cit.pageNumber" class="text-ink-faint text-[10px]">Page {{ cit.pageNumber }}</span>
+                  </div>
+                  <p class="mt-0.5 italic text-ink-soft">"{{ cit.snippet }}"</p>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
     </div>

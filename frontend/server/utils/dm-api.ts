@@ -10,14 +10,35 @@ export const dmResources = new Set([
   'documents',
   'workflows',
   'saved-searches',
+  'collections',
+  'tags',
+  'custom-attributes',
+  'custom-identifiers',
+  'acl',
+  'shares',
+  'legal-holds',
+  'signatures',
+  'entity-links',
+  'quotas',
+  'settings',
+  'workflow-templates',
+  'workflow-instances',
+  'workflow-tasks',
+  'ai',
 ])
 
 const dmSubResources: Record<string, Set<string>> = {
-  documents: new Set(['versions', 'notes', 'relations', 'workflow']),
+  documents: new Set(['versions', 'notes', 'relations', 'workflow', 'annotations']),
+  collections: new Set(['documents']),
 }
 
 const dmActions: Record<string, Set<string>> = {
   documents: new Set(['checkout', 'checkin', 'lock', 'unlock', 'bookmark']),
+  signatures: new Set(['sign', 'verify']),
+  'workflow-tasks': new Set(['complete', 'sweep']),
+  'custom-identifiers': new Set(['generate']),
+  'legal-holds': new Set(['apply', 'release']),
+  audit: new Set(['verify']),
 }
 
 export type DmProxyMode =
